@@ -1,42 +1,67 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* The Manhattan Project - Digital Architect's Studio Design System */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Canvas Background - Clean off-white with subtle texture */
+    --background: 45 15% 98%;
+    --foreground: 220 9% 15%;
 
+    /* Card System - Clean paper feel */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 220 9% 15%;
+    --card-border: 45 15% 92%;
 
+    /* Interactive Elements */
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 220 9% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Brand Colors - Sophisticated and professional */
+    --primary: 220 9% 15%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 220 9% 25%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Soft Crayon Colors */
+    --sage: 120 15% 75%;
+    --sage-foreground: 120 25% 25%;
+    --dusty-blue: 205 25% 70%;
+    --dusty-blue-foreground: 205 35% 25%;
+    --soft-ochre: 35 35% 75%;
+    --soft-ochre-foreground: 35 45% 25%;
+    --warm-coral: 15 35% 75%;
+    --warm-coral-foreground: 15 45% 25%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* UI Elements */
+    --secondary: 45 15% 95%;
+    --secondary-foreground: 220 9% 15%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --muted: 45 15% 94%;
+    --muted-foreground: 220 6% 50%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --accent: 120 15% 75%;
+    --accent-foreground: 120 25% 25%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --destructive: 0 65% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --radius: 0.5rem;
+    /* Borders and Inputs */
+    --border: 45 15% 88%;
+    --input: 45 15% 94%;
+    --ring: 220 9% 15%;
+
+    /* Design System Variables */
+    --radius: 0.75rem;
+    --shadow-soft: 0 2px 8px -2px hsl(220 9% 15% / 0.08);
+    --shadow-elevated: 0 8px 32px -8px hsl(220 9% 15% / 0.12);
+    
+    /* Transitions */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-spring: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 
     --sidebar-background: 0 0% 98%;
 
@@ -100,6 +125,72 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-inter;
+    background-image: 
+      radial-gradient(circle at 25% 25%, hsl(var(--sage)) 0%, transparent 50%),
+      radial-gradient(circle at 75% 75%, hsl(var(--dusty-blue)) 0%, transparent 50%);
+    background-size: 1200px 1200px;
+    background-attachment: fixed;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-inter;
+  }
+}
+
+@layer components {
+  /* Elegant hand-drawn style elements */
+  .sketch-divider {
+    position: relative;
+    height: 2px;
+    background: linear-gradient(90deg, 
+      transparent 0%, 
+      hsl(var(--border)) 20%, 
+      hsl(var(--border)) 80%, 
+      transparent 100%
+    );
+    border-radius: 1px;
+  }
+  
+  .sketch-divider::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: 20%;
+    right: 20%;
+    height: 4px;
+    background: hsl(var(--border));
+    border-radius: 2px;
+    opacity: 0.3;
+    filter: blur(0.5px);
+  }
+
+  /* Card styles with soft shadows */
+  .card-elevated {
+    box-shadow: var(--shadow-elevated);
+    border: 1px solid hsl(var(--card-border));
+    transition: var(--transition-smooth);
+  }
+
+  .card-elevated:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px -12px hsl(220 9% 15% / 0.15);
+  }
+
+  /* Button variants for the design system */
+  .btn-sage {
+    @apply bg-sage text-sage-foreground hover:bg-sage/90;
+  }
+
+  .btn-dusty-blue {
+    @apply bg-dusty-blue text-dusty-blue-foreground hover:bg-dusty-blue/90;
+  }
+
+  .btn-soft-ochre {
+    @apply bg-soft-ochre text-soft-ochre-foreground hover:bg-soft-ochre/90;
+  }
+
+  .btn-warm-coral {
+    @apply bg-warm-coral text-warm-coral-foreground hover:bg-warm-coral/90;
   }
 }
