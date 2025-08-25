@@ -203,6 +203,7 @@ const CreatorStudio = () => {
       }
 
       handleNewAgent();
+      
       if (user) fetchUserAgents(user.uid);
       setActiveTab("agents");
     } catch (error) {

@@ -14,7 +14,7 @@ const Layout = () => {
     const unsubscribe = onAuthStateChanged(auth, (user) => setCurrentUser(user));
     return unsubscribe;
   }, []);
-
+  
   const navigation = [
     { name: "Explore", href: "/explore" },
     { name: "Trending", href: "/trending" },
@@ -68,6 +68,7 @@ const Layout = () => {
                 <Plus className="w-4 h-4 mr-2" />
                 Submit Agent
               </Button>
+
 
               {currentUser ? (
                 <Button variant="ghost" size="sm" onClick={handleSignOut}>
