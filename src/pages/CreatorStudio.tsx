@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,16 +11,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { 
-  Plus, 
-  Github, 
-  Upload, 
-  Save, 
-  Eye, 
-  Trash2, 
-  Edit, 
-  Star, 
-  Users, 
+import {
+  getUserAgents,
+  createAgent,
+  updateAgent,
+  deleteAgent,
+} from "@/lib/api/agents";
+import type { Tables } from "@/integrations/supabase/types";
+import {
+  Plus,
+  Eye,
+  Trash2,
+  Edit,
+  Star,
+  Users,
   TrendingUp,
   Settings,
   FileText,
@@ -27,7 +32,6 @@ import {
   Play,
   Database,
   Globe,
-  CheckCircle,
   AlertCircle,
   Clock
 } from "lucide-react";
@@ -38,6 +42,9 @@ const CreatorStudio = () => {
   const [myAgents, setMyAgents] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("overview");
+  const [editingAgentId, setEditingAgentId] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     name: "",
@@ -81,22 +88,16 @@ const CreatorStudio = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchUserAgents = async (userId) => {
+  const fetchUserAgents = async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('agent_profiles')
-        .select('*')
-        .eq('creator_id', userId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setMyAgents(data || []);
+      const data = await getUserAgents(userId);
+      setMyAgents(data);
     } catch (error) {
       console.error('Error fetching agents:', error);
       toast({
         title: "Error",
         description: "Failed to fetch your agents",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -116,13 +117,71 @@ const CreatorStudio = () => {
     "API Integration", "Database Queries", "Image Generation", "Text Processing"
   ];
   const protocols = ["REST API", "GraphQL", "WebSocket", "gRPC", "Custom"];
+  const handleNewAgent = () => {
+    setFormData({
+      name: "",
+      description: "",
+      category: "",
+      tags: [],
+      githubUrl: "",
+      model: "",
+      license: "MIT",
+      modalities: [],
+      capabilities: [],
+      ioSchema: "",
+      protocols: [],
+      runtimeDependencies: [],
+      dockerfileUrl: "",
+    });
+    setEditingAgentId(null);
+    setCurrentStep(1);
+    setActiveTab("foundry");
+  };
+
+  const startEditing = (agent: Tables<'agent_profiles'>) => {
+    setFormData({
+      name: agent.name || "",
+      description: agent.description || "",
+      category: agent.category || "",
+      tags: agent.tags || [],
+      githubUrl: agent.github_url || "",
+      model: agent.model || "",
+      license: agent.license || "MIT",
+      modalities: agent.modalities || [],
+      capabilities: agent.capabilities || [],
+      ioSchema: agent.io_schema ? JSON.stringify(agent.io_schema, null, 2) : "",
+      protocols: agent.protocols || [],
+      runtimeDependencies: agent.runtime_dependencies || [],
+      dockerfileUrl: agent.dockerfile_url || "",
+    });
+    setEditingAgentId(agent.id);
+    setCurrentStep(1);
+    setActiveTab("foundry");
+  };
+
+  const handleView = (id: string) => navigate(`/agent/${id}`);
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteAgent(id);
+      toast({ title: "Agent deleted", description: "The agent has been removed." });
+      if (user) fetchUserAgents(user.id);
+    } catch (error) {
+      console.error('Error deleting agent:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete agent",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleSubmit = async () => {
     if (!user) {
       toast({
         title: "Authentication required",
         description: "Please log in to submit an agent",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -143,44 +202,26 @@ const CreatorStudio = () => {
         protocols: formData.protocols,
         runtime_dependencies: formData.runtimeDependencies,
         dockerfile_url: formData.dockerfileUrl,
-        status: 'review'
+        status: 'review',
       };
 
-      const { error } = await supabase
-        .from('agent_profiles')
-        .insert([agentData]);
+      if (editingAgentId) {
+        await updateAgent(editingAgentId, agentData);
+        toast({ title: "Agent updated", description: "Your agent has been updated" });
+      } else {
+        await createAgent(agentData);
+        toast({ title: "Success!", description: "Your agent has been submitted for review" });
+      }
 
-      if (error) throw error;
-
-      toast({
-        title: "Success!",
-        description: "Your agent has been submitted for review"
-      });
-
-      // Reset form
-      setFormData({
-        name: "",
-        description: "",
-        category: "",
-        tags: [],
-        githubUrl: "",
-        model: "",
-        license: "MIT",
-        modalities: [],
-        capabilities: [],
-        ioSchema: "",
-        protocols: [],
-        runtimeDependencies: [],
-        dockerfileUrl: ""
-      });
-      setCurrentStep(1);
-      fetchUserAgents(user.id);
+      handleNewAgent();
+      if (user) fetchUserAgents(user.id);
+      setActiveTab("agents");
     } catch (error) {
       console.error('Error submitting agent:', error);
       toast({
         title: "Error",
         description: "Failed to submit agent",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -248,14 +289,14 @@ const CreatorStudio = () => {
               Professional agent foundry for the Manhattan Project community
             </p>
           </div>
-          <Button className="bg-primary hover:bg-primary-hover">
+          <Button className="bg-primary hover:bg-primary-hover" onClick={handleNewAgent}>
             <Plus className="w-4 h-4 mr-2" />
             New Agent
           </Button>
         </div>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="agents">My Agents ({myAgents.length})</TabsTrigger>
@@ -407,14 +448,21 @@ const CreatorStudio = () => {
                     </div>
                     
                     <div className="flex items-center space-x-2">
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={() => handleView(agent.id)}>
                         <Eye className="w-4 h-4" />
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={() => startEditing(agent)}>
                         <Edit className="w-4 h-4" />
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toast({ title: "Coming soon", description: "Advanced settings will be available soon" })}
+                      >
                         <Settings className="w-4 h-4" />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleDelete(agent.id)}>
+                        <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
