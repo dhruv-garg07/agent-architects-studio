@@ -1,10 +1,19 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Search, User, Plus, Menu, X } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { auth } from "@/integrations/firebase/client";
+import { onAuthStateChanged, signOut, type User } from "firebase/auth";
 
 const Layout = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => setCurrentUser(user));
+    return unsubscribe;
+  }, []);
 
   const navigation = [
     { name: "Explore", href: "/explore" },
@@ -12,6 +21,10 @@ const Layout = () => {
     { name: "Categories", href: "/categories" },
     { name: "Creators", href: "/creators" },
   ];
+
+  const handleSignOut = async () => {
+    await signOut(auth);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -46,19 +59,26 @@ const Layout = () => {
 
             {/* Actions */}
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="sm" className="hidden sm:flex">
+              <Button variant="ghost" size="sm" className="hidden sm:flex" onClick={() => navigate('/explore')}>
                 <Search className="w-4 h-4 mr-2" />
                 Search
               </Button>
-              
-              <Button variant="outline" size="sm" className="btn-sage">
+
+              <Button variant="outline" size="sm" className="btn-sage" onClick={() => navigate('/studio')}>
                 <Plus className="w-4 h-4 mr-2" />
                 Submit Agent
               </Button>
 
-              <Button variant="ghost" size="sm">
-                <User className="w-4 h-4" />
-              </Button>
+              {currentUser ? (
+                <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                  <User className="w-4 h-4 mr-2" />
+                  Sign Out
+                </Button>
+              ) : (
+                <Button variant="ghost" size="sm" onClick={() => navigate('/auth')}>
+                  <User className="w-4 h-4" />
+                </Button>
+              )}
 
               {/* Mobile menu button */}
               <Button
@@ -117,11 +137,11 @@ const Layout = () => {
                 <span className="text-lg font-semibold font-inter">The Manhattan Project</span>
               </div>
               <p className="text-muted-foreground text-sm max-w-md">
-                The definitive hub for discovering, sharing, and demonstrating autonomous AI agents. 
+                The definitive hub for discovering, sharing, and demonstrating autonomous AI agents.
                 Combining community collaboration with professional-grade tools.
               </p>
             </div>
-            
+
             <div>
               <h3 className="font-medium mb-4">Platform</h3>
               <div className="space-y-3 text-sm text-muted-foreground">
@@ -131,7 +151,7 @@ const Layout = () => {
                 <a href="/api" className="block hover:text-primary transition-colors">API</a>
               </div>
             </div>
-            
+
             <div>
               <h3 className="font-medium mb-4">Community</h3>
               <div className="space-y-3 text-sm text-muted-foreground">
@@ -142,9 +162,9 @@ const Layout = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="sketch-divider my-8"></div>
-          
+
           <div className="flex flex-col md:flex-row justify-between items-center text-sm text-muted-foreground">
             <p>&copy; 2024 The Manhattan Project. Built for the AI community.</p>
             <div className="flex space-x-6 mt-4 md:mt-0">

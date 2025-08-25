@@ -1,15 +1,16 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { supabase } from "@/integrations/supabase/client";
-import { 
-  Trophy, 
-  Star, 
-  TrendingUp, 
-  Play, 
-  Users, 
+import { useToast } from "@/components/ui/use-toast";
+import { getTopAgents, getTopCreators } from "@/lib/api/agents";
+import {
+  Trophy,
+  Star,
+  TrendingUp,
+  Play,
   Clock,
   Award,
   Target,
@@ -20,6 +21,8 @@ const Leaderboard = () => {
   const [topAgents, setTopAgents] = useState([]);
   const [topCreators, setTopCreators] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchLeaderboardData();
@@ -27,28 +30,10 @@ const Leaderboard = () => {
 
   const fetchLeaderboardData = async () => {
     try {
-      // Fetch top agents by rating
-      const { data: agents, error: agentsError } = await supabase
-        .from('agent_profiles')
-        .select(`
-          *,
-          user_profiles(display_name, avatar_url)
-        `)
-        .eq('status', 'published')
-        .order('avg_rating', { ascending: false })
-        .limit(10);
-
-      if (agentsError) throw agentsError;
-      setTopAgents(agents || []);
-
-      // Fetch top creators (simplified - in real app would aggregate properly)
-      const { data: creators, error: creatorsError } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .limit(10);
-
-      if (creatorsError) throw creatorsError;
-      setTopCreators(creators || []);
+      const agents = await getTopAgents();
+      setTopAgents(agents);
+      const creators = await getTopCreators();
+      setTopCreators(creators);
     } catch (error) {
       console.error('Error fetching leaderboard data:', error);
     } finally {
@@ -97,7 +82,7 @@ const Leaderboard = () => {
                 Submit your best coding agent to compete for the top spot and win community recognition
               </p>
             </div>
-            <Button className="bg-primary hover:bg-primary-hover">
+            <Button className="bg-primary hover:bg-primary-hover" onClick={() => navigate('/studio')}>
               Join Challenge
             </Button>
           </div>
@@ -193,7 +178,11 @@ const Leaderboard = () => {
                     </div>
                   </div>
                   
-                  <Button variant="outline" className="w-full mt-4">
+                  <Button
+                    variant="outline"
+                    className="w-full mt-4"
+                    onClick={() => toast({ title: 'Coming soon', description: 'Creator profiles are under development' })}
+                  >
                     View Profile
                   </Button>
                 </CardContent>
