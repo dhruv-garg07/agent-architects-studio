@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 import { 
   Plus, 
   Github, 
@@ -22,11 +24,21 @@ import {
   Settings,
   FileText,
   Code,
-  Play
+  Play,
+  Database,
+  Globe,
+  CheckCircle,
+  AlertCircle,
+  Clock
 } from "lucide-react";
 
 const CreatorStudio = () => {
   const [currentStep, setCurrentStep] = useState(1);
+  const [user, setUser] = useState(null);
+  const [myAgents, setMyAgents] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+  
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -34,38 +46,62 @@ const CreatorStudio = () => {
     tags: [],
     githubUrl: "",
     model: "",
-    license: "MIT"
+    license: "MIT",
+    modalities: [],
+    capabilities: [],
+    ioSchema: "",
+    protocols: [],
+    runtimeDependencies: [],
+    dockerfileUrl: ""
   });
 
-  const myAgents = [
-    {
-      id: 1,
-      name: "CodeCraft AI",
-      description: "Advanced code generation and refactoring assistant",
-      status: "published",
-      rating: 4.9,
-      runs: "12.3k",
-      lastUpdated: "2 days ago"
-    },
-    {
-      id: 2,
-      name: "DataViz Pro",
-      description: "Intelligent data visualization tool",
-      status: "draft",
-      rating: 0,
-      runs: "0",
-      lastUpdated: "1 week ago"
-    },
-    {
-      id: 3,
-      name: "Task Assistant",
-      description: "Productivity and task management agent",
-      status: "review",
-      rating: 0,
-      runs: "0",
-      lastUpdated: "3 days ago"
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUser(session.user);
+        fetchUserAgents(session.user.id);
+      } else {
+        setIsLoading(false);
+      }
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        setUser(session.user);
+        fetchUserAgents(session.user.id);
+      } else {
+        setUser(null);
+        setMyAgents([]);
+        setIsLoading(false);
+      }
+    });
+
+    checkUser();
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const fetchUserAgents = async (userId) => {
+    try {
+      const { data, error } = await supabase
+        .from('agent_profiles')
+        .select('*')
+        .eq('creator_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setMyAgents(data || []);
+    } catch (error) {
+      console.error('Error fetching agents:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch your agents",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
-  ];
+  };
 
   const categories = [
     "Code Generation", "Data Analysis", "Content Creation", 
@@ -73,6 +109,81 @@ const CreatorStudio = () => {
   ];
 
   const models = ["GPT-4", "Claude 3.5", "LangChain", "Custom", "Gemini"];
+  
+  const modalities = ["Text", "Vision", "Audio", "Multimodal"];
+  const capabilities = [
+    "Code Generation", "Data Analysis", "Web Search", "File Processing",
+    "API Integration", "Database Queries", "Image Generation", "Text Processing"
+  ];
+  const protocols = ["REST API", "GraphQL", "WebSocket", "gRPC", "Custom"];
+
+  const handleSubmit = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to submit an agent",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const agentData = {
+        creator_id: user.id,
+        name: formData.name,
+        description: formData.description,
+        category: formData.category,
+        tags: formData.tags,
+        github_url: formData.githubUrl,
+        model: formData.model,
+        license: formData.license,
+        modalities: formData.modalities,
+        capabilities: formData.capabilities,
+        io_schema: formData.ioSchema ? JSON.parse(formData.ioSchema) : null,
+        protocols: formData.protocols,
+        runtime_dependencies: formData.runtimeDependencies,
+        dockerfile_url: formData.dockerfileUrl,
+        status: 'review'
+      };
+
+      const { error } = await supabase
+        .from('agent_profiles')
+        .insert([agentData]);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success!",
+        description: "Your agent has been submitted for review"
+      });
+
+      // Reset form
+      setFormData({
+        name: "",
+        description: "",
+        category: "",
+        tags: [],
+        githubUrl: "",
+        model: "",
+        license: "MIT",
+        modalities: [],
+        capabilities: [],
+        ioSchema: "",
+        protocols: [],
+        runtimeDependencies: [],
+        dockerfileUrl: ""
+      });
+      setCurrentStep(1);
+      fetchUserAgents(user.id);
+    } catch (error) {
+      console.error('Error submitting agent:', error);
+      toast({
+        title: "Error",
+        description: "Failed to submit agent",
+        variant: "destructive"
+      });
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -92,6 +203,38 @@ const CreatorStudio = () => {
     }
   };
 
+  if (!user) {
+    return (
+      <div className="container mx-auto px-4 lg:px-8 py-8">
+        <Card className="card-elevated max-w-md mx-auto">
+          <CardContent className="p-8 text-center">
+            <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Authentication Required</h2>
+            <p className="text-muted-foreground mb-4">
+              Please log in to access the Creator Studio
+            </p>
+            <Button onClick={() => window.location.href = '/auth'}>
+              Sign In
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 lg:px-8 py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <Clock className="w-8 h-8 animate-spin mx-auto mb-2 text-muted-foreground" />
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 lg:px-8 py-8">
       {/* Header */}
@@ -102,7 +245,7 @@ const CreatorStudio = () => {
               Creator Studio
             </h1>
             <p className="text-muted-foreground">
-              Manage and submit your AI agents to the community
+              Professional agent foundry for the Manhattan Project community
             </p>
           </div>
           <Button className="bg-primary hover:bg-primary-hover">
@@ -115,8 +258,8 @@ const CreatorStudio = () => {
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="agents">My Agents</TabsTrigger>
-          <TabsTrigger value="submit">Submit Agent</TabsTrigger>
+          <TabsTrigger value="agents">My Agents ({myAgents.length})</TabsTrigger>
+          <TabsTrigger value="foundry">Agent Foundry</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
 
@@ -128,7 +271,7 @@ const CreatorStudio = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Total Agents</p>
-                    <p className="text-2xl font-bold">3</p>
+                    <p className="text-2xl font-bold">{myAgents.length}</p>
                   </div>
                   <div className="w-12 h-12 bg-sage/20 rounded-lg flex items-center justify-center">
                     <Code className="w-6 h-6 text-sage-foreground" />
@@ -142,7 +285,9 @@ const CreatorStudio = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Total Runs</p>
-                    <p className="text-2xl font-bold">12.3k</p>
+                    <p className="text-2xl font-bold">
+                      {myAgents.reduce((total, agent) => total + (agent.total_runs || 0), 0).toLocaleString()}
+                    </p>
                   </div>
                   <div className="w-12 h-12 bg-dusty-blue/20 rounded-lg flex items-center justify-center">
                     <Play className="w-6 h-6 text-dusty-blue-foreground" />
@@ -156,7 +301,12 @@ const CreatorStudio = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Avg Rating</p>
-                    <p className="text-2xl font-bold">4.9</p>
+                    <p className="text-2xl font-bold">
+                      {myAgents.length > 0 
+                        ? (myAgents.reduce((total, agent) => total + (agent.avg_rating || 0), 0) / myAgents.length).toFixed(1)
+                        : "0.0"
+                      }
+                    </p>
                   </div>
                   <div className="w-12 h-12 bg-soft-ochre/20 rounded-lg flex items-center justify-center">
                     <Star className="w-6 h-6 text-soft-ochre-foreground" />
@@ -169,8 +319,10 @@ const CreatorStudio = () => {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Followers</p>
-                    <p className="text-2xl font-bold">2.3k</p>
+                    <p className="text-sm font-medium text-muted-foreground">Published</p>
+                    <p className="text-2xl font-bold">
+                      {myAgents.filter(agent => agent.status === 'published').length}
+                    </p>
                   </div>
                   <div className="w-12 h-12 bg-warm-coral/20 rounded-lg flex items-center justify-center">
                     <Users className="w-6 h-6 text-warm-coral-foreground" />
@@ -272,37 +424,51 @@ const CreatorStudio = () => {
           </div>
         </TabsContent>
 
-        {/* Submit Agent Tab */}
-        <TabsContent value="submit">
+        {/* Agent Foundry Tab */}
+        <TabsContent value="foundry">
           <Card className="card-elevated">
             <CardHeader>
-              <CardTitle>Submit New Agent</CardTitle>
+              <CardTitle>Agent Foundry - Professional Registration</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Complete metadata and configuration for your AI agent
+              </p>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Step Indicator */}
-              <div className="flex items-center space-x-4">
-                {[1, 2, 3, 4].map((step) => (
-                  <div key={step} className="flex items-center">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                      step <= currentStep 
+              <div className="flex items-center space-x-4 mb-8">
+                {[
+                  { num: 1, title: "Registration", icon: FileText },
+                  { num: 2, title: "Interface", icon: Database },
+                  { num: 3, title: "Capabilities", icon: Settings },
+                  { num: 4, title: "Environment", icon: Globe }
+                ].map((step, index) => (
+                  <div key={step.num} className="flex items-center">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${
+                      step.num <= currentStep 
                         ? "bg-primary text-primary-foreground" 
                         : "bg-muted text-muted-foreground"
                     }`}>
-                      {step}
+                      <step.icon className="w-4 h-4" />
                     </div>
-                    {step < 4 && (
+                    <div className="ml-2 hidden md:block">
+                      <p className="text-xs font-medium">{step.title}</p>
+                    </div>
+                    {index < 3 && (
                       <div className={`w-12 h-1 mx-2 ${
-                        step < currentStep ? "bg-primary" : "bg-muted"
+                        step.num < currentStep ? "bg-primary" : "bg-muted"
                       }`} />
                     )}
                   </div>
                 ))}
               </div>
 
-              {/* Step 1: Basic Information */}
+              {/* Step 1: Registration */}
               {currentStep === 1 && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Basic Information</h3>
+                <div className="space-y-6">
+                  <div className="border-l-4 border-primary pl-4">
+                    <h3 className="text-lg font-semibold">Agent Registration</h3>
+                    <p className="text-sm text-muted-foreground">Core metadata and identification</p>
+                  </div>
                   
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -319,7 +485,7 @@ const CreatorStudio = () => {
                       <Label htmlFor="category">Category *</Label>
                       <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select category" />
+                          <SelectValue placeholder="Select primary category" />
                         </SelectTrigger>
                         <SelectContent>
                           {categories.map((category) => (
@@ -336,19 +502,19 @@ const CreatorStudio = () => {
                     <Label htmlFor="description">Description *</Label>
                     <Textarea 
                       id="description"
-                      placeholder="Describe what your agent does and how it helps users..."
+                      placeholder="Comprehensive description of your agent's capabilities and use cases..."
                       value={formData.description}
                       onChange={(e) => setFormData({...formData, description: e.target.value})}
-                      className="min-h-[100px]"
+                      className="min-h-[120px]"
                     />
                   </div>
 
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="model">Foundation Model</Label>
+                      <Label htmlFor="model">Foundation Model *</Label>
                       <Select value={formData.model} onValueChange={(value) => setFormData({...formData, model: value})}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select model" />
+                          <SelectValue placeholder="Select foundation model" />
                         </SelectTrigger>
                         <SelectContent>
                           {models.map((model) => (
@@ -375,6 +541,161 @@ const CreatorStudio = () => {
                       </Select>
                     </div>
                   </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="githubUrl">GitHub Repository *</Label>
+                    <Input 
+                      id="githubUrl"
+                      placeholder="https://github.com/username/repo"
+                      value={formData.githubUrl}
+                      onChange={(e) => setFormData({...formData, githubUrl: e.target.value})}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Modalities *</Label>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {modalities.map((modality) => (
+                        <div key={modality} className="flex items-center space-x-2">
+                          <Checkbox 
+                            id={modality}
+                            checked={formData.modalities.includes(modality)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setFormData({...formData, modalities: [...formData.modalities, modality]});
+                              } else {
+                                setFormData({...formData, modalities: formData.modalities.filter(m => m !== modality)});
+                              }
+                            }}
+                          />
+                          <Label htmlFor={modality} className="text-sm">{modality}</Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 2: Interface Declaration */}
+              {currentStep === 2 && (
+                <div className="space-y-6">
+                  <div className="border-l-4 border-dusty-blue pl-4">
+                    <h3 className="text-lg font-semibold">Interface Declaration</h3>
+                    <p className="text-sm text-muted-foreground">Define API schema and communication protocols</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="ioSchema">I/O Schema (JSON)</Label>
+                    <Textarea 
+                      id="ioSchema"
+                      placeholder='{"input": {"type": "string", "description": "User prompt"}, "output": {"type": "string", "description": "Generated response"}}'
+                      value={formData.ioSchema}
+                      onChange={(e) => setFormData({...formData, ioSchema: e.target.value})}
+                      className="min-h-[150px] font-mono text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground">Define the input/output structure in JSON schema format</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Supported Protocols *</Label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {protocols.map((protocol) => (
+                        <div key={protocol} className="flex items-center space-x-2">
+                          <Checkbox 
+                            id={protocol}
+                            checked={formData.protocols.includes(protocol)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setFormData({...formData, protocols: [...formData.protocols, protocol]});
+                              } else {
+                                setFormData({...formData, protocols: formData.protocols.filter(p => p !== protocol)});
+                              }
+                            }}
+                          />
+                          <Label htmlFor={protocol} className="text-sm">{protocol}</Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 3: Capability Manifest */}
+              {currentStep === 3 && (
+                <div className="space-y-6">
+                  <div className="border-l-4 border-soft-ochre pl-4">
+                    <h3 className="text-lg font-semibold">Capability Manifest</h3>
+                    <p className="text-sm text-muted-foreground">Declare supported intents and external tools</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Core Capabilities *</Label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {capabilities.map((capability) => (
+                        <div key={capability} className="flex items-center space-x-2">
+                          <Checkbox 
+                            id={capability}
+                            checked={formData.capabilities.includes(capability)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setFormData({...formData, capabilities: [...formData.capabilities, capability]});
+                              } else {
+                                setFormData({...formData, capabilities: formData.capabilities.filter(c => c !== capability)});
+                              }
+                            }}
+                          />
+                          <Label htmlFor={capability} className="text-sm">{capability}</Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="runtimeDeps">Runtime Dependencies</Label>
+                    <Textarea 
+                      id="runtimeDeps"
+                      placeholder="List required packages, APIs, or external services..."
+                      value={formData.runtimeDependencies.join('\n')}
+                      onChange={(e) => setFormData({...formData, runtimeDependencies: e.target.value.split('\n').filter(dep => dep.trim())})}
+                      className="min-h-[100px]"
+                    />
+                    <p className="text-xs text-muted-foreground">One dependency per line</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 4: Execution Environment */}
+              {currentStep === 4 && (
+                <div className="space-y-6">
+                  <div className="border-l-4 border-warm-coral pl-4">
+                    <h3 className="text-lg font-semibold">Execution Environment</h3>
+                    <p className="text-sm text-muted-foreground">Configure runtime environment for live demos</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="dockerfileUrl">Dockerfile URL</Label>
+                    <Input 
+                      id="dockerfileUrl"
+                      placeholder="https://raw.githubusercontent.com/username/repo/main/Dockerfile"
+                      value={formData.dockerfileUrl}
+                      onChange={(e) => setFormData({...formData, dockerfileUrl: e.target.value})}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      URL to your Dockerfile for containerized execution in live demos
+                    </p>
+                  </div>
+
+                  <Card className="p-4 bg-muted/30">
+                    <h4 className="font-medium mb-2">Environment Summary</h4>
+                    <div className="space-y-1 text-sm text-muted-foreground">
+                      <p>• <strong>Name:</strong> {formData.name || "Not specified"}</p>
+                      <p>• <strong>Category:</strong> {formData.category || "Not specified"}</p>
+                      <p>• <strong>Model:</strong> {formData.model || "Not specified"}</p>
+                      <p>• <strong>Modalities:</strong> {formData.modalities.join(", ") || "None selected"}</p>
+                      <p>• <strong>Capabilities:</strong> {formData.capabilities.length} selected</p>
+                      <p>• <strong>Protocols:</strong> {formData.protocols.join(", ") || "None selected"}</p>
+                    </div>
+                  </Card>
                 </div>
               )}
 
@@ -389,10 +710,10 @@ const CreatorStudio = () => {
                 </Button>
                 <Button 
                   className="bg-primary hover:bg-primary-hover"
-                  onClick={() => setCurrentStep(Math.min(4, currentStep + 1))}
-                  disabled={currentStep === 4}
+                  onClick={currentStep === 4 ? handleSubmit : () => setCurrentStep(Math.min(4, currentStep + 1))}
+                  disabled={currentStep === 4 && (!formData.name || !formData.description || !formData.category)}
                 >
-                  {currentStep === 4 ? "Submit" : "Next"}
+                  {currentStep === 4 ? "Submit to Review" : "Next"}
                 </Button>
               </div>
             </CardContent>
