@@ -1,10 +1,11 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Search, User, Plus, Menu, X } from "lucide-react";
 import { useState } from "react";
 
 const Layout = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   const navigation = [
     { name: "Explore", href: "/explore" },
@@ -46,17 +47,17 @@ const Layout = () => {
 
             {/* Actions */}
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="sm" className="hidden sm:flex">
+              <Button variant="ghost" size="sm" className="hidden sm:flex" onClick={() => navigate('/explore')}>
                 <Search className="w-4 h-4 mr-2" />
                 Search
               </Button>
-              
-              <Button variant="outline" size="sm" className="btn-sage">
+
+              <Button variant="outline" size="sm" className="btn-sage" onClick={() => navigate('/studio')}>
                 <Plus className="w-4 h-4 mr-2" />
                 Submit Agent
               </Button>
 
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" onClick={() => navigate('/auth')}>
                 <User className="w-4 h-4" />
               </Button>
 
