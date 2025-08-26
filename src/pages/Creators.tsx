@@ -19,14 +19,24 @@ interface CreatorProfile {
   website_url: string;
   reputation_score: number;
   created_at: string;
+  user_id: string;
+}
+
+interface CreatorStats {
+  agent_count: number;
+  total_runs: number;
+  avg_rating: number;
+}
+
+interface CreatorWithStats extends CreatorProfile {
   agent_count: number;
   total_runs: number;
   avg_rating: number;
 }
 
 const Creators = () => {
-  const [creators, setCreators] = useState<CreatorProfile[]>([]);
-  const [filteredCreators, setFilteredCreators] = useState<CreatorProfile[]>([]);
+  const [creators, setCreators] = useState<CreatorWithStats[]>([]);
+  const [filteredCreators, setFilteredCreators] = useState<CreatorWithStats[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("reputation");
   const [isLoading, setIsLoading] = useState(true);
@@ -55,25 +65,46 @@ const Creators = () => {
 
   const fetchCreators = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch user profiles first
+      const { data: profiles, error: profilesError } = await supabase
         .from('user_profiles')
-        .select(`
-          *,
-          agent_count:agent_profiles(count),
-          total_runs:agent_profiles(total_runs.sum()),
-          avg_rating:agent_profiles(avg_rating.avg())
-        `);
+        .select('*');
 
-      if (error) throw error;
+      if (profilesError) throw profilesError;
+
+      if (!profiles || profiles.length === 0) {
+        setCreators([]);
+        return;
+      }
+
+      // Fetch agent statistics for each creator
+      const creatorIds = profiles.map(p => p.user_id);
       
-      const processedData = data?.map(creator => ({
-        ...creator,
-        agent_count: creator.agent_count?.[0]?.count || 0,
-        total_runs: creator.total_runs?.[0]?.sum || 0,
-        avg_rating: creator.avg_rating?.[0]?.avg || 0
-      })) || [];
+      const { data: agentStats, error: statsError } = await supabase
+        .from('agent_profiles')
+        .select('creator_id, total_runs, avg_rating')
+        .in('creator_id', creatorIds);
+
+      if (statsError) throw statsError;
+
+      // Process data to get stats per creator
+      const creatorsWithStats = profiles.map(creator => {
+        const creatorAgents = agentStats?.filter(a => a.creator_id === creator.user_id) || [];
+        const agent_count = creatorAgents.length;
+        const total_runs = creatorAgents.reduce((sum, agent) => sum + (agent.total_runs || 0), 0);
+        const avg_rating = creatorAgents.length > 0 
+          ? creatorAgents.reduce((sum, agent) => sum + (agent.avg_rating || 0), 0) / creatorAgents.length 
+          : 0;
+
+        return {
+          ...creator,
+          agent_count,
+          total_runs,
+          avg_rating
+        };
+      });
       
-      setCreators(processedData);
+      setCreators(creatorsWithStats);
     } catch (error) {
       console.error('Error fetching creators:', error);
       toast({
