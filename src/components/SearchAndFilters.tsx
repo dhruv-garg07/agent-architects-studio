@@ -45,7 +45,9 @@ const SearchAndFilters = ({ filters, onFiltersChange, isLoading, resultCount }: 
   ];
 
   const handleFilterChange = (key: keyof SearchFilters, value: any) => {
-    onFiltersChange({ ...filters, [key]: value });
+    // Convert "all" values back to empty strings for the filter logic
+    const actualValue = value === "all" ? "" : value;
+    onFiltersChange({ ...filters, [key]: actualValue });
   };
 
   const handleArrayFilterChange = (key: 'modalities' | 'capabilities', value: string, checked: boolean) => {
@@ -54,7 +56,7 @@ const SearchAndFilters = ({ filters, onFiltersChange, isLoading, resultCount }: 
       ? [...currentArray, value]
       : currentArray.filter(item => item !== value);
     
-    handleFilterChange(key, newArray);
+    onFiltersChange({ ...filters, [key]: newArray });
   };
 
   const clearFilters = () => {
@@ -122,12 +124,12 @@ const SearchAndFilters = ({ filters, onFiltersChange, isLoading, resultCount }: 
 
         {/* Quick Filters */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Select value={filters.category} onValueChange={(value) => handleFilterChange('category', value)}>
+          <Select value={filters.category || "all"} onValueChange={(value) => handleFilterChange('category', value)}>
             <SelectTrigger className="text-sm">
               <SelectValue placeholder="Category" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Categories</SelectItem>
+              <SelectItem value="all">All Categories</SelectItem>
               {categories.map((category) => (
                 <SelectItem key={category} value={category}>
                   {category}
@@ -136,12 +138,12 @@ const SearchAndFilters = ({ filters, onFiltersChange, isLoading, resultCount }: 
             </SelectContent>
           </Select>
 
-          <Select value={filters.model} onValueChange={(value) => handleFilterChange('model', value)}>
+          <Select value={filters.model || "all"} onValueChange={(value) => handleFilterChange('model', value)}>
             <SelectTrigger className="text-sm">
               <SelectValue placeholder="Model" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Models</SelectItem>
+              <SelectItem value="all">All Models</SelectItem>
               {models.map((model) => (
                 <SelectItem key={model} value={model}>
                   {model}
@@ -150,12 +152,12 @@ const SearchAndFilters = ({ filters, onFiltersChange, isLoading, resultCount }: 
             </SelectContent>
           </Select>
 
-          <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
+          <Select value={filters.status || "all"} onValueChange={(value) => handleFilterChange('status', value)}>
             <SelectTrigger className="text-sm">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Status</SelectItem>
+              <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="published">Published</SelectItem>
               <SelectItem value="draft">Draft</SelectItem>
               <SelectItem value="pending_review">Pending Review</SelectItem>
@@ -249,7 +251,7 @@ const SearchAndFilters = ({ filters, onFiltersChange, isLoading, resultCount }: 
                   variant="ghost" 
                   size="sm" 
                   className="h-auto p-0 ml-1 hover:bg-transparent"
-                  onClick={() => handleFilterChange('category', '')}
+                  onClick={() => handleFilterChange('category', 'all')}
                 >
                   <X className="w-3 h-3" />
                 </Button>
@@ -262,7 +264,7 @@ const SearchAndFilters = ({ filters, onFiltersChange, isLoading, resultCount }: 
                   variant="ghost" 
                   size="sm" 
                   className="h-auto p-0 ml-1 hover:bg-transparent"
-                  onClick={() => handleFilterChange('model', '')}
+                  onClick={() => handleFilterChange('model', 'all')}
                 >
                   <X className="w-3 h-3" />
                 </Button>
@@ -275,7 +277,7 @@ const SearchAndFilters = ({ filters, onFiltersChange, isLoading, resultCount }: 
                   variant="ghost" 
                   size="sm" 
                   className="h-auto p-0 ml-1 hover:bg-transparent"
-                  onClick={() => handleFilterChange('status', '')}
+                  onClick={() => handleFilterChange('status', 'all')}
                 >
                   <X className="w-3 h-3" />
                 </Button>
