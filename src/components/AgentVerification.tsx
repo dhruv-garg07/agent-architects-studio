@@ -58,11 +58,11 @@ const AgentVerification = ({ isAdmin }: AgentVerificationProps) => {
       if (agentError) throw agentError;
 
       if (agentData && agentData.length > 0) {
-        // Fetch creator profiles separately
+        // Fetch creator profiles separately - fix the field selection
         const creatorIds = agentData.map(agent => agent.creator_id);
         const { data: creatorData, error: creatorError } = await supabase
           .from('user_profiles')
-          .select('id, display_name, avatar_url')
+          .select('user_id, display_name, avatar_url')
           .in('user_id', creatorIds);
 
         if (creatorError) throw creatorError;
@@ -103,27 +103,16 @@ const AgentVerification = ({ isAdmin }: AgentVerificationProps) => {
     
     setIsSubmitting(true);
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) throw new Error('Not authenticated');
-
-      // Insert verification record (we'll use a simple insert since the table might not be in types yet)
-      const { error: verificationError } = await supabase.rpc('insert_agent_verification', {
-        p_agent_id: agentId,
-        p_reviewer_id: userData.user.id,
-        p_status: status,
-        p_notes: verificationNotes
-      });
-
-      if (verificationError) {
-        console.error('Verification RPC error:', verificationError);
-        // Fallback: update agent status directly
-        const { error: updateError } = await supabase
-          .from('agent_profiles')
-          .update({ status: status === 'approved' ? 'published' : 'rejected' })
-          .eq('id', agentId);
-        
-        if (updateError) throw updateError;
-      }
+      // Since we don't have the agent_verifications table or RPC function yet,
+      // let's just update the agent status directly
+      const newStatus = status === 'approved' ? 'published' : 'rejected';
+      
+      const { error: updateError } = await supabase
+        .from('agent_profiles')
+        .update({ status: newStatus })
+        .eq('id', agentId);
+      
+      if (updateError) throw updateError;
 
       toast({
         title: "Success",
