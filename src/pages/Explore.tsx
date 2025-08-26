@@ -9,6 +9,11 @@ import { Star, Play, Eye, Users, Code, TrendingUp, Clock } from "lucide-react";
 import SearchAndFilters from "@/components/SearchAndFilters";
 import { NavLink } from "react-router-dom";
 
+interface Creator {
+  display_name: string;
+  avatar_url: string;
+}
+
 interface Agent {
   id: string;
   name: string;
@@ -22,10 +27,11 @@ interface Agent {
   avg_rating: number;
   total_runs: number;
   created_at: string;
-  creator: {
-    display_name: string;
-    avatar_url: string;
-  };
+  creator_id: string;
+}
+
+interface AgentWithCreator extends Agent {
+  creator: Creator;
 }
 
 interface SearchFilters {
@@ -40,7 +46,7 @@ interface SearchFilters {
 }
 
 const Explore = () => {
-  const [agents, setAgents] = useState<Agent[]>([]);
+  const [agents, setAgents] = useState<AgentWithCreator[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState<SearchFilters>({
     search: '',
@@ -63,13 +69,7 @@ const Explore = () => {
     try {
       let query = supabase
         .from('agent_profiles')
-        .select(`
-          *,
-          creator:user_profiles!creator_id (
-            display_name,
-            avatar_url
-          )
-        `);
+        .select('*');
 
       // Apply filters
       if (filters.search) {
@@ -99,10 +99,39 @@ const Explore = () => {
       // Apply sorting
       query = query.order(filters.sortBy, { ascending: filters.sortOrder === 'asc' });
 
-      const { data, error } = await query;
+      const { data: agentData, error } = await query;
 
       if (error) throw error;
-      setAgents(data || []);
+
+      if (agentData && agentData.length > 0) {
+        // Fetch creator profiles separately
+        const creatorIds = agentData.map(agent => agent.creator_id);
+        const { data: creatorData, error: creatorError } = await supabase
+          .from('user_profiles')
+          .select('user_id, display_name, avatar_url')
+          .in('user_id', creatorIds);
+
+        if (creatorError) throw creatorError;
+
+        // Combine agent data with creator data
+        const agentsWithCreators = agentData.map(agent => {
+          const creator = creatorData?.find(c => c.user_id === agent.creator_id) || {
+            display_name: 'Unknown Creator',
+            avatar_url: ''
+          };
+          return {
+            ...agent,
+            creator: {
+              display_name: creator.display_name || 'Unknown Creator',
+              avatar_url: creator.avatar_url || ''
+            }
+          };
+        });
+
+        setAgents(agentsWithCreators);
+      } else {
+        setAgents([]);
+      }
     } catch (error) {
       console.error('Error fetching agents:', error);
       toast({
