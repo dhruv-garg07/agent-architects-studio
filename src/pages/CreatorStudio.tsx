@@ -35,12 +35,14 @@ import {
   AlertCircle,
   Clock
 } from "lucide-react";
+import AgentVerification from "@/components/AgentVerification";
 
 const CreatorStudio = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [user, setUser] = useState(null);
   const [myAgents, setMyAgents] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
@@ -67,6 +69,7 @@ const CreatorStudio = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setUser(session.user);
+        await checkAdminRole(session.user.id);
         fetchUserAgents(session.user.id);
       } else {
         setIsLoading(false);
@@ -229,8 +232,11 @@ const CreatorStudio = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "published": return "sage";
+      case "approved": return "sage";
       case "draft": return "secondary";
-      case "review": return "soft-ochre";
+      case "pending_review": return "soft-ochre";
+      case "rejected": return "destructive";
+      case "suspended": return "destructive";
       default: return "secondary";
     }
   };
@@ -238,8 +244,11 @@ const CreatorStudio = () => {
   const getStatusText = (status: string) => {
     switch (status) {
       case "published": return "Published";
+      case "approved": return "Approved";
       case "draft": return "Draft";
-      case "review": return "Under Review";
+      case "pending_review": return "Pending Review";
+      case "rejected": return "Rejected";
+      case "suspended": return "Suspended";
       default: return status;
     }
   };
@@ -302,6 +311,7 @@ const CreatorStudio = () => {
           <TabsTrigger value="agents">My Agents ({myAgents.length})</TabsTrigger>
           <TabsTrigger value="foundry">Agent Foundry</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          {isAdmin && <TabsTrigger value="verification">Verification</TabsTrigger>}
         </TabsList>
 
         {/* Overview Tab */}
@@ -767,6 +777,13 @@ const CreatorStudio = () => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Verification Tab (Admin Only) */}
+        {isAdmin && (
+          <TabsContent value="verification">
+            <AgentVerification isAdmin={isAdmin} />
+          </TabsContent>
+        )}
 
         {/* Analytics Tab */}
         <TabsContent value="analytics">
