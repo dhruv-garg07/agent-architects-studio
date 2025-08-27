@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}Creators - AI Agent Marketplace{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-foreground mb-4">Creator Community</h1>
+        <p class="text-lg text-muted-foreground">
+            Discover talented AI developers and researchers building the future
+        </p>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="card p-6 mb-8">
+        <form method="GET" action="{{ url_for('creators') }}" class="space-y-4">
+            <!-- Search Bar -->
+            <div class="flex flex-col sm:flex-row gap-4">
+                <div class="flex-1">
+                    <input type="text" 
+                           name="search" 
+                           value="{{ search }}"
+                           placeholder="Search creators by name, bio, or username..." 
+                           class="input w-full">
+                </div>
+                <button type="submit" class="btn-primary">
+                    <i data-lucide="search" class="w-4 h-4 mr-2"></i>
+                    Search
+                </button>
+            </div>
+
+            <!-- Sort Options -->
+            <div class="flex flex-col sm:flex-row gap-4">
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-foreground mb-2">Sort By</label>
+                    <select name="sort_by" class="input w-full">
+                        <option value="reputation" {% if sort_by == 'reputation' %}selected{% endif %}>Reputation</option>
+                        <option value="agents" {% if sort_by == 'agents' %}selected{% endif %}>Number of Agents</option>
+                        <option value="rating" {% if sort_by == 'rating' %}selected{% endif %}>Average Rating</option>
+                        <option value="runs" {% if sort_by == 'runs' %}selected{% endif %}>Total Runs</option>
+                        <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Name A-Z</option>
+                        <option value="joined" {% if sort_by == 'joined' %}selected{% endif %}>Recently Joined</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <a href="{{ url_for('creators') }}" class="btn-secondary">
+                        Clear Filters
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Results Count -->
+    <div class="mb-6">
+        <p class="text-muted-foreground">
+            Found {{ creators|length }} creators
+        </p>
+    </div>
+
+    <!-- Creators Grid -->
+    {% if creators %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for creator in creators %}
+                <div class="card card-elevated p-6">
+                    <!-- Creator Header -->
+                    <div class="flex items-center mb-4">
+                        <div class="w-16 h-16 bg-muted rounded-full flex items-center justify-center mr-4">
+                            {% if creator.avatar_url %}
+                                <img src="{{ creator.avatar_url }}" 
+                                     alt="{{ creator.display_name or 'Creator' }}"
+                                     class="w-16 h-16 rounded-full">
+                            {% else %}
+                                <i data-lucide="user" class="w-8 h-8 text-muted-foreground"></i>
+                            {% endif %}
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-lg font-semibold text-foreground">
+                                {{ creator.display_name or 'Anonymous Creator' }}
+                            </h3>
+                            {% if creator.bio %}
+                                <p class="text-sm text-muted-foreground line-clamp-2">
+                                    {{ creator.bio }}
+                                </p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Stats -->
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div class="text-center p-3 bg-muted rounded-lg">
+                            <div class="text-xl font-bold text-primary">{{ creator.agent_count }}</div>
+                            <div class="text-xs text-muted-foreground">Agents</div>
+                        </div>
+                        <div class="text-center p-3 bg-muted rounded-lg">
+                            <div class="text-xl font-bold text-sage">{{ creator.reputation_score or 0 }}</div>
+                            <div class="text-xs text-muted-foreground">Reputation</div>
+                        </div>
+                        <div class="text-center p-3 bg-muted rounded-lg">
+                            <div class="text-xl font-bold text-dusty-blue">{{ "%.1f"|format(creator.avg_rating or 0) }}</div>
+                            <div class="text-xs text-muted-foreground">Avg Rating</div>
+                        </div>
+                        <div class="text-center p-3 bg-muted rounded-lg">
+                            <div class="text-xl font-bold text-soft-ochre">{{ creator.total_runs }}</div>
+                            <div class="text-xs text-muted-foreground">Total Runs</div>
+                        </div>
+                    </div>
+
+                    <!-- Social Links -->
+                    {% if creator.website_url or creator.github_username or creator.twitter_username %}
+                        <div class="flex justify-center space-x-3 mb-4">
+                            {% if creator.website_url %}
+                                <a href="{{ creator.website_url }}" target="_blank" 
+                                   class="p-2 bg-muted rounded-full hover:bg-primary hover:text-primary-foreground transition-colors">
+                                    <i data-lucide="globe" class="w-4 h-4"></i>
+                                </a>
+                            {% endif %}
+                            {% if creator.github_username %}
+                                <a href="https://github.com/{{ creator.github_username }}" target="_blank" 
+                                   class="p-2 bg-muted rounded-full hover:bg-primary hover:text-primary-foreground transition-colors">
+                                    <i data-lucide="github" class="w-4 h-4"></i>
+                                </a>
+                            {% endif %}
+                            {% if creator.twitter_username %}
+                                <a href="https://twitter.com/{{ creator.twitter_username }}" target="_blank" 
+                                   class="p-2 bg-muted rounded-full hover:bg-primary hover:text-primary-foreground transition-colors">
+                                    <i data-lucide="twitter" class="w-4 h-4"></i>
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
+                    <!-- Action Buttons -->
+                    <div class="flex space-x-2">
+                        <a href="{{ url_for('explore', creator_id=creator.user_id) }}" 
+                           class="btn-primary flex-1 text-center text-sm">
+                            View Agents
+                        </a>
+                        <button class="btn-secondary text-sm">
+                            <i data-lucide="user-plus" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <!-- Empty State -->
+        <div class="text-center py-16">
+            <i data-lucide="users-x" class="w-16 h-16 text-muted-foreground mx-auto mb-4"></i>
+            <h3 class="text-xl font-semibold text-foreground mb-2">No creators found</h3>
+            <p class="text-muted-foreground mb-6">
+                Try adjusting your search criteria
+            </p>
+            <a href="{{ url_for('creators') }}" class="btn-primary">
+                Clear Search
+            </a>
+        </div>
+    {% endif %}
+
+    <!-- Top Creators Section -->
+    {% if creators %}
+        <div class="mt-16">
+            <h2 class="text-2xl font-bold text-foreground mb-8 text-center">Top Contributors</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {% for creator in creators[:3] %}
+                    <div class="card p-6 text-center border-2 border-primary/20">
+                        <div class="w-20 h-20 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                            {% if creator.avatar_url %}
+                                <img src="{{ creator.avatar_url }}" 
+                                     alt="{{ creator.display_name or 'Creator' }}"
+                                     class="w-20 h-20 rounded-full">
+                            {% else %}
+                                <i data-lucide="user" class="w-10 h-10 text-muted-foreground"></i>
+                            {% endif %}
+                        </div>
+                        <h3 class="text-lg font-semibold text-foreground mb-2">
+                            {{ creator.display_name or 'Anonymous Creator' }}
+                        </h3>
+                        <div class="flex justify-center space-x-4 text-sm text-muted-foreground mb-4">
+                            <span>{{ creator.agent_count }} agents</span>
+                            <span>{{ creator.reputation_score or 0 }} reputation</span>
+                        </div>
+                        <a href="{{ url_for('explore', creator_id=creator.user_id) }}" 
+                           class="btn-primary">
+                            View Work
+                        </a>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

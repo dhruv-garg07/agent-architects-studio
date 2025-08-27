@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block title %}{{ agent.name }} - AI Agent Details{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Back Button -->
+    <div class="mb-6">
+        <a href="{{ url_for('explore') }}" 
+           class="inline-flex items-center text-muted-foreground hover:text-primary transition-colors">
+            <i data-lucide="arrow-left" class="w-4 h-4 mr-2"></i>
+            Back to Explore
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Main Content -->
+        <div class="lg:col-span-2">
+            <!-- Agent Header -->
+            <div class="card p-6 mb-6">
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex-1">
+                        <h1 class="text-3xl font-bold text-foreground mb-2">{{ agent.name }}</h1>
+                        <p class="text-lg text-muted-foreground">
+                            {{ agent.description or 'No description available' }}
+                        </p>
+                    </div>
+                    {% if agent.status == 'verified' %}
+                        <span class="badge badge-primary ml-4">
+                            <i data-lucide="check-circle" class="w-4 h-4 mr-1"></i>
+                            Verified
+                        </span>
+                    {% elif agent.status == 'pending' %}
+                        <span class="badge" style="background-color: hsl(var(--soft-ochre)); color: hsl(var(--soft-ochre-foreground));">
+                            Pending Review
+                        </span>
+                    {% endif %}
+                </div>
+
+                <!-- Tags and Category -->
+                <div class="flex flex-wrap gap-2 mb-4">
+                    {% if agent.category %}
+                        <span class="badge badge-primary">{{ agent.category }}</span>
+                    {% endif %}
+                    {% if agent.model %}
+                        <span class="badge" style="background-color: hsl(var(--dusty-blue)); color: hsl(var(--dusty-blue-foreground));">
+                            {{ agent.model }}
+                        </span>
+                    {% endif %}
+                    {% if agent.tags %}
+                        {% for tag in agent.tags %}
+                            <span class="badge badge-secondary">{{ tag }}</span>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+
+                <!-- Stats -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-border">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-primary">{{ "%.1f"|format(agent.avg_rating or 0) }}</div>
+                        <div class="text-sm text-muted-foreground">Average Rating</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-sage">{{ agent.total_runs or 0 }}</div>
+                        <div class="text-sm text-muted-foreground">Total Runs</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-dusty-blue">{{ agent.upvotes or 0 }}</div>
+                        <div class="text-sm text-muted-foreground">Upvotes</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-soft-ochre">{{ agent.version or '1.0.0' }}</div>
+                        <div class="text-sm text-muted-foreground">Version</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Technical Details -->
+            <div class="card p-6 mb-6">
+                <h2 class="text-xl font-semibold text-foreground mb-4">Technical Details</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Capabilities -->
+                    {% if agent.capabilities %}
+                        <div>
+                            <h3 class="font-medium text-foreground mb-2">Capabilities</h3>
+                            <div class="space-y-2">
+                                {% for capability in agent.capabilities %}
+                                    <div class="flex items-center">
+                                        <i data-lucide="check" class="w-4 h-4 text-primary mr-2"></i>
+                                        <span class="text-sm text-muted-foreground">{{ capability }}</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- Modalities -->
+                    {% if agent.modalities %}
+                        <div>
+                            <h3 class="font-medium text-foreground mb-2">Modalities</h3>
+                            <div class="space-y-2">
+                                {% for modality in agent.modalities %}
+                                    <div class="flex items-center">
+                                        <i data-lucide="check" class="w-4 h-4 text-primary mr-2"></i>
+                                        <span class="text-sm text-muted-foreground">{{ modality }}</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- Performance -->
+                    <div>
+                        <h3 class="font-medium text-foreground mb-2">Performance</h3>
+                        <div class="space-y-2">
+                            {% if agent.success_rate %}
+                                <div class="flex justify-between">
+                                    <span class="text-sm text-muted-foreground">Success Rate</span>
+                                    <span class="text-sm font-medium text-foreground">{{ "%.1f"|format(agent.success_rate) }}%</span>
+                                </div>
+                            {% endif %}
+                            {% if agent.avg_latency %}
+                                <div class="flex justify-between">
+                                    <span class="text-sm text-muted-foreground">Avg. Latency</span>
+                                    <span class="text-sm font-medium text-foreground">{{ agent.avg_latency }}ms</span>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Additional Info -->
+                    <div>
+                        <h3 class="font-medium text-foreground mb-2">Additional Info</h3>
+                        <div class="space-y-2">
+                            {% if agent.license %}
+                                <div class="flex justify-between">
+                                    <span class="text-sm text-muted-foreground">License</span>
+                                    <span class="text-sm font-medium text-foreground">{{ agent.license }}</span>
+                                </div>
+                            {% endif %}
+                            <div class="flex justify-between">
+                                <span class="text-sm text-muted-foreground">Created</span>
+                                <span class="text-sm font-medium text-foreground">{{ agent.created_at.strftime('%b %d, %Y') }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-sm text-muted-foreground">Updated</span>
+                                <span class="text-sm font-medium text-foreground">{{ agent.updated_at.strftime('%b %d, %Y') }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dependencies -->
+            {% if agent.runtime_dependencies %}
+                <div class="card p-6">
+                    <h2 class="text-xl font-semibold text-foreground mb-4">Runtime Dependencies</h2>
+                    <div class="space-y-2">
+                        {% for dependency in agent.runtime_dependencies %}
+                            <div class="flex items-center p-3 bg-muted rounded-lg">
+                                <i data-lucide="package" class="w-4 h-4 text-muted-foreground mr-3"></i>
+                                <span class="text-sm font-mono text-foreground">{{ dependency }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="lg:col-span-1">
+            <!-- Creator Info -->
+            <div class="card p-6 mb-6">
+                <h2 class="text-lg font-semibold text-foreground mb-4">Created By</h2>
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-muted rounded-full flex items-center justify-center mr-4">
+                        {% if agent.creator.avatar_url %}
+                            <img src="{{ agent.creator.avatar_url }}" 
+                                 alt="{{ agent.creator.display_name or 'Creator' }}"
+                                 class="w-12 h-12 rounded-full">
+                        {% else %}
+                            <i data-lucide="user" class="w-6 h-6 text-muted-foreground"></i>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-foreground">
+                            {{ agent.creator.display_name or 'Anonymous Creator' }}
+                        </h3>
+                        <p class="text-sm text-muted-foreground">Creator</p>
+                    </div>
+                </div>
+                <a href="{{ url_for('creators') }}" class="btn-secondary w-full text-center">
+                    View Profile
+                </a>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="card p-6 mb-6">
+                <h2 class="text-lg font-semibold text-foreground mb-4">Actions</h2>
+                <div class="space-y-3">
+                    {% if agent.status == 'verified' %}
+                        <button class="btn-primary w-full">
+                            <i data-lucide="play" class="w-4 h-4 mr-2"></i>
+                            Deploy Agent
+                        </button>
+                    {% else %}
+                        <button class="btn-secondary w-full" disabled>
+                            <i data-lucide="clock" class="w-4 h-4 mr-2"></i>
+                            Pending Review
+                        </button>
+                    {% endif %}
+                    
+                    <button class="btn-secondary w-full">
+                        <i data-lucide="heart" class="w-4 h-4 mr-2"></i>
+                        Add to Favorites
+                    </button>
+                    
+                    {% if agent.github_url %}
+                        <a href="{{ agent.github_url }}" target="_blank" class="btn-secondary w-full text-center">
+                            <i data-lucide="github" class="w-4 h-4 mr-2"></i>
+                            View Source
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Links -->
+            <div class="card p-6">
+                <h2 class="text-lg font-semibold text-foreground mb-4">Resources</h2>
+                <div class="space-y-3">
+                    {% if agent.github_url %}
+                        <a href="{{ agent.github_url }}" target="_blank" 
+                           class="flex items-center text-muted-foreground hover:text-primary transition-colors">
+                            <i data-lucide="github" class="w-4 h-4 mr-3"></i>
+                            GitHub Repository
+                        </a>
+                    {% endif %}
+                    
+                    {% if agent.dockerfile_url %}
+                        <a href="{{ agent.dockerfile_url }}" target="_blank" 
+                           class="flex items-center text-muted-foreground hover:text-primary transition-colors">
+                            <i data-lucide="container" class="w-4 h-4 mr-3"></i>
+                            Dockerfile
+                        </a>
+                    {% endif %}
+                    
+                    <a href="#" class="flex items-center text-muted-foreground hover:text-primary transition-colors">
+                        <i data-lucide="book-open" class="w-4 h-4 mr-3"></i>
+                        Documentation
+                    </a>
+                    
+                    <a href="#" class="flex items-center text-muted-foreground hover:text-primary transition-colors">
+                        <i data-lucide="life-buoy" class="w-4 h-4 mr-3"></i>
+                        Support
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
