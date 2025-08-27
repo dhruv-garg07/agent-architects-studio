@@ -1,0 +1,264 @@
+#!/usr/bin/env python3
+"""Flask AI Agent Marketplace Application."""
+
+import os
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from werkzeug.security import check_password_hash, generate_password_hash
+from datetime import datetime
+import json
+
+# Import services from the backend_examples
+from backend_examples.python.services.agents import agent_service
+from backend_examples.python.services.creators import creator_service
+from backend_examples.python.models import SearchFilters
+
+app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+
+# Flask-Login setup
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'auth'
+
+class User:
+    def __init__(self, user_id, email=None):
+        self.id = user_id
+        self.email = email
+        self.is_authenticated = True
+        self.is_active = True
+        self.is_anonymous = False
+    
+    def get_id(self):
+        return str(self.id)
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User(user_id)
+
+# Routes
+@app.route('/')
+def homepage():
+    """Homepage with hero section and featured agents."""
+    return render_template('homepage.html')
+
+@app.route('/explore')
+def explore():
+    """Explore agents with search and filters."""
+    # Get filter parameters from URL
+    search = request.args.get('search', '')
+    category = request.args.get('category', '')
+    model = request.args.get('model', '')
+    status = request.args.get('status', '')
+    sort_by = request.args.get('sort_by', 'created_at')
+    modalities = request.args.getlist('modalities')
+    capabilities = request.args.getlist('capabilities')
+    
+    # Create filters object
+    filters = SearchFilters(
+        search=search,
+        category=category,
+        model=model,
+        status=status,
+        sort_by=sort_by,
+        modalities=modalities,
+        capabilities=capabilities
+    )
+    
+    try:
+        agents = agent_service.fetch_agents(filters)
+    except Exception as e:
+        flash(f'Error fetching agents: {str(e)}', 'error')
+        agents = []
+    
+    return render_template('explore.html', 
+                         agents=agents, 
+                         filters=filters,
+                         search=search,
+                         category=category,
+                         model=model,
+                         sort_by=sort_by)
+
+@app.route('/agent/<agent_id>')
+def agent_detail(agent_id):
+    """Agent detail page."""
+    try:
+        agent = agent_service.get_agent_by_id(agent_id)
+        if not agent:
+            flash('Agent not found', 'error')
+            return redirect(url_for('explore'))
+    except Exception as e:
+        flash(f'Error fetching agent: {str(e)}', 'error')
+        return redirect(url_for('explore'))
+    
+    return render_template('agent_detail.html', agent=agent)
+
+@app.route('/creators')
+def creators():
+    """Creators page with leaderboard."""
+    search = request.args.get('search', '')
+    sort_by = request.args.get('sort_by', 'reputation')
+    
+    try:
+        all_creators = creator_service.fetch_creators()
+        filtered_creators = creator_service.filter_and_sort_creators(all_creators, search, sort_by)
+    except Exception as e:
+        flash(f'Error fetching creators: {str(e)}', 'error')
+        filtered_creators = []
+    
+    return render_template('creators.html', 
+                         creators=filtered_creators,
+                         search=search,
+                         sort_by=sort_by)
+
+@app.route('/submit')
+@login_required
+def creator_studio():
+    """Creator studio for submitting agents."""
+    return render_template('creator_studio.html')
+
+@app.route('/submit', methods=['POST'])
+@login_required
+def submit_agent():
+    """Handle agent submission."""
+    try:
+        agent_data = {
+            'name': request.form.get('name'),
+            'description': request.form.get('description'),
+            'category': request.form.get('category'),
+            'model': request.form.get('model'),
+            'tags': request.form.get('tags', '').split(',') if request.form.get('tags') else [],
+            'github_url': request.form.get('github_url'),
+            'dockerfile_url': request.form.get('dockerfile_url'),
+            'status': 'pending',
+            'created_at': datetime.utcnow(),
+            'updated_at': datetime.utcnow()
+        }
+        
+        agent = agent_service.create_agent(agent_data, current_user.id)
+        if agent:
+            flash('Agent submitted successfully and is pending review!', 'success')
+        else:
+            flash('Failed to submit agent. Please try again.', 'error')
+            
+    except Exception as e:
+        flash(f'Error submitting agent: {str(e)}', 'error')
+    
+    return redirect(url_for('creator_studio'))
+
+@app.route('/auth')
+def auth():
+    """Authentication page."""
+    if current_user.is_authenticated:
+        return redirect(url_for('homepage'))
+    return render_template('auth.html')
+
+@app.route('/login', methods=['POST'])
+def login():
+    """Handle login."""
+    email = request.form.get('email')
+    password = request.form.get('password')
+    
+    # Mock authentication - replace with real Supabase auth
+    if email and password:
+        user = User(user_id="mock-user-id", email=email)
+        login_user(user)
+        flash('Logged in successfully!', 'success')
+        return redirect(url_for('homepage'))
+    else:
+        flash('Invalid credentials', 'error')
+        return redirect(url_for('auth'))
+
+@app.route('/register', methods=['POST'])
+def register():
+    """Handle registration."""
+    email = request.form.get('email')
+    password = request.form.get('password')
+    confirm_password = request.form.get('confirm_password')
+    
+    if password != confirm_password:
+        flash('Passwords do not match', 'error')
+        return redirect(url_for('auth'))
+    
+    # Mock registration - replace with real Supabase auth
+    if email and password:
+        user = User(user_id="mock-user-id", email=email)
+        login_user(user)
+        flash('Account created successfully!', 'success')
+        return redirect(url_for('homepage'))
+    else:
+        flash('Please fill in all fields', 'error')
+        return redirect(url_for('auth'))
+
+@app.route('/logout')
+@login_required
+def logout():
+    """Handle logout."""
+    logout_user()
+    flash('Logged out successfully!', 'success')
+    return redirect(url_for('homepage'))
+
+@app.route('/trending')
+def trending():
+    """Trending agents - redirect to explore with trending sort."""
+    return redirect(url_for('explore', sort_by='popular'))
+
+@app.route('/categories')
+def categories():
+    """Categories - redirect to explore."""
+    return redirect(url_for('explore'))
+
+# API endpoints for AJAX requests
+@app.route('/api/agents')
+def api_agents():
+    """API endpoint for fetching agents."""
+    # Get filter parameters
+    search = request.args.get('search', '')
+    category = request.args.get('category', '')
+    model = request.args.get('model', '')
+    status = request.args.get('status', '')
+    sort_by = request.args.get('sort_by', 'created_at')
+    modalities = request.args.getlist('modalities')
+    capabilities = request.args.getlist('capabilities')
+    
+    filters = SearchFilters(
+        search=search,
+        category=category,
+        model=model,
+        status=status,
+        sort_by=sort_by,
+        modalities=modalities,
+        capabilities=capabilities
+    )
+    
+    try:
+        agents = agent_service.fetch_agents(filters)
+        return jsonify([agent.dict() for agent in agents])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/creators')
+def api_creators():
+    """API endpoint for fetching creators."""
+    search = request.args.get('search', '')
+    sort_by = request.args.get('sort_by', 'reputation')
+    
+    try:
+        all_creators = creator_service.fetch_creators()
+        filtered_creators = creator_service.filter_and_sort_creators(all_creators, search, sort_by)
+        return jsonify([creator.dict() for creator in filtered_creators])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.errorhandler(404)
+def not_found(error):
+    """404 error handler."""
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    """500 error handler."""
+    return render_template('500.html'), 500
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=5000)

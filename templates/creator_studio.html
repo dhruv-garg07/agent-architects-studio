@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block title %}Creator Studio - Submit AI Agent{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-foreground mb-4">Creator Studio</h1>
+        <p class="text-lg text-muted-foreground">
+            Submit your AI agent to the marketplace
+        </p>
+    </div>
+
+    <!-- Agent Submission Form -->
+    <div class="card p-6">
+        <form method="POST" action="{{ url_for('submit_agent') }}" class="space-y-6">
+            <!-- Basic Information -->
+            <div>
+                <h2 class="text-xl font-semibold text-foreground mb-4">Basic Information</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-foreground mb-2">
+                            Agent Name *
+                        </label>
+                        <input type="text" 
+                               id="name" 
+                               name="name" 
+                               required
+                               placeholder="My Amazing AI Agent"
+                               class="input w-full">
+                    </div>
+                    <div>
+                        <label for="category" class="block text-sm font-medium text-foreground mb-2">
+                            Category *
+                        </label>
+                        <select id="category" name="category" required class="input w-full">
+                            <option value="">Select a category</option>
+                            <option value="automation">Automation</option>
+                            <option value="content">Content Creation</option>
+                            <option value="analysis">Data Analysis</option>
+                            <option value="customer-service">Customer Service</option>
+                            <option value="productivity">Productivity</option>
+                            <option value="research">Research</option>
+                            <option value="education">Education</option>
+                            <option value="finance">Finance</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <label for="description" class="block text-sm font-medium text-foreground mb-2">
+                        Description *
+                    </label>
+                    <textarea id="description" 
+                              name="description" 
+                              required
+                              rows="4"
+                              placeholder="Describe what your agent does, its capabilities, and use cases..."
+                              class="input w-full resize-none"></textarea>
+                </div>
+            </div>
+
+            <!-- Technical Specifications -->
+            <div>
+                <h2 class="text-xl font-semibold text-foreground mb-4">Technical Specifications</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="model" class="block text-sm font-medium text-foreground mb-2">
+                            Base Model
+                        </label>
+                        <select id="model" name="model" class="input w-full">
+                            <option value="">Select a model</option>
+                            <option value="gpt-4">GPT-4</option>
+                            <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                            <option value="claude-3">Claude 3</option>
+                            <option value="gemini-pro">Gemini Pro</option>
+                            <option value="llama-2">Llama 2</option>
+                            <option value="custom">Custom Model</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="tags" class="block text-sm font-medium text-foreground mb-2">
+                            Tags
+                        </label>
+                        <input type="text" 
+                               id="tags" 
+                               name="tags" 
+                               placeholder="ai, automation, chatbot (comma-separated)"
+                               class="input w-full">
+                        <p class="text-xs text-muted-foreground mt-1">
+                            Separate tags with commas
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Repository & Deployment -->
+            <div>
+                <h2 class="text-xl font-semibold text-foreground mb-4">Repository & Deployment</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label for="github_url" class="block text-sm font-medium text-foreground mb-2">
+                            GitHub Repository URL
+                        </label>
+                        <input type="url" 
+                               id="github_url" 
+                               name="github_url" 
+                               placeholder="https://github.com/username/agent-repo"
+                               class="input w-full">
+                        <p class="text-xs text-muted-foreground mt-1">
+                            Link to your agent's source code repository
+                        </p>
+                    </div>
+                    
+                    <div>
+                        <label for="dockerfile_url" class="block text-sm font-medium text-foreground mb-2">
+                            Dockerfile URL
+                        </label>
+                        <input type="url" 
+                               id="dockerfile_url" 
+                               name="dockerfile_url" 
+                               placeholder="https://github.com/username/agent-repo/blob/main/Dockerfile"
+                               class="input w-full">
+                        <p class="text-xs text-muted-foreground mt-1">
+                            Direct link to your Dockerfile for deployment
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Capabilities & Modalities -->
+            <div>
+                <h2 class="text-xl font-semibold text-foreground mb-4">Capabilities & Modalities</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Capabilities -->
+                    <div>
+                        <label class="block text-sm font-medium text-foreground mb-3">
+                            Capabilities
+                        </label>
+                        <div class="space-y-2">
+                            {% for capability in ['text-generation', 'text-analysis', 'conversation', 'summarization', 'translation', 'code-generation', 'data-processing', 'image-analysis', 'audio-processing'] %}
+                                <div class="flex items-center">
+                                    <input type="checkbox" 
+                                           id="cap_{{ capability }}" 
+                                           name="capabilities" 
+                                           value="{{ capability }}"
+                                           class="mr-2">
+                                    <label for="cap_{{ capability }}" class="text-sm text-foreground capitalize">
+                                        {{ capability.replace('-', ' ') }}
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Modalities -->
+                    <div>
+                        <label class="block text-sm font-medium text-foreground mb-3">
+                            Modalities
+                        </label>
+                        <div class="space-y-2">
+                            {% for modality in ['text', 'image', 'audio', 'video', 'multimodal'] %}
+                                <div class="flex items-center">
+                                    <input type="checkbox" 
+                                           id="mod_{{ modality }}" 
+                                           name="modalities" 
+                                           value="{{ modality }}"
+                                           class="mr-2">
+                                    <label for="mod_{{ modality }}" class="text-sm text-foreground capitalize">
+                                        {{ modality }}
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Terms and Submission -->
+            <div class="border-t border-border pt-6">
+                <div class="flex items-start mb-6">
+                    <input type="checkbox" id="terms" name="terms" required class="mr-3 mt-1">
+                    <label for="terms" class="text-sm text-muted-foreground">
+                        I agree to the <a href="#" class="text-primary hover:underline">Terms of Service</a> 
+                        and confirm that this agent complies with the 
+                        <a href="#" class="text-primary hover:underline">Community Guidelines</a>. 
+                        I understand that my submission will be reviewed before publication.
+                    </label>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <button type="submit" class="btn-primary flex-1">
+                        <i data-lucide="upload" class="w-4 h-4 mr-2"></i>
+                        Submit Agent for Review
+                    </button>
+                    <button type="button" class="btn-secondary" onclick="window.history.back()">
+                        <i data-lucide="x" class="w-4 h-4 mr-2"></i>
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Submission Guidelines -->
+    <div class="mt-8 card p-6">
+        <h2 class="text-xl font-semibold text-foreground mb-4">Submission Guidelines</h2>
+        <div class="space-y-4 text-sm text-muted-foreground">
+            <div class="flex items-start">
+                <i data-lucide="check-circle" class="w-5 h-5 text-primary mr-3 mt-0.5 flex-shrink-0"></i>
+                <div>
+                    <strong class="text-foreground">Quality Code:</strong> 
+                    Ensure your agent is well-documented, tested, and follows best practices.
+                </div>
+            </div>
+            <div class="flex items-start">
+                <i data-lucide="check-circle" class="w-5 h-5 text-primary mr-3 mt-0.5 flex-shrink-0"></i>
+                <div>
+                    <strong class="text-foreground">Clear Documentation:</strong> 
+                    Provide comprehensive README with setup instructions and usage examples.
+                </div>
+            </div>
+            <div class="flex items-start">
+                <i data-lucide="check-circle" class="w-5 h-5 text-primary mr-3 mt-0.5 flex-shrink-0"></i>
+                <div>
+                    <strong class="text-foreground">Ethical Use:</strong> 
+                    Agents must not promote harmful, illegal, or unethical activities.
+                </div>
+            </div>
+            <div class="flex items-start">
+                <i data-lucide="check-circle" class="w-5 h-5 text-primary mr-3 mt-0.5 flex-shrink-0"></i>
+                <div>
+                    <strong class="text-foreground">Original Work:</strong> 
+                    Submit only your original creations or properly attributed collaborative work.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}AI Agent Marketplace - Discover and Deploy AI Agents{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="relative overflow-hidden pt-16 pb-32">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center">
+            <h1 class="text-4xl sm:text-6xl font-bold text-foreground mb-6">
+                Discover the Future of
+                <span class="text-primary">AI Agents</span>
+            </h1>
+            <p class="text-xl sm:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto">
+                Explore, deploy, and monetize cutting-edge AI agents. Join the revolution in autonomous digital assistants.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="{{ url_for('explore') }}" class="btn-primary text-lg px-8 py-3 inline-flex items-center">
+                    <i data-lucide="search" class="mr-2 h-5 w-5"></i>
+                    Explore Agents
+                </a>
+                <a href="{{ url_for('creator_studio') }}" class="btn-secondary text-lg px-8 py-3 inline-flex items-center">
+                    <i data-lucide="plus" class="mr-2 h-5 w-5"></i>
+                    Submit Your Agent
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+            <h2 class="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+                Why Choose Our Platform?
+            </h2>
+            <p class="text-xl text-muted-foreground max-w-2xl mx-auto">
+                Experience the next generation of AI agents with our comprehensive marketplace
+            </p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Feature 1 -->
+            <div class="card card-elevated p-8 text-center">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-full mb-6">
+                    <i data-lucide="brain-circuit" class="h-8 w-8 text-primary-foreground"></i>
+                </div>
+                <h3 class="text-xl font-semibold text-foreground mb-4">Smart AI Agents</h3>
+                <p class="text-muted-foreground">
+                    Discover intelligent agents powered by the latest AI models and technologies
+                </p>
+            </div>
+            
+            <!-- Feature 2 -->
+            <div class="card card-elevated p-8 text-center">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-sage rounded-full mb-6">
+                    <i data-lucide="users" class="h-8 w-8 text-sage-foreground"></i>
+                </div>
+                <h3 class="text-xl font-semibold text-foreground mb-4">Creator Community</h3>
+                <p class="text-muted-foreground">
+                    Join a vibrant community of AI developers and researchers
+                </p>
+            </div>
+            
+            <!-- Feature 3 -->
+            <div class="card card-elevated p-8 text-center">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-dusty-blue rounded-full mb-6">
+                    <i data-lucide="shield-check" class="h-8 w-8 text-dusty-blue-foreground"></i>
+                </div>
+                <h3 class="text-xl font-semibold text-foreground mb-4">Verified Quality</h3>
+                <p class="text-muted-foreground">
+                    All agents are reviewed and verified for quality and safety
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Statistics Section -->
+<section class="py-16 bg-card">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
+            <div>
+                <div class="text-4xl font-bold text-primary mb-2">1,000+</div>
+                <div class="text-muted-foreground">AI Agents</div>
+            </div>
+            <div>
+                <div class="text-4xl font-bold text-sage mb-2">500+</div>
+                <div class="text-muted-foreground">Creators</div>
+            </div>
+            <div>
+                <div class="text-4xl font-bold text-dusty-blue mb-2">10M+</div>
+                <div class="text-muted-foreground">Total Runs</div>
+            </div>
+            <div>
+                <div class="text-4xl font-bold text-soft-ochre mb-2">4.8★</div>
+                <div class="text-muted-foreground">Average Rating</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Categories Section -->
+<section class="py-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+            <h2 class="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+                Popular Categories
+            </h2>
+            <p class="text-xl text-muted-foreground">
+                Explore agents across various domains and use cases
+            </p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Category Cards -->
+            {% set categories = [
+                ('automation', 'Automation', 'Streamline workflows and processes'),
+                ('content', 'Content Creation', 'Generate and optimize content'),
+                ('analysis', 'Data Analysis', 'Extract insights from data'),
+                ('customer-service', 'Customer Service', 'Enhance customer interactions'),
+                ('productivity', 'Productivity', 'Boost efficiency and output'),
+                ('research', 'Research', 'Accelerate research and discovery'),
+                ('education', 'Education', 'Personalized learning experiences'),
+                ('finance', 'Finance', 'Financial analysis and insights')
+            ] %}
+            
+            {% for icon, name, description in categories %}
+                <a href="{{ url_for('explore', category=name.lower().replace(' ', '-')) }}" 
+                   class="card card-elevated p-6 hover:scale-105 transition-transform">
+                    <div class="flex items-center mb-3">
+                        <i data-lucide="{{ icon }}" class="h-6 w-6 text-primary mr-3"></i>
+                        <h3 class="font-semibold text-foreground">{{ name }}</h3>
+                    </div>
+                    <p class="text-sm text-muted-foreground">{{ description }}</p>
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="py-16 bg-primary">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h2 class="text-3xl sm:text-4xl font-bold text-primary-foreground mb-4">
+            Ready to Get Started?
+        </h2>
+        <p class="text-xl text-primary-foreground/80 mb-8 max-w-2xl mx-auto">
+            Join thousands of developers and businesses leveraging AI agents to transform their workflows
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="{{ url_for('explore') }}" 
+               class="bg-primary-foreground text-primary px-8 py-3 rounded-lg font-semibold hover:bg-primary-foreground/90 transition-colors">
+                Browse Agents
+            </a>
+            <a href="{{ url_for('creator_studio') }}" 
+               class="border border-primary-foreground text-primary-foreground px-8 py-3 rounded-lg font-semibold hover:bg-primary-foreground/10 transition-colors">
+                Become a Creator
+            </a>
+        </div>
+    </div>
+</section>
+{% endblock %}
