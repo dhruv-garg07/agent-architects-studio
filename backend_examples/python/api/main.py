@@ -1,10 +1,14 @@
 """FastAPI application with endpoints mirroring frontend functionality."""
-
+import os
+import sys
 from fastapi import FastAPI, HTTPException, Query
 from typing import List, Optional
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models import AgentWithCreator, CreatorWithStats, SearchFilters
 from services.agents import agent_service
 from services.creators import creator_service
+
+
 
 app = FastAPI(title="AI Agent Marketplace API", version="1.0.0")
 

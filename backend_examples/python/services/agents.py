@@ -1,7 +1,9 @@
 """Agent services for fetching and managing agents."""
-
+import os
+import sys
 from typing import List, Optional, Tuple
-from supabase_client import get_supabase_client
+from ..supabase_client import get_supabase_client
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models import Agent, AgentWithCreator, Creator, SearchFilters
 
 
