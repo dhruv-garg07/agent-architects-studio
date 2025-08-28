@@ -8,42 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 
 const Layout = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-<<<<<<< HEAD
   const navigate = useNavigate();
-=======
-  const [user, setUser] = useState<SupabaseUser | null>(null);
-  const { toast } = useToast();
-
-  useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
-    } else {
-      toast({
-        title: "Signed out",
-        description: "You have been successfully signed out."
-      });
-    }
-  };
->>>>>>> 0349e78 (Fix: Register backend data on website)
 
   const navigation = [
     { name: "Explore", href: "/explore" },
@@ -89,7 +54,6 @@ const Layout = () => {
                 <Search className="w-4 h-4 mr-2" />
                 Search
               </Button>
-<<<<<<< HEAD
 
               <Button variant="outline" size="sm" className="btn-sage" onClick={() => navigate('/studio')}>
                 <Plus className="w-4 h-4 mr-2" />
@@ -99,33 +63,6 @@ const Layout = () => {
               <Button variant="ghost" size="sm" onClick={() => navigate('/auth')}>
                 <User className="w-4 h-4" />
               </Button>
-=======
-              
-              <Button asChild variant="outline" size="sm" className="btn-sage">
-                <NavLink to="/submit">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Submit Agent
-                </NavLink>
-              </Button>
-
-              {user ? (
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-muted-foreground hidden sm:block">
-                    {user.email}
-                  </span>
-                  <Button variant="ghost" size="sm" onClick={handleSignOut}>
-                    <LogOut className="w-4 h-4" />
-                  </Button>
-                </div>
-              ) : (
-                <Button asChild variant="ghost" size="sm">
-                  <NavLink to="/auth">
-                    <User className="w-4 h-4 mr-2" />
-                    Sign In
-                  </NavLink>
-                </Button>
-              )}
->>>>>>> 0349e78 (Fix: Register backend data on website)
 
               {/* Mobile menu button */}
               <Button

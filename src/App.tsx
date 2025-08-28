@@ -11,14 +11,9 @@ import Layout from "./components/Layout";
 import Homepage from "./pages/Homepage";
 import Explore from "./pages/Explore";
 import AgentDetail from "./pages/AgentDetail";
-<<<<<<< HEAD
 import Leaderboard from "./pages/Leaderboard";
 import CreatorStudio from "./pages/CreatorStudio";
 import Auth from "./pages/Auth";
-=======
-import Auth from "./pages/Auth";
-import CreatorStudio from "./pages/CreatorStudio";
->>>>>>> 0349e78 (Fix: Register backend data on website)
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
