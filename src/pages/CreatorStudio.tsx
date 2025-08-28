@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,7 +9,30 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { Plus, FileText, Settings, BarChart3, Users, AlertTriangle, Clock, CheckCircle, Eye, Pencil } from "lucide-react";
+import {
+  getUserAgents,
+  createAgent,
+  updateAgent,
+  deleteAgent,
+} from "@/lib/api/agents";
+import type { Tables } from "@/integrations/supabase/types";
+import {
+  Plus,
+  Eye,
+  Trash2,
+  Edit,
+  Star,
+  Users,
+  TrendingUp,
+  Settings,
+  FileText,
+  Code,
+  Play,
+  Database,
+  Globe,
+  AlertCircle,
+  Clock
+} from "lucide-react";
 import AgentVerification from "@/components/AgentVerification";
 
 interface Agent {
@@ -32,10 +54,11 @@ const CreatorStudio = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("agents");
   const { toast } = useToast();
-
-  // Form states for new agent
-  const [isCreating, setIsCreating] = useState(false);
-  const [newAgent, setNewAgent] = useState({
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("overview");
+  const [editingAgentId, setEditingAgentId] = useState<string | null>(null);
+  
+  const [formData, setFormData] = useState({
     name: "",
     description: "",
     category: "",
@@ -49,132 +72,138 @@ const CreatorStudio = () => {
     checkAuth();
   }, []);
 
-  const checkAuth = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast({
-          title: "Authentication required",
-          description: "Please sign in to access Creator Studio",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      setUser(user);
-      
-      // Check if user is admin (simple check for now)
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      // For now, consider any user an admin for testing
-      // You can implement proper role checking later
-      setIsAdmin(true);
-
-      await fetchUserAgents(user.id);
-    } catch (error) {
-      console.error('Auth check error:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const fetchUserAgents = async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('agent_profiles')
-        .select('*')
-        .eq('creator_id', userId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setAgents(data || []);
+      const data = await getUserAgents(userId);
+      setMyAgents(data);
     } catch (error) {
       console.error('Error fetching user agents:', error);
       toast({
         title: "Error",
         description: "Failed to fetch your agents",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
 
-  const handleCreateAgent = async () => {
-    if (!user) return;
-    
-    setIsCreating(true);
+  const categories = [
+    "Code Generation", "Data Analysis", "Content Creation", 
+    "Automation", "Research", "Customer Service", "Design", "Marketing"
+  ];
+
+  const models = ["GPT-4", "Claude 3.5", "LangChain", "Custom", "Gemini"];
+  
+  const modalities = ["Text", "Vision", "Audio", "Multimodal"];
+  const capabilities = [
+    "Code Generation", "Data Analysis", "Web Search", "File Processing",
+    "API Integration", "Database Queries", "Image Generation", "Text Processing"
+  ];
+  const protocols = ["REST API", "GraphQL", "WebSocket", "gRPC", "Custom"];
+  const handleNewAgent = () => {
+    setFormData({
+      name: "",
+      description: "",
+      category: "",
+      tags: [],
+      githubUrl: "",
+      model: "",
+      license: "MIT",
+      modalities: [],
+      capabilities: [],
+      ioSchema: "",
+      protocols: [],
+      runtimeDependencies: [],
+      dockerfileUrl: "",
+    });
+    setEditingAgentId(null);
+    setCurrentStep(1);
+    setActiveTab("foundry");
+  };
+
+  const startEditing = (agent: Tables<'agent_profiles'>) => {
+    setFormData({
+      name: agent.name || "",
+      description: agent.description || "",
+      category: agent.category || "",
+      tags: agent.tags || [],
+      githubUrl: agent.github_url || "",
+      model: agent.model || "",
+      license: agent.license || "MIT",
+      modalities: agent.modalities || [],
+      capabilities: agent.capabilities || [],
+      ioSchema: agent.io_schema ? JSON.stringify(agent.io_schema, null, 2) : "",
+      protocols: agent.protocols || [],
+      runtimeDependencies: agent.runtime_dependencies || [],
+      dockerfileUrl: agent.dockerfile_url || "",
+    });
+    setEditingAgentId(agent.id);
+    setCurrentStep(1);
+    setActiveTab("foundry");
+  };
+
+  const handleView = (id: string) => navigate(`/agent/${id}`);
+
+  const handleDelete = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('agent_profiles')
-        .insert({
-          creator_id: user.id,
-          name: newAgent.name,
-          description: newAgent.description,
-          category: newAgent.category,
-          model: newAgent.model,
-          tags: newAgent.tags,
-          capabilities: newAgent.capabilities,
-          modalities: newAgent.modalities,
-          status: 'draft'
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Agent created successfully",
-      });
-
-      // Reset form and refresh agents
-      setNewAgent({
-        name: "",
-        description: "",
-        category: "",
-        model: "gpt-4",
-        tags: [],
-        capabilities: [],
-        modalities: []
-      });
-      
-      await fetchUserAgents(user.id);
+      await deleteAgent(id);
+      toast({ title: "Agent deleted", description: "The agent has been removed." });
+      if (user) fetchUserAgents(user.id);
     } catch (error) {
-      console.error('Error creating agent:', error);
+      console.error('Error deleting agent:', error);
       toast({
         title: "Error",
-        description: "Failed to create agent",
-        variant: "destructive"
+        description: "Failed to delete agent",
+        variant: "destructive",
       });
-    } finally {
-      setIsCreating(false);
     }
   };
 
-  const handleSubmitForReview = async (agentId: string) => {
-    try {
-      const { error } = await supabase
-        .from('agent_profiles')
-        .update({ status: 'pending_review' })
-        .eq('id', agentId);
-
-      if (error) throw error;
-
+  const handleSubmit = async () => {
+    if (!user) {
       toast({
-        title: "Success",
-        description: "Agent submitted for review",
+        title: "Authentication required",
+        description: "Please log in to submit an agent",
+        variant: "destructive",
       });
+      return;
+    }
 
-      if (user) {
-        await fetchUserAgents(user.id);
+    try {
+      const agentData = {
+        creator_id: user.id,
+        name: formData.name,
+        description: formData.description,
+        category: formData.category,
+        tags: formData.tags,
+        github_url: formData.githubUrl,
+        model: formData.model,
+        license: formData.license,
+        modalities: formData.modalities,
+        capabilities: formData.capabilities,
+        io_schema: formData.ioSchema ? JSON.parse(formData.ioSchema) : null,
+        protocols: formData.protocols,
+        runtime_dependencies: formData.runtimeDependencies,
+        dockerfile_url: formData.dockerfileUrl,
+        status: 'review',
+      };
+
+      if (editingAgentId) {
+        await updateAgent(editingAgentId, agentData);
+        toast({ title: "Agent updated", description: "Your agent has been updated" });
+      } else {
+        await createAgent(agentData);
+        toast({ title: "Success!", description: "Your agent has been submitted for review" });
       }
+
+      handleNewAgent();
+      if (user) fetchUserAgents(user.id);
+      setActiveTab("agents");
     } catch (error) {
       console.error('Error submitting for review:', error);
       toast({
         title: "Error",
-        description: "Failed to submit for review",
-        variant: "destructive"
+        description: "Failed to submit agent",
+        variant: "destructive",
       });
     }
   };
@@ -236,18 +265,27 @@ const CreatorStudio = () => {
     <div className="container mx-auto px-4 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl lg:text-4xl font-bold font-inter mb-2">
-          Creator Studio
-        </h1>
-        <p className="text-muted-foreground">
-          Build, manage, and publish your AI agents
-        </p>
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl lg:text-4xl font-bold font-inter mb-2">
+              Creator Studio
+            </h1>
+            <p className="text-muted-foreground">
+              Professional agent foundry for the Manhattan Project community
+            </p>
+          </div>
+          <Button className="bg-primary hover:bg-primary-hover" onClick={handleNewAgent}>
+            <Plus className="w-4 h-4 mr-2" />
+            New Agent
+          </Button>
+        </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 max-w-2xl">
-          <TabsTrigger value="agents">My Agents</TabsTrigger>
-          <TabsTrigger value="create">Create New</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="agents">My Agents ({myAgents.length})</TabsTrigger>
+          <TabsTrigger value="foundry">Agent Foundry</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           {isAdmin && <TabsTrigger value="verification">Verification</TabsTrigger>}
         </TabsList>
@@ -310,36 +348,43 @@ const CreatorStudio = () => {
                           <div className="font-semibold text-lg">{agent.avg_rating.toFixed(1)}</div>
                           <div className="text-xs text-muted-foreground">Rating</div>
                         </div>
-                        <div>
-                          <div className="font-semibold text-lg">{agent.upvotes}</div>
-                          <div className="text-xs text-muted-foreground">Upvotes</div>
+                        <p className="text-muted-foreground text-sm">{agent.description}</p>
+                        <div className="flex items-center space-x-4 mt-2 text-sm text-muted-foreground">
+                          <span>Updated {agent.lastUpdated}</span>
+                          {agent.status === "published" && (
+                            <>
+                              <span>•</span>
+                              <span>{agent.rating} rating</span>
+                              <span>•</span>
+                              <span>{agent.runs} runs</span>
+                            </>
+                          )}
                         </div>
                       </div>
-
-                      <div className="flex space-x-2">
-                        <Button size="sm" variant="outline" className="flex-1">
-                          <Eye className="w-4 h-4 mr-1" />
-                          View
-                        </Button>
-                        <Button size="sm" variant="outline" className="flex-1">
-                          <Pencil className="w-4 h-4 mr-1" />
-                          Edit
-                        </Button>
-                        {agent.status === 'draft' && (
-                          <Button 
-                            size="sm" 
-                            className="btn-primary flex-1"
-                            onClick={() => handleSubmitForReview(agent.id)}
-                          >
-                            Submit
-                          </Button>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Button variant="outline" size="sm" onClick={() => handleView(agent.id)}>
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => startEditing(agent)}>
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toast({ title: "Coming soon", description: "Advanced settings will be available soon" })}
+                      >
+                        <Settings className="w-4 h-4" />
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleDelete(agent.id)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </TabsContent>
 

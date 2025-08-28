@@ -1,7 +1,10 @@
 """Creator services for managing creator profiles and leaderboards."""
 
+import os
+import sys  
 from typing import List, Optional
 from supabase_client import get_supabase_client
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models import CreatorProfile, CreatorWithStats
 
 

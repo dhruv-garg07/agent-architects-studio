@@ -11,9 +11,9 @@ import Layout from "./components/Layout";
 import Homepage from "./pages/Homepage";
 import Explore from "./pages/Explore";
 import AgentDetail from "./pages/AgentDetail";
-import Auth from "./pages/Auth";
+import Leaderboard from "./pages/Leaderboard";
 import CreatorStudio from "./pages/CreatorStudio";
-import Creators from "./pages/Creators";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +27,9 @@ function App() {
             <Route index element={<Homepage />} />
             <Route path="explore" element={<Explore />} />
             <Route path="agent/:id" element={<AgentDetail />} />
+            <Route path="leaderboard" element={<Leaderboard />} />
+            <Route path="studio" element={<CreatorStudio />} />
+            <Route path="auth" element={<Auth />} />
             <Route path="trending" element={<Explore />} />
             <Route path="categories" element={<Explore />} />
             <Route path="creators" element={<Creators />} />

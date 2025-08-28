@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Search, User, Plus, Menu, X, LogOut } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -8,38 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 
 const Layout = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [user, setUser] = useState<SupabaseUser | null>(null);
-  const { toast } = useToast();
-
-  useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
-    } else {
-      toast({
-        title: "Signed out",
-        description: "You have been successfully signed out."
-      });
-    }
-  };
+  const navigate = useNavigate();
 
   const navigation = [
     { name: "Explore", href: "/explore" },
@@ -81,35 +50,19 @@ const Layout = () => {
 
             {/* Actions */}
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="sm" className="hidden sm:flex">
+              <Button variant="ghost" size="sm" className="hidden sm:flex" onClick={() => navigate('/explore')}>
                 <Search className="w-4 h-4 mr-2" />
                 Search
               </Button>
-              
-              <Button asChild variant="outline" size="sm" className="btn-sage">
-                <NavLink to="/submit">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Submit Agent
-                </NavLink>
+
+              <Button variant="outline" size="sm" className="btn-sage" onClick={() => navigate('/studio')}>
+                <Plus className="w-4 h-4 mr-2" />
+                Submit Agent
               </Button>
 
-              {user ? (
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-muted-foreground hidden sm:block">
-                    {user.email}
-                  </span>
-                  <Button variant="ghost" size="sm" onClick={handleSignOut}>
-                    <LogOut className="w-4 h-4" />
-                  </Button>
-                </div>
-              ) : (
-                <Button asChild variant="ghost" size="sm">
-                  <NavLink to="/auth">
-                    <User className="w-4 h-4 mr-2" />
-                    Sign In
-                  </NavLink>
-                </Button>
-              )}
+              <Button variant="ghost" size="sm" onClick={() => navigate('/auth')}>
+                <User className="w-4 h-4" />
+              </Button>
 
               {/* Mobile menu button */}
               <Button
