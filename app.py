@@ -122,18 +122,49 @@ def creator_studio():
 def submit_agent():
     """Handle agent submission."""
     try:
+        # agent_data = {
+        #     'name': request.form.get('name'),
+        #     'description': request.form.get('description'),
+        #     'category': request.form.get('category'),
+        #     'model': request.form.get('model'),
+        #     'tags': request.form.get('tags', '').split(',') if request.form.get('tags') else [],
+        #     'github_url': request.form.get('github_url'),
+        #     'dockerfile_url': request.form.get('dockerfile_url'),
+        #     'status': 'pending',
+        #     'created_at': datetime.utcnow(),
+        #     'updated_at': datetime.utcnow()
+        # }
+        header_keys = request.form.getlist('header_keys[]')
+        header_values = request.form.getlist('header_values[]')
+        headers = {}
+        for key, value in zip(header_keys, header_values):
+            if key and value:  # Only add non-empty headers
+                headers[key] = value
+        
+        # Process authentication
+        auth_keys = request.form.getlist('auth_keys[]')
+        auth_values = request.form.getlist('auth_values[]')
+        authentication = {}
+        for key, value in zip(auth_keys, auth_values):
+            if key and value:  # Only add non-empty auth fields
+                authentication[key] = value
+        
         agent_data = {
             'name': request.form.get('name'),
             'description': request.form.get('description'),
             'category': request.form.get('category'),
-            'model': request.form.get('model'),
-            'tags': request.form.get('tags', '').split(',') if request.form.get('tags') else [],
-            'github_url': request.form.get('github_url'),
-            'dockerfile_url': request.form.get('dockerfile_url'),
+            'base_url': request.form.get('base_url'),
+            'headers': headers,
+            'content_type': request.form.get('content_type'),
+            'authentication': authentication,
+            'data_format': request.form.get('data_format'),
+            'data_structure': request.form.get('data_structure'),
+            'tags': [tag.strip() for tag in request.form.get('tags', '').split(',')] if request.form.get('tags') else [],
             'status': 'pending',
             'created_at': datetime.utcnow(),
             'updated_at': datetime.utcnow()
         }
+    
         
         agent = agent_service.create_agent(agent_data, current_user.id)
         if agent:

@@ -61,24 +61,120 @@
                 </div>
             </div>
 
+            <!-- API Configuration -->
+            <div>
+                <h2 class="text-xl font-semibold text-foreground mb-4">API Configuration</h2>
+                
+                <!-- Base URL (Compulsory) -->
+                <div class="mb-4">
+                    <label for="base_url" class="block text-sm font-medium text-foreground mb-2">
+                        Base URL *
+                    </label>
+                    <input type="url" 
+                           id="base_url" 
+                           name="base_url" 
+                           required
+                           placeholder="https://api.example.com/v1/"
+                           class="input w-full">
+                </div>
+                
+                <!-- Headers -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-foreground mb-2">
+                        Headers
+                    </label>
+                    <div id="headers-container" class="space-y-2">
+                        <div class="flex gap-2 header-field">
+                            <input type="text" 
+                                   name="header_keys[]" 
+                                   placeholder="Header name"
+                                   class="input flex-1">
+                            <input type="text" 
+                                   name="header_values[]" 
+                                   placeholder="Header value"
+                                   class="input flex-1">
+                            <button type="button" class="btn-secondary remove-header" style="display: none;">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="button" id="add-header" class="btn-secondary mt-2">
+                        <i data-lucide="plus" class="w-4 h-4 mr-1"></i> Add Header
+                    </button>
+                </div>
+                
+                <!-- Content Type (Compulsory) -->
+                <div class="mb-4">
+                    <label for="content_type" class="block text-sm font-medium text-foreground mb-2">
+                        Content-Type *
+                    </label>
+                    <select id="content_type" name="content_type" required class="input w-full">
+                        <option value="application/json">application/json</option>
+                        <option value="text/plain">text/plain</option>
+                        <option value="application/xml">application/xml</option>
+                        <option value="application/x-www-form-urlencoded">application/x-www-form-urlencoded</option>
+                    </select>
+                </div>
+                
+                
+                <!-- Authentication -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-foreground mb-2">
+                        Authentication
+                    </label>
+                    <div id="auth-container" class="space-y-2">
+                        <div class="flex gap-2 auth-field">
+                            <input type="text" 
+                                   name="auth_keys[]" 
+                                   placeholder="Key (e.g., Authorization)"
+                                   class="input flex-1">
+                            <input type="text" 
+                                   name="auth_values[]" 
+                                   placeholder="Value (e.g., Bearer token)"
+                                   class="input flex-1">
+                            <button type="button" class="btn-secondary remove-auth" style="display: none;">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button type="button" id="add-auth" class="btn-secondary mt-2">
+                        <i data-lucide="plus" class="w-4 h-4 mr-1"></i> Add Auth Field
+                    </button>
+                </div>
+                
+                <!-- Data Format (Compulsory) -->
+                <div class="mb-4">
+                    <label for="data_format" class="block text-sm font-medium text-foreground mb-2">
+                        Data Format
+                    </label>
+                    <select id="data_format" name="data_format" required class="input w-full">
+                        <option value="json">JSON</option>
+                        <option value="text">Plain Text</option>
+                        <option value="xml">XML</option>
+                        <option value="form-data">Form Data</option>
+                    </select>
+                </div>
+                
+                <!-- Data Structure -->
+                <div>
+                    <label for="data_structure" required class="block text-sm font-medium text-foreground mb-2">
+                        Data Structure * (e.g., input, prompt, message, body)
+                    </label>
+                    <textarea id="data_structure" 
+                              name="data_structure" 
+                              rows="4"
+                              placeholder='Example: {"input": "user_message", "parameters": {}}'
+                              class="input w-full resize-none"></textarea>
+                    <p class="text-xs text-muted-foreground mt-1">
+                        Describe the expected request format for your API
+                    </p>
+                </div>
+            </div>
+
             <!-- Technical Specifications -->
             <div>
                 <h2 class="text-xl font-semibold text-foreground mb-4">Technical Specifications</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label for="model" class="block text-sm font-medium text-foreground mb-2">
-                            Base Model
-                        </label>
-                        <select id="model" name="model" class="input w-full">
-                            <option value="">Select a model</option>
-                            <option value="gpt-4">GPT-4</option>
-                            <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-                            <option value="claude-3">Claude 3</option>
-                            <option value="gemini-pro">Gemini Pro</option>
-                            <option value="llama-2">Llama 2</option>
-                            <option value="custom">Custom Model</option>
-                        </select>
-                    </div>
                     <div>
                         <label for="tags" class="block text-sm font-medium text-foreground mb-2">
                             Tags
@@ -90,40 +186,6 @@
                                class="input w-full">
                         <p class="text-xs text-muted-foreground mt-1">
                             Separate tags with commas
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Repository & Deployment -->
-            <div>
-                <h2 class="text-xl font-semibold text-foreground mb-4">Repository & Deployment</h2>
-                <div class="space-y-4">
-                    <div>
-                        <label for="github_url" class="block text-sm font-medium text-foreground mb-2">
-                            GitHub Repository URL
-                        </label>
-                        <input type="url" 
-                               id="github_url" 
-                               name="github_url" 
-                               placeholder="https://github.com/username/agent-repo"
-                               class="input w-full">
-                        <p class="text-xs text-muted-foreground mt-1">
-                            Link to your agent's source code repository
-                        </p>
-                    </div>
-                    
-                    <div>
-                        <label for="dockerfile_url" class="block text-sm font-medium text-foreground mb-2">
-                            Dockerfile URL
-                        </label>
-                        <input type="url" 
-                               id="dockerfile_url" 
-                               name="dockerfile_url" 
-                               placeholder="https://github.com/username/agent-repo/blob/main/Dockerfile"
-                               class="input w-full">
-                        <p class="text-xs text-muted-foreground mt-1">
-                            Direct link to your Dockerfile for deployment
                         </p>
                     </div>
                 </div>
@@ -238,4 +300,75 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Header management
+    const headersContainer = document.getElementById('headers-container');
+    const addHeaderBtn = document.getElementById('add-header');
+    
+    addHeaderBtn.addEventListener('click', function() {
+        const newHeader = document.createElement('div');
+        newHeader.className = 'flex gap-2 header-field';
+        newHeader.innerHTML = `
+            <input type="text" name="header_keys[]" placeholder="Header name" class="input flex-1">
+            <input type="text" name="header_values[]" placeholder="Header value" class="input flex-1">
+            <button type="button" class="btn-secondary remove-header">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+        `;
+        headersContainer.appendChild(newHeader);
+        
+        // Add event listener to the new remove button
+        newHeader.querySelector('.remove-header').addEventListener('click', function() {
+            headersContainer.removeChild(newHeader);
+        });
+        
+        // Initialize Lucide icons for the new button
+        if (window.lucide) {
+            window.lucide.createIcons();
+        }
+    });
+    
+    // Auth management
+    const authContainer = document.getElementById('auth-container');
+    const addAuthBtn = document.getElementById('add-auth');
+    
+    addAuthBtn.addEventListener('click', function() {
+        const newAuth = document.createElement('div');
+        newAuth.className = 'flex gap-2 auth-field';
+        newAuth.innerHTML = `
+            <input type="text" name="auth_keys[]" placeholder="Key (e.g., Authorization)" class="input flex-1">
+            <input type="text" name="auth_values[]" placeholder="Value (e.g., Bearer token)" class="input flex-1">
+            <button type="button" class="btn-secondary remove-auth">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+        `;
+        authContainer.appendChild(newAuth);
+        
+        // Add event listener to the new remove button
+        newAuth.querySelector('.remove-auth').addEventListener('click', function() {
+            authContainer.removeChild(newAuth);
+        });
+        
+        // Initialize Lucide icons for the new button
+        if (window.lucide) {
+            window.lucide.createIcons();
+        }
+    });
+    
+    // Add event listeners to existing remove buttons (if any)
+    document.querySelectorAll('.remove-header').forEach(btn => {
+        btn.addEventListener('click', function() {
+            headersContainer.removeChild(btn.parentElement);
+        });
+    });
+    
+    document.querySelectorAll('.remove-auth').forEach(btn => {
+        btn.addEventListener('click', function() {
+            authContainer.removeChild(btn.parentElement);
+        });
+    });
+});
+</script>
 {% endblock %}
