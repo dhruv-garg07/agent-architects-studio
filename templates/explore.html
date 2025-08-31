@@ -84,11 +84,27 @@
     </div>
 
     <!-- Results Count -->
+    
     <div class="mb-6">
         <p class="text-muted-foreground">
-            Found {{ agents|length }} agents
+            {% if agents and agents|length > 0 %}
+                Found {{ agents|length }} agents
+            {% else %}
+                <!-- Empty State -->
+                <div class="text-center py-16">
+                    <i data-lucide="search-x" class="w-16 h-16 text-muted-foreground mx-auto mb-4"></i>
+                    <h3 class="text-xl font-semibold text-foreground mb-2">No agents found</h3>
+                    <p class="text-muted-foreground mb-6">
+                        Try adjusting your search criteria or filters
+                    </p>
+                    <a href="{{ url_for('explore') }}" class="btn-primary">
+                        Clear All Filters
+                    </a>
+                </div>
+            {% endif %}
         </p>
     </div>
+
 
     <!-- Agent Grid -->
     {% if agents %}

@@ -66,20 +66,21 @@ def explore():
         modalities=modalities,
         capabilities=capabilities
     )
-    
+    print("Filters applied:", filters)
     try:
-        agents = agent_service.fetch_agents(filters)
+        agents = asyncio.run(agent_service.fetch_agents(filters))
+        print("Fetched agents:", agents)
     except Exception as e:
         flash(f'Error fetching agents: {str(e)}', 'error')
         agents = []
     
     return render_template('explore.html', 
-                         agents=agents, 
-                         filters=filters,
-                         search=search,
-                         category=category,
-                         model=model,
-                         sort_by=sort_by)
+                        agents=agents, 
+                        filters=filters,
+                        search=search,
+                        category=category,
+                        #  model=model,
+                        sort_by=sort_by)
 
 @app.route('/agent/<agent_id>')
 def agent_detail(agent_id):
@@ -362,3 +363,4 @@ def internal_error(error):
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+    

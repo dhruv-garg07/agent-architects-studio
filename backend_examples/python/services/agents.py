@@ -21,7 +21,7 @@ class AgentService:
         try:
             # Start with base query
             query = self.supabase.table('agent_profiles').select('*')
-            
+            # print(f"query: {query}")
             # Apply filters
             if filters.search:
                 # Search in name and description
@@ -31,8 +31,8 @@ class AgentService:
             if filters.category:
                 query = query.eq('category', filters.category)
             
-            if filters.model:
-                query = query.eq('model', filters.model)
+            # if filters.model:
+            #     query = query.eq('model', filters.model)
             
             if filters.status:
                 query = query.eq('status', filters.status)
@@ -59,6 +59,7 @@ class AgentService:
             
             # Execute query
             response = query.execute()
+            print(f"response: {response}")
             agents_data = response.data
             
             if not agents_data:
