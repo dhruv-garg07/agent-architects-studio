@@ -13,163 +13,29 @@
         </a>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- Main Content -->
-        <div class="lg:col-span-2">
-            <!-- Agent Header -->
-            <div class="card p-6 mb-6">
-                <div class="flex items-start justify-between mb-4">
-                    <div class="flex-1">
-                        <h1 class="text-3xl font-bold text-foreground mb-2">{{ agent.name }}</h1>
-                        <p class="text-lg text-muted-foreground">
-                            {{ agent.description or 'No description available' }}
-                        </p>
-                    </div>
-                    {% if agent.status == 'verified' %}
-                        <span class="badge badge-primary ml-4">
-                            <i data-lucide="check-circle" class="w-4 h-4 mr-1"></i>
-                            Verified
-                        </span>
-                    {% elif agent.status == 'pending' %}
-                        <span class="badge" style="background-color: hsl(var(--soft-ochre)); color: hsl(var(--soft-ochre-foreground));">
-                            Pending Review
-                        </span>
-                    {% endif %}
-                </div>
+    <!-- Tab Navigation -->
+    <div class="flex border-b border-border mb-6 overflow-x-auto">
+        <button class="tab-button active" data-tab="agent-info">
+            <i data-lucide="info" class="w-4 h-4 mr-2"></i>
+            Agent Info
+        </button>
+        <button class="tab-button" data-tab="try-agent">
+            <i data-lucide="play" class="w-4 h-4 mr-2"></i>
+            Try Agent
+        </button>
+        <button class="tab-button" data-tab="community">
+            <i data-lucide="message-square" class="w-4 h-4 mr-2"></i>
+            Community
+        </button>
+        <button class="tab-button" data-tab="resources">
+            <i data-lucide="book-open" class="w-4 h-4 mr-2"></i>
+            Resources
+        </button>
+    </div>
 
-                <!-- Tags and Category -->
-                <div class="flex flex-wrap gap-2 mb-4">
-                    {% if agent.category %}
-                        <span class="badge badge-primary">{{ agent.category }}</span>
-                    {% endif %}
-                    {% if agent.model %}
-                        <span class="badge" style="background-color: hsl(var(--dusty-blue)); color: hsl(var(--dusty-blue-foreground));">
-                            {{ agent.model }}
-                        </span>
-                    {% endif %}
-                    {% if agent.tags %}
-                        {% for tag in agent.tags %}
-                            <span class="badge badge-secondary">{{ tag }}</span>
-                        {% endfor %}
-                    {% endif %}
-                </div>
-
-                <!-- Stats -->
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-border">
-                    <div class="text-center">
-                        <div class="text-2xl font-bold text-primary">{{ "%.1f"|format(agent.avg_rating or 0) }}</div>
-                        <div class="text-sm text-muted-foreground">Average Rating</div>
-                    </div>
-                    <div class="text-center">
-                        <div class="text-2xl font-bold text-sage">{{ agent.total_runs or 0 }}</div>
-                        <div class="text-sm text-muted-foreground">Total Runs</div>
-                    </div>
-                    <div class="text-center">
-                        <div class="text-2xl font-bold text-dusty-blue">{{ agent.upvotes or 0 }}</div>
-                        <div class="text-sm text-muted-foreground">Upvotes</div>
-                    </div>
-                    <div class="text-center">
-                        <div class="text-2xl font-bold text-soft-ochre">{{ agent.version or '1.0.0' }}</div>
-                        <div class="text-sm text-muted-foreground">Version</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Technical Details -->
-            <div class="card p-6 mb-6">
-                <h2 class="text-xl font-semibold text-foreground mb-4">Technical Details</h2>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Capabilities -->
-                    {% if agent.capabilities %}
-                        <div>
-                            <h3 class="font-medium text-foreground mb-2">Capabilities</h3>
-                            <div class="space-y-2">
-                                {% for capability in agent.capabilities %}
-                                    <div class="flex items-center">
-                                        <i data-lucide="check" class="w-4 h-4 text-primary mr-2"></i>
-                                        <span class="text-sm text-muted-foreground">{{ capability }}</span>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    {% endif %}
-
-                    <!-- Modalities -->
-                    {% if agent.modalities %}
-                        <div>
-                            <h3 class="font-medium text-foreground mb-2">Modalities</h3>
-                            <div class="space-y-2">
-                                {% for modality in agent.modalities %}
-                                    <div class="flex items-center">
-                                        <i data-lucide="check" class="w-4 h-4 text-primary mr-2"></i>
-                                        <span class="text-sm text-muted-foreground">{{ modality }}</span>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    {% endif %}
-
-                    <!-- Performance -->
-                    <div>
-                        <h3 class="font-medium text-foreground mb-2">Performance</h3>
-                        <div class="space-y-2">
-                            {% if agent.success_rate %}
-                                <div class="flex justify-between">
-                                    <span class="text-sm text-muted-foreground">Success Rate</span>
-                                    <span class="text-sm font-medium text-foreground">{{ "%.1f"|format(agent.success_rate) }}%</span>
-                                </div>
-                            {% endif %}
-                            {% if agent.avg_latency %}
-                                <div class="flex justify-between">
-                                    <span class="text-sm text-muted-foreground">Avg. Latency</span>
-                                    <span class="text-sm font-medium text-foreground">{{ agent.avg_latency }}ms</span>
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <!-- Additional Info -->
-                    <div>
-                        <h3 class="font-medium text-foreground mb-2">Additional Info</h3>
-                        <div class="space-y-2">
-                            {% if agent.license %}
-                                <div class="flex justify-between">
-                                    <span class="text-sm text-muted-foreground">License</span>
-                                    <span class="text-sm font-medium text-foreground">{{ agent.license }}</span>
-                                </div>
-                            {% endif %}
-                            <div class="flex justify-between">
-                                <span class="text-sm text-muted-foreground">Created</span>
-                                <span class="text-sm font-medium text-foreground">{{ agent.created_at.strftime('%b %d, %Y') }}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-sm text-muted-foreground">Updated</span>
-                                <span class="text-sm font-medium text-foreground">{{ agent.updated_at.strftime('%b %d, %Y') }}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Dependencies -->
-            {% if agent.runtime_dependencies %}
-                <div class="card p-6">
-                    <h2 class="text-xl font-semibold text-foreground mb-4">Runtime Dependencies</h2>
-                    <div class="space-y-2">
-                        {% for dependency in agent.runtime_dependencies %}
-                            <div class="flex items-center p-3 bg-muted rounded-lg">
-                                <i data-lucide="package" class="w-4 h-4 text-muted-foreground mr-3"></i>
-                                <span class="text-sm font-mono text-foreground">{{ dependency }}</span>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            {% endif %}
-        </div>
-
-        <!-- Sidebar -->
-        <div class="lg:col-span-1">
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        <!-- Left Column: Agent Metadata and Creator Info -->
+        <div class="xl:col-span-1 order-2 xl:order-1">
             <!-- Creator Info -->
             <div class="card p-6 mb-6">
                 <h2 class="text-lg font-semibold text-foreground mb-4">Created By</h2>
@@ -190,9 +56,51 @@
                         <p class="text-sm text-muted-foreground">Creator</p>
                     </div>
                 </div>
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center text-sm text-muted-foreground">
+                        <i data-lucide="users" class="w-4 h-4 mr-1"></i>
+                        <span>{{ agent.creator.followers or 125 }} followers</span>
+                    </div>
+                    <div class="flex items-center text-sm text-muted-foreground">
+                        <i data-lucide="star" class="w-4 h-4 mr-1"></i>
+                        <span>{{ agent.creator.agents or 3 }} agents</span>
+                    </div>
+                </div>
                 <a href="{{ url_for('creators') }}" class="btn-secondary w-full text-center">
                     View Profile
                 </a>
+            </div>
+
+            <!-- Model Specifications -->
+            <div class="card p-6 mb-6">
+                <h2 class="text-lg font-semibold text-foreground mb-4">Model Specifications</h2>
+                <div class="space-y-3">
+                    {% if agent.model_size %}
+                    <div class="flex justify-between">
+                        <span class="text-sm text-muted-foreground">Model Size</span>
+                        <span class="text-sm font-medium text-foreground">{{ agent.model_size }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if agent.context_window %}
+                    <div class="flex justify-between">
+                        <span class="text-sm text-muted-foreground">Context Window</span>
+                        <span class="text-sm font-medium text-foreground">{{ agent.context_window }} tokens</span>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="flex justify-between">
+                        <span class="text-sm text-muted-foreground">Architecture</span>
+                        <span class="text-sm font-medium text-foreground">Transformer</span>
+                    </div>
+                    
+                    {% if agent.training_data %}
+                    <div class="flex justify-between">
+                        <span class="text-sm text-muted-foreground">Training Data</span>
+                        <span class="text-sm font-medium text-foreground">{{ agent.training_data }}</span>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
 
             <!-- Action Buttons -->
@@ -222,11 +130,21 @@
                             View Source
                         </a>
                     {% endif %}
+                    
+                    <button class="btn-secondary w-full">
+                        <i data-lucide="download" class="w-4 h-4 mr-2"></i>
+                        Download Agent
+                    </button>
+                    
+                    <button class="btn-secondary w-full">
+                        <i data-lucide="share" class="w-4 h-4 mr-2"></i>
+                        Share Agent
+                    </button>
                 </div>
             </div>
 
             <!-- Links -->
-            <div class="card p-6">
+            <div class="card p-6 mb-6">
                 <h2 class="text-lg font-semibold text-foreground mb-4">Resources</h2>
                 <div class="space-y-3">
                     {% if agent.github_url %}
@@ -254,9 +172,748 @@
                         <i data-lucide="life-buoy" class="w-4 h-4 mr-3"></i>
                         Support
                     </a>
+                    
+                    <a href="#" class="flex items-center text-muted-foreground hover:text-primary transition-colors">
+                        <i data-lucide="file-text" class="w-4 h-4 mr-3"></i>
+                        Model Card
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Input/Output Schema Preview -->
+            <div class="card p-6">
+                <h2 class="text-lg font-semibold text-foreground mb-4">I/O Schema</h2>
+                <div class="space-y-4">
+                    <div>
+                        <h3 class="text-sm font-medium text-foreground mb-2">Input Schema</h3>
+                        <div class="bg-muted p-3 rounded-md font-mono text-xs overflow-x-auto">
+                            {{ agent.input_schema or '{"prompt": "string", "max_tokens": "number"}' }}
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-medium text-foreground mb-2">Output Schema</h3>
+                        <div class="bg-muted p-3 rounded-md font-mono text-xs overflow-x-auto">
+                            {{ agent.output_schema or '{"response": "string", "tokens_used": "number"}' }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Column: Main Content Area -->
+        <div class="xl:col-span-2 order-1 xl:order-2">
+            <!-- Agent Info Panel -->
+            <div id="agent-info" class="tab-content active">
+                <!-- Agent Header -->
+                <div class="card p-6 mb-6">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex-1">
+                            <h1 class="text-3xl font-bold text-foreground mb-2">{{ agent.name }}</h1>
+                            <p class="text-lg text-muted-foreground">
+                                {{ agent.description or 'No description available' }}
+                            </p>
+                        </div>
+                        {% if agent.status == 'verified' %}
+                            <span class="badge badge-primary ml-4">
+                                <i data-lucide="check-circle" class="w-4 h-4 mr-1"></i>
+                                Verified
+                            </span>
+                        {% elif agent.status == 'pending' %}
+                            <span class="badge" style="background-color: hsl(var(--soft-ochre)); color: hsl(var(--soft-ochre-foreground));">
+                                Pending Review
+                            </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Tags and Category -->
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        {% if agent.category %}
+                            <span class="badge badge-primary">{{ agent.category }}</span>
+                        {% endif %}
+                        {% if agent.model %}
+                            <span class="badge" style="background-color: hsl(var(--dusty-blue)); color: hsl(var(--dusty-blue-foreground));">
+                                {{ agent.model }}
+                            </span>
+                        {% endif %}
+                        {% if agent.tags %}
+                            {% for tag in agent.tags %}
+                                <span class="badge badge-secondary">{{ tag }}</span>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+
+                    <!-- Stats -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-border">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-primary">{{ "%.1f"|format(agent.avg_rating or 0) }}</div>
+                            <div class="text-sm text-muted-foreground">Average Rating</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-sage">{{ agent.total_runs or 0 }}</div>
+                            <div class="text-sm text-muted-foreground">Total Runs</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-dusty-blue">{{ agent.upvotes or 0 }}</div>
+                            <div class="text-sm text-muted-foreground">Upvotes</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-soft-ochre">{{ agent.version or '1.0.0' }}</div>
+                            <div class="text-sm text-muted-foreground">Version</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detailed Description -->
+                <div class="card p-6 mb-6">
+                    <h2 class="text-xl font-semibold text-foreground mb-4">About This Agent</h2>
+                    <div class="prose max-w-none text-foreground">
+                        <p>This agent specializes in natural language processing tasks with a focus on content generation and analysis. It's built on a transformer architecture and fine-tuned for conversational applications.</p>
+                        
+                        <h3 class="text-lg font-medium mt-6 mb-3">Key Features</h3>
+                        <ul class="list-disc pl-5 space-y-2">
+                            <li>Advanced text generation with context awareness</li>
+                            <li>Multi-language support including English, Spanish, and French</li>
+                            <li>Customizable temperature and creativity controls</li>
+                            <li>Integration capabilities with external APIs and tools</li>
+                            <li>Efficient token usage with smart caching mechanisms</li>
+                        </ul>
+                        
+                        <h3 class="text-lg font-medium mt-6 mb-3">Use Cases</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-muted p-4 rounded-lg">
+                                <h4 class="font-medium mb-2">Content Creation</h4>
+                                <p class="text-sm">Generate articles, stories, and marketing copy with consistent tone and style.</p>
+                            </div>
+                            <div class="bg-muted p-4 rounded-lg">
+                                <h4 class="font-medium mb-2">Customer Support</h4>
+                                <p class="text-sm">Handle common inquiries and provide instant responses to customer questions.</p>
+                            </div>
+                            <div class="bg-muted p-4 rounded-lg">
+                                <h4 class="font-medium mb-2">Data Analysis</h4>
+                                <p class="text-sm">Process and summarize large volumes of text data for insights.</p>
+                            </div>
+                            <div class="bg-muted p-4 rounded-lg">
+                                <h4 class="font-medium mb-2">Education</h4>
+                                <p class="text-sm">Create learning materials and provide explanations on complex topics.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Version History -->
+                <div class="card p-6">
+                    <h2 class="text-xl font-semibold text-foreground mb-4">Version History</h2>
+                    <div class="space-y-4">
+                        <div class="flex items-start">
+                            <div class="bg-primary/10 text-primary rounded-full p-2 mr-4">
+                                <i data-lucide="git-branch" class="w-4 h-4"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-medium">Version 1.2.0</h3>
+                                <p class="text-sm text-muted-foreground">Released on January 15, 2024</p>
+                                <ul class="text-sm mt-2 list-disc pl-5">
+                                    <li>Improved response coherence</li>
+                                    <li>Added support for additional languages</li>
+                                    <li>Reduced inference time by 15%</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="bg-primary/10 text-primary rounded-full p-2 mr-4">
+                                <i data-lucide="git-branch" class="w-4 h-4"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-medium">Version 1.1.0</h3>
+                                <p class="text-sm text-muted-foreground">Released on December 5, 2023</p>
+                                <ul class="text-sm mt-2 list-disc pl-5">
+                                    <li>Fixed memory leak issues</li>
+                                    <li>Added API endpoint for batch processing</li>
+                                    <li>Enhanced security protocols</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="bg-primary/10 text-primary rounded-full p-2 mr-4">
+                                <i data-lucide="git-branch" class="w-4 h-4"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-medium">Version 1.0.0</h3>
+                                <p class="text-sm text-muted-foreground">Released on November 1, 2023</p>
+                                <ul class="text-sm mt-2 list-disc pl-5">
+                                    <li>Initial release</li>
+                                    <li>Basic text generation capabilities</li>
+                                    <li>English language support only</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Try Agent Panel -->
+            <div id="try-agent" class="tab-content hidden">
+                <!-- Parallel Execution Pane -->
+                <div class="card p-6 mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold text-foreground">Try Agent</h2>
+                        <div class="flex space-x-2">
+                            <button class="px-3 py-1 text-xs rounded-md bg-muted text-muted-foreground hover:bg-accent">
+                                <i data-lucide="settings" class="w-3 h-3 mr-1"></i> Settings
+                            </button>
+                            <button class="px-3 py-1 text-xs rounded-md bg-muted text-muted-foreground hover:bg-accent">
+                                <i data-lucide="link" class="w-3 h-3 mr-1"></i> Chain Agents
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <!-- Input Type Selector -->
+                        <div class="flex space-x-2 overflow-x-auto pb-2">
+                            <button class="px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground">Text</button>
+                            <button class="px-3 py-1.5 text-xs rounded-md bg-muted text-muted-foreground hover:bg-accent">Code</button>
+                            <button class="px-3 py-1.5 text-xs rounded-md bg-muted text-muted-foreground hover:bg-accent">Image</button>
+                            <button class="px-3 py-1.5 text-xs rounded-md bg-muted text-muted-foreground hover:bg-accent">File</button>
+                            <button class="px-3 py-1.5 text-xs rounded-md bg-muted text-muted-foreground hover:bg-accent">JSON</button>
+                        </div>
+                        
+                        <!-- Input Field -->
+                        <div>
+                            <label for="agent-input" class="block text-sm font-medium text-foreground mb-2">Input</label>
+                            <textarea id="agent-input" rows="6" class="w-full p-3 border border-border rounded-md focus:ring-primary focus:border-primary font-mono text-sm" placeholder="Type your input here..."></textarea>
+                        </div>
+                        
+                        <!-- Parameters -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-sm font-medium text-foreground mb-1">Temperature</label>
+                                <input type="range" min="0" max="1" step="0.1" value="0.7" class="w-full">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-foreground mb-1">Max Tokens</label>
+                                <input type="number" value="1000" class="w-full p-2 border border-border rounded-md">
+                            </div>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="flex items-center justify-between pt-2">
+                            <div class="flex items-center space-x-3">
+                                <button id="send-button" class="btn-primary">
+                                    <i data-lucide="send" class="w-4 h-4 mr-2"></i>
+                                    Run Agent
+                                </button>
+                                <button class="btn-secondary">
+                                    <i data-lucide="code" class="w-4 h-4 mr-2"></i>
+                                    View Code
+                                </button>
+                            </div>
+                            <a href="#" class="text-sm text-primary hover:underline">Open in Playground</a>
+                        </div>
+                        
+                        <!-- Output Tabs -->
+                        <div class="pt-4">
+                            <div class="flex border-b border-border">
+                                <button class="px-4 py-2 text-sm font-medium border-b-2 border-primary text-primary">Formatted</button>
+                                <button class="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">Raw</button>
+                                <button class="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground">Logs</button>
+                            </div>
+                            
+                            <!-- Output Preview -->
+                            <div class="mt-2 p-4 bg-muted rounded-md min-h-[200px]">
+                                <div class="text-center text-muted-foreground py-8">
+                                    <i data-lucide="play" class="w-8 h-8 mx-auto mb-2"></i>
+                                    <p>Run the agent to see results</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Agent Mode Information -->
+                <div class="card p-6 mb-6">
+                    <h2 class="text-xl font-semibold text-foreground mb-4">Agent Mode</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="font-medium text-foreground mb-2">Reasoning Mode</h3>
+                            <div class="space-y-2">
+                                <div class="flex items-center">
+                                    <i data-lucide="brain" class="w-4 h-4 text-primary mr-2"></i>
+                                    <span class="text-sm text-muted-foreground">
+                                        {% if agent.thinking_mode %}
+                                            Thinking Mode Enabled
+                                        {% else %}
+                                            Direct Response Mode
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h3 class="font-medium text-foreground mb-2">Tool Usage</h3>
+                            <div class="space-y-2">
+                                <div class="flex items-center">
+                                    <i data-lucide="wrench" class="w-4 h-4 text-primary mr-2"></i>
+                                    <span class="text-sm text-muted-foreground">
+                                        {% if agent.tool_usage %}
+                                            {{ agent.tool_usage }} tools integrated
+                                        {% else %}
+                                            No external tools
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- API Documentation -->
+                <div class="card p-6">
+                    <h2 class="text-xl font-semibold text-foreground mb-4">API Integration</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <h3 class="font-medium text-foreground mb-2">Endpoint</h3>
+                            <div class="bg-muted p-3 rounded-md font-mono text-sm overflow-x-auto">
+                                POST /api/v1/agents/{{ agent.id }}/run
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h3 class="font-medium text-foreground mb-2">Example Request</h3>
+                            <div class="bg-muted p-3 rounded-md font-mono text-sm overflow-x-auto">
+                                <pre>{
+  "input": "Your input text here",
+  "parameters": {
+    "temperature": 0.7,
+    "max_tokens": 1000
+  }
+}</pre>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h3 class="font-medium text-foreground mb-2">Example Response</h3>
+                            <div class="bg-muted p-3 rounded-md font-mono text-sm overflow-x-auto">
+                                <pre>{
+  "output": "Generated response from the agent",
+  "metrics": {
+    "processing_time": 0.45,
+    "tokens_used": 256
+  },
+  "status": "success"
+}</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Community Panel -->
+            <div id="community" class="tab-content hidden">
+                <!-- Community Header -->
+                <div class="card p-6 mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold text-foreground">Community</h2>
+                        <button class="btn-primary text-sm">
+                            <i data-lucide="plus" class="w-4 h-4 mr-1"></i> New Post
+                        </button>
+                    </div>
+                    
+                    <!-- Community Stats -->
+                    <div class="grid grid-cols-3 gap-4 mb-4">
+                        <div class="text-center p-3 bg-muted rounded-lg">
+                            <div class="text-2xl font-bold text-primary">{{ agent.discussions or 24 }}</div>
+                            <div class="text-xs text-muted-foreground">Discussions</div>
+                        </div>
+                        <div class="text-center p-3 bg-muted rounded-lg">
+                            <div class="text-2xl font-bold text-sage">{{ agent.followers or 128 }}</div>
+                            <div class="text-xs text-muted-foreground">Followers</div>
+                        </div>
+                        <div class="text-center p-3 bg-muted rounded-lg">
+                            <div class="text-2xl font-bold text-dusty-blue">{{ agent.contributors or 5 }}</div>
+                            <div class="text-xs text-muted-foreground">Contributors</div>
+                        </div>
+                    </div>
+                    
+                    <!-- New Post Form -->
+                    <div class="mb-6">
+                        <textarea placeholder="Share your experience with this agent..." class="w-full p-3 border border-border rounded-md text-sm mb-2" rows="2"></textarea>
+                        <div class="flex justify-between items-center">
+                            <div class="flex space-x-2">
+                                <button class="p-1.5 rounded-md bg-muted hover:bg-accent">
+                                    <i data-lucide="image" class="w-4 h-4"></i>
+                                </button>
+                                <button class="p-1.5 rounded-md bg-muted hover:bg-accent">
+                                    <i data-lucide="code" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            <button class="btn-primary text-sm">Post</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Community Posts -->
+                <div class="space-y-4">
+                    <!-- Sample Post 1 -->
+                    <div class="card p-4">
+                        <div class="flex items-start mb-3">
+                            <div class="w-8 h-8 bg-muted rounded-full flex items-center justify-center mr-3">
+                                <i data-lucide="user" class="w-4 h-4 text-muted-foreground"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-foreground">Sarah Johnson</h3>
+                                <p class="text-xs text-muted-foreground">2 hours ago</p>
+                            </div>
+                        </div>
+                        <p class="text-sm text-foreground mb-3">This agent helped me automate my data analysis workflow. Reduced my processing time by 70%! 🚀</p>
+                        <div class="flex items-center justify-between">
+                            <div class="flex space-x-3">
+                                <button class="flex items-center text-xs text-muted-foreground hover:text-foreground">
+                                    <i data-lucide="thumbs-up" class="w-3 h-3 mr-1"></i> 12
+                                </button>
+                                <button class="flex items-center text-xs text-muted-foreground hover:text-foreground">
+                                    <i data-lucide="message-square" class="w-3 h-3 mr-1"></i> 3
+                                </button>
+                            </div>
+                            <button class="text-xs text-muted-foreground hover:text-foreground">
+                                <i data-lucide="share" class="w-3 h-3"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Sample Post 2 -->
+                    <div class="card p-4">
+                        <div class="flex items-start mb-3">
+                            <div class="w-8 h-8 bg-muted rounded-full flex items-center justify-center mr-3">
+                                <i data-lucide="user" class="w-4 h-4 text-muted-foreground"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-foreground">Alex Chen</h3>
+                                <p class="text-xs text-muted-foreground">1 day ago</p>
+                            </div>
+                        </div>
+                        <p class="text-sm text-foreground mb-3">Has anyone tried chaining this with the DataVisualizer agent? Looking for best practices on combining these two.</p>
+                        <div class="flex items-center justify-between">
+                            <div class="flex space-x-3">
+                                <button class="flex items-center text-xs text-muted-foreground hover:text-foreground">
+                                    <i data-lucide="thumbs-up" class="w-3 h-3 mr-1"></i> 8
+                                </button>
+                                <button class="flex items-center text-xs text-muted-foreground hover:text-foreground">
+                                    <i data-lucide="message-square" class="w-3 h-3 mr-1"></i> 5
+                                </button>
+                            </div>
+                            <button class="text-xs text-muted-foreground hover:text-foreground">
+                                <i data-lucide="share" class="w-3 h-3"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Sample Post 3 -->
+                    <div class="card p-4">
+                        <div class="flex items-start mb-3">
+                            <div class="w-8 h-8 bg-muted rounded-full flex items-center justify-center mr-3">
+                                <i data-lucide="user" class="w-4 h-4 text-muted-foreground"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-foreground">Maria Rodriguez</h3>
+                                <p class="text-xs text-muted-foreground">3 days ago</p>
+                            </div>
+                        </div>
+                        <p class="text-sm text-foreground mb-3">Created a custom plugin for this agent that extends its capabilities to handle PDF analysis. Check out the repo if interested!</p>
+                        <div class="bg-muted p-3 rounded-md mb-3 text-xs font-mono">
+                            https://github.com/maria/pdf-analyzer-plugin
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex space-x-3">
+                                <button class="flex items-center text-xs text-muted-foreground hover:text-foreground">
+                                    <i data-lucide="thumbs-up" class="w-3 h-3 mr-1"></i> 21
+                                </button>
+                                <button class="flex items-center text-xs text-muted-foreground hover:text-foreground">
+                                    <i data-lucide="message-square" class="w-3 h-3 mr-1"></i> 7
+                                </button>
+                            </div>
+                            <button class="text-xs text-muted-foreground hover:text-foreground">
+                                <i data-lucide="share" class="w-3 h-3"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- View More Button -->
+                <div class="mt-4 text-center">
+                    <button class="btn-secondary w-full">
+                        <i data-lucide="refresh-cw" class="w-4 h-4 mr-2"></i>
+                        Load More
+                    </button>
+                </div>
+            </div>
+
+            <!-- Resources Panel -->
+            <div id="resources" class="tab-content hidden">
+                <!-- Documentation -->
+                <div class="card p-6 mb-6">
+                    <h2 class="text-xl font-semibold text-foreground mb-4">Documentation</h2>
+                    <div class="space-y-4">
+                        <div class="p-4 bg-muted rounded-lg">
+                            <h3 class="font-medium text-foreground mb-2">Getting Started Guide</h3>
+                            <p class="text-sm text-muted-foreground mb-3">Learn how to integrate this agent into your application with our comprehensive guide.</p>
+                            <a href="#" class="inline-flex items-center text-primary hover:underline text-sm">
+                                <i data-lucide="file-text" class="w-4 h-4 mr-2"></i>
+                                View Documentation
+                            </a>
+                        </div>
+                        
+                        <div class="p-4 bg-muted rounded-lg">
+                            <h3 class="font-medium text-foreground mb-2">API Reference</h3>
+                            <p class="text-sm text-muted-foreground mb-3">Complete technical documentation for all available endpoints and parameters.</p>
+                            <a href="#" class="inline-flex items-center text-primary hover:underline text-sm">
+                                <i data-lucide="code" class="w-4 h-4 mr-2"></i>
+                                API Reference
+                            </a>
+                        </div>
+                        
+                        <div class="p-4 bg-muted rounded-lg">
+                            <h3 class="font-medium text-foreground mb-2">Tutorials</h3>
+                            <p class="text-sm text-muted-foreground mb-3">Step-by-step tutorials for common use cases and integration scenarios.</p>
+                            <a href="#" class="inline-flex items-center text-primary hover:underline text-sm">
+                                <i data-lucide="video" class="w-4 h-4 mr-2"></i>
+                                Watch Tutorials
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Related Resources -->
+                <div class="card p-6 mb-6">
+                    <h2 class="text-xl font-semibold text-foreground mb-4">Related Resources</h2>
+                    <div class="space-y-3">
+                        <a href="#" class="flex items-center justify-between p-3 rounded-md hover:bg-muted transition-colors">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-primary/10 rounded flex items-center justify-center mr-3">
+                                    <i data-lucide="github" class="w-4 h-4 text-primary"></i>
+                                </div>
+                                <span class="font-medium">Example Implementations</span>
+                            </div>
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-muted-foreground"></i>
+                        </a>
+                        
+                        <a href="#" class="flex items-center justify-between p-3 rounded-md hover:bg-muted transition-colors">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-primary/10 rounded flex items-center justify-center mr-3">
+                                    <i data-lucide="book-open" class="w-4 h-4 text-primary"></i>
+                                </div>
+                                <span class="font-medium">Best Practices Guide</span>
+                            </div>
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-muted-foreground"></i>
+                        </a>
+                        
+                        <a href="#" class="flex items-center justify-between p-3 rounded-md hover:bg-muted transition-colors">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-primary/10 rounded flex items-center justify-center mr-3">
+                                    <i data-lucide="settings" class="w-4 h-4 text-primary"></i>
+                                </div>
+                                <span class="font-medium">Configuration Options</span>
+                            </div>
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-muted-foreground"></i>
+                        </a>
+                        
+                        <a href="#" class="flex items-center justify-between p-3 rounded-md hover:bg-muted transition-colors">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-primary/10 rounded flex items-center justify-center mr-3">
+                                    <i data-lucide="bar-chart" class="w-4 h-4 text-primary"></i>
+                                </div>
+                                <span class="font-medium">Performance Benchmarks</span>
+                            </div>
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-muted-foreground"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- FAQs -->
+                <div class="card p-6">
+                    <h2 class="text-xl font-semibold text-foreground mb-4">Frequently Asked Questions</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <h3 class="font-medium text-foreground mb-2">How do I deploy this agent in production?</h3>
+                            <p class="text-sm text-muted-foreground">We recommend using our Docker container for production deployments. The container includes all dependencies and can be easily scaled with Kubernetes or similar orchestration tools.</p>
+                        </div>
+                        
+                        <div>
+                            <h3 class="font-medium text-foreground mb-2">What are the rate limits for the API?</h3>
+                            <p class="text-sm text-muted-foreground">Free tier users have a limit of 100 requests per hour. Paid plans start at 1,000 requests per hour with options for higher limits based on your needs.</p>
+                        </div>
+                        
+                        <div>
+                            <h3 class="font-medium text-foreground mb-2">Can I fine-tune this agent with my own data?</h3>
+                            <p class="text-sm text-muted-foreground">Yes, we provide fine-tuning capabilities for enterprise customers. Contact our sales team to discuss your specific requirements and pricing.</p>
+                        </div>
+                        
+                        <div>
+                            <h3 class="font-medium text-foreground mb-2">How do I handle errors and retries?</h3>
+                            <p class="text-sm text-muted-foreground">Our API returns standard HTTP status codes. We recommend implementing exponential backoff for retries to handle temporary failures gracefully.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Mobile Tabs for Responsive Design -->
+<div class="fixed bottom-0 left-0 right-0 bg-background border-t border-border xl:hidden z-10">
+    <div class="grid grid-cols-4 h-14">
+        <button class="mobile-tab flex flex-col items-center justify-center text-xs font-medium text-primary" data-tab="agent-info">
+            <i data-lucide="info" class="w-5 h-5 mb-1"></i>
+            <span>Info</span>
+        </button>
+        <button class="mobile-tab flex flex-col items-center justify-center text-xs font-medium text-muted-foreground" data-tab="try-agent">
+            <i data-lucide="play" class="w-5 h-5 mb-1"></i>
+            <span>Try It</span>
+        </button>
+        <button class="mobile-tab flex flex-col items-center justify-center text-xs font-medium text-muted-foreground" data-tab="community">
+            <i data-lucide="message-square" class="w-5 h-5 mb-1"></i>
+            <span>Community</span>
+        </button>
+        <button class="mobile-tab flex flex-col items-center justify-center text-xs font-medium text-muted-foreground" data-tab="resources">
+            <i data-lucide="book-open" class="w-5 h-5 mb-1"></i>
+            <span>Resources</span>
+        </button>
+    </div>
+</div>
+
+<style>
+    /* Tab Navigation Styles */
+    .tab-button {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1.5rem;
+        background: transparent;
+        border: none;
+        color: hsl(var(--muted-foreground));
+        font-weight: 500;
+        border-bottom: 2px solid transparent;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+    
+    .tab-button:hover {
+        color: hsl(var(--foreground));
+        background-color: hsl(var(--muted));
+    }
+    
+    .tab-button.active {
+        color: hsl(var(--primary));
+        border-bottom-color: hsl(var(--primary));
+    }
+    
+    /* Tab Content Styles */
+    .tab-content {
+        display: none;
+        animation: fadeIn 0.3s ease;
+    }
+    
+    .tab-content.active {
+        display: block;
+    }
+    
+    /* Mobile Tab Styles */
+    .mobile-tab.active {
+        color: hsl(var(--primary));
+    }
+    
+    /* Animation */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+<script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+    
+    // Tab switching functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get all tab buttons and content panels
+        const tabButtons = document.querySelectorAll('.tab-button, .mobile-tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        // Function to switch tabs
+        function switchTab(tabName) {
+            // Update tab buttons
+            tabButtons.forEach(button => {
+                if (button.dataset.tab === tabName) {
+                    button.classList.add('active');
+                    button.classList.remove('text-muted-foreground');
+                    if (button.classList.contains('mobile-tab')) {
+                        button.classList.add('text-primary');
+                    }
+                } else {
+                    button.classList.remove('active');
+                    if (!button.classList.contains('mobile-tab')) {
+                        button.classList.add('text-muted-foreground');
+                    } else {
+                        button.classList.remove('text-primary');
+                    }
+                }
+            });
+            
+            // Update content panels
+            tabContents.forEach(content => {
+                if (content.id === tabName) {
+                    content.classList.add('active');
+                    content.classList.remove('hidden');
+                } else {
+                    content.classList.remove('active');
+                    content.classList.add('hidden');
+                }
+            });
+            
+            // Update URL hash
+            window.location.hash = tabName;
+            
+            // Store active tab in localStorage
+            localStorage.setItem('activeTab', tabName);
+        }
+        
+        // Add click event listeners to tab buttons
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                switchTab(button.dataset.tab);
+            });
+        });
+        
+        // Check for hash in URL or localStorage for saved tab
+        const urlHash = window.location.hash.substring(1);
+        const savedTab = localStorage.getItem('activeTab');
+        
+        if (urlHash && ['agent-info', 'try-agent', 'community', 'resources'].includes(urlHash)) {
+            switchTab(urlHash);
+        } else if (savedTab) {
+            switchTab(savedTab);
+        } else {
+            // Default to first tab
+            switchTab('agent-info');
+        }
+        
+        // Simple output simulation
+        document.getElementById('send-button').addEventListener('click', function() {
+            const input = document.getElementById('agent-input').value;
+            if (input.trim() !== '') {
+                const outputArea = document.querySelector('.bg-muted.min-h-\\[200px\\]');
+                outputArea.innerHTML = `
+                    <div class="p-3">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-medium">Agent Response</span>
+                            <span class="text-xs text-muted-foreground">${new Date().toLocaleTimeString()}</span>
+                        </div>
+                        <div class="text-sm">Processing your request: "${input}"</div>
+                        <div class="mt-3 p-2 bg-background rounded text-xs font-mono">
+                            // Sample response output\n// The agent has processed your input\n// Results would appear here
+                        </div>
+                    </div>
+                `;
+            }
+        });
+    });
+</script>
 {% endblock %}

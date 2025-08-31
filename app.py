@@ -86,7 +86,9 @@ def explore():
 def agent_detail(agent_id):
     """Agent detail page."""
     try:
-        agent = agent_service.get_agent_by_id(agent_id)
+        # agent = agent_service.get_agent_by_id(agent_id)
+        agent = asyncio.run(agent_service.get_agent_by_id(agent_id))
+        print("Fetched agent:", agent)
         if not agent:
             flash('Agent not found', 'error')
             return redirect(url_for('explore'))
