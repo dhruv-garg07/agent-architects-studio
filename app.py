@@ -340,6 +340,22 @@ def api_agents():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+def run_agent(user_input: str):
+    # Your Python logic goes here
+    # DO ANYTHING 
+    # For example, call your AI agent service
+    
+    return f"Agent processed: {user_input}"
+
+@app.route("/run-agent", methods=["POST"])
+def run_agent_route():
+    data = request.get_json()
+    print(data)
+    user_input = data.get("input")
+    # agent_data = data.get("agent")
+    result = run_agent(user_input)
+    return jsonify({"response": result})
+
 @app.route('/api/creators')
 def api_creators():
     """API endpoint for fetching creators."""
