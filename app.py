@@ -14,10 +14,16 @@ import json
 from backend_examples.python.services.agents import agent_service
 from backend_examples.python.services.creators import creator_service
 from backend_examples.python.models import SearchFilters
+from dotenv import load_dotenv
 import asyncio
+
+load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+supabase_anon_key = os.environ.get("SUPABASE_ANON_KEY")
+supabase: Client = create_client(SUPABASE_URL, supabase_anon_key)
 
 # Flask-Login setup
 login_manager = LoginManager()
