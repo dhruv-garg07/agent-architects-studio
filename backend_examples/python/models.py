@@ -38,6 +38,8 @@ class Agent(BaseModel):
     io_schema: Optional[Dict[str, Any]] = None
     created_at: datetime
     updated_at: datetime
+    base_url: Optional[str] = None  # Added field for base URL
+    # data_structure: dict = {}  # Added field for data structure
 
 
 class AgentWithCreator(Agent):

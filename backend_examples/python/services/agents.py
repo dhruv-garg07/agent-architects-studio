@@ -110,11 +110,14 @@ class AgentService:
         try:
             # Fetch agent
             agent_response = self.supabase.table('agent_profiles').select('*').eq('id', agent_id).execute()
-            
+            # print(f"agent_response: {agent_response}")
+            # Includes base_url as a field in agent_response.
             if not agent_response.data:
                 return None
             
             agent_data = agent_response.data[0]
+            # print(f"agent_data: {agent_data}")
+            # URL is present in agent_data if it exists.
             
             # Fetch creator
             creator_response = self.supabase.table('user_profiles').select(

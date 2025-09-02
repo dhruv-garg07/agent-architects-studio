@@ -2,10 +2,11 @@
 """Flask AI Agent Marketplace Application."""
 
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime
+
 from supabase import create_client, Client
 import json
 
@@ -339,21 +340,69 @@ def api_agents():
         return jsonify([agent.dict() for agent in agents])
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+import re
+import ast
 
-def run_agent(user_input: str):
-    # Your Python logic goes here
-    # DO ANYTHING 
-    # For example, call your AI agent service
+def parse_to_dict(raw: str):
+    # Regex to capture key=value pairs (value can be quoted or unquoted)
+    pattern = re.compile(r"(\w+)=((?:'[^']*')|(?:\[[^\]]*\])|(?:\{[^}]*\})|(?:\S+))")
+    result = {}
+
+    for match in pattern.finditer(raw):
+        key, value = match.groups()
+
+        # Try to safely evaluate Python literals (lists, dicts, numbers, booleans, None, strings)
+        try:
+            result[key] = ast.literal_eval(value)
+        except Exception:
+            # If not a pure literal (like datetime(...), Creator(...)), keep as string
+            result[key] = value
+
+    return result
+import requests
+import html
+from pydantic.json import pydantic_encoder
+def run_agent(user_input, agent_data):
+    """
+    Runs an agent by sending a POST request to the agent's base_url with the input payload.
+    agent_data is expected to be a dict with at least 'base_url'.
+    """
     
-    return f"Agent processed: {user_input}"
+    print("==== USER INPUT ==== for now:",user_input)
+    # agent_data = agent_data.dict()
+    print("==== AGENT DATA ==== for now:",agent_data)
+    agent_data = parse_to_dict(html.unescape(agent_data))
+    print("==== AGENT DATA ==== for now:",agent_data)
+    if not agent_data or not isinstance(agent_data, dict):
+        return "Invalid agent data. Must be a dict."
+
+    url = agent_data.get("base_url")
+    if not url:
+        return "Agent base_url not found."
+
+    # Build the command/payload
+    command = {}
+    if isinstance(user_input, dict):
+        command.update(user_input)
+    else:
+        command["user_input"] = user_input
+
+    try:
+        response = requests.post(url, json=user_input['body'])
+        response.raise_for_status()  # raise if not 2xx
+        return f"Agent processed: {response.text}"
+    except requests.RequestException as e:
+        return f"Agent request failed: {str(e)}"
+    except Exception as e:
+        return f"Agent processing failed: {str(e)}"
+
 
 @app.route("/run-agent", methods=["POST"])
 def run_agent_route():
-    data = request.get_json()
-    print(data)
+    data = request.get_json(force=True) or {}
     user_input = data.get("input")
-    # agent_data = data.get("agent")
-    result = run_agent(user_input)
+    agent_data = data.get("agent")
+    result = run_agent(user_input, agent_data)
     return jsonify({"response": result})
 
 @app.route('/api/creators')
