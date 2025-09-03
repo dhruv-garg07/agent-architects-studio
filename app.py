@@ -107,21 +107,23 @@ def agent_detail(agent_id):
 
 @app.route('/creators')
 def creators():
-    """Creators page with leaderboard."""
     search = request.args.get('search', '')
     sort_by = request.args.get('sort_by', 'reputation')
-    
     try:
-        all_creators = creator_service.fetch_creators()
-        filtered_creators = creator_service.filter_and_sort_creators(all_creators, search, sort_by)
+        # If fetch_creators is async, run it and get the list
+        all_creators = asyncio.run(creator_service.fetch_creators())
+        # If filter_and_sort_creators is async, run it too
+        if asyncio.iscoroutinefunction(creator_service.filter_and_sort_creators):
+            filtered_creators = asyncio.run(creator_service.filter_and_sort_creators(all_creators, search, sort_by))
+        else:
+            filtered_creators = creator_service.filter_and_sort_creators(all_creators, search, sort_by)
     except Exception as e:
         flash(f'Error fetching creators: {str(e)}', 'error')
         filtered_creators = []
-    
     return render_template('creators.html', 
-                         creators=filtered_creators,
-                         search=search,
-                         sort_by=sort_by)
+                        creators=filtered_creators,
+                        search=search,
+                        sort_by=sort_by)
 
 @app.route('/submit')
 @login_required
