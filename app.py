@@ -271,6 +271,10 @@ def register():
             "options": {"email_redirect_to": url_for('auth', _external=True)}
         })
 
+        if auth.user and not auth.user.identities:
+            flash("That email is already registered. Try logging in.", "error")
+            return redirect(url_for("auth"))
+
         if auth.user and not auth.session:
             # Email confirmation required; user must verify before they can sign in
             flash('Account created! Please check your email to confirm your address.', 'success')

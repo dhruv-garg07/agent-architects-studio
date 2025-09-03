@@ -1,68 +1,80 @@
 <!DOCTYPE html>
 <html lang="en" class="h-full">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}AI Agent Marketplace{% endblock %}</title>
-    
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
+
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    
+
     <style>
         :root {
             /* Enhanced Color System - Scientific precision with AI tones */
-            --background: 220 15% 8%; /* Dark slate for high contrast */
-            --foreground: 0 0% 98%; /* Near-white for readability */
-            
+            --background: 220 15% 8%;
+            /* Dark slate for high contrast */
+            --foreground: 0 0% 98%;
+            /* Near-white for readability */
+
             /* Card System - Technical instrument panel aesthetic */
             --card: 220 12% 12%;
             --card-foreground: 0 0% 98%;
             --card-border: 220 15% 18%;
-            
+
             /* Primary Colors - Manhattan Project technical aesthetic */
-            --primary: 194 80% 48%; /* Scientific blue - precision instruments */
+            --primary: 194 80% 48%;
+            /* Scientific blue - precision instruments */
             --primary-foreground: 220 15% 8%;
             --primary-hover: 194 80% 55%;
-            
+
             /* Data Visualization Colors - AI agent indicators */
-            --ai-1: 326 100% 74%; /* AI agent primary - vibrant magenta */
+            --ai-1: 326 100% 74%;
+            /* AI agent primary - vibrant magenta */
             --ai-1-foreground: 220 15% 8%;
-            --ai-2: 37 100% 69%; /* AI agent secondary - golden yellow */
+            --ai-2: 37 100% 69%;
+            /* AI agent secondary - golden yellow */
             --ai-2-foreground: 220 15% 8%;
-            --ai-3: 266 85% 72%; /* AI agent tertiary - purple */
+            --ai-3: 266 85% 72%;
+            /* AI agent tertiary - purple */
             --ai-3-foreground: 0 0% 98%;
-            
+
             /* Status Indicators - Scientific measurement colors */
-            --success: 144 70% 58%; /* Confirmed data */
-            --warning: 35 100% 64%; /* Experimental/uncertain */
-            --error: 0 84% 60%; /* Critical alert */
-            
+            --success: 144 70% 58%;
+            /* Confirmed data */
+            --warning: 35 100% 64%;
+            /* Experimental/uncertain */
+            --error: 0 84% 60%;
+            /* Critical alert */
+
             /* UI Elements - Technical minimalism */
             --secondary: 220 12% 16%;
             --secondary-foreground: 0 0% 98%;
-            
+
             --muted: 220 12% 14%;
             --muted-foreground: 220 5% 54%;
-            
+
             --accent: 194 80% 48%;
             --accent-foreground: 220 15% 8%;
-            
+
             --destructive: 0 84% 60%;
             --destructive-foreground: 0 0% 98%;
 
             /* Scientific precision borders and inputs */
             --border: 220 15% 22%;
             --input: 220 15% 14%;
-            --ring: 194 80% 48%; /* Focus ring matches primary */
+            --ring: 194 80% 48%;
+            /* Focus ring matches primary */
 
-            --radius: 0.5rem; /* Slightly sharper for technical feel */
-            
+            --radius: 0.5rem;
+            /* Slightly sharper for technical feel */
+
             /* New scientific measurement variables */
             --grid-size: 8px;
             --precision-border: 1px;
@@ -97,15 +109,14 @@
             /* Remove all grid/background images */
             background-image: none;
             /* Add a subtle gradient for depth */
-            background: linear-gradient(
-                135deg,
-                hsl(220 12% 16%) 0%,
-                hsl(220 14% 12%) 100%
-            );
+            background: linear-gradient(135deg,
+                    hsl(220 12% 16%) 0%,
+                    hsl(220 14% 12%) 100%);
             background-attachment: fixed;
             line-height: 1.6;
             font-weight: 350;
         }
+
         /* Enhanced card with technical instrument aesthetic */
         .card {
             background-color: hsl(var(--card));
@@ -124,21 +135,26 @@
             left: 0;
             right: 0;
             height: var(--data-line);
-            background: linear-gradient(
-                90deg, 
-                transparent, 
-                hsl(var(--ai-1)), 
-                hsl(var(--ai-2)), 
-                hsl(var(--ai-3)), 
-                transparent
-            );
+            background: linear-gradient(90deg,
+                    transparent,
+                    hsl(var(--ai-1)),
+                    hsl(var(--ai-2)),
+                    hsl(var(--ai-3)),
+                    transparent);
             opacity: 0.7;
             animation: data-pulse 3s infinite;
         }
 
         @keyframes data-pulse {
-            0%, 100% { opacity: 0.3; }
-            50% { opacity: 0.8; }
+
+            0%,
+            100% {
+                opacity: 0.3;
+            }
+
+            50% {
+                opacity: 0.8;
+            }
         }
 
         /* Buttons with technical precision aesthetic */
@@ -184,6 +200,7 @@
                 transform: scale(0, 0);
                 opacity: 0.5;
             }
+
             100% {
                 transform: scale(20, 20);
                 opacity: 0;
@@ -264,7 +281,7 @@
 
         /* Enhanced card elevation with technical precision */
         .card-elevated {
-            box-shadow: 
+            box-shadow:
                 0 2px 4px hsl(220 15% 8% / 0.1),
                 0 4px 12px hsl(220 15% 8% / 0.1);
             transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -272,7 +289,7 @@
 
         .card-elevated:hover {
             transform: translateY(-4px);
-            box-shadow: 
+            box-shadow:
                 0 6px 16px hsl(220 15% 8% / 0.12),
                 0 12px 24px hsl(220 15% 8% / 0.1);
         }
@@ -280,12 +297,10 @@
         /* Manhattan Project data visualization elements */
         .data-line {
             height: var(--data-line);
-            background: linear-gradient(
-                90deg, 
-                transparent, 
-                hsl(var(--primary)), 
-                transparent
-            );
+            background: linear-gradient(90deg,
+                    transparent,
+                    hsl(var(--primary)),
+                    transparent);
             margin: 1rem 0;
             opacity: 0.7;
         }
@@ -321,14 +336,12 @@
             transform: translateX(-50%);
             width: 60%;
             height: 2px;
-            background: linear-gradient(
-                90deg, 
-                transparent, 
-                hsl(var(--ai-1)), 
-                hsl(var(--ai-2)), 
-                hsl(var(--ai-3)), 
-                transparent
-            );
+            background: linear-gradient(90deg,
+                    transparent,
+                    hsl(var(--ai-1)),
+                    hsl(var(--ai-2)),
+                    hsl(var(--ai-3)),
+                    transparent);
             opacity: 0.6;
         }
     </style>
@@ -372,6 +385,7 @@
         }
     </script>
 </head>
+
 <body class="min-h-full">
     <!-- Navigation -->
     <nav class="bg-card border-b border-border">
@@ -383,24 +397,28 @@
                         <i data-lucide="brain-circuit" class="h-8 w-8 text-primary"></i>
                         <span class="font-bold text-xl text-foreground">AI Agents</span>
                     </a>
-                    
+
                     <!-- Navigation Links -->
                     <div class="hidden md:ml-8 md:flex md:space-x-8">
-                        <a href="{{ url_for('explore') }}" class="text-muted-foreground hover:text-primary px-3 py-2 text-sm font-medium transition-colors">
+                        <a href="{{ url_for('explore') }}"
+                            class="text-muted-foreground hover:text-primary px-3 py-2 text-sm font-medium transition-colors">
                             Explore
                         </a>
-                        <a href="{{ url_for('creators') }}" class="text-muted-foreground hover:text-primary px-3 py-2 text-sm font-medium transition-colors">
+                        <a href="{{ url_for('creators') }}"
+                            class="text-muted-foreground hover:text-primary px-3 py-2 text-sm font-medium transition-colors">
                             Creators
                         </a>
-                        <a href="{{ url_for('trending') }}" class="text-muted-foreground hover:text-primary px-3 py-2 text-sm font-medium transition-colors">
+                        <a href="{{ url_for('trending') }}"
+                            class="text-muted-foreground hover:text-primary px-3 py-2 text-sm font-medium transition-colors">
                             Trending
                         </a>
-                        <a href="{{ url_for('categories') }}" class="text-muted-foreground hover:text-primary px-3 py-2 text-sm font-medium transition-colors">
+                        <a href="{{ url_for('categories') }}"
+                            class="text-muted-foreground hover:text-primary px-3 py-2 text-sm font-medium transition-colors">
                             Categories
                         </a>
                     </div>
                 </div>
-                
+
                 <!-- Right side -->
                 <div class="flex items-center space-x-4">
                     {% if current_user.is_authenticated %}
@@ -408,36 +426,66 @@
                         <i data-lucide="layout-dashboard" class="w-4 h-4 mr-2"></i>
                         Dashboard
                     </a>
-                <style>
-                    .btn-dashboard {
-                        background: linear-gradient(90deg, #6366f1 0%, #06b6d4 100%);
-                        color: #fff !important;
-                        padding: 0.5rem 1.2rem;
-                        border-radius: var(--radius);
-                        font-weight: 600;
-                        border: none;
-                        box-shadow: 0 2px 8px -2px rgba(99,102,241,0.15);
-                        transition: all 0.2s;
-                        display: flex;
-                        align-items: center;
-                    }
-                    .btn-dashboard:hover {
-                        background: linear-gradient(90deg, #4f46e5 0%, #0ea5e9 100%);
-                        color: #fff !important;
-                        transform: translateY(-2px) scale(1.03);
-                        box-shadow: 0 4px 16px -4px rgba(99,102,241,0.18);
-                    }
-                </style>
-                        <a href="{{ url_for('creator_studio') }}" class="btn-primary">
-                            Submit Agent
-                        </a>
-                        <a href="{{ url_for('logout') }}" class="btn-secondary">
-                            Logout
-                        </a>
+                    <style>
+                        .btn-dashboard {
+                            background: linear-gradient(90deg, #6366f1 0%, #06b6d4 100%);
+                            color: #fff !important;
+                            padding: 0.5rem 1.2rem;
+                            border-radius: var(--radius);
+                            font-weight: 600;
+                            border: none;
+                            box-shadow: 0 2px 8px -2px rgba(99, 102, 241, 0.15);
+                            transition: all 0.2s;
+                            display: flex;
+                            align-items: center;
+                        }
+
+                        .btn-dashboard:hover {
+                            background: linear-gradient(90deg, #4f46e5 0%, #0ea5e9 100%);
+                            color: #fff !important;
+                            transform: translateY(-2px) scale(1.03);
+                            box-shadow: 0 4px 16px -4px rgba(99, 102, 241, 0.18);
+                        }
+                    </style>
+                    <a href="{{ url_for('creator_studio') }}" class="btn-primary">
+                        Submit Agent
+                    </a>
+                    <!-- User Dropdown -->
+                    <div class="relative inline-block text-left">
+                        <button id="user-menu-button" type="button"
+                            class="w-10 h-10 rounded-full flex items-center justify-center bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow"
+                            aria-expanded="false" aria-haspopup="true"
+                            onclick="document.getElementById('user-dropdown').classList.toggle('hidden')">
+                            <i data-lucide="user" class="w-5 h-5"></i>
+                        </button>
+
+                        <div id="user-dropdown"
+                            class="hidden absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-card ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+                            <div class="py-1">
+                                <a href="/"
+                                    class="block px-4 py-2 text-sm text-secondary-foreground hover:bg-secondary hover:text-primary">Profile</a>
+                                <a href="/"
+                                    class="block px-4 py-2 text-sm text-secondary-foreground hover:bg-secondary hover:text-primary">Settings</a>
+                                <a href="{{ url_for('logout') }}"
+                                    class="block px-4 py-2 text-sm text-secondary-foreground hover:bg-secondary hover:text-primary">Logout</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <script>
+                        // Close dropdown when clicking outside
+                        document.addEventListener('click', function (event) {
+                            var dropdown = document.getElementById('user-dropdown');
+                            var button = document.getElementById('user-menu-button');
+                            if (dropdown && !dropdown.contains(event.target) && !button.contains(event.target)) {
+                                dropdown.classList.add('hidden');
+                            }
+                        });
+                    </script>
                     {% else %}
-                        <a href="{{ url_for('auth') }}" class="btn-primary">
-                            Sign In
-                        </a>
+                    <a href="{{ url_for('auth') }}" class="btn-primary">
+                        Sign In
+                    </a>
                     {% endif %}
                 </div>
             </div>
@@ -446,18 +494,18 @@
 
     <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} p-4 mb-4 rounded-lg border
+    {% if messages %}
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} p-4 mb-4 rounded-lg border
                         {% if category == 'success' %}bg-green-50 border-green-200 text-green-800
                         {% elif category == 'error' %}bg-red-50 border-red-200 text-red-800
                         {% else %}bg-blue-50 border-blue-200 text-blue-800{% endif %}">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
     {% endwith %}
 
     <!-- Main Content -->
@@ -472,17 +520,24 @@
                 <div>
                     <h3 class="font-semibold text-foreground mb-4">Platform</h3>
                     <div class="space-y-2">
-                        <a href="{{ url_for('explore') }}" class="block text-muted-foreground hover:text-primary transition-colors">Explore Agents</a>
-                        <a href="{{ url_for('creators') }}" class="block text-muted-foreground hover:text-primary transition-colors">Creator Directory</a>
-                        <a href="{{ url_for('creator_studio') }}" class="block text-muted-foreground hover:text-primary transition-colors">Submit Agent</a>
+                        <a href="{{ url_for('explore') }}"
+                            class="block text-muted-foreground hover:text-primary transition-colors">Explore Agents</a>
+                        <a href="{{ url_for('creators') }}"
+                            class="block text-muted-foreground hover:text-primary transition-colors">Creator
+                            Directory</a>
+                        <a href="{{ url_for('creator_studio') }}"
+                            class="block text-muted-foreground hover:text-primary transition-colors">Submit Agent</a>
                     </div>
                 </div>
                 <div>
                     <h3 class="font-semibold text-foreground mb-4">Resources</h3>
                     <div class="space-y-2">
-                        <a href="#" class="block text-muted-foreground hover:text-primary transition-colors">Documentation</a>
-                        <a href="#" class="block text-muted-foreground hover:text-primary transition-colors">API Reference</a>
-                        <a href="#" class="block text-muted-foreground hover:text-primary transition-colors">Community</a>
+                        <a href="#"
+                            class="block text-muted-foreground hover:text-primary transition-colors">Documentation</a>
+                        <a href="#" class="block text-muted-foreground hover:text-primary transition-colors">API
+                            Reference</a>
+                        <a href="#"
+                            class="block text-muted-foreground hover:text-primary transition-colors">Community</a>
                     </div>
                 </div>
                 <div>
@@ -513,5 +568,5 @@
         lucide.createIcons();
     </script>
 </body>
-</html>
 
+</html>
