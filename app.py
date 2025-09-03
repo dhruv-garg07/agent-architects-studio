@@ -203,7 +203,10 @@ def auth():
         return redirect(url_for('homepage'))
     return render_template('auth.html')
 
-
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    return render_template('dashboard.html')
 
 
 def _clean_email(v: str) -> str:
