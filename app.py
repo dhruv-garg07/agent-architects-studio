@@ -203,7 +203,7 @@ def auth():
         return redirect(url_for('homepage'))
     return render_template('auth.html')
 
-@app.route('/dashboard')
+@app.route('/dashboardk927498238409283490283409283409283094')
 @login_required
 def dashboard():
     return render_template('dashboard.html')
