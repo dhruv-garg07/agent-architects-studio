@@ -246,28 +246,55 @@ def login():
         flash('Login failed. Please check your credentials.', 'error')
         return redirect(url_for('auth'))
 
+
+# You might have a helper for this already, if not, it's good practice
+def _clean_email(email):
+    return (email or "").lower().strip()
+
 @app.route('/register', methods=['POST'])
 def register():
+    # --- 1. Get all form data ---
     email = _clean_email(request.form.get('email'))
     password = request.form.get('password') or ""
     confirm_password = request.form.get('confirm_password') or ""
+    full_name = request.form.get('full_name') or ""
+    username = request.form.get('username') or ""
+    user_role = request.form.get('user_role') or ""
+    
+    # Role-specific fields
+    portfolio_url = request.form.get('portfolio_url')
+    expertise = request.form.get('expertise')
+    primary_interest = request.form.get('primary_interest')
 
-    if not email or not password:
-        flash('Please fill in all fields.', 'error')
+    # --- 2. Perform validation ---
+    if not all([email, password, full_name, username, user_role]):
+        flash('Please fill in all required fields.', 'error')
         return redirect(url_for('auth'))
+    
     if password != confirm_password:
         flash('Passwords do not match.', 'error')
         return redirect(url_for('auth'))
+    
     if len(password) < 8:
-        flash('Password must be at least 8 characters.', 'error')
+        flash('Password must be at least 8 characters long.', 'error')
         return redirect(url_for('auth'))
 
+    # --- 3. Check for unique username before trying to create the user ---
     try:
-        # If your project requires email confirmation, this returns a user and sends a confirmation email
+        # Query your 'profiles' table to see if the username exists
+        existing_user = supabase.table('profiles').select('id').eq('username', username).execute()
+        if existing_user.data:
+            flash('That username is already taken. Please choose another.', 'error')
+            return redirect(url_for('auth'))
+    except Exception as e:
+        flash(f'An error occurred: {str(e)}', 'error')
+        return redirect(url_for('auth'))
+
+    # --- 4. Attempt to sign up the user with Supabase Auth ---
+    try:
         auth = supabase.auth.sign_up({
             "email": email,
             "password": password,
-            # After email confirmation, Supabase can redirect back here if you want:
             "options": {"email_redirect_to": url_for('auth', _external=True)}
         })
 
@@ -275,30 +302,52 @@ def register():
             flash("That email is already registered. Try logging in.", "error")
             return redirect(url_for("auth"))
 
-        if auth.user and not auth.session:
-            # Email confirmation required; user must verify before they can sign in
+        # --- 5. If user auth is created, insert data into the profiles table ---
+        if auth.user:
+            profile_data = {
+                'id': auth.user.id,  # Link to the auth.users table
+                'username': username,
+                'full_name': full_name,
+                'user_role': user_role,
+                'portfolio_url': portfolio_url if user_role == 'creator' else None,
+                'expertise': expertise if user_role == 'creator' else None,
+                'primary_interest': primary_interest if user_role == 'user' else None,
+            }
+            # Insert the new profile. Use a try-except block for safety.
+            try:
+                supabase.table('profiles').insert(profile_data).execute()
+            except Exception as e:
+                # This is a critical error. The auth user was created, but the profile failed.
+                # You should log this error for manual review.
+                # For the user, a generic error is okay for now.
+                print(f"CRITICAL: Failed to create profile for user {auth.user.id}. Error: {e}")
+                flash('Registration failed at the final step. Please contact support.', 'error')
+                return redirect(url_for('auth'))
+
+
+        # --- Handle session based on email confirmation settings ---
+        if not auth.session: # Email confirmation required
             flash('Account created! Please check your email to confirm your address.', 'success')
             return redirect(url_for('auth'))
-
-        # If email confirmation is disabled, you may get a session directly:
-        if auth.user and auth.session:
+        
+        if auth.session: # Email confirmation is disabled, user logged in directly
             session['sb_access_token'] = auth.session.access_token
             session['sb_refresh_token'] = auth.session.refresh_token
-            user = User(user_id=auth.user.id, email=email)
+            # Your User model might need to be updated to load profile data
+            user = User(user_id=auth.user.id, email=email) 
             login_user(user)
             flash('Account created successfully!', 'success')
             return redirect(url_for('homepage'))
 
-        flash('Registration failed. Try a different email.', 'error')
+        flash('An unknown error occurred during registration.', 'error')
         return redirect(url_for('auth'))
 
     except Exception as e:
-        # Common: "User already registered"
         msg = str(e)
-        if 'User already registered' in msg or 'already registered' in msg:
+        if 'User already registered' in msg:
             flash('That email is already registered. Try logging in.', 'error')
         else:
-            flash('Registration failed. Please try again.', 'error')
+            flash(f'Registration failed: {msg}', 'error')
         return redirect(url_for('auth'))
 
 @app.route('/logout', methods=['GET','POST'])
@@ -316,6 +365,130 @@ def logout():
     flash('Logged out.', 'success')
     return redirect(url_for('auth'))
 
+
+@app.route('/profile')
+@login_required
+def my_profile():
+    """
+    Displays the profile page for the currently logged-in user.
+    Redirects to their public username-based URL.
+    """
+    try:
+        # Fetch the logged-in user's profile to get their username
+        # REMOVED .single() to prevent the error on 0 rows found
+        print("Current user:", current_user.id)
+        user_profile_res = supabase.table('profiles').select('username').eq('id', current_user.id).execute()
+        print("User profile response:", user_profile_res.data)
+        # Check if the data list is not empty
+        if user_profile_res.data:
+            # Redirect to the public URL format for consistency
+            username = user_profile_res.data[0]['username']
+            return redirect(url_for('view_profile', username=username))
+        else:
+            # This case will now be handled gracefully
+            flash("Your profile has not been set up yet. Please contact support or re-register.", "error")
+            return redirect(url_for('homepage'))
+            
+    except Exception as e:
+        flash(f"An error occurred while fetching your profile: {e}", "error")
+        return redirect(url_for('homepage'))
+
+
+@app.route('/profile/<username>')
+def view_profile(username):
+    """
+    Displays a user's public profile page, identified by their username.
+    """
+    try:
+        # Fetch the profile data from Supabase using the username
+        # REMOVED .single() to prevent a similar potential error
+        profile_res = supabase.table('profiles').select('*').eq('username', username).execute()
+
+        # If the data list is empty, the user does not exist
+        if not profile_res.data:
+            abort(404) # Renders a "Not Found" page
+
+        # Since we are no longer using .single(), the result is a list. Get the first item.
+        profile_data = profile_res.data[0]
+        
+        # Determine if the person viewing the page is the owner of the profile
+        is_own_profile = False
+        if current_user.is_authenticated and current_user.id == profile_data['id']:
+            is_own_profile = True
+
+        return render_template('profile.html', profile=profile_data, is_own_profile=is_own_profile)
+
+    except Exception as e:
+        flash(f"An error occurred while fetching the profile: {e}", "error")
+        return redirect(url_for('homepage'))
+
+@app.route('/profile/edit', methods=['GET', 'POST'])
+@login_required
+def edit_profile():
+    """
+    Allow the current user to edit their profile information.
+    """
+    # First, get the user's current profile data to populate the form
+    try:
+        profile_res = supabase.table('profiles').select('*').eq('id', current_user.id).execute()
+        if not profile_res.data:
+            flash("Your profile could not be found. Cannot edit.", "error")
+            return redirect(url_for('homepage'))
+        
+        current_profile = profile_res.data[0]
+    except Exception as e:
+        flash(f"An error occurred while fetching your profile: {e}", "error")
+        return redirect(url_for('homepage'))
+
+    if request.method == 'POST':
+        # Handle the form submission
+        full_name = request.form.get('full_name') or ""
+        username = request.form.get('username') or ""
+        portfolio_url = request.form.get('portfolio_url')
+        expertise = request.form.get('expertise')
+        primary_interest = request.form.get('primary_interest')
+        
+        # --- Validation ---
+        if not full_name or not username:
+            flash("Full Name and Username are required.", "error")
+            return render_template('edit_profile.html', profile=current_profile)
+
+        # --- Unique Username Check (if it was changed) ---
+        if username != current_profile['username']:
+            try:
+                existing_user = supabase.table('profiles').select('id').eq('username', username).execute()
+                if existing_user.data:
+                    flash('That username is already taken. Please choose another.', 'error')
+                    submitted_data = current_profile.copy()
+                    submitted_data.update({
+                        'full_name': full_name, 'username': username,
+                        'portfolio_url': portfolio_url, 'expertise': expertise,
+                        'primary_interest': primary_interest
+                    })
+                    return render_template('edit_profile.html', profile=submitted_data)
+            except Exception as e:
+                flash(f'An error occurred while checking the username: {e}', 'error')
+                return render_template('edit_profile.html', profile=current_profile)
+        
+        # --- Prepare data for update ---
+        update_data = {
+            'full_name': full_name, 'username': username,
+            'portfolio_url': portfolio_url if current_profile['user_role'] == 'creator' else None,
+            'expertise': expertise if current_profile['user_role'] == 'creator' else None,
+            'primary_interest': primary_interest if current_profile['user_role'] == 'user' else None,
+        }
+
+        # --- Execute Update ---
+        try:
+            supabase.table('profiles').update(update_data).eq('id', current_user.id).execute()
+            flash('Your profile has been updated successfully!', 'success')
+            return redirect(url_for('view_profile', username=username))
+        except Exception as e:
+            flash(f'An error occurred while updating your profile: {e}', 'error')
+            return render_template('edit_profile.html', profile=current_profile)
+
+    # --- For GET request, just show the form ---
+    return render_template('edit_profile.html', profile=current_profile)
 
 @app.route('/trending')
 def trending():

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}{{ profile.full_name }}'s Profile{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 py-10">
+    <div class="container mx-auto max-w-4xl p-4 sm:p-6 lg:p-8">
+        <div class="bg-white shadow-lg rounded-xl overflow-hidden">
+            <div class="p-8 md:p-12">
+                <div class="md:flex md:items-start md:justify-between">
+                    <!-- Main Profile Info -->
+                    <div>
+                        <h1 class="text-4xl font-bold text-gray-900">{{ profile.full_name }}</h1>
+                        <p class="text-lg mt-1 text-gray-500">@{{ profile.username }}</p>
+                        
+                        <span class="mt-4 inline-block capitalize text-sm font-semibold px-3 py-1 rounded-full 
+                            {% if profile.user_role == 'creator' %} bg-blue-100 text-blue-800 {% else %} bg-green-100 text-green-800 {% endif %}">
+                            {{ profile.user_role }}
+                        </span>
+                    </div>
+
+                    <!-- Edit Profile Button (Conditional) -->
+                    {% if is_own_profile %}
+                    <div class="mt-4 md:mt-0">
+                        <a href="{{ url_for('edit_profile') }}" class="inline-block bg-gray-800 hover:bg-gray-700 text-white font-semibold py-2 px-5 rounded-lg transition-colors duration-200">
+                            Edit Profile
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <hr class="my-8">
+
+                <!-- Role-Specific Information -->
+                <div class="space-y-6">
+                    <!-- Creator-Specific Fields -->
+                    {% if profile.user_role == 'creator' %}
+                        {% if profile.portfolio_url %}
+                        <div class="flex items-start">
+                             <svg class="w-6 h-6 text-gray-400 mr-4 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                            <div>
+                                <h3 class="text-sm font-medium text-gray-500">Portfolio / Website</h3>
+                                <a href="{{ profile.portfolio_url }}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline break-all">
+                                    {{ profile.portfolio_url }}
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if profile.expertise %}
+                        <div class="flex items-start">
+                           <svg class="w-6 h-6 text-gray-400 mr-4 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                            <div>
+                                <h3 class="text-sm font-medium text-gray-500">Areas of Expertise</h3>
+                                <p class="text-gray-800 text-lg">{{ profile.expertise }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endif %}
+
+                    <!-- User-Specific Fields -->
+                    {% if profile.user_role == 'user' %}
+                        {% if profile.primary_interest %}
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-gray-400 mr-4 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            <div>
+                                <h3 class="text-sm font-medium text-gray-500">Primary Interest</h3>
+                                <p class="text-gray-800 text-lg capitalize">{{ profile.primary_interest.replace('_', ' ') }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endif %}
+
+                    <!-- Common Fields -->
+                    <div class="flex items-start">
+                        <svg class="w-6 h-6 text-gray-400 mr-4 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-500">Member Since</h3>
+                            <p class="text-gray-800 text-lg">{{ profile.created_at.split('T')[0] }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

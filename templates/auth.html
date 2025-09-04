@@ -76,43 +76,120 @@
             <div id="signup-form" class="hidden">
                 <form method="POST" action="{{ url_for('register') }}" class="space-y-4">
                     <div>
-                        <label for="signup-email" class="block text-sm font-medium text-foreground mb-2">
-                            Email Address
-                        </label>
-                        <input type="email" 
-                               id="signup-email" 
-                               name="email" 
-                               required
-                               placeholder="Enter your email"
-                               class="input w-full">
-                    </div>
-                    
-                    <div>
-                        <label for="signup-password" class="block text-sm font-medium text-foreground mb-2">
-                            Password
-                        </label>
-                        <input type="password" 
-                               id="signup-password" 
-                               name="password" 
-                               required
-                               placeholder="Create a password"
-                               class="input w-full">
-                        <p class="text-xs text-muted-foreground mt-1">
-                            Must be at least 8 characters long
-                        </p>
-                    </div>
+    <label for="signup-email" class="block text-sm font-medium text-foreground mb-2">
+        Email Address
+    </label>
+    <input type="email" 
+           id="signup-email" 
+           name="email" 
+           required
+           placeholder="Enter your email"
+           class="input w-full">
+</div>
 
-                    <div>
-                        <label for="confirm-password" class="block text-sm font-medium text-foreground mb-2">
-                            Confirm Password
-                        </label>
-                        <input type="password" 
-                               id="confirm-password" 
-                               name="confirm_password" 
-                               required
-                               placeholder="Confirm your password"
-                               class="input w-full">
-                    </div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+    <div>
+        <label for="full-name" class="block text-sm font-medium text-foreground mb-2">
+            Full Name
+        </label>
+        <input type="text" 
+               id="full-name" 
+               name="full_name" 
+               required
+               placeholder="e.g., Ada Lovelace"
+               class="input w-full">
+    </div>
+    <div>
+        <label for="username" class="block text-sm font-medium text-foreground mb-2">
+            Username
+        </label>
+        <input type="text" 
+               id="username" 
+               name="username" 
+               required
+               placeholder="username"
+               class="input w-full">
+    </div>
+</div>
+
+<div class="mt-4">
+    <label for="signup-password" class="block text-sm font-medium text-foreground mb-2">
+        Password
+    </label>
+    <input type="password" 
+           id="signup-password" 
+           name="password" 
+           required
+           placeholder="Create a password"
+           class="input w-full">
+    <p class="text-xs text-muted-foreground mt-1">
+        Must be at least 8 characters long.
+    </p>
+</div>
+
+<div class="mt-4">
+    <label for="confirm-password" class="block text-sm font-medium text-foreground mb-2">
+        Confirm Password
+    </label>
+    <input type="password" 
+           id="confirm-password" 
+           name="confirm_password" 
+           required
+           placeholder="Confirm your password"
+           class="input w-full">
+</div>
+
+<hr class="my-6">
+
+<div>
+    <label for="user-role" class="block text-sm font-medium text-foreground mb-2">
+        How will you be using our platform?
+    </label>
+    <select id="user-role" name="user_role" class="input w-full" required>
+        <option value="" disabled selected>Select an option...</option>
+        <option value="creator">I am a Creator (I want to submit AI agents)</option>
+        <option value="user">I am a User (I want to use AI agents)</option>
+    </select>
+</div>
+
+<div id="creator-fields" class="hidden space-y-4 mt-4">
+    <div>
+        <label for="portfolio-url" class="block text-sm font-medium text-foreground mb-2">
+            Portfolio or GitHub URL
+        </label>
+        <input type="url" 
+               id="portfolio-url" 
+               name="portfolio_url"
+               placeholder="https://github.com/your-username"
+               class="input w-full">
+    </div>
+    <div>
+        <label for="expertise" class="block text-sm font-medium text-foreground mb-2">
+            Areas of Expertise
+        </label>
+        <input type="text" 
+               id="expertise" 
+               name="expertise"
+               placeholder="e.g., NLP, Computer Vision, Generative AI"
+               class="input w-full">
+        <p class="text-xs text-muted-foreground mt-1">
+            Separate different areas with a comma.
+        </p>
+    </div>
+</div>
+
+<div id="user-fields" class="hidden mt-4">
+    <label for="primary-interest" class="block text-sm font-medium text-foreground mb-2">
+        What is your primary interest?
+    </label>
+    <select id="primary-interest" name="primary_interest" class="input w-full">
+        <option value="" disabled selected>Select your primary goal...</option>
+        <option value="business">For my business or work</option>
+        <option value="personal">For personal projects</option>
+        <option value="research">For academic research</option>
+        <option value="browsing">Just browsing</option>
+    </select>
+</div>
 
                     <div class="flex items-start">
                         <input type="checkbox" id="terms-signup" name="terms" required class="mr-2 mt-1">
@@ -183,5 +260,33 @@ function switchTab(tabName) {
         signinForm.classList.add('hidden');
     }
 }
+</script>
+
+<script>
+    // Wait for the DOM to be fully loaded before running the script
+    document.addEventListener('DOMContentLoaded', (event) => {
+        
+        // Find the elements in the document
+        const userRoleSelect = document.getElementById('user-role');
+        const creatorFields = document.getElementById('creator-fields');
+        const userFields = document.getElementById('user-fields');
+
+        // Add an event listener to the dropdown
+        userRoleSelect.addEventListener('change', function () {
+            // Check the selected value
+            if (this.value === 'creator') {
+                creatorFields.classList.remove('hidden');
+                userFields.classList.add('hidden');
+            } else if (this.value === 'user') {
+                userFields.classList.remove('hidden');
+                creatorFields.classList.add('hidden');
+            } else {
+                // Hide both if no option is selected
+                creatorFields.classList.add('hidden');
+                userFields.classList.add('hidden');
+            }
+        });
+
+    });
 </script>
 {% endblock %}
