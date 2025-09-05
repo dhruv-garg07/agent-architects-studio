@@ -2,13 +2,17 @@
 """Flask AI Agent Marketplace Application."""
 
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
+import sys
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, abort
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime
 
 from supabase import create_client, Client
 import json
+
+# Ensure backend_examples can be imported
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Import services from the backend_examples
 from backend_examples.python.services.agents import agent_service
@@ -19,7 +23,7 @@ import asyncio
 
 load_dotenv()
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder=os.path.abspath(os.path.join(os.path.dirname(__file__), '../templates')))
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 supabase_anon_key = os.environ.get("SUPABASE_ANON_KEY")
@@ -618,4 +622,3 @@ def internal_error(error):
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
-    
