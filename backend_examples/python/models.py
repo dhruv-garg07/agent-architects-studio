@@ -40,6 +40,7 @@ class Agent(BaseModel):
     updated_at: datetime
     base_url: Optional[str] = None  # Added field for base URL
     # data_structure: dict = {}  # Added field for data structure
+    # NEW_SUPABASE_COLOUMN should be added here. 
 
 
 class AgentWithCreator(Agent):
