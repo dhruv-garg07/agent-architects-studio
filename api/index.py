@@ -661,20 +661,47 @@ def agent_version(agent_id):
     asyncio.run(agent_service.update_agent_field(agent_id, 'version', version))
     return jsonify({'version': version})
 
+from flask import request, jsonify
+from flask_login import login_user
+import requests
+
 @app.route('/supabase-login', methods=['POST'])
 def supabase_login():
     data = request.get_json()
     access_token = data.get('access_token')
     email = data.get('email')
-    # Optionally: verify the token with Supabase REST API
-    # For demo, just log in the user by email
+
+    if not access_token or not email:
+        return jsonify({'success': False, 'error': 'Missing access token or email'}), 400
+
+    # (Optional but recommended) Verify the token with Supabase
+    resp = requests.get(
+        "https://lmlwkkbzkikrkshriaqm.supabase.co/auth/v1/user",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+    if resp.status_code != 200:
+        return jsonify({'success': False, 'error': 'Invalid Supabase token'}), 401
+
+    supabase_user = resp.json()
+
+    # Look up user in your DB
     user = User.query.filter_by(email=email).first()
-    if user:
-        login_user(user)
-        return jsonify({'success': True})
-    else:
-        # Optionally: create user if not exists
-        return jsonify({'success': False, 'error': 'User not found'})
+
+    if not user:
+        # If not found, create a new local user
+        user = User(
+            email=email,
+            full_name=supabase_user.get("user_metadata", {}).get("full_name", ""),
+            username=email.split("@")[0],  # fallback username
+        )
+        db.session.add(user)
+        db.session.commit()
+
+    # Log them in via Flask-Login
+    login_user(user)
+
+    return jsonify({'success': True})
+
     
 @app.route("/auth/callback")
 def auth_callback():

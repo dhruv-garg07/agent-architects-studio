@@ -302,7 +302,7 @@ function switchTab(tabName) {
     }, 
   })
      
-  // Redirect URL should just be your same auth page
+  // Redirect back to the same page after OAuth, then JS will forward to homepage
   const redirectTo = window.location.origin + "/auth"
 
   async function loginWithProvider(provider) {
@@ -336,21 +336,21 @@ function switchTab(tabName) {
 
       const data = await res.json()
       if (data.success) {
-        window.location.href = ''
+        // ✅ Redirect to homepage
+        window.location.href = '/'
       } else {
         alert('Login failed: ' + (data.error || 'Unknown error'))
       }
     }
   })
 
-  // Check if already signed in
+  // Check if already signed in → redirect to homepage
   const { data: { session } } = await supabase.auth.getSession()
   if (session) {
     console.log("Already signed in:", session.user.email)
-    window.location.href = ''
+    window.location.href = '/'
   }
 </script>
-
 
 
 
