@@ -216,7 +216,7 @@ def dashboard():
 def _clean_email(v: str) -> str:
     return (v or "").strip().lower()
 
-@app.route('/login/google', methods=['POST'])
+@app.route('/login', methods=['POST'])
 def login():
     print("Supabase URL:", SUPABASE_URL)
     print("Supabase client:", supabase)
@@ -662,68 +662,6 @@ def agent_version(agent_id):
     return jsonify({'version': version})
 
 
-from flask import Flask, redirect, url_for, session, request, jsonify
-from authlib.integrations.flask_client import OAuth
-from supabase import create_client, Client
-import os
-
-app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", "your-secret-key")
-
-# 🔹 Supabase Setup
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")  # use service_role only on backend!
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-# 🔹 Google OAuth Setup
-oauth = OAuth(app)
-google = oauth.register(
-    name='google',
-    client_id=os.environ.get("GOOGLE_CLIENT_ID"),
-    client_secret=os.environ.get("GOOGLE_CLIENT_SECRET"),
-    access_token_url='https://oauth2.googleapis.com/token',
-    access_token_params=None,
-    authorize_url='https://accounts.google.com/o/oauth2/auth',
-    authorize_params={"access_type": "offline"},
-    api_base_url='https://www.googleapis.com/oauth2/v2/',
-    client_kwargs={'scope': 'openid email profile'}
-)
-
-@app.route('/')
-def index():
-    return '<a href="/login">Login with Google</a>'
-
-@app.route('/login')
-def login():
-    redirect_uri = url_for('authorize', _external=True)
-    return google.authorize_redirect(redirect_uri)
-
-@app.route('/auth/callback')
-def authorize():
-    token = google.authorize_access_token()
-    user_info = google.get('userinfo').json()
-
-    # user_info contains: {id, email, verified_email, name, picture}
-    email = user_info['email']
-
-    # 🔹 Store user in Supabase (insert into profiles or just rely on auth.users)
-    existing_user = supabase.table("profiles").select("*").eq("email", email).execute()
-    if not existing_user.data:
-        supabase.table("profiles").insert({
-            "email": email,
-            "name": user_info["name"],
-            "avatar_url": user_info["picture"]
-        }).execute()
-
-    # Store in Flask session
-    session['user'] = user_info
-
-    return jsonify(user_info)
-
-@app.route('/logout')
-def logout():
-    session.pop('user', None)
-    return redirect('/')
 
 
 if __name__ == '__main__':
