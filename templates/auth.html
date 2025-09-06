@@ -337,7 +337,7 @@ function switchTab(tabName) {
       const data = await res.json()
       if (data.success) {
         // ✅ Redirect to homepage
-        window.location.href = '/'
+        window.location.href = '/explore'
       } else {
         alert('Login failed: ' + (data.error || 'Unknown error'))
       }
@@ -348,7 +348,7 @@ function switchTab(tabName) {
   const { data: { session } } = await supabase.auth.getSession()
   if (session) {
     console.log("Already signed in:", session.user.email)
-    window.location.href = '/'
+    window.location.href = '/explore'
   }
 </script>
 
