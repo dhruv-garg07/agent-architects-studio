@@ -661,10 +661,48 @@ def agent_version(agent_id):
     asyncio.run(agent_service.update_agent_field(agent_id, 'version', version))
     return jsonify({'version': version})
 
+from flask import url_for
+
+@app.route("/login/google")
+def login_google():
+    redirect_url = url_for("auth_callback", _external=True)  # must match Supabase redirect
+    # Build Supabase OAuth sign-in URL for Google
+    google_oauth_url = (
+        f"{SUPABASE_URL}/auth/v1/authorize"
+        f"?provider=google"
+        f"&redirect_to={redirect_url}"
+    )
+    return redirect(google_oauth_url)
+
 
 @app.route("/auth/callback")
 def auth_callback():
-    return render_template("auth_callback.html")
+    """Handle Google OAuth callback from Supabase"""
+    code = request.args.get("code")
+    error = request.args.get("error")
+
+    if error:
+        flash(f"Google sign-in failed: {error}", "error")
+        return redirect(url_for("auth"))
+
+    if not code:
+        flash("Missing authorization code.", "error")
+        return redirect(url_for("auth"))
+
+    try:
+        # Exchange code for session
+        tokens = supabase.auth.exchange_code_for_session({"auth_code": code})
+        session["sb_access_token"] = tokens.session.access_token
+        session["sb_refresh_token"] = tokens.session.refresh_token
+
+        user = User(user_id=tokens.user.id, email=tokens.user.email)
+        login_user(user)
+        flash("Signed in with Google!", "success")
+        return redirect(url_for("homepage"))
+
+    except Exception as e:
+        flash(f"Google login failed: {e}", "error")
+        return redirect(url_for("auth"))
 
 
 if __name__ == '__main__':
