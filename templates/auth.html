@@ -339,17 +339,28 @@ function switchTab(tabName) {
   // 7) Handle post-login UI (optional)
   //    This fires when the page loads after the OAuth redirect and the session is set.
   supabase.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN') {
-      console.log('Signed in as:', session?.user?.email);
-
-      // If you’re on a dedicated callback route, clean the URL and go home (optional):
-      if (window.location.pathname.startsWith('/auth/callback')) {
-        window.history.replaceState({}, '', '/');
-        // Or navigate somewhere else:
-        // window.location.assign('/dashboard');
-      }
+  if (event === 'SIGNED_IN') {
+    // Send the access token to your Flask backend
+    const accessToken = session?.access_token;
+    const userEmail = session?.user?.email;
+    if (accessToken) {
+      // POST to your Flask login endpoint
+      fetch('/supabase-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ access_token: accessToken, email: userEmail })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          window.location.href = '/dashboard'; // or wherever you want
+        } else {
+          alert('Login failed: ' + (data.error || 'Unknown error'));
+        }
+      });
     }
-  });
+  }
+});
 
   // 8) If already signed in, you can update UI immediately (optional)
   const { data: { session } } = await supabase.auth.getSession();
