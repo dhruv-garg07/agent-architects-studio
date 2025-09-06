@@ -336,7 +336,7 @@ function switchTab(tabName) {
 
       const data = await res.json()
       if (data.success) {
-        window.location.href = '/explore'
+        window.location.href = '/auth'
       } else {
         alert('Login failed: ' + (data.error || 'Unknown error'))
       }
