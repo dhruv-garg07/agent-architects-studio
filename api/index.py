@@ -629,40 +629,5 @@ def internal_error(error):
     """500 error handler."""
     return render_template('500.html'), 500
 
-
-# Agent stats update endpoints
-from flask import request, jsonify
-
-@app.route('/agent/<agent_id>/upvote', methods=['POST'])
-def agent_upvote(agent_id):
-    agent = asyncio.run(agent_service.get_agent_by_id(agent_id))
-    if not agent:
-        return jsonify({'error': 'Agent not found'}), 404
-    new_upvotes = (agent.upvotes or 0) + 1
-    asyncio.run(agent_service.update_agent_field(agent_id, 'upvotes', new_upvotes))
-    return jsonify({'upvotes': new_upvotes})
-
-@app.route('/agent/<agent_id>/rate', methods=['POST'])
-def agent_rate(agent_id):
-    agent = asyncio.run(agent_service.get_agent_by_id(agent_id))
-    if not agent:
-        return jsonify({'error': 'Agent not found'}), 404
-    rating = request.json.get('rating', 0)
-    # For demo: just set avg_rating to new rating (implement real average logic as needed)
-    asyncio.run(agent_service.update_agent_field(agent_id, 'avg_rating', rating))
-    return jsonify({'avg_rating': rating})
-
-@app.route('/agent/<agent_id>/version', methods=['POST'])
-def agent_version(agent_id):
-    agent = asyncio.run(agent_service.get_agent_by_id(agent_id))
-    if not agent:
-        return jsonify({'error': 'Agent not found'}), 404
-    version = request.json.get('version', '1.0.0')
-    asyncio.run(agent_service.update_agent_field(agent_id, 'version', version))
-    return jsonify({'version': version})
-
-
-
-
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
