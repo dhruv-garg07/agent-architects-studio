@@ -661,11 +661,5 @@ def agent_version(agent_id):
     asyncio.run(agent_service.update_agent_field(agent_id, 'version', version))
     return jsonify({'version': version})
 
-<<<<<<< HEAD
-
-
-
-=======
->>>>>>> 51fe29f (total_runs)
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
