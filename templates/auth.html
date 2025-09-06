@@ -353,7 +353,7 @@ function switchTab(tabName) {
       .then(res => res.json())
       .then(data => {
         if (data.success) {
-          window.location.href = '/dashboard'; // or wherever you want
+          window.location.href = '/explore'; // or wherever you want
         } else {
           alert('Login failed: ' + (data.error || 'Unknown error'));
         }
