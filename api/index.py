@@ -661,25 +661,6 @@ def agent_version(agent_id):
     asyncio.run(agent_service.update_agent_field(agent_id, 'version', version))
     return jsonify({'version': version})
 
-@app.route('/supabase-login', methods=['POST'])
-def supabase_login():
-    data = request.get_json()
-    email = data.get('email')
-
-    if not email:
-        return jsonify({'success': False, 'error': 'No email provided'}), 400
-
-    user = User.query.filter_by(email=email).first()
-    if user:
-        login_user(user)
-        return jsonify({'success': True})
-    else:
-        # Optionally create a new user if not found
-        new_user = User(email=email)
-        db.session.add(new_user)
-        db.session.commit()
-        login_user(new_user)
-        return jsonify({'success': True, 'new_user': True})
 
 @app.route("/auth/callback")
 def auth_callback():
