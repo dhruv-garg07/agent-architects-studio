@@ -216,7 +216,7 @@ def dashboard():
 def _clean_email(v: str) -> str:
     return (v or "").strip().lower()
 
-@app.route('/login', methods=['POST'])
+@app.route('/login/google', methods=['POST'])
 def login():
     print("Supabase URL:", SUPABASE_URL)
     print("Supabase client:", supabase)
@@ -661,49 +661,69 @@ def agent_version(agent_id):
     asyncio.run(agent_service.update_agent_field(agent_id, 'version', version))
     return jsonify({'version': version})
 
-from flask import url_for
 
-@app.route("/login/google")
-def login_google():
-    redirect_url = url_for("auth_callback", _external=True)  # must match Supabase redirect
-    # Build Supabase OAuth sign-in URL for Google
-    google_oauth_url = (
-        f"{SUPABASE_URL}/auth/v1/authorize"
-        f"?provider=google"
-        f"&redirect_to={redirect_url}"
-        f"&flow_type=pkce"
-    )
-    return redirect(google_oauth_url)
+from flask import Flask, redirect, url_for, session, request, jsonify
+from authlib.integrations.flask_client import OAuth
+from supabase import create_client, Client
+import os
 
+app = Flask(__name__)
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "your-secret-key")
 
-@app.route("/auth/callback")
-def auth_callback():
-    """Handle Google OAuth callback from Supabase"""
-    code = request.args.get("code")
-    error = request.args.get("error")
+# 🔹 Supabase Setup
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")  # use service_role only on backend!
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-    if error:
-        flash(f"Google sign-in failed: {error}", "error")
-        return redirect(url_for("auth"))
+# 🔹 Google OAuth Setup
+oauth = OAuth(app)
+google = oauth.register(
+    name='google',
+    client_id=os.environ.get("GOOGLE_CLIENT_ID"),
+    client_secret=os.environ.get("GOOGLE_CLIENT_SECRET"),
+    access_token_url='https://oauth2.googleapis.com/token',
+    access_token_params=None,
+    authorize_url='https://accounts.google.com/o/oauth2/auth',
+    authorize_params={"access_type": "offline"},
+    api_base_url='https://www.googleapis.com/oauth2/v2/',
+    client_kwargs={'scope': 'openid email profile'}
+)
 
-    if not code:
-        flash("Missing authorization code.", "error")
-        return redirect(url_for("auth"))
+@app.route('/')
+def index():
+    return '<a href="/login">Login with Google</a>'
 
-    try:
-        # Exchange code for session
-        tokens = supabase.auth.exchange_code_for_session({"auth_code": code})
-        session["sb_access_token"] = tokens.session.access_token
-        session["sb_refresh_token"] = tokens.session.refresh_token
+@app.route('/login')
+def login():
+    redirect_uri = url_for('authorize', _external=True)
+    return google.authorize_redirect(redirect_uri)
 
-        user = User(user_id=tokens.user.id, email=tokens.user.email)
-        login_user(user)
-        flash("Signed in with Google!", "success")
-        return redirect(url_for("homepage"))
+@app.route('/auth/callback')
+def authorize():
+    token = google.authorize_access_token()
+    user_info = google.get('userinfo').json()
 
-    except Exception as e:
-        flash(f"Google login failed: {e}", "error")
-        return redirect(url_for("auth"))
+    # user_info contains: {id, email, verified_email, name, picture}
+    email = user_info['email']
+
+    # 🔹 Store user in Supabase (insert into profiles or just rely on auth.users)
+    existing_user = supabase.table("profiles").select("*").eq("email", email).execute()
+    if not existing_user.data:
+        supabase.table("profiles").insert({
+            "email": email,
+            "name": user_info["name"],
+            "avatar_url": user_info["picture"]
+        }).execute()
+
+    # Store in Flask session
+    session['user'] = user_info
+
+    return jsonify(user_info)
+
+@app.route('/logout')
+def logout():
+    session.pop('user', None)
+    return redirect('/')
 
 
 if __name__ == '__main__':
