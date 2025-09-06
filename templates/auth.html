@@ -287,48 +287,4 @@ function switchTab(tabName) {
     });
 </script>
 
-<!-- Social Login -->
-<div class="space-y-3">
-    <button id="google-login" class="btn-secondary w-full flex items-center justify-center">
-        Continue with Google
-    </button>
-</div>
-
-<script src="https://unpkg.com/@supabase/supabase-js"></script>
-<script>
-  // Initialize Supabase client
-  const supabase = supabase.createClient(
-    "https://lmlwkkbzkikrkshriaqm.supabase.co",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtbHdra2J6a2lrcmtzaHJpYXFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNDEzMDUsImV4cCI6MjA3MTcxNzMwNX0.v2dO6pscKXPxCmjUCAQW0EXVTV_iAN9BWQ7crX4yNUc"
-  );
-
-  // Handle Google login click
-  document.getElementById("google-login").addEventListener("click", async () => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: window.location.origin + "/auth/callback"
-      }
-    });
-
-    if (error) {
-      console.error("Error logging in:", error.message);
-    }
-  });
-</script>
-
-
-<script>
-  window.addEventListener("DOMContentLoaded", async () => {
-    const { data: { session }, error } = await supabase.auth.getSession();
-
-    if (session) {
-      console.log("Logged in as:", session.user.email);
-      // Redirect to homepage or dashboard
-      window.location.href = "/";
-    }
-  });
-</script>
-
-
 {% endblock %}
