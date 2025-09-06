@@ -252,7 +252,7 @@
                         <div class="text-center">
                             <div id="total-runs" class="text-2xl font-bold text-sage">{{ agent.total_runs or 0 }}</div>
                             <div class="text-sm text-muted-foreground">Total Runs</div>
-                            <button id="run-btn" class="btn-secondary mt-2 text-xs">Run Agent</button>
+                            <!-- <button id="run-btn" class="btn-secondary mt-2 text-xs">Run Agent</button> -->
                         </div>
                         <div class="text-center">
                             <div id="upvotes" class="text-2xl font-bold text-dusty-blue">{{ agent.upvotes or 0 }}</div>
@@ -984,10 +984,16 @@ updatePreview();
         </div>
         <div class="text-sm break-words whitespace-pre-wrap">
         ${data.response}
+        Total Runs: ${data.total_runs}
         </div>
     </div>
     `;
 
+    // Update total runs count if returned by backend
+      if (data.total_runs !== undefined) {
+        document.getElementById('total-runs').textContent = data.total_runs;
+      }
+    
     })
     .catch(err => {
       const outputArea = document.querySelector('.bg-muted.min-h-\\[200px\\]');
@@ -1001,13 +1007,6 @@ updatePreview();
 function updateStat(id, value) {
     document.getElementById(id).textContent = value;
 }
-
-// Run Agent
-document.getElementById('run-btn').addEventListener('click', function() {
-    fetch('/agent/{{ agent.id }}/run', { method: 'POST' })
-        .then(res => res.json())
-        .then(data => updateStat('total-runs', data.total_runs));
-});
 
 // Upvote
 document.getElementById('upvote-btn').addEventListener('click', function() {

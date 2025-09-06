@@ -172,6 +172,17 @@ class AgentService:
         except Exception as e:
             print(f"Error updating agent status: {e}")
             return False
+    
+    async def update_agent_field(self, agent_id: str, field: str, value):
+        """Update a single field for an agent."""
+        try:
+            response = self.supabase.table('agent_profiles').update({
+                field: value
+            }).eq('id', agent_id).execute()
+            return len(response.data) > 0
+        except Exception as e:
+            print(f"Error updating agent field: {e}")
+            return False
 
 
 # Initialize service instance
