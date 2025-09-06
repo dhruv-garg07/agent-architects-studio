@@ -289,85 +289,68 @@ function switchTab(tabName) {
 
 
 <script type="module">
-  // 1) Import Supabase client (CDN/ESM)
-  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-  // 2) Your project keys
-  const SUPABASE_URL = 'https://lmlwkkbzkikrkshriaqm.supabase.co';          // <-- replace
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtbHdra2J6a2lrcmtzaHJpYXFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNDEzMDUsImV4cCI6MjA3MTcxNzMwNX0.v2dO6pscKXPxCmjUCAQW0EXVTV_iAN9BWQ7crX4yNUc';                            // <-- replace
+  const SUPABASE_URL = 'https://lmlwkkbzkikrkshriaqm.supabase.co'
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtbHdra2J6a2lrcmtzaHJpYXFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYxNDEzMDUsImV4cCI6MjA3MTcxNzMwNX0.v2dO6pscKXPxCmjUCAQW0EXVTV_iAN9BWQ7crX4yNUc'
 
-  // 3) Create client
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-      detectSessionInUrl: true, // handles the OAuth callback automatically
+      detectSessionInUrl: true,  // handles the redirect on this page itself
     },
-  });
+  })
 
-  // 4) Where users should land *after* Supabase finishes OAuth.
-  //    Add this URL to Auth → URL Configuration → Redirect URLs in your Supabase project.
-  //    If you want to return to the same page, use: const redirectTo = window.location.href;
-    
-    const redirectTo = window.location.href;
+  // Redirect URL should just be your same auth page
+  const redirectTo = window.location.origin + "/auth"
 
-  // 5) Helper to start OAuth
   async function loginWithProvider(provider) {
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider,
-      options: {
-        redirectTo, // Supabase will redirect here after hitting your project callback
-        // scopes: 'email profile', // optional: add extra scopes if you need
-      },
-    });
+      options: { redirectTo }
+    })
 
     if (error) {
-      console.error('OAuth error:', error);
-      alert(`Login failed: ${error.message}`);
+      console.error('OAuth error:', error)
+      alert(`Login failed: ${error.message}`)
     }
   }
 
-  // 6) Wire up your buttons
-  document.getElementById('google-login')?.addEventListener('click', () => {
-    loginWithProvider('google');
-  });
+  // Wire up buttons
+  document.getElementById('google-login')?.addEventListener('click', () => loginWithProvider('google'))
+  document.getElementById('github-login')?.addEventListener('click', () => loginWithProvider('github'))
 
-  document.getElementById('github-login')?.addEventListener('click', () => {
-    loginWithProvider('github');
-  });
-
-  // 7) Handle post-login UI (optional)
-  //    This fires when the page loads after the OAuth redirect and the session is set.
+  // Handle login after OAuth redirect
   supabase.auth.onAuthStateChange(async (event, session) => {
-  if (event === 'SIGNED_IN') {
-    // Send the access token to your Flask backend
-    const accessToken = session?.access_token;
-    const userEmail = session?.user?.email;
-    if (accessToken) {
-      // POST to your Flask login endpoint
-      fetch('/supabase-login', {
+    if (event === 'SIGNED_IN') {
+      const accessToken = session?.access_token
+      const userEmail = session?.user?.email
+
+      // Send token + email to Flask backend
+      const res = await fetch('/supabase-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ access_token: accessToken, email: userEmail })
       })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          window.location.href = '/explore'; // or wherever you want
-        } else {
-          alert('Login failed: ' + (data.error || 'Unknown error'));
-        }
-      });
-    }
-  }
-});
 
-  // 8) If already signed in, you can update UI immediately (optional)
-  const { data: { session } } = await supabase.auth.getSession();
+      const data = await res.json()
+      if (data.success) {
+        window.location.href = '/explore'
+      } else {
+        alert('Login failed: ' + (data.error || 'Unknown error'))
+      }
+    }
+  })
+
+  // Check if already signed in
+  const { data: { session } } = await supabase.auth.getSession()
   if (session) {
-    console.log('Already signed in as:', session.user.email);
+    console.log("Already signed in:", session.user.email)
+    window.location.href = '/explore'
   }
 </script>
+
 
 
 
