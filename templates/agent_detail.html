@@ -908,11 +908,14 @@ Object.entries(schema).forEach(([key, config]) => {
   // editable handling
   if (editable) {
     if (type === "string") {
-      const textarea = document.createElement("textarea");
-      textarea.rows = 2;
-      textarea.className = "w-full p-2 border border-border rounded-md";
-      textarea.value = state[key]; // show default
-      textarea.addEventListener("input", (e) => {
+        const textarea = document.createElement("textarea");
+        textarea.rows = 2;
+        textarea.className = "w-full p-2 rounded-md";
+        textarea.style.background = "hsl(220, 15%, 14%)"; // matches --input from base.html
+        textarea.style.color = "hsla(0, 27%, 29%, 1.00)";         // matches --foreground from base.html
+        textarea.style.border = "1px solid hsl(220, 15%, 22%)"; // matches --border
+        textarea.value = state[key]; // show default
+        textarea.addEventListener("input", (e) => {
         state[key] = e.target.value;
         updatePreview();
       });
@@ -922,7 +925,10 @@ Object.entries(schema).forEach(([key, config]) => {
       const input = document.createElement("input");
       input.type = "number";
       input.value = state[key]; // show default
-      input.className = "w-full p-2 border border-border rounded-md";
+      input.className = "w-full p-2 rounded-md";
+        input.style.background = "hsl(220, 15%, 14%)";
+        input.style.color = "hsl(0, 0%, 98%)";
+        input.style.border = "1px solid hsl(220, 15%, 22%)";
       input.addEventListener("input", (e) => {
         state[key] = parseFloat(e.target.value) || 0;
         updatePreview();
@@ -934,7 +940,9 @@ Object.entries(schema).forEach(([key, config]) => {
     // non-editable → show fixed value
     const fixed = document.createElement("div");
     fixed.textContent = state[key];
-    fixed.className = "p-2 bg-muted text-xs rounded-md";
+    fixed.className = "p-2 text-xs rounded-md";
+    fixed.style.background = "hsl(220, 12%, 14%)"; // matches --muted from base.html
+    fixed.style.color = "hsl(0, 0%, 98%)";
     wrapper.appendChild(fixed);
   }
 
