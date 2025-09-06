@@ -676,5 +676,10 @@ def supabase_login():
         # Optionally: create user if not exists
         return jsonify({'success': False, 'error': 'User not found'})
     
+@app.route("/auth/callback")
+def auth_callback():
+    return render_template("auth_callback.html")
+
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
