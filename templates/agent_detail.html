@@ -243,22 +243,26 @@
                     </div>
 
                     <!-- Stats -->
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-border">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-border" id="agent-stats">
                         <div class="text-center">
-                            <div class="text-2xl font-bold text-primary">{{ "%.1f"|format(agent.avg_rating or 0) }}</div>
+                            <div id="avg-rating" class="text-2xl font-bold text-primary">{{ "%.1f"|format(agent.avg_rating or 0) }}</div>
                             <div class="text-sm text-muted-foreground">Average Rating</div>
+                            <button id="rate-btn" class="btn-secondary mt-2 text-xs">Rate</button>
                         </div>
                         <div class="text-center">
-                            <div class="text-2xl font-bold text-sage">{{ agent.total_runs or 0 }}</div>
+                            <div id="total-runs" class="text-2xl font-bold text-sage">{{ agent.total_runs or 0 }}</div>
                             <div class="text-sm text-muted-foreground">Total Runs</div>
+                            <button id="run-btn" class="btn-secondary mt-2 text-xs">Run Agent</button>
                         </div>
                         <div class="text-center">
-                            <div class="text-2xl font-bold text-dusty-blue">{{ agent.upvotes or 0 }}</div>
+                            <div id="upvotes" class="text-2xl font-bold text-dusty-blue">{{ agent.upvotes or 0 }}</div>
                             <div class="text-sm text-muted-foreground">Upvotes</div>
+                            <button id="upvote-btn" class="btn-secondary mt-2 text-xs">Upvote</button>
                         </div>
                         <div class="text-center">
-                            <div class="text-2xl font-bold text-soft-ochre">{{ agent.version or '1.0.0' }}</div>
+                            <div id="version" class="text-2xl font-bold text-soft-ochre">{{ agent.version or '1.0.0' }}</div>
                             <div class="text-sm text-muted-foreground">Version</div>
+                            <button id="version-btn" class="btn-secondary mt-2 text-xs">Update Version</button>
                         </div>
                     </div>
                 </div>
@@ -993,6 +997,52 @@ updatePreview();
 });
 </script>
 
+<script>
+function updateStat(id, value) {
+    document.getElementById(id).textContent = value;
+}
 
+// Run Agent
+document.getElementById('run-btn').addEventListener('click', function() {
+    fetch('/agent/{{ agent.id }}/run', { method: 'POST' })
+        .then(res => res.json())
+        .then(data => updateStat('total-runs', data.total_runs));
+});
+
+// Upvote
+document.getElementById('upvote-btn').addEventListener('click', function() {
+    fetch('/agent/{{ agent.id }}/upvote', { method: 'POST' })
+        .then(res => res.json())
+        .then(data => updateStat('upvotes', data.upvotes));
+});
+
+// Rate
+document.getElementById('rate-btn').addEventListener('click', function() {
+    const rating = prompt("Enter your rating (1-5):");
+    if (rating) {
+        fetch('/agent/{{ agent.id }}/rate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rating: parseFloat(rating) })
+        })
+        .then(res => res.json())
+        .then(data => updateStat('avg-rating', data.avg_rating));
+    }
+});
+
+// Update Version
+document.getElementById('version-btn').addEventListener('click', function() {
+    const version = prompt("Enter new version:");
+    if (version) {
+        fetch('/agent/{{ agent.id }}/version', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ version: version })
+        })
+        .then(res => res.json())
+        .then(data => updateStat('version', data.version));
+    }
+});
+</script>
 
 {% endblock %}
