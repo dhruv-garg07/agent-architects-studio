@@ -299,9 +299,9 @@ function switchTab(tabName) {
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,  // handles the redirect on this page itself
-    },
+    }, 
   })
-
+     
   // Redirect URL should just be your same auth page
   const redirectTo = window.location.origin + "/auth"
 
@@ -347,7 +347,7 @@ function switchTab(tabName) {
   const { data: { session } } = await supabase.auth.getSession()
   if (session) {
     console.log("Already signed in:", session.user.email)
-    window.location.href = '/explore'
+    window.location.href = '/auth'
   }
 </script>
 
