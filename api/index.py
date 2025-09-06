@@ -671,6 +671,7 @@ def login_google():
         f"{SUPABASE_URL}/auth/v1/authorize"
         f"?provider=google"
         f"&redirect_to={redirect_url}"
+        f"&flow_type=pkce"
     )
     return redirect(google_oauth_url)
 
