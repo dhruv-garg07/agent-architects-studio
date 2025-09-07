@@ -26,8 +26,11 @@ load_dotenv()
 app = Flask(__name__, template_folder=os.path.abspath(os.path.join(os.path.dirname(__file__), '../templates')))
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
-supabase_anon_key = os.environ.get("SUPABASE_ANON_KEY")
-supabase: Client = create_client(SUPABASE_URL, supabase_anon_key)
+SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY")
+SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+supabase_backend: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
 # Flask-Login setup
 login_manager = LoginManager()
@@ -249,6 +252,42 @@ def login():
         # Optional: log e
         flash('Login failed. Please check your credentials.', 'error')
         return redirect(url_for('auth'))
+    
+@app.route("/login/google")
+def login_google():
+    redirect_url = url_for("auth_callback", _external=True)  # http://127.0.0.1:5000/auth/callback
+    oauth_url = f"{SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to={redirect_url}"
+    return redirect(oauth_url)
+
+@app.route("/auth/callback")
+def auth_callback():
+    code = request.args.get("code")
+    if not code:
+        flash("No authorization code returned from Google.", "error")
+        return redirect(url_for("auth"))
+
+    token_url = f"{SUPABASE_URL}/auth/v1/token?grant_type=authorization_code"
+    response = requests.post(
+        token_url,
+        headers={"apikey": SUPABASE_ANON_KEY, "Content-Type": "application/json"},
+        json={"code": code, "redirect_uri": url_for("auth_callback", _external=True)},
+    )
+
+    if response.status_code != 200:
+        flash(f"Google login failed: {response.text}", "error")
+        return redirect(url_for("auth"))
+
+    data = response.json()
+    session["sb_access_token"] = data["access_token"]
+    session["sb_refresh_token"] = data.get("refresh_token")
+
+    user_data = data["user"]
+    user = User(user_id=user_data["id"], email=user_data["email"])
+    login_user(user)
+
+    flash("Logged in successfully with Google!", "success")
+    return redirect(url_for("homepage"))
+
 
 
 # You might have a helper for this already, if not, it's good practice
