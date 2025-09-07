@@ -256,44 +256,81 @@
 </script>
 
 <script type="module">
-    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-    const supabase = createClient(
-        "{{ SUPABASE_URL }}",
-        "{{ SUPABASE_ANON_KEY }}"
-    );
+// Supabase client (ensure these render correctly from Flask)
+const supabase = createClient(
+    "{{ SUPABASE_URL }}",
+    "{{ SUPABASE_ANON_KEY }}"
+);
 
-    console.log("Supabase client initialized:", supabase);
-    document.getElementById('google-login').addEventListener('click', async () => {
-        const { data, error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-                redirectTo: window.location.origin + "/auth/callback"
-                // Local: http://127.0.0.1:5000/auth/callback
-                // Prod: https://www.themanhattanproject.ai/auth/callback
-            }
+document.addEventListener('DOMContentLoaded', () => {
+
+    // Google login
+    const googleBtn = document.getElementById('google-login');
+    if (googleBtn) {
+        googleBtn.addEventListener('click', async () => {
+            console.log("Google login button clicked");
+            const { data, error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: window.location.origin + "/auth/callback"
+                }
+            });
+            if (error) console.error("Google login failed:", error.message);
+            else if (data?.url) window.location.href = data.url;
         });
-
-        if (error) console.error("Login failed:", error.message);
-    });
-
-    document.getElementById('github-login').addEventListener('click', async () => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'github',
-        options: {
-            redirectTo: window.location.origin + "/auth/github/callback"
-        }
-    });
-
-    if (error) {
-        console.error("GitHub login failed:", error.message);
-        return;
     }
 
-    // Redirect browser to GitHub login page
-    if (data?.url) window.location.href = data.url;
-    });
+    // GitHub login
+    const githubBtn = document.getElementById('github-login');
+    if (githubBtn) {
+        githubBtn.addEventListener('click', async () => {
+            console.log("GitHub login button clicked");
+            const { data, error } = await supabase.auth.signInWithOAuth({
+                provider: 'github',
+                options: {
+                    redirectTo: window.location.origin + "/auth/github/callback"
+                }
+            });
+            if (error) console.error("GitHub login failed:", error.message);
+            else if (data?.url) window.location.href = data.url;
+        });
+    }
+
+    // Handle OAuth callback for Google
+    if (window.location.pathname === "/auth/callback") {
+        const fragment = new URLSearchParams(window.location.hash.slice(1));
+        const access_token = fragment.get("access_token");
+        const refresh_token = fragment.get("refresh_token");
+
+        if (access_token) {
+            fetch("/auth/callback", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ access_token, refresh_token })
+            }).then(() => window.location.href = "/");
+        }
+    }
+
+    // Handle OAuth callback for GitHub
+    if (window.location.pathname === "/auth/github/callback") {
+        const fragment = new URLSearchParams(window.location.hash.slice(1));
+        const access_token = fragment.get("access_token");
+        const refresh_token = fragment.get("refresh_token");
+
+        if (access_token) {
+            fetch("/auth/github/callback", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ access_token, refresh_token })
+            }).then(() => window.location.href = "/");
+        }
+    }
+
+});
 </script>
+
 
 <script>
     if (window.location.pathname === "/auth/callback") {
