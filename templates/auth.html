@@ -259,10 +259,11 @@
     import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
     const supabase = createClient(
-        process.env.SUPABASE_URL,      // exact name from .env
-        process.env.SUPABASE_ANON_KEY
+        "{{ SUPABASE_URL }}",
+        "{{ SUPABASE_ANON_KEY }}"
     );
 
+    console.log("Supabase client initialized:", supabase);
     document.getElementById('google-login').addEventListener('click', async () => {
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
@@ -277,14 +278,20 @@
     });
 
     document.getElementById('github-login').addEventListener('click', async () => {
-        const { data, error } = await supabase.auth.signInWithOAuth({
-            provider: 'github',
-            options: {
-                redirectTo: window.location.origin + "/auth/github/callback"
-            }
-        });
+    const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'github',
+        options: {
+            redirectTo: window.location.origin + "/auth/github/callback"
+        }
+    });
 
-        if (error) console.error("GitHub login failed:", error.message);
+    if (error) {
+        console.error("GitHub login failed:", error.message);
+        return;
+    }
+
+    // Redirect browser to GitHub login page
+    if (data?.url) window.location.href = data.url;
     });
 </script>
 
