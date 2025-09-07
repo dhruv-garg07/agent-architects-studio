@@ -38,19 +38,32 @@ login_manager.init_app(app)
 login_manager.login_view = 'auth'
 
 class User:
-    def __init__(self, user_id, email=None):
+    def __init__(self, user_id=None, email=None):
         self.id = user_id
         self.email = email
-        self.is_authenticated = True
-        self.is_active = True
-        self.is_anonymous = False
-    
+
+    @property
+    def is_authenticated(self):
+        return self.id is not None
+
+    @property
+    def is_active(self):
+        return True
+
+    @property
+    def is_anonymous(self):
+        return self.id is None
+
     def get_id(self):
-        return str(self.id)
+        return str(self.id) if self.id else None
+
 
 @login_manager.user_loader
 def load_user(user_id):
+    if not user_id:
+        return None
     return User(user_id)
+
 
 # Routes
 @app.route('/')
