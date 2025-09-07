@@ -334,43 +334,45 @@ def auth_callback():
 
 
 
-@app.route('/auth/github/callback', methods=['POST'])
+# Redirect to Supabase OAuth for GitHub
+@app.route('/login/github')
+def login_github():
+    supabase_redirect_url = "https://lmlwkkbzkikrkshriaqm.supabase.co/auth/v1/authorize?provider=github&redirect_to=" + \
+                            url_for('github_callback', _external=True)
+    return redirect(supabase_redirect_url)
+
+# GitHub callback
+@app.route('/auth/github/callback')
 def github_callback():
+    # Supabase will include access_token in URL fragment (#access_token=...)
+    return render_template("oauth_redirect.html")  # small page that parses hash and POSTs to /auth/github/verify
+
+# Verify token and create/update profile
+@app.route('/auth/github/verify', methods=['POST'])
+def github_verify():
     data = request.get_json()
-    if not data or "access_token" not in data:
+    access_token = data.get("access_token")
+
+    if not access_token:
         flash("GitHub login failed: missing access token.", "error")
         return redirect(url_for("auth"))
 
-    access_token = data["access_token"]
-
     try:
-        # Use backend client
+        # Use backend service key client
         user_info = supabase_backend.auth.get_user(access_token)
-        if not user_info.data or not user_info.data.user:
-            flash("Failed to fetch GitHub user info.", "error")
-            return redirect(url_for("auth"))
-
         github_user = user_info.data.user
         github_email = github_user.email
+        github_profile_url = github_user.user_metadata.get("html_url", "")
+
         if not github_email:
             flash("GitHub account does not provide an email.", "error")
             return redirect(url_for("auth"))
 
-        github_profile_url = github_user.user_metadata.get("html_url", "")
-
         # Check if profile exists
-        existing_profile_res = (
-            supabase_backend.table("profiles")
-            .select("*")
-            .eq("email", github_email)
-            .execute()
-        )
-
+        existing_profile_res = supabase_backend.table("profiles").select("*").eq("email", github_email).execute()
         if existing_profile_res.data and len(existing_profile_res.data) > 0:
             profile_id = existing_profile_res.data[0]["id"]
-            supabase_backend.table("profiles").update({
-                "github_url": github_profile_url
-            }).eq("id", profile_id).execute()
+            supabase_backend.table("profiles").update({"github_url": github_profile_url}).eq("id", profile_id).execute()
         else:
             # Create unique username
             base_username = github_email.split("@")[0]
@@ -401,6 +403,7 @@ def github_callback():
     except Exception as e:
         flash(f"Unexpected error during GitHub login: {e}", "error")
         return redirect(url_for("auth"))
+
 
 
 
