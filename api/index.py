@@ -457,6 +457,8 @@ def logout():
 
 
 
+from uuid import UUID
+
 @app.route('/profile')
 @login_required
 def my_profile():
@@ -465,24 +467,37 @@ def my_profile():
     Redirects to their public username-based URL.
     """
     try:
-        # Fetch the logged-in user's profile to get their username
-        # REMOVED .single() to prevent the error on 0 rows found
-        print("Current user:", current_user.id)
-        user_profile_res = supabase.table('profiles').select('username').eq('id', current_user.id).execute()
+        # Ensure the ID is a proper UUID string
+        user_id = str(UUID(str(current_user.id)))
+        print("Current user ID:", user_id)
+
+        # Supabase query
+        user_profile_res = (
+            supabase.table('profiles')
+            .select('username')
+            .eq('id', user_id)
+            .execute()
+        )
+
+
         print("User profile response:", user_profile_res.data)
-        # Check if the data list is not empty
-        if user_profile_res.data:
-            # Redirect to the public URL format for consistency
+
+        all_profiles_res = supabase.table('profiles').select('*').execute()
+        print("All profiles:", all_profiles_res.data)
+
+        if user_profile_res.data and len(user_profile_res.data) > 0:
             username = user_profile_res.data[0]['username']
             return redirect(url_for('view_profile', username=username))
         else:
-            # This case will now be handled gracefully
             flash("Your profile has not been set up yet. Please contact support or re-register.", "error")
             return redirect(url_for('homepage'))
-            
+
     except Exception as e:
         flash(f"An error occurred while fetching your profile: {e}", "error")
         return redirect(url_for('homepage'))
+
+
+
 
 
 @app.route('/profile/<username>')
