@@ -332,15 +332,6 @@ def auth_callback():
             print("Error during Google login:", e)
             return {"error": "Login failed"}, 500
 
-
-
-# Redirect to Supabase OAuth for GitHub
-@app.route('/login/github')
-def login_github():
-    supabase_redirect_url = "https://lmlwkkbzkikrkshriaqm.supabase.co/auth/v1/authorize?provider=github&redirect_to=" + \
-                            url_for('github_callback', _external=True)
-    return redirect(supabase_redirect_url)
-
 @app.route("/login/github")
 def login_github():
     redirect_url = url_for("github_callback", _external=True)
