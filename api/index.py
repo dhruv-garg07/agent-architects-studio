@@ -255,38 +255,71 @@ def login():
     
 @app.route("/login/google")
 def login_google():
-    redirect_url = url_for("auth_callback", _external=True)  # http://127.0.0.1:5000/auth/callback
+    redirect_url = url_for("auth_callback", _external=True)
     oauth_url = f"{SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to={redirect_url}"
     return redirect(oauth_url)
 
-@app.route("/auth/callback")
+@app.route("/auth/callback", methods=["GET", "POST"])
 def auth_callback():
-    code = request.args.get("code")
-    if not code:
-        flash("No authorization code returned from Google.", "error")
-        return redirect(url_for("auth"))
+    # --- GET request: serve HTML with JS to extract tokens ---
+    if request.method == "GET":
+        return render_template("auth_callback.html")  # your JS in this page will POST the tokens
 
-    token_url = f"{SUPABASE_URL}/auth/v1/token?grant_type=authorization_code"
-    response = requests.post(
-        token_url,
-        headers={"apikey": SUPABASE_ANON_KEY, "Content-Type": "application/json"},
-        json={"code": code, "redirect_uri": url_for("auth_callback", _external=True)},
-    )
+    # --- POST request: handle token sent from frontend ---
+    if request.method == "POST":
+        data = request.get_json(silent=True)
+        if not data:
+            return {"error": "Expected JSON body"}, 400
 
-    if response.status_code != 200:
-        flash(f"Google login failed: {response.text}", "error")
-        return redirect(url_for("auth"))
+        access_token = data.get("access_token")
+        refresh_token = data.get("refresh_token")
 
-    data = response.json()
-    session["sb_access_token"] = data["access_token"]
-    session["sb_refresh_token"] = data.get("refresh_token")
+        if not access_token:
+            return {"error": "Missing access_token"}, 400
 
-    user_data = data["user"]
-    user = User(user_id=user_data["id"], email=user_data["email"])
-    login_user(user)
+        try:
+            # --- Validate token with Supabase ---
+            user_resp = supabase.auth.get_user(access_token)
+            if not user_resp or not user_resp.user:
+                return {"error": "Invalid token"}, 401
 
-    flash("Logged in successfully with Google!", "success")
-    return redirect(url_for("homepage"))
+            user = user_resp.user
+
+            # --- Save tokens in server-side session ---
+            session["sb_access_token"] = access_token
+            session["sb_refresh_token"] = refresh_token
+            session["user_email"] = user.email
+
+            # --- Ensure profile exists in 'profiles' table ---
+            try:
+                existing_profile = supabase.table("profiles").select("id").eq("id", user.id).execute()
+                if not existing_profile.data:
+                    profile_data = {
+                        "id": user.id,  # same UUID as auth.users
+                        "username": user.email.split("@")[0],  # default username
+                        "full_name": user.user_metadata.get("full_name") or user.email,
+                        "user_role": "user",  # default role
+                        "primary_interest": None,
+                        "portfolio_url": None,
+                        "expertise": None
+                    }
+                    # Use service role key to bypass RLS, and handle duplicates gracefully
+                    supabase_backend.table("profiles").upsert(profile_data, on_conflict="id").execute()
+            except Exception as e:
+                print("Error syncing profile:", e)
+
+            # --- Log in the user with Flask-Login ---
+            user_obj = User(user_id=user.id, email=user.email)
+            login_user(user_obj)
+
+            return {"message": "Logged in successfully"}
+
+        except Exception as e:
+            print("Error during Google login:", e)
+            return {"error": "Login failed"}, 500
+
+
+
 
 
 

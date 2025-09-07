@@ -277,5 +277,23 @@
     });
 </script>
 
+<script>
+  const fragment = new URLSearchParams(window.location.hash.slice(1));
+  const access_token = fragment.get("access_token");
+  const refresh_token = fragment.get("refresh_token");
+
+  if (access_token) {
+    fetch("/auth/callback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ access_token, refresh_token })
+    }).then(() => {
+      window.location.href = "/"; // or homepage
+    });
+  } else {
+    window.location.href = "/auth"; // fallback if login failed
+  }
+</script>
+
 
 {% endblock %}
