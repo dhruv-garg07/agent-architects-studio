@@ -3,6 +3,7 @@
 
 import os
 import sys
+import uuid
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, abort
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -333,6 +334,92 @@ def auth_callback():
 
 
 
+@app.route('/auth/github/callback', methods=['POST'])
+def github_callback():
+    data = request.get_json()
+
+    # Check if data is valid
+    if not data or "access_token" not in data:
+        flash("GitHub login failed: missing access token.", "error")
+        return redirect(url_for("auth"))
+
+    access_token = data.get("access_token")
+
+    # Get user info from Supabase
+    user_info = supabase.auth.get_user(access_token)
+    if user_info.error or not user_info.data:
+        flash("Failed to fetch GitHub user info.", "error")
+        return redirect(url_for("auth"))
+
+    github_user = user_info.data.user
+
+    # GitHub email may be None
+    github_email = github_user.email
+    if not github_email:
+        flash("GitHub account does not provide an email. Please use another login method.", "error")
+        return redirect(url_for("auth"))
+
+    github_profile_url = github_user.user_metadata.get("html_url") or ""
+
+    # Check if profile already exists
+    existing_profile_res = (
+        supabase.table("profiles")
+        .select("*")
+        .eq("email", github_email)
+        .execute()
+    )
+
+    try:
+        if existing_profile_res.data and len(existing_profile_res.data) > 0:
+            # Profile exists → update GitHub URL
+            profile_id = existing_profile_res.data[0]["id"]
+            update_res = supabase.table("profiles").update({
+                "github_url": github_profile_url
+            }).eq("id", profile_id).execute()
+
+            if update_res.error:
+                flash("Failed to update GitHub profile URL.", "error")
+                return redirect(url_for("auth"))
+
+        else:
+            # Profile does not exist → create new
+            # Ensure username uniqueness
+            base_username = github_email.split("@")[0]
+            username = base_username
+            counter = 1
+
+            while True:
+                username_check = supabase.table("profiles").select("id").eq("username", username).execute()
+                if username_check.data and len(username_check.data) > 0:
+                    username = f"{base_username}{counter}"
+                    counter += 1
+                else:
+                    break
+
+            new_profile_id = str(uuid.uuid4())
+            insert_res = supabase.table("profiles").insert({
+                "id": new_profile_id,
+                "email": github_email,
+                "username": username,
+                "github_url": github_profile_url,
+                "created_at": datetime.utcnow().isoformat()
+            }).execute()
+
+            if insert_res.error:
+                flash("Failed to create your profile.", "error")
+                return redirect(url_for("auth"))
+
+            profile_id = new_profile_id
+
+        # Log in user with Flask-Login
+        login_user(User(profile_id))
+
+        flash("Successfully logged in via GitHub!", "success")
+        return redirect(url_for("homepage"))
+
+    except Exception as e:
+        flash(f"An unexpected error occurred: {e}", "error")
+        return redirect(url_for("auth"))
 
 
 

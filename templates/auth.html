@@ -259,8 +259,8 @@
     import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
     const supabase = createClient(
-        "https://lmlwkkbzkikrkshriaqm.supabase.co",
-        "<your-public-anon-key>"
+        process.env.SUPABASE_URL,      // exact name from .env
+        process.env.SUPABASE_ANON_KEY
     );
 
     document.getElementById('google-login').addEventListener('click', async () => {
@@ -275,24 +275,35 @@
 
         if (error) console.error("Login failed:", error.message);
     });
+
+    document.getElementById('github-login').addEventListener('click', async () => {
+        const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'github',
+            options: {
+                redirectTo: window.location.origin + "/auth/github/callback"
+            }
+        });
+
+        if (error) console.error("GitHub login failed:", error.message);
+    });
 </script>
 
 <script>
-if (window.location.pathname === "/auth/callback") {
-  const fragment = new URLSearchParams(window.location.hash.slice(1));
-  const access_token = fragment.get("access_token");
-  const refresh_token = fragment.get("refresh_token");
+    if (window.location.pathname === "/auth/callback") {
+        const fragment = new URLSearchParams(window.location.hash.slice(1));
+        const access_token = fragment.get("access_token");
+        const refresh_token = fragment.get("refresh_token");
 
-  if (access_token) {
-    fetch("/auth/callback", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ access_token, refresh_token })
-    }).then(() => {
-      window.location.href = "/"; // or homepage
-    });
-  }
-}
+        if (access_token) {
+            fetch("/auth/callback", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ access_token, refresh_token })
+            }).then(() => {
+                window.location.href = "/"; // or homepage
+            });
+        }
+    }
 </script>
 
 
