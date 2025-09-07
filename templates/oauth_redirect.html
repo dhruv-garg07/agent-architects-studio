@@ -1,23 +1,18 @@
-<!DOCTYPE html>
-<html>
-<head><title>OAuth Redirect</title></head>
-<body>
 <script>
-  // Parse access token from URL fragment
-  const fragment = new URLSearchParams(window.location.hash.slice(1));
-  const access_token = fragment.get("access_token");
+document.addEventListener("DOMContentLoaded", () => {
+    const fragment = new URLSearchParams(window.location.hash.slice(1));
+    const access_token = fragment.get("access_token");
 
-  if (access_token) {
-      fetch("/auth/github/verify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ access_token })
-      }).then(() => {
-          window.location.href = "/"; // redirect to homepage
-      });
-  } else {
-      window.location.href = "/auth"; // fallback
-  }
+    if (access_token) {
+        fetch("/auth/github/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ access_token })
+        }).then(() => {
+            window.location.href = "/"; // redirect to homepage
+        }).catch(err => console.error(err));
+    } else {
+        console.error("No access token found in URL fragment");
+    }
+});
 </script>
-</body>
-</html>

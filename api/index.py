@@ -341,61 +341,50 @@ def login_github():
                             url_for('github_callback', _external=True)
     return redirect(supabase_redirect_url)
 
-# GitHub callback
-@app.route('/auth/github/callback')
-def github_callback():
-    # Supabase will include access_token in URL fragment (#access_token=...)
-    return render_template("oauth_redirect.html")  # small page that parses hash and POSTs to /auth/github/verify
+@app.route("/login/github")
+def login_github():
+    redirect_url = url_for("github_callback", _external=True)
+    oauth_url = f"{SUPABASE_URL}/auth/v1/authorize?provider=github&redirect_to={redirect_url}"
+    return redirect(oauth_url)
 
-# Verify token and create/update profile
-@app.route('/auth/github/verify', methods=['POST'])
+
+@app.route("/auth/github/callback")
+def github_callback():
+    # Render page with JS to extract access_token from URL fragment
+    return render_template("oauth_redirect.html")
+
+
+@app.route("/auth/github/verify", methods=["POST"])
 def github_verify():
     data = request.get_json()
     access_token = data.get("access_token")
-
     if not access_token:
         flash("GitHub login failed: missing access token.", "error")
         return redirect(url_for("auth"))
 
     try:
-        # Use backend service key client
+        # --- Get user info using service role key ---
         user_info = supabase_backend.auth.get_user(access_token)
         github_user = user_info.data.user
-        github_email = github_user.email
-        github_profile_url = github_user.user_metadata.get("html_url", "")
-
-        if not github_email:
-            flash("GitHub account does not provide an email.", "error")
+        if not github_user:
+            flash("Failed to fetch GitHub user info.", "error")
             return redirect(url_for("auth"))
 
-        # Check if profile exists
-        existing_profile_res = supabase_backend.table("profiles").select("*").eq("email", github_email).execute()
-        if existing_profile_res.data and len(existing_profile_res.data) > 0:
-            profile_id = existing_profile_res.data[0]["id"]
-            supabase_backend.table("profiles").update({"github_url": github_profile_url}).eq("id", profile_id).execute()
-        else:
-            # Create unique username
-            base_username = github_email.split("@")[0]
-            username = base_username
-            counter = 1
-            while True:
-                username_check = supabase_backend.table("profiles").select("id").eq("username", username).execute()
-                if username_check.data and len(username_check.data) > 0:
-                    username = f"{base_username}{counter}"
-                    counter += 1
-                else:
-                    break
+        profile_id = github_user.id  # Always use Supabase Auth UUID
+        github_email = github_user.email or github_user.user_metadata.get("email")
+        github_username = github_user.user_metadata.get("login") or github_email.split("@")[0]
+        github_profile_url = github_user.user_metadata.get("html_url", "")
 
-            profile_id = str(uuid.uuid4())
-            supabase_backend.table("profiles").insert({
-                "id": profile_id,
-                "email": github_email,
-                "username": username,
-                "github_url": github_profile_url,
-                "created_at": datetime.utcnow().isoformat()
-            }).execute()
+        # --- Upsert profile in 'profiles' table ---
+        supabase_backend.table("profiles").upsert({
+            "id": profile_id,
+            "email": github_email,
+            "username": github_username,
+            "github_url": github_profile_url,
+            "created_at": datetime.utcnow().isoformat()
+        }, on_conflict="id").execute()
 
-        # Log in user
+        # --- Log in user ---
         login_user(User(profile_id))
         flash("Successfully logged in via GitHub!", "success")
         return redirect(url_for("homepage"))
@@ -403,7 +392,6 @@ def github_verify():
     except Exception as e:
         flash(f"Unexpected error during GitHub login: {e}", "error")
         return redirect(url_for("auth"))
-
 
 
 
