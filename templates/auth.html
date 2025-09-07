@@ -227,112 +227,80 @@
     }
 </script>
 
-<script>
-    // Wait for the DOM to be fully loaded before running the script
-    document.addEventListener('DOMContentLoaded', (event) => {
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-        // Find the elements in the document
-        const userRoleSelect = document.getElementById('user-role');
-        const creatorFields = document.getElementById('creator-fields');
-        const userFields = document.getElementById('user-fields');
+// Initialize Supabase client (rendered from Flask template)
+const supabase = createClient(
+    "{{ SUPABASE_URL }}",
+    "{{ SUPABASE_ANON_KEY }}"
+);
 
-        // Add an event listener to the dropdown
+document.addEventListener('DOMContentLoaded', () => {
+
+    // -----------------------------
+    // User role dropdown logic
+    // -----------------------------
+    const userRoleSelect = document.getElementById('user-role');
+    const creatorFields = document.getElementById('creator-fields');
+    const userFields = document.getElementById('user-fields');
+
+    if (userRoleSelect) {
         userRoleSelect.addEventListener('change', function () {
-            // Check the selected value
             if (this.value === 'creator') {
-                creatorFields.classList.remove('hidden');
-                userFields.classList.add('hidden');
+                creatorFields?.classList.remove('hidden');
+                userFields?.classList.add('hidden');
             } else if (this.value === 'user') {
-                userFields.classList.remove('hidden');
-                creatorFields.classList.add('hidden');
+                userFields?.classList.remove('hidden');
+                creatorFields?.classList.add('hidden');
             } else {
-                // Hide both if no option is selected
-                creatorFields.classList.add('hidden');
-                userFields.classList.add('hidden');
+                creatorFields?.classList.add('hidden');
+                userFields?.classList.add('hidden');
             }
         });
+    }
 
-    });
-</script>
-
-<script type="module">
-    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-    // Supabase client (ensure these render correctly from Flask)
-    const supabase = createClient(
-        "{{ SUPABASE_URL }}",
-        "{{ SUPABASE_ANON_KEY }}"
-    );
-
-    document.addEventListener('DOMContentLoaded', () => {
-
-        // Google login
-        const googleBtn = document.getElementById('google-login');
-        if (googleBtn) {
-            googleBtn.addEventListener('click', async () => {
-                console.log("Google login button clicked");
+    // -----------------------------
+    // Google OAuth login
+    // -----------------------------
+    const googleBtn = document.getElementById('google-login');
+    if (googleBtn) {
+        googleBtn.addEventListener('click', async () => {
+            try {
                 const { data, error } = await supabase.auth.signInWithOAuth({
                     provider: 'google',
-                    options: {
-                        redirectTo: window.location.origin + "/auth/callback"
-                    }
+                    options: { redirectTo: window.location.origin + "/auth/callback" }
                 });
-                if (error) console.error("Google login failed:", error.message);
-                else if (data?.url) window.location.href = data.url;
-            });
-        }
+                if (error) throw error;
+                if (data?.url) window.location.href = data.url;
+            } catch (err) {
+                console.error("Google login error:", err.message);
+            }
+        });
+    }
 
-        // GitHub login
-        const githubBtn = document.getElementById('github-login');
-        if (githubBtn) {
-            githubBtn.addEventListener('click', async () => {
-                console.log("GitHub login button clicked");
+    // -----------------------------
+    // GitHub OAuth login
+    // -----------------------------
+    const githubBtn = document.getElementById('github-login');
+    if (githubBtn) {
+        githubBtn.addEventListener('click', async () => {
+            try {
                 const { data, error } = await supabase.auth.signInWithOAuth({
                     provider: 'github',
-                    options: {
-                        redirectTo: window.location.origin + "/auth/github/callback"
-                    }
+                    options: { redirectTo: window.location.origin + "/auth/github/callback" }
                 });
-                if (error) console.error("GitHub login failed:", error.message);
-                else if (data?.url) window.location.href = data.url;
-            });
-        }
-
-        // Handle OAuth callback for Google
-        if (window.location.pathname === "/auth/callback") {
-            const fragment = new URLSearchParams(window.location.hash.slice(1));
-            const access_token = fragment.get("access_token");
-            const refresh_token = fragment.get("refresh_token");
-
-            if (access_token) {
-                fetch("/auth/callback", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ access_token, refresh_token })
-                }).then(() => window.location.href = "/");
+                if (error) throw error;
+                if (data?.url) window.location.href = data.url;
+            } catch (err) {
+                console.error("GitHub login error:", err.message);
             }
-        }
+        });
+    }
 
-        // Handle OAuth callback for GitHub
-        if (window.location.pathname === "/auth/github/callback") {
-            const fragment = new URLSearchParams(window.location.hash.slice(1));
-            const access_token = fragment.get("access_token");
-            const refresh_token = fragment.get("refresh_token");
-
-            if (access_token) {
-                fetch("/auth/github/callback", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ access_token, refresh_token })
-                }).then(() => window.location.href = "/");
-            }
-        }
-
-    });
-</script>
-
-
-<script>
+    // -----------------------------
+    // Handle Google OAuth callback
+    // -----------------------------
     if (window.location.pathname === "/auth/callback") {
         const fragment = new URLSearchParams(window.location.hash.slice(1));
         const access_token = fragment.get("access_token");
@@ -343,13 +311,50 @@
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ access_token, refresh_token })
-            }).then(() => {
-                window.location.href = "/"; // or homepage
-            });
+            })
+            .then(res => res.json())
+            .then(result => {
+                if (result.error) {
+                    console.error("Google login failed:", result.error);
+                } else {
+                    window.location.href = "/";
+                }
+            })
+            .catch(err => console.error("Google login fetch error:", err));
         }
     }
-</script>
 
+    // -----------------------------
+    // Handle GitHub OAuth callback
+    // -----------------------------
+    if (window.location.pathname === "/auth/github/callback") {
+        const fragment = new URLSearchParams(window.location.hash.slice(1));
+        const access_token = fragment.get("access_token");
+        const refresh_token = fragment.get("refresh_token");
+
+        if (access_token) {
+            fetch("/auth/github/verify", {  // <--- FIXED endpoint
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ access_token, refresh_token })
+            })
+            .then(res => res.json())
+            .then(result => {
+                if (result.error) {
+                    console.error("GitHub login failed:", result.error);
+                    alert("GitHub login failed. Check console for details.");
+                } else {
+                    window.location.href = "/";
+                }
+            })
+            .catch(err => console.error("GitHub login fetch error:", err));
+        } else {
+            console.error("No access token found in GitHub callback URL.");
+        }
+    }
+
+});
+</script>
 
 
 {% endblock %}
