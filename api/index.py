@@ -452,7 +452,9 @@ def logout():
     session.pop('sb_refresh_token', None)
     logout_user()
     flash('Logged out.', 'success')
+    session.clear()
     return redirect(url_for('auth'))
+
 
 
 @app.route('/profile')
