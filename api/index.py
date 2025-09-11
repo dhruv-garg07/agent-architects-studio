@@ -382,12 +382,16 @@ def github_verify():
             profile_id = existing_profile.data[0]["id"]
             print(f"Profile exists: {github_email}")
 
-            # ✅ Update GitHub URL if missing
             if not existing_profile.data[0].get("github_url"):
-                supabase_backend.table("profiles").update({
+                update_res = supabase_backend.table("profiles").update({
                     "github_url": github_profile_url
                 }).eq("id", profile_id).execute()
-                print(f"Updated GitHub URL for {github_email}")
+
+                if update_res.error:
+                    print(f"Failed to update GitHub URL for {github_email}: {update_res.error}")
+                else:
+                    print(f"Updated GitHub URL for {github_email}")
+
 
         else:
             # -----------------------------
