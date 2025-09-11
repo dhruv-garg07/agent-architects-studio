@@ -365,6 +365,7 @@ def github_verify():
 
         github_user = user_info.user
         github_email = github_user.email
+        print("GitHub user info:", github_user)
         github_profile_url = github_user.user_metadata.get("html_url") or ""
 
         if not github_email:
