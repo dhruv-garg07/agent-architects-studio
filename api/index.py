@@ -404,7 +404,7 @@ def github_verify():
                 else:
                     break
 
-            profile_id = str(uuid.uuid4())
+            profile_id = github_user.id or str(uuid.uuid4())
             supabase_backend.table("profiles").insert({
                 "id": profile_id,
                 "email": github_email,
