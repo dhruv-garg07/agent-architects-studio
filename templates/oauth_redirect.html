@@ -1,18 +1,33 @@
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-    const fragment = new URLSearchParams(window.location.hash.slice(1));
-    const access_token = fragment.get("access_token");
+        document.addEventListener("DOMContentLoaded", async () => {
+            const fragment = new URLSearchParams(window.location.hash.slice(1));
+            const access_token = fragment.get("access_token");
+            const refresh_token = fragment.get("refresh_token");
 
-    if (access_token) {
-        fetch("/auth/github/verify", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ access_token })
-        }).then(() => {
-            window.location.href = "/"; // redirect to homepage
-        }).catch(err => console.error(err));
-    } else {
-        console.error("No access token found in URL fragment");
-    }
-});
-</script>
+            if (!access_token) {
+                console.error("No access token found in URL fragment");
+                alert("GitHub login failed: No access token.");
+                return;
+            }
+
+            try {
+                const res = await fetch("/auth/github/verify", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ access_token, refresh_token })
+                });
+
+                const result = await res.json();
+
+                if (result.success) {
+                    window.location.href = result.redirect || "/";
+                } else {
+                    console.error("GitHub login failed:", result.error);
+                    alert("GitHub login failed: " + (result.error || "Unknown error"));
+                }
+            } catch (err) {
+                console.error("Error verifying GitHub login:", err);
+                alert("GitHub login failed: Network or server error.");
+            }
+        });
+    </script>

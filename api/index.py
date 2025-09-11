@@ -345,9 +345,10 @@ def github_callback():
 
 @app.route("/auth/github/verify", methods=["POST"])
 def github_verify():
+    print("Verifying GitHub login...")
     data = request.get_json()
     access_token = data.get("access_token")
-
+    print("Received GitHub access token:", access_token)
     if not access_token:
         return jsonify({"error": "Missing access token"}), 400
 
