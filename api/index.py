@@ -348,33 +348,84 @@ def github_verify():
     print("Verifying GitHub login...")
     data = request.get_json()
     access_token = data.get("access_token")
-    print("Received GitHub access token:", access_token)
+    print("Received GitHub access token:", access_token[:15] + "...")
+
     if not access_token:
         return jsonify({"error": "Missing access token"}), 400
 
     try:
+        # Fetch user from Supabase Auth
         user_info = supabase_backend.auth.get_user(access_token)
 
-        if not user_info.user:
+        if not user_info or not user_info.user:
             return jsonify({"error": "Invalid GitHub user response"}), 400
 
         github_user = user_info.user
         github_email = github_user.email
-        github_profile_url = github_user.user_metadata.get("avatar_url", "")
-
+        github_profile_url = github_user.user_metadata.get("html_url") or github_user.user_metadata.get("avatar_url", "")
 
         if not github_email:
             return jsonify({"error": "GitHub account has no email"}), 400
 
-        # same insert/update logic ...
-        profile_id = str(uuid.uuid4())
-        # ...
+        # -----------------------------
+        # Check if user already exists
+        # -----------------------------
+        existing_profile = (
+            supabase_backend.table("profiles").select("*").eq("email", github_email).execute()
+        )
 
+        if existing_profile.data and len(existing_profile.data) > 0:
+            # Existing profile → login
+            profile_id = existing_profile.data[0]["id"]
+            print(f"Profile exists: {github_email}")
+
+            # ✅ Update GitHub URL if missing
+            if not existing_profile.data[0].get("github_url"):
+                supabase_backend.table("profiles").update({
+                    "github_url": github_profile_url
+                }).eq("id", profile_id).execute()
+                print(f"Updated GitHub URL for {github_email}")
+
+        else:
+            # -----------------------------
+            # New user → create profile
+            # -----------------------------
+            base_username = github_email.split("@")[0]
+            username = base_username
+            counter = 1
+            while True:
+                username_check = supabase_backend.table("profiles").select("id").eq("username", username).execute()
+                if username_check.data and len(username_check.data) > 0:
+                    username = f"{base_username}{counter}"
+                    counter += 1
+                else:
+                    break
+
+            profile_id = str(uuid.uuid4())
+            supabase_backend.table("profiles").insert({
+                "id": profile_id,
+                "email": github_email,
+                "username": username,
+                "full_name": github_user.user_metadata.get("full_name", ""),
+                "user_role": "user",
+                "portfolio_url": None,
+                "expertise": None,
+                "primary_interest": None,
+                "github_url": github_profile_url,
+                "created_at": datetime.utcnow().isoformat()
+            }).execute()
+            print(f"Created new profile: {github_email}")
+
+        # -----------------------------
+        # Log in with Flask-Login
+        # -----------------------------
         login_user(User(profile_id))
         return jsonify({"success": True, "redirect": url_for("homepage")})
 
     except Exception as e:
+        print("Error during GitHub login:", str(e))
         return jsonify({"error": str(e)}), 500
+
 
 
 
