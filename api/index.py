@@ -388,10 +388,10 @@ def github_verify():
                     "github_url": github_profile_url
                 }).eq("id", profile_id).execute()
 
-                if update_res.error:
-                    print(f"Failed to update GitHub URL for {github_email}: {update_res.error}")
-                else:
+                if update_res.data:
                     print(f"Updated GitHub URL for {github_email}")
+                else:
+                    print(f"Failed to update GitHub URL for {github_email}, response: {update_res}")
 
 
         else:
