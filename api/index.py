@@ -393,6 +393,7 @@ def github_verify():
             # -----------------------------
             # New user → create profile
             # -----------------------------
+            print("Creating new profile for:", github_email)
             base_username = github_email.split("@")[0]
             username = base_username
             counter = 1
