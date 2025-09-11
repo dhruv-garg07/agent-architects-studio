@@ -354,9 +354,14 @@ def github_verify():
 
     try:
         user_info = supabase_backend.auth.get_user(access_token)
-        github_user = user_info.data.user
+
+        if not user_info.user:
+            return jsonify({"error": "Invalid GitHub user response"}), 400
+
+        github_user = user_info.user
         github_email = github_user.email
-        github_profile_url = github_user.user_metadata.get("html_url", "")
+        github_profile_url = github_user.user_metadata.get("avatar_url", "")
+
 
         if not github_email:
             return jsonify({"error": "GitHub account has no email"}), 400
