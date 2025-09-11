@@ -310,12 +310,15 @@ def auth_callback():
                 if not existing_profile.data:
                     profile_data = {
                         "id": user.id,  # same UUID as auth.users
+                        "email": user.email,
                         "username": user.email.split("@")[0],  # default username
                         "full_name": user.user_metadata.get("full_name") or user.email,
                         "user_role": "user",  # default role
+                        "portfolio_url": None,
                         "primary_interest": None,
                         "portfolio_url": None,
-                        "expertise": None
+                        "expertise": None,
+                        "created_at": datetime.utcnow().isoformat()
                     }
                     # Use service role key to bypass RLS, and handle duplicates gracefully
                     supabase_backend.table("profiles").upsert(profile_data, on_conflict="id").execute()
