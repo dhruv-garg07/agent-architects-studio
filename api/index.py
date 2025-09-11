@@ -365,7 +365,7 @@ def github_verify():
 
         github_user = user_info.user
         github_email = github_user.email
-        github_profile_url = github_user.user_metadata.get("html_url") or github_user.user_metadata.get("avatar_url", "")
+        github_profile_url = github_user.user_metadata.get("html_url") or ""
 
         if not github_email:
             return jsonify({"error": "GitHub account has no email"}), 400
