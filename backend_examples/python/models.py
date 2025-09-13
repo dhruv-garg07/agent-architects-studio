@@ -18,10 +18,19 @@ class Agent(BaseModel):
     name: str
     description: Optional[str] = None
     category: Optional[str] = None
+    base_url: Optional[str] = None  # Added field for base URL
+    run_path: Optional[str] = None  # Added field for run path
+    headers: Optional[Dict[str, str]] = None
+    content_type: Optional[str] = None
+    authentication: Optional[Dict[str, Any]] = None
+    data_format: Optional[str] = None
+    io_schema: Optional[Dict[str, Any]] = None
+    out_schema: Optional[Dict[str, Any]] = None
+    # data_structure: Optional[Dict[str, Any]] = None  # Changed to Dict
+    
     tags: Optional[List[str]] = None
     model: Optional[str] = None
     status: Optional[str] = "draft"
-    creator_id: str
     upvotes: Optional[int] = 0
     total_runs: Optional[int] = 0
     avg_rating: Optional[float] = 0
@@ -35,10 +44,10 @@ class Agent(BaseModel):
     protocols: Optional[List[str]] = None
     dockerfile_url: Optional[str] = None
     runtime_dependencies: Optional[List[str]] = None
-    io_schema: Optional[Dict[str, Any]] = None
+    creator_id: str
     created_at: datetime
     updated_at: datetime
-    base_url: Optional[str] = None  # Added field for base URL
+    
     # data_structure: dict = {}  # Added field for data structure
     # NEW_SUPABASE_COLOUMN should be added here. 
 

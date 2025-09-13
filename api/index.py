@@ -189,15 +189,26 @@ def submit_agent():
             'description': request.form.get('description'),
             'category': request.form.get('category'),
             'base_url': request.form.get('base_url'),
+            'run_path': request.form.get('run_path'),
             'headers': headers,
             'content_type': request.form.get('content_type'),
             'authentication': authentication,
-            'data_format': request.form.get('data_format'),
-            'data_structure': request.form.get('data_structure'),
+            # 'data_format': request.form.get('data_format'),
+            'io_schema': json.loads(request.form.get('sample_input')) if request.form.get('sample_input') else {},
+            'out_schema': json.loads(request.form.get('sample_output')) if request.form.get('sample_output') else {},
             'tags': [tag.strip() for tag in request.form.get('tags', '').split(',')] if request.form.get('tags') else [],
             'status': 'pending',
-            # 'created_at': datetime.utcnow(),
-            # 'updated_at': datetime.utcnow()
+            
+            # 'created_at': json.dumps(datetime.utcnow()),
+            # 'updated_at': json.dumps(datetime.utcnow()),
+            'creator_id': current_user.id,
+            'success_rate': 0,
+            'total_runs': 0,
+            'avg_rating': 0,
+            'avg_latency': 0,
+            'upvotes': 0,
+            'runtime_dependencies': ['python'],
+            
         }
     
         print("Submitting agent data:", agent_data)
@@ -775,6 +786,10 @@ def run_agent(user_input, agent_data):
         return "Invalid agent data. Must be a dict."
 
     url = agent_data.get("base_url")
+    run_path = agent_data.get("run_path", "")
+    if run_path:
+        url = url.rstrip("/") + "/" + run_path.lstrip("/")  # Ensure single slash between base_url and run_path     
+        
     if not url:
         return "Agent base_url not found."
 

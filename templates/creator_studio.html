@@ -3,7 +3,8 @@
 {% block title %}Creator Studio - Submit AI Agent{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="container mx-auto w-full px-8 py-8">
+
     <!-- Header -->
     <div class="mb-8">
         <h1 class="text-3xl font-bold text-foreground mb-4">Creator Studio</h1>
@@ -12,289 +13,427 @@
         </p>
     </div>
 
-    <!-- Agent Submission Form -->
-    <div class="card p-6">
-        <form method="POST" action="{{ url_for('submit_agent') }}" class="space-y-6">
-            <!-- Basic Information -->
-            <div>
-                <h2 class="text-xl font-semibold text-foreground mb-4">Basic Information</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Form Column -->
+        <div class="lg:col-span-1">
+            <!-- Agent Submission Form -->
+            <div class="card p-6 mb-6">
+                <form method="POST" action="{{ url_for('submit_agent') }}" class="space-y-6" id="agent-form">
+                    <!-- Section 1: Basic Info -->
                     <div>
-                        <label for="name" class="block text-sm font-medium text-foreground mb-2">
-                            Agent Name *
+                        <h2 class="text-xl font-semibold text-foreground mb-4 flex items-center">
+                            <span class="mr-2">🔹</span> Basic Information
+                        </h2>
+                        
+                        <div class="mb-4">
+                            <label for="name" class="block text-sm font-medium text-foreground mb-2">
+                                Agent Name *
+                            </label>
+                            <input type="text" 
+                                   id="name" 
+                                   name="name" 
+                                   required
+                                   placeholder="My Amazing AI Agent"
+                                   class="input w-full">
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="category" class="block text-sm font-medium text-foreground mb-2">
+                                Category *
+                            </label>
+                            <select id="category" name="category" required class="input w-full">
+                                <option value="">Select a category</option>
+                                <option value="summarizer">Summarizer</option>
+                                <option value="coder">Coder</option>
+                                <option value="analytics">Analytics</option>
+                                <option value="content">Content Creation</option>
+                                <option value="customer-service">Customer Service</option>
+                                <option value="productivity">Productivity</option>
+                                <option value="research">Research</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="description" class="block text-sm font-medium text-foreground mb-2">
+                                Description *
+                            </label>
+                            <textarea id="description" 
+                                      name="description" 
+                                      required
+                                      rows="3"
+                                      placeholder="What the agent does..."
+                                      class="input w-full resize-none"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Section 2: API Setup -->
+                    <div>
+                        <h2 class="text-xl font-semibold text-foreground mb-4 flex items-center">
+                            <span class="mr-2">🌐</span> API Setup
+                        </h2>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label for="base_url" class="block text-sm font-medium text-foreground mb-2">
+                            Base URL *
+                        </label>
+                        <input type="url" 
+                            id="base_url" 
+                            name="base_url" 
+                            required
+                            placeholder="https://api.example.com"
+                            class="input w-full">
+                        <p class="text-xs text-muted-foreground mt-1">Root endpoint for your API</p>
+                    </div>
+                    
+                    <div>
+                        <label for="run_path" class="block text-sm font-medium text-foreground mb-2">
+                            Run Path *
                         </label>
                         <input type="text" 
-                               id="name" 
-                               name="name" 
-                               required
-                               placeholder="My Amazing AI Agent"
-                               class="input w-full">
+                            id="run_path" 
+                            name="run_path" 
+                            required
+                            placeholder="/run"
+                            class="input w-full">
+                        <p class="text-xs text-muted-foreground mt-1">Relative path for execution</p>
                     </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
-                        <label for="category" class="block text-sm font-medium text-foreground mb-2">
-                            Category *
+                        <label for="method" class="block text-sm font-medium text-foreground mb-2">
+                            Method *
                         </label>
-                        <select id="category" name="category" required class="input w-full">
-                            <option value="">Select a category</option>
-                            <option value="automation">Automation</option>
-                            <option value="content">Content Creation</option>
-                            <option value="analysis">Data Analysis</option>
-                            <option value="customer-service">Customer Service</option>
-                            <option value="productivity">Productivity</option>
-                            <option value="research">Research</option>
-                            <option value="education">Education</option>
-                            <option value="finance">Finance</option>
+                        <select id="method" name="method" required class="input w-full">
+                            <option value="POST" selected>POST</option>
+                            <option value="GET">GET</option>
+                            <option value="PUT">PUT</option>
+                            <option value="DELETE">DELETE</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="content_type" class="block text-sm font-medium text-foreground mb-2">
+                            Content-Type *
+                        </label>
+                        <select id="content_type" name="content_type" required class="input w-full">
+                            <option value="application/json" selected>application/json</option>
+                            <option value="text/plain">text/plain</option>
+                            <option value="application/xml">application/xml</option>
                         </select>
                     </div>
                 </div>
-                
-                <div class="mt-4">
-                    <label for="description" class="block text-sm font-medium text-foreground mb-2">
-                        Description *
-                    </label>
-                    <textarea id="description" 
-                              name="description" 
-                              required
-                              rows="4"
-                              placeholder="Describe what your agent does, its capabilities, and use cases..."
-                              class="input w-full resize-none"></textarea>
-                </div>
+                        
+                        <div class="mb-4">
+                            <label for="auth_token" class="block text-sm font-medium text-foreground mb-2">
+                                Auth Token
+                            </label>
+                            <input type="password" 
+                                    id="auth_token" 
+                                    name="auth_token" 
+                                    placeholder="Optional (Bearer or API Key)"
+                                    class="input w-full">
+                            <p class="text-xs text-muted-foreground mt-1">Leave empty if no authentication required</p>
+                        </div>
+                    </div>
+
+                    <!-- Section 3: Input & Output -->
+                    <div>
+                        <h2 class="text-xl font-semibold text-foreground mb-4 flex items-center">
+                            <span class="mr-2">🧾</span> Input & Output
+                        </h2>
+                        
+                        <div class="mb-4">
+                            <label for="sample_input" class="block text-sm font-medium text-foreground mb-2">
+                                Sample Input *
+                            </label>
+                            <div class="border border-border rounded-md overflow-hidden">
+                                <textarea id="sample_input" 
+                                          name="sample_input" 
+                                          required
+                                          rows="5"
+                                          placeholder='{"input": "Your input here"}'
+                                          class="w-full p-3 font-mono text-sm bg-muted/20 resize-none"></textarea>
+                            </div>
+                            <p class="text-xs text-muted-foreground mt-1">JSON or plain text example input</p>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="sample_output" class="block text-sm font-medium text-foreground mb-2">
+                                Sample Output *
+                            </label>
+                            <div class="border border-border rounded-md overflow-hidden">
+                                <textarea id="sample_output" 
+                                          name="sample_output" 
+                                          required
+                                          rows="5"
+                                          placeholder='{"result": "Expected output here"}'
+                                          class="w-full p-3 font-mono text-sm bg-muted/20 resize-none"></textarea>
+                            </div>
+                            <p class="text-xs text-muted-foreground mt-1">Expected response format</p>
+                        </div>
+                    </div>
+
+                    <!-- Expandable: Advanced Settings -->
+                    <div>
+                        <button type="button" id="toggle-advanced" class="flex items-center text-primary hover:underline mb-4">
+                            <i data-lucide="plus" class="w-4 h-4 mr-1"></i>
+                            <span>Add More Options</span>
+                        </button>
+                        
+                        <div id="advanced-settings" class="hidden space-y-4 pl-5 border-l-2 border-primary/20">
+                            <h3 class="text-lg font-medium text-foreground">Advanced Settings</h3>
+                            
+                            <!-- Custom Headers -->
+                            <div>
+                                <label class="block text-sm font-medium text-foreground mb-2">
+                                    Custom Headers
+                                </label>
+                                <div id="headers-container" class="space-y-2">
+                                    <div class="flex gap-2 header-field">
+                                        <input type="text" 
+                                               name="header_keys[]" 
+                                               placeholder="Header name"
+                                               class="input flex-1">
+                                        <input type="text" 
+                                               name="header_values[]" 
+                                               placeholder="Header value"
+                                               class="input flex-1">
+                                        <button type="button" class="btn-secondary remove-header" style="display: none;">
+                                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <button type="button" id="add-header" class="btn-secondary mt-2 text-xs">
+                                    <i data-lucide="plus" class="w-3 h-3 mr-1"></i> Add Header
+                                </button>
+                            </div>
+                            
+                            <!-- Memory Support -->
+                            <div class="flex items-center">
+                                <input type="checkbox" 
+                                       id="memory_support" 
+                                       name="memory_support" 
+                                       class="mr-2">
+                                <label for="memory_support" class="text-sm text-foreground">
+                                    Enable memory support
+                                </label>
+                            </div>
+                            
+                            <!-- Rate Limits -->
+                            <div>
+                                <label for="rate_limit" class="block text-sm font-medium text-foreground mb-2">
+                                    Rate Limit (requests per minute)
+                                </label>
+                                <input type="number" 
+                                       id="rate_limit" 
+                                       name="rate_limit" 
+                                       min="1"
+                                       placeholder="e.g., 60"
+                                       class="input w-full">
+                            </div>
+                            
+                            <!-- Timeout -->
+                            <div>
+                                <label for="timeout" class="block text-sm font-medium text-foreground mb-2">
+                                    Timeout (seconds)
+                                </label>
+                                <input type="number" 
+                                       id="timeout" 
+                                       name="timeout" 
+                                       min="1"
+                                       placeholder="e.g., 30"
+                                       class="input w-full">
+                            </div>
+                            
+                            <!-- Manifest Upload -->
+                            <div>
+                                <label for="manifest_upload" class="block text-sm font-medium text-foreground mb-2">
+                                    Upload Agent Manifest (Optional)
+                                </label>
+                                <input type="file" 
+                                       id="manifest_upload" 
+                                       name="manifest_upload" 
+                                       accept=".json"
+                                       class="input w-full py-1.5">
+                                <p class="text-xs text-muted-foreground mt-1">Upload agent_config.json to pre-fill fields</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Terms and Submission -->
+                    <div class="border-t border-border pt-6">
+                        <div class="flex items-start mb-6">
+                            <input type="checkbox" id="terms" name="terms" required class="mr-3 mt-1">
+                            <label for="terms" class="text-sm text-muted-foreground">
+                                I agree to the <a href="#" class="text-primary hover:underline">Terms of Service</a> 
+                                and confirm that this agent complies with the 
+                                <a href="#" class="text-primary hover:underline">Community Guidelines</a>. 
+                                I understand that my submission will be reviewed before publication.
+                            </label>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <button type="submit" class="btn-primary flex-1">
+                                <i data-lucide="upload" class="w-4 h-4 mr-2"></i>
+                                Submit Agent for Review
+                            </button>
+                            <button type="button" id="test-agent" class="btn-secondary">
+                                <i data-lucide="test-tube" class="w-4 h-4 mr-2"></i>
+                                Test Agent
+                            </button>
+                            <button type="button" class="btn-secondary" onclick="window.history.back()">
+                                <i data-lucide="x" class="w-4 h-4 mr-2"></i>
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </form>
             </div>
 
-            <!-- API Configuration -->
-            <div>
-                <h2 class="text-xl font-semibold text-foreground mb-4">API Configuration</h2>
-                
-                <!-- Base URL (Compulsory) -->
-                <div class="mb-4">
-                    <label for="base_url" class="block text-sm font-medium text-foreground mb-2">
-                        Base URL *
-                    </label>
-                    <input type="url" 
-                           id="base_url" 
-                           name="base_url" 
-                           required
-                           placeholder="https://api.example.com/v1/"
-                           class="input w-full">
-                </div>
-                
-                <!-- Headers -->
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-foreground mb-2">
-                        Headers
-                    </label>
-                    <div id="headers-container" class="space-y-2">
-                        <div class="flex gap-2 header-field">
-                            <input type="text" 
-                                   name="header_keys[]" 
-                                   placeholder="Header name"
-                                   class="input flex-1">
-                            <input type="text" 
-                                   name="header_values[]" 
-                                   placeholder="Header value"
-                                   class="input flex-1">
-                            <button type="button" class="btn-secondary remove-header" style="display: none;">
-                                <i data-lucide="trash-2" class="w-4 h-4"></i>
-                            </button>
+            <!-- Submission Guidelines -->
+            <div class="card p-6">
+                <h2 class="text-xl font-semibold text-foreground mb-4">Submission Guidelines</h2>
+                <div class="space-y-4 text-sm text-muted-foreground">
+                    <div class="flex items-start">
+                        <i data-lucide="check-circle" class="w-5 h-5 text-primary mr-3 mt-0.5 flex-shrink-0"></i>
+                        <div>
+                            <strong class="text-foreground">Quality Code:</strong> 
+                            Ensure your agent is well-documented, tested, and follows best practices.
                         </div>
                     </div>
-                    <button type="button" id="add-header" class="btn-secondary mt-2">
-                        <i data-lucide="plus" class="w-4 h-4 mr-1"></i> Add Header
-                    </button>
-                </div>
-                
-                <!-- Content Type (Compulsory) -->
-                <div class="mb-4">
-                    <label for="content_type" class="block text-sm font-medium text-foreground mb-2">
-                        Content-Type *
-                    </label>
-                    <select id="content_type" name="content_type" required class="input w-full">
-                        <option value="application/json">application/json</option>
-                        <option value="text/plain">text/plain</option>
-                        <option value="application/xml">application/xml</option>
-                        <option value="application/x-www-form-urlencoded">application/x-www-form-urlencoded</option>
-                    </select>
-                </div>
-                
-                
-                <!-- Authentication -->
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-foreground mb-2">
-                        Authentication
-                    </label>
-                    <div id="auth-container" class="space-y-2">
-                        <div class="flex gap-2 auth-field">
-                            <input type="text" 
-                                   name="auth_keys[]" 
-                                   placeholder="Key (e.g., Authorization)"
-                                   class="input flex-1">
-                            <input type="text" 
-                                   name="auth_values[]" 
-                                   placeholder="Value (e.g., Bearer token)"
-                                   class="input flex-1">
-                            <button type="button" class="btn-secondary remove-auth" style="display: none;">
-                                <i data-lucide="trash-2" class="w-4 h-4"></i>
-                            </button>
+                    <div class="flex items-start">
+                        <i data-lucide="check-circle" class="w-5 h-5 text-primary mr-3 mt-0.5 flex-shrink-0"></i>
+                        <div>
+                            <strong class="text-foreground">Clear Documentation:</strong> 
+                            Provide comprehensive README with setup instructions and usage examples.
                         </div>
                     </div>
-                    <button type="button" id="add-auth" class="btn-secondary mt-2">
-                        <i data-lucide="plus" class="w-4 h-4 mr-1"></i> Add Auth Field
-                    </button>
+                    <div class="flex items-start">
+                        <i data-lucide="check-circle" class="w-5 h-5 text-primary mr-3 mt-0.5 flex-shrink-0"></i>
+                        <div>
+                            <strong class="text-foreground">Ethical Use:</strong> 
+                            Agents must not promote harmful, illegal, or unethical activities.
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <i data-lucide="check-circle" class="w-5 h-5 text-primary mr-3 mt-0.5 flex-shrink-0"></i>
+                        <div>
+                            <strong class="text-foreground">Original Work:</strong> 
+                            Submit only your original creations or properly attributed collaborative work.
+                        </div>
+                    </div>
                 </div>
-                
-                <!-- Data Format (Compulsory) -->
-                <div class="mb-4">
-                    <label for="data_format" class="block text-sm font-medium text-foreground mb-2">
-                        Data Format
-                    </label>
-                    <select id="data_format" name="data_format" required class="input w-full">
-                        <option value="json">JSON</option>
-                        <option value="text">Plain Text</option>
-                        <option value="xml">XML</option>
-                        <option value="form-data">Form Data</option>
-                    </select>
-                </div>
-                
-                <!-- Data Structure -->
-                <div>
-                    <label for="data_structure" required class="block text-sm font-medium text-foreground mb-2">
-                        Data Structure * (e.g., input, prompt, message, body)
-                    </label>
-                    <textarea id="data_structure" 
-                              name="data_structure" 
-                              rows="4"
-                              placeholder='Example: {"input": "user_message", "parameters": {}}'
-                              class="input w-full resize-none"></textarea>
-                    <p class="text-xs text-muted-foreground mt-1">
-                        Describe the expected request format for your API
+            </div>
+        </div>
+
+        <!-- Preview Column -->
+        <div class="lg:col-span-1 flex flex-col">
+            <div class="sticky top-4">
+                <!-- JSON Manifest Preview -->
+                <div class="card p-6 mb-4">
+                    <h2 class="text-xl font-semibold text-foreground mb-4 flex items-center">
+                        <i data-lucide="eye" class="w-5 h-5 mr-2"></i>
+                        Live Preview
+                    </h2>
+                    <p class="text-sm text-muted-foreground mb-4">
+                        Preview your agent configuration as you fill out the form
                     </p>
-                </div>
-            </div>
-
-            <!-- Technical Specifications -->
-            <div>
-                <h2 class="text-xl font-semibold text-foreground mb-4">Technical Specifications</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label for="tags" class="block text-sm font-medium text-foreground mb-2">
-                            Tags
-                        </label>
-                        <input type="text" 
-                               id="tags" 
-                               name="tags" 
-                               placeholder="ai, automation, chatbot (comma-separated)"
-                               class="input w-full">
-                        <p class="text-xs text-muted-foreground mt-1">
-                            Separate tags with commas
-                        </p>
+                    
+                    <div class="border border-border rounded-md p-4 bg-muted/10">
+    <pre id="manifest-preview" class="text-xs font-mono overflow-auto max-h-96 p-3 rounded bg-muted/5">{
+  "agent": {
+    "name": "",
+    "category": "",
+    "description": ""
+  },
+  "api": {
+    "base_url": "",
+    "run_path": "",
+    "method": "POST",
+    "content_type": "application/json"
+  },
+  "samples": {
+    "input": "",
+    "output": ""
+  }
+}</pre>
+</div>
+                    
+                    <div class="mt-4 flex justify-between">
+                        <button type="button" id="copy-manifest" class="btn-secondary text-xs">
+                            <i data-lucide="copy" class="w-3 h-3 mr-1"></i> Copy JSON
+                        </button>
+                        <button type="button" id="download-manifest" class="btn-secondary text-xs">
+                            <i data-lucide="download" class="w-3 h-3 mr-1"></i> Download
+                        </button>
                     </div>
                 </div>
-            </div>
+                
+                <!-- Backend Preview Panel -->
+                <div class="card p-6 mb-4">
+                    <h2 class="text-xl font-semibold text-foreground mb-4 flex items-center">
+                        <i data-lucide="code" class="w-5 h-5 mr-2"></i>
+                        Preview: Backend Call to Agent
+                    </h2>
+                    <p class="text-sm text-muted-foreground mb-4">
+                        This is the code your platform will use to call the agent
+                    </p>
+                    
+                    <div class="border border-border rounded-md p-4 bg-muted/10">
+                        <pre id="backend-preview" class="text-xs font-mono overflow-auto max-h-96 p-3 rounded bg-muted/5">import requests
 
-            <!-- Capabilities & Modalities -->
-            <div>
-                <h2 class="text-xl font-semibold text-foreground mb-4">Capabilities & Modalities</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Capabilities -->
-                    <div>
-                        <label class="block text-sm font-medium text-foreground mb-3">
-                            Capabilities
-                        </label>
-                        <div class="space-y-2">
-                            {% for capability in ['text-generation', 'text-analysis', 'conversation', 'summarization', 'translation', 'code-generation', 'data-processing', 'image-analysis', 'audio-processing'] %}
-                                <div class="flex items-center">
-                                    <input type="checkbox" 
-                                           id="cap_{{ capability }}" 
-                                           name="capabilities" 
-                                           value="{{ capability }}"
-                                           class="mr-2">
-                                    <label for="cap_{{ capability }}" class="text-sm text-foreground capitalize">
-                                        {{ capability.replace('-', ' ') }}
-                                    </label>
-                                </div>
-                            {% endfor %}
+url = "BASE_URL/RUN_PATH"
+headers = {
+    "Content-Type": "application/json"
+}
+
+payload = {
+    "input": "Your input here"
+}
+
+response = requests.post(url, headers=headers, json=payload)
+
+print("Status Code:", response.status_code)
+print("Response:", response.json())</pre>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <button disabled style="opacity: 0.6; cursor: not-allowed;" class="btn-secondary w-full text-xs">
+                            <i data-lucide="play" class="w-3 h-3 mr-1"></i> Run Agent (Coming Soon)
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Test Results Panel -->
+                <div id="test-results" class="card p-6 hidden">
+                    <h2 class="text-xl font-semibold text-foreground mb-4 flex items-center">
+                        <i data-lucide="test-tube" class="w-5 h-5 mr-2"></i>
+                        Test Results
+                    </h2>
+                    <div class="text-sm">
+                        <div class="hidden" id="test-success">
+                            <div class="flex items-center text-green-600 mb-2">
+                                <i data-lucide="check-circle" class="w-5 h-5 mr-2"></i>
+                                <span>Agent test successful!</span>
+                            </div>
+                            <pre class="p-3 bg-muted/5 rounded-md text-xs font-mono mt-2 overflow-auto max-h-40"></pre>
+                        </div>
+                        <div class="hidden" id="test-error">
+                            <div class="flex items-center text-red-600 mb-2">
+                                <i data-lucide="x-circle" class="w-5 h-5 mr-2"></i>
+                                <span>Agent test failed</span>
+                            </div>
+                            <pre class="p-3 bg-muted/5 rounded-md text-xs font-mono mt-2 overflow-auto max-h-40"></pre>
+                        </div>
+                        <div class="hidden" id="test-loading">
+                            <div class="flex items-center text-blue-600">
+                                <i data-lucide="loader" class="w-5 h-5 mr-2 animate-spin"></i>
+                                <span>Testing agent...</span>
+                            </div>
                         </div>
                     </div>
-
-                    <!-- Modalities -->
-                    <div>
-                        <label class="block text-sm font-medium text-foreground mb-3">
-                            Modalities
-                        </label>
-                        <div class="space-y-2">
-                            {% for modality in ['text', 'image', 'audio', 'video', 'multimodal'] %}
-                                <div class="flex items-center">
-                                    <input type="checkbox" 
-                                           id="mod_{{ modality }}" 
-                                           name="modalities" 
-                                           value="{{ modality }}"
-                                           class="mr-2">
-                                    <label for="mod_{{ modality }}" class="text-sm text-foreground capitalize">
-                                        {{ modality }}
-                                    </label>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Terms and Submission -->
-            <div class="border-t border-border pt-6">
-                <div class="flex items-start mb-6">
-                    <input type="checkbox" id="terms" name="terms" required class="mr-3 mt-1">
-                    <label for="terms" class="text-sm text-muted-foreground">
-                        I agree to the <a href="#" class="text-primary hover:underline">Terms of Service</a> 
-                        and confirm that this agent complies with the 
-                        <a href="#" class="text-primary hover:underline">Community Guidelines</a>. 
-                        I understand that my submission will be reviewed before publication.
-                    </label>
-                </div>
-
-                <div class="flex flex-col sm:flex-row gap-4">
-                    <button type="submit" class="btn-primary flex-1">
-                        <i data-lucide="upload" class="w-4 h-4 mr-2"></i>
-                        Submit Agent for Review
-                    </button>
-                    <button type="button" class="btn-secondary" onclick="window.history.back()">
-                        <i data-lucide="x" class="w-4 h-4 mr-2"></i>
-                        Cancel
-                    </button>
-                </div>
-            </div>
-        </form>
-    </div>
-
-    <!-- Submission Guidelines -->
-    <div class="mt-8 card p-6">
-        <h2 class="text-xl font-semibold text-foreground mb-4">Submission Guidelines</h2>
-        <div class="space-y-4 text-sm text-muted-foreground">
-            <div class="flex items-start">
-                <i data-lucide="check-circle" class="w-5 h-5 text-primary mr-3 mt-0.5 flex-shrink-0"></i>
-                <div>
-                    <strong class="text-foreground">Quality Code:</strong> 
-                    Ensure your agent is well-documented, tested, and follows best practices.
-                </div>
-            </div>
-            <div class="flex items-start">
-                <i data-lucide="check-circle" class="w-5 h-5 text-primary mr-3 mt-0.5 flex-shrink-0"></i>
-                <div>
-                    <strong class="text-foreground">Clear Documentation:</strong> 
-                    Provide comprehensive README with setup instructions and usage examples.
-                </div>
-            </div>
-            <div class="flex items-start">
-                <i data-lucide="check-circle" class="w-5 h-5 text-primary mr-3 mt-0.5 flex-shrink-0"></i>
-                <div>
-                    <strong class="text-foreground">Ethical Use:</strong> 
-                    Agents must not promote harmful, illegal, or unethical activities.
-                </div>
-            </div>
-            <div class="flex items-start">
-                <i data-lucide="check-circle" class="w-5 h-5 text-primary mr-3 mt-0.5 flex-shrink-0"></i>
-                <div>
-                    <strong class="text-foreground">Original Work:</strong> 
-                    Submit only your original creations or properly attributed collaborative work.
                 </div>
             </div>
         </div>
@@ -303,6 +442,28 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Lucide icons
+    if (window.lucide) {
+        window.lucide.createIcons();
+    }
+    
+    // Toggle advanced settings
+    const toggleAdvancedBtn = document.getElementById('toggle-advanced');
+    const advancedSettings = document.getElementById('advanced-settings');
+    const advancedIcon = toggleAdvancedBtn.querySelector('i');
+    
+    toggleAdvancedBtn.addEventListener('click', function() {
+        const isHidden = advancedSettings.classList.contains('hidden');
+        if (isHidden) {
+            advancedSettings.classList.remove('hidden');
+            advancedIcon.setAttribute('data-lucide', 'minus');
+        } else {
+            advancedSettings.classList.add('hidden');
+            advancedIcon.setAttribute('data-lucide', 'plus');
+        }
+        window.lucide.createIcons();
+    });
+    
     // Header management
     const headersContainer = document.getElementById('headers-container');
     const addHeaderBtn = document.getElementById('add-header');
@@ -322,53 +483,171 @@ document.addEventListener('DOMContentLoaded', function() {
         // Add event listener to the new remove button
         newHeader.querySelector('.remove-header').addEventListener('click', function() {
             headersContainer.removeChild(newHeader);
+            updatePreviews();
         });
         
         // Initialize Lucide icons for the new button
         if (window.lucide) {
             window.lucide.createIcons();
         }
-    });
-    
-    // Auth management
-    const authContainer = document.getElementById('auth-container');
-    const addAuthBtn = document.getElementById('add-auth');
-    
-    addAuthBtn.addEventListener('click', function() {
-        const newAuth = document.createElement('div');
-        newAuth.className = 'flex gap-2 auth-field';
-        newAuth.innerHTML = `
-            <input type="text" name="auth_keys[]" placeholder="Key (e.g., Authorization)" class="input flex-1">
-            <input type="text" name="auth_values[]" placeholder="Value (e.g., Bearer token)" class="input flex-1">
-            <button type="button" class="btn-secondary remove-auth">
-                <i data-lucide="trash-2" class="w-4 h-4"></i>
-            </button>
-        `;
-        authContainer.appendChild(newAuth);
         
-        // Add event listener to the new remove button
-        newAuth.querySelector('.remove-auth').addEventListener('click', function() {
-            authContainer.removeChild(newAuth);
+        // Add input listeners to update preview
+        const inputs = newHeader.querySelectorAll('input');
+        inputs.forEach(input => {
+            input.addEventListener('input', updatePreviews);
         });
+    });
+    
+    // Update previews when form inputs change
+    const formInputs = document.querySelectorAll('#agent-form input, #agent-form select, #agent-form textarea');
+    formInputs.forEach(input => {
+        input.addEventListener('input', updatePreviews);
+        input.addEventListener('change', updatePreviews);
+    });
+    
+    // Initial update
+    updatePreviews();
+    
+    // Copy manifest button
+    document.getElementById('copy-manifest').addEventListener('click', function() {
+        const manifestText = document.getElementById('manifest-preview').textContent;
+        navigator.clipboard.writeText(manifestText).then(() => {
+            const originalText = this.innerHTML;
+            this.innerHTML = '<i data-lucide="check" class="w-3 h-3 mr-1"></i> Copied!';
+            setTimeout(() => {
+                this.innerHTML = originalText;
+                window.lucide.createIcons();
+            }, 2000);
+        });
+    });
+    
+    // Test agent button
+    document.getElementById('test-agent').addEventListener('click', function() {
+        const testResults = document.getElementById('test-results');
+        const testLoading = document.getElementById('test-loading');
+        const testSuccess = document.getElementById('test-success');
+        const testError = document.getElementById('test-error');
         
-        // Initialize Lucide icons for the new button
-        if (window.lucide) {
-            window.lucide.createIcons();
-        }
-    });
-    
-    // Add event listeners to existing remove buttons (if any)
-    document.querySelectorAll('.remove-header').forEach(btn => {
-        btn.addEventListener('click', function() {
-            headersContainer.removeChild(btn.parentElement);
-        });
-    });
-    
-    document.querySelectorAll('.remove-auth').forEach(btn => {
-        btn.addEventListener('click', function() {
-            authContainer.removeChild(btn.parentElement);
-        });
+        testResults.classList.remove('hidden');
+        testLoading.classList.remove('hidden');
+        testSuccess.classList.add('hidden');
+        testError.classList.add('hidden');
+        
+        // Simulate API test (would be replaced with actual API call)
+        setTimeout(() => {
+            testLoading.classList.add('hidden');
+            
+            // Simulate success 80% of the time for demo purposes
+            if (Math.random() > 0.2) {
+                testSuccess.classList.remove('hidden');
+                testSuccess.querySelector('pre').textContent = JSON.stringify({
+                    status: "success",
+                    message: "Agent responded correctly",
+                    data: {
+                        result: "Sample response from agent"
+                    }
+                }, null, 2);
+            } else {
+                testError.classList.remove('hidden');
+                testError.querySelector('pre').textContent = JSON.stringify({
+                    status: "error",
+                    message: "Connection timeout",
+                    error: "Could not connect to the agent endpoint"
+                }, null, 2);
+            }
+        }, 1500);
     });
 });
+
+function updatePreviews() {
+    // Update JSON manifest preview
+    const agentName = document.getElementById('name').value || '';
+    const category = document.getElementById('category').value || '';
+    const description = document.getElementById('description').value || '';
+    const baseUrl = document.getElementById('base_url').value || '';
+    const runPath = document.getElementById('run_path').value || '';
+    const method = document.getElementById('method').value || 'POST';
+    const contentType = document.getElementById('content_type').value || 'application/json';
+    const sampleInput = document.getElementById('sample_input').value || '';
+    const sampleOutput = document.getElementById('sample_output').value || '';
+    
+    // Try to parse sample input as JSON for a cleaner display, fallback to raw text
+    let parsedInput = sampleInput;
+    try {
+        if (sampleInput.trim()) {
+            parsedInput = JSON.parse(sampleInput);
+        }
+    } catch (e) {
+        // Not valid JSON, use as-is
+    }
+    
+    let parsedOutput = sampleOutput;
+    try {
+        if (sampleOutput.trim()) {
+            parsedOutput = JSON.parse(sampleOutput);
+        }
+    } catch (e) {
+        // Not valid JSON, use as-is
+    }
+    
+    const manifest = {
+        agent: {
+            name: agentName,
+            category: category,
+            description: description
+        },
+        api: {
+            base_url: baseUrl,
+            run_path: runPath,
+            method: method,
+            content_type: contentType
+        },
+        samples: {
+            input: parsedInput,
+            output: parsedOutput
+        }
+    };
+    
+    document.getElementById('manifest-preview').textContent = JSON.stringify(manifest, null, 2);
+    
+    // Update backend code preview
+    const authToken = document.getElementById('auth_token').value || '';
+    const fullUrl = baseUrl && runPath ? `${baseUrl}${runPath}` : 'BASE_URL/RUN_PATH';
+    
+    let headersCode = `    "Content-Type": "${contentType}"`;
+    
+    // Add auth header if token exists
+    if (authToken) {
+        headersCode += `,\n    "Authorization": "Bearer ${authToken}"`;
+    }
+    
+    // Add custom headers
+    const headerInputs = document.querySelectorAll('input[name="header_keys[]"], input[name="header_values[]"]');
+    for (let i = 0; i < headerInputs.length; i += 2) {
+        const key = headerInputs[i].value;
+        const value = headerInputs[i + 1]?.value;
+        if (key && value) {
+            headersCode += `,\n    "${key}": "${value}"`;
+        }
+    }
+    
+    // Create backend code
+    const backendCode = `import requests
+
+url = "${fullUrl}"
+headers = {
+${headersCode}
+}
+
+payload = ${sampleInput || '{\n    "input": "Your input here"\n}'}
+
+response = requests.${method.toLowerCase()}(url, headers=headers, json=payload)
+
+print("Status Code:", response.status_code)
+print("Response:", response.json())`;
+    
+    document.getElementById('backend-preview').textContent = backendCode;
+}
+
 </script>
 {% endblock %}
