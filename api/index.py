@@ -876,7 +876,6 @@ def agent_version(agent_id):
     return jsonify({'version': version})
 
 @app.route('/join-waitlist', methods=['POST'])
-@login_required
 def join_waitlist():
     """Handle waitlist signups"""
     try:
