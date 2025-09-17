@@ -28,6 +28,111 @@
     </div>
 </section>
 
+<!-- Blueprint Section -->
+<section class="py-16 bg-muted/30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+            <h2 class="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+                Our Vision & Roadmap
+            </h2>
+            <p class="text-xl text-muted-foreground max-w-2xl mx-auto">
+                Building the future of AI collaboration, one phase at a time
+            </p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Phase 1: Agent Registry -->
+            <div class="card card-elevated p-8 text-center">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-full mb-6">
+                    <span class="text-2xl font-bold text-primary-foreground">1</span>
+                </div>
+                <h3 class="text-xl font-semibold text-foreground mb-4">Agent Registry</h3>
+                <p class="text-muted-foreground mb-4">
+                    A platform for developers to list and showcase their already-deployed AI agents via a base URL.
+                </p>
+                <div class="mt-4">
+                    <span class="inline-flex items-center bg-green-100 text-green-800 text-sm font-medium px-3 py-1 rounded-full">
+                        <i data-lucide="check-circle" class="mr-1 h-4 w-4"></i>
+                        Launched
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Phase 2: Memory Passport -->
+            <div class="card card-elevated p-8 text-center">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-sage rounded-full mb-6">
+                    <span class="text-2xl font-bold text-sage-foreground">2</span>
+                </div>
+                <h3 class="text-xl font-semibold text-foreground mb-4">The Memory Passport</h3>
+                <p class="text-muted-foreground mb-4">
+                    Our first product: allows users to share context between different consumer AIs.
+                </p>
+                <div class="mt-4">
+                    <div class="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full mb-2">
+                        <span id="waitlist-count">{{ waitlist_count | default(114) }}</span>+ waitlist signups
+                    </div>
+                    <button onclick="openWaitlistModal()" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                        Join the waitlist →
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Phase 3: Manhattan Project -->
+            <div class="card card-elevated p-8 text-center">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-dusty-blue rounded-full mb-6">
+                    <span class="text-2xl font-bold text-dusty-blue-foreground">3</span>
+                </div>
+                <h3 class="text-xl font-semibold text-foreground mb-4">The Manhattan Project</h3>
+                <p class="text-muted-foreground">
+                    Enabling true collaboration, conflict resolution, and distributed workflows for all agents.
+                </p>
+                <div class="mt-4">
+                    <span class="inline-flex items-center bg-gray-100 text-gray-800 text-sm font-medium px-3 py-1 rounded-full">
+                        <i data-lucide="clock" class="mr-1 h-4 w-4"></i>
+                        Coming soon
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Waitlist Modal -->
+<div id="waitlist-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-card border border-border rounded-lg p-6 m-4 max-w-md w-full card-elevated">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-semibold text-foreground">Join the Waitlist</h3>
+            <button onclick="closeWaitlistModal()" class="text-muted-foreground hover:text-foreground">
+                <i data-lucide="x" class="h-5 w-5"></i>
+            </button>
+        </div>
+        <p class="text-muted-foreground mb-4">
+            Be the first to know when The Memory Passport launches. Enter your email below to join the waitlist.
+        </p>
+        <form id="waitlist-form" onsubmit="submitWaitlist(event)">
+            <div class="mb-4">
+                <label for="email" class="block text-sm font-medium text-foreground mb-2">Email Address</label>
+                <input 
+                    type="email" 
+                    id="email" 
+                    name="email" 
+                    required 
+                    class="input w-full"
+                    placeholder="your.email@example.com"
+                >
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button type="button" onclick="closeWaitlistModal()" class="btn-secondary">
+                    Cancel
+                </button>
+                <button type="submit" class="btn-primary">
+                    Join Waitlist
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- Features Section -->
 <section class="py-16">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -82,7 +187,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
             <div>
-                <div class="text-4xl font-bold text-primary mb-2">1,000+</div>
+                <div class="text-4xl font-bold text-primary mb-2" id="agent-count">1,000+</div>
                 <div class="text-muted-foreground">AI Agents</div>
             </div>
             <div>
@@ -161,4 +266,112 @@
         </div>
     </div>
 </section>
+
+<script>
+// Function to update agent count from Supabase
+async function updateAgentCount() {
+    try {
+        // This would be replaced with your actual Supabase function call
+        const response = await fetch('/api/agent-count');
+        const data = await response.json();
+        document.getElementById('agent-count').textContent = data.count.toLocaleString() + '+';
+    } catch (error) {
+        console.error('Error fetching agent count:', error);
+        // Keep the default value if there's an error
+    }
+}
+
+// Waitlist modal functions (frontend UI - remains in JS)
+function openWaitlistModal() {
+    document.getElementById('waitlist-modal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden'; // Prevent scrolling
+}
+
+function closeWaitlistModal() {
+    document.getElementById('waitlist-modal').classList.add('hidden');
+    document.body.style.overflow = ''; // Re-enable scrolling
+}
+
+// Function to handle waitlist form submission
+// Function to handle waitlist form submission
+async function submitWaitlist(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const email = form.email.value;
+    const submitButton = form.querySelector('button[type="submit"]');
+    const originalButtonText = submitButton.textContent;
+    
+    if (!email || !email.includes('@')) {
+        alert('Please enter a valid email address.');
+        return;
+    }
+    
+    try {
+        // Show loading state
+        submitButton.disabled = true;
+        submitButton.textContent = 'Joining...';
+        
+        // Prepare data to send
+        const formData = { email: email };
+        
+        // If you have user authentication info available in the frontend
+        // you could add it here, but typically this is handled by the backend
+        // using the session authentication
+        
+        // Call Python Flask endpoint
+        const response = await fetch("{{ url_for('join_waitlist') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData),
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            // Update the waitlist count
+            document.getElementById('waitlist-count').textContent = result.new_count;
+            
+            // Show success message
+            alert('Successfully joined the waitlist! Thank you for your interest.');
+            
+            // Close the modal
+            closeWaitlistModal();
+            
+            // Reset form
+            form.reset();
+        } else {
+            throw new Error('Failed to join waitlist');
+        }
+    } catch (error) {
+        console.error('Error joining waitlist:', error);
+        alert('There was an error joining the waitlist. Please try again.');
+    } finally {
+        // Reset button state
+        submitButton.disabled = false;
+        submitButton.textContent = originalButtonText;
+    }
+}
+
+// Close modal when clicking outside
+document.getElementById('waitlist-modal').addEventListener('click', function(event) {
+    if (event.target === this) {
+        closeWaitlistModal();
+    }
+});
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    updateAgentCount();
+    
+    // Close modal with Escape key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeWaitlistModal();
+        }
+    });
+});
+
+</script>
 {% endblock %}

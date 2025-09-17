@@ -65,13 +65,6 @@ def load_user(user_id):
         return None
     return User(user_id)
 
-
-# Routes
-@app.route('/')
-def homepage():
-    """Homepage with hero section and featured agents."""
-    return render_template('homepage.html')
-
 @app.route('/explore')
 def explore():
     """Explore agents with search and filters."""
@@ -881,6 +874,106 @@ def agent_version(agent_id):
     version = request.json.get('version', '1.0.0')
     asyncio.run(agent_service.update_agent_field(agent_id, 'version', version))
     return jsonify({'version': version})
+
+@app.route('/join-waitlist', methods=['POST'])
+@login_required
+def join_waitlist():
+    """Handle waitlist signups"""
+    try:
+        data = request.get_json()
+        email = data.get('email', '').strip().lower()
+        
+        # Validate email
+        if not email or not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+            return jsonify({
+                'success': False, 
+                'message': 'Please enter a valid email address.'
+            }), 400
+        
+        # Get user ID if authenticated
+        user_id = None
+        if current_user.is_authenticated:
+            user_id = current_user.id
+        
+        # Prepare data for insertion
+        waitlist_data = {'email': email}
+        if user_id:
+            waitlist_data['user_id'] = user_id
+        
+        # Check if email already exists in waitlist
+        existing_entry = supabase.table('waitlist').select('email').eq('email', email).execute()
+        
+        if existing_entry.data:
+            # Get current count
+            count_result = supabase.table('waitlist').select('id', count='exact').execute()
+            return jsonify({
+                'success': True,
+                'message': 'Email already registered',
+                'new_count': count_result.count + 114,
+                'already_registered': True
+            })
+        
+        # Insert new email (with user_id if available)
+        insert_result = supabase.table('waitlist').insert(waitlist_data).execute()
+        
+        if insert_result.data:
+            # Get updated count
+            count_result = supabase.table('waitlist').select('id', count='exact').execute()
+            print(count_result)# Starting offset
+            return jsonify({
+                'success': True,
+                'message': 'Successfully joined waitlist',
+                'new_count': count_result.count + 114
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Failed to add to waitlist'
+            }), 500
+            
+    except Exception as e:
+        print(f"Error in join_waitlist: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'Internal server error'
+        }), 500
+
+@app.route('/api/agent-count')
+def get_agent_count():
+    """Get the current number of agents from Supabase"""
+    try:
+        # Query the agents table to get the count
+        count = supabase.table('agents').select('id', count='exact').execute()
+        return jsonify({'count': count.count})
+    except Exception as e:
+        print(f"Error fetching agent count: {e}")
+        # Return a default value if there's an error
+        return jsonify({'count': 1000})
+
+def update_waitlist_count():
+    """Helper function to get current waitlist count"""
+    try:
+        count_result = supabase.table('waitlist').select('id', count='exact').execute()
+        return (count_result.count + 114)  # Starting offset
+    except Exception as e:
+        print(f"Error getting waitlist count: {e}")
+        return 114  # Default fallback
+
+
+# Routes
+@app.route('/')
+def homepage():
+    """Homepage with hero section and featured agents."""
+    waitlist_count = update_waitlist_count()
+    return render_template('homepage.html', waitlist_count=waitlist_count)
+
+
+# Update your homepage route to include waitlist count
+# @app.route('/')
+# def homepage():
+#     """Homepage with waitlist count"""
+#     waitlist_count = update_waitlist_count()
+#     return render_template('homepage.html', waitlist_count=waitlist_count)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
