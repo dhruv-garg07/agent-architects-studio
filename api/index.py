@@ -4,6 +4,9 @@
 import os
 import sys
 import uuid
+import asyncio
+import smtplib
+
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, abort
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -20,7 +23,8 @@ from backend_examples.python.services.agents import agent_service
 from backend_examples.python.services.creators import creator_service
 from backend_examples.python.models import SearchFilters
 from dotenv import load_dotenv
-import asyncio
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 load_dotenv()
 
@@ -917,10 +921,6 @@ def join_waitlist():
         insert_result = supabase.table('waitlist').insert(waitlist_data).execute()
         
         if insert_result.data:
-            # Send confirmation email
-            import smtplib
-            from email.mime.text import MIMEText
-            from email.mime.multipart import MIMEMultipart
             sender_email = os.environ.get('SENDER_EMAIL')
             sender_password = os.environ.get('SENDER_EMAIL_PASSWORD')
             print("Sender email:", sender_email)
@@ -933,10 +933,15 @@ def join_waitlist():
             msg['To'] = receiver_email
             msg['Subject'] = subject
             msg.attach(MIMEText(body, 'plain'))
+            import ssl
+            context = ssl.create_default_context()
             try:
-                with smtplib.SMTP_SSL('smtp.secureserver.net', 587) as server:
-                    server.login(sender_email, sender_password)
-                    server.sendmail(sender_email, receiver_email, msg.as_string())
+                server = smtplib.SMTP_SSL("smtpout.secureserver.net", 465, context=context, timeout=15)
+                server.set_debuglevel(1)  # prints SMTP conversation
+                server.login(sender_email, sender_password)
+                server.sendmail(sender_email, receiver_email, msg.as_string())
+                server.quit()
+
             except Exception as mail_err:
                 print(f"Error sending email: {mail_err}")
             # Get updated count
