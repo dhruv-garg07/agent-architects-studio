@@ -912,10 +912,33 @@ def join_waitlist():
                 'already_registered': True
             })
         
+        print("Waitlist data to insert:", waitlist_data)
         # Insert new email (with user_id if available)
         insert_result = supabase.table('waitlist').insert(waitlist_data).execute()
         
         if insert_result.data:
+            # Send confirmation email
+            import smtplib
+            from email.mime.text import MIMEText
+            from email.mime.multipart import MIMEMultipart
+            sender_email = os.environ.get('SENDER_EMAIL')
+            sender_password = os.environ.get('SENDER_EMAIL_PASSWORD')
+            print("Sender email:", sender_email)
+            print("Sender password:", sender_password) 
+            receiver_email = email
+            subject = "Welcome to the Agent Architects Waitlist!"
+            body = "Thank you for joining the waitlist. We'll keep you updated!"
+            msg = MIMEMultipart()
+            msg['From'] = sender_email
+            msg['To'] = receiver_email
+            msg['Subject'] = subject
+            msg.attach(MIMEText(body, 'plain'))
+            try:
+                with smtplib.SMTP_SSL('smtp.secureserver.net', 587) as server:
+                    server.login(sender_email, sender_password)
+                    server.sendmail(sender_email, receiver_email, msg.as_string())
+            except Exception as mail_err:
+                print(f"Error sending email: {mail_err}")
             # Get updated count
             count_result = supabase.table('waitlist').select('id', count='exact').execute()
             print(count_result)# Starting offset
