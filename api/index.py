@@ -232,7 +232,7 @@ def auth():
         return redirect(url_for('homepage'))
     return render_template('auth.html')
 
-@app.route('/dashboardk927498238409283490283409283409283094')
+@app.route('/dashboard')
 @login_required
 def dashboard():
     return render_template('dashboard.html')
@@ -986,6 +986,33 @@ def update_waitlist_count():
         print(f"Error getting waitlist count: {e}")
         return 114  # Default fallback
 
+
+
+@app.route('/memory', methods=['GET', 'POST'])
+@login_required
+def memory():
+    if request.method == 'POST':
+        # Handle text input and file upload here
+        text = request.form.get('memory_text')
+        file = request.files.get('memory_file')
+        # Accept all document and image types
+        allowed_extensions = [
+            '.pdf', '.ppt', '.pptx', '.doc', '.docx', '.txt', '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg', '.webp', '.heic', '.tiff', '.xls', '.xlsx', '.csv'
+        ]
+        if file:
+            filename = file.filename
+            ext = os.path.splitext(filename)[1].lower()
+            if ext not in allowed_extensions:
+                flash('Unsupported file type. Please upload a valid document or image.', 'error')
+                return redirect(url_for('memory'))
+            # Save file (example: to local 'uploads' folder)
+            upload_folder = os.path.join(app.root_path, 'uploads')
+            os.makedirs(upload_folder, exist_ok=True)
+            file.save(os.path.join(upload_folder, filename))
+        # Save text as needed (e.g., to database)
+        flash('Memory saved!', 'success')
+        return redirect(url_for('memory'))
+    return render_template('memory.html')
 
 # Routes
 @app.route('/')

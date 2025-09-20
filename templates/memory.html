@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Memory Upload | AI Agent Marketplace{% endblock %}
+
+{% block content %}
+<div class="bg-card text-foreground font-inter min-h-screen flex flex-col items-center justify-center">
+    <div class="card card-elevated p-8 w-full max-w-lg mt-10">
+        <h1 class="text-2xl font-bold mb-6">Add Memory</h1>
+        <form method="POST" enctype="multipart/form-data" class="space-y-6">
+            <div>
+                <label for="memory_text" class="block font-medium mb-2">Text</label>
+                <textarea id="memory_text" name="memory_text" rows="4" class="input w-full" placeholder="Add your memory text..."></textarea>
+            </div>
+            <div>
+                <label for="memory_file" class="block font-medium mb-2">Upload Document (PDF, PPT, DOC, etc.)</label>
+                <input type="file" id="memory_file" name="memory_file" accept=".pdf,.ppt,.pptx,.doc,.docx,.txt" class="input w-full" />
+            </div>
+            <button type="submit" class="btn-primary w-full">Save Memory</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
