@@ -1010,7 +1010,7 @@ def memory():
             os.makedirs(upload_folder, exist_ok=True)
             file.save(os.path.join(upload_folder, filename))
         # Save text as needed (e.g., to database)
-        flash('Memory saved!', 'success')
+        # flash('Memory saved!', 'success')
         return redirect(url_for('memory'))
     return render_template('memory.html')
 

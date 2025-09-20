@@ -1,22 +1,604 @@
 {% extends "base.html" %}
 
-{% block title %}Memory Upload | AI Agent Marketplace{% endblock %}
+{% block title %}Memory Dashboard | AI Agent Marketplace{% endblock %}
 
 {% block content %}
-<div class="bg-card text-foreground font-inter min-h-screen flex flex-col items-center justify-center">
-    <div class="card card-elevated p-8 w-full max-w-lg mt-10">
-        <h1 class="text-2xl font-bold mb-6">Add Memory</h1>
-        <form method="POST" enctype="multipart/form-data" class="space-y-6">
+<div class="memory-dashboard min-h-screen bg-background text-foreground flex flex-col">
+    <!-- Top Navigation Bar -->
+    <header class="bg-card border-b border-border py-4 px-6 flex justify-between items-center">
+        <div class="flex items-center space-x-3">
+            <i data-lucide="brain" class="h-7 w-7 text-primary"></i>
+            <h1 class="text-xl font-semibold">Memory Dashboard</h1>
+        </div>
+        <div class="flex items-center space-x-4">
+            <!-- Add Data Button -->
+            <button id="addDataBtn" class="btn-primary flex items-center space-x-2">
+                <i data-lucide="plus" class="h-4 w-4"></i>
+                <span>Add Data</span>
+            </button>
+            <!-- User Profile/Notifications -->
+            <div class="flex items-center space-x-3">
+                <button class="p-2 rounded-full hover:bg-secondary transition-colors">
+                    <i data-lucide="bell" class="h-5 w-5"></i>
+                </button>
+                <div class="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium shadow-md">
+                    U
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Dashboard Content -->
+    <div class="flex flex-1 overflow-hidden">
+        <!-- Left Panel - Navigation -->
+        <div class="w-64 bg-card border-r border-border flex flex-col">
+            <div class="p-5">
+                <h2 class="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Memory Sources</h2>
+                <nav class="space-y-1">
+                    <a href="#" class="nav-item active flex items-center space-x-3 py-2 px-3 rounded-lg">
+                        <i data-lucide="message-square" class="h-5 w-5"></i>
+                        <span>Chat History</span>
+                    </a>
+                    <a href="#" class="nav-item flex items-center space-x-3 py-2 px-3 rounded-lg">
+                        <i data-lucide="file-text" class="h-5 w-5"></i>
+                        <span>Manual Data</span>
+                    </a>
+                    <a href="#" class="nav-item flex items-center space-x-3 py-2 px-3 rounded-lg">
+                        <i data-lucide="link" class="h-5 w-5"></i>
+                        <span>External Integrations</span>
+                    </a>
+                </nav>
+            </div>
+            
+            <div class="mt-auto p-5 border-t border-border">
+                <h2 class="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Memory Settings</h2>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm">Auto-sync</span>
+                        <label class="switch">
+                            <input type="checkbox" checked>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm">Privacy Mode</span>
+                        <label class="switch">
+                            <input type="checkbox">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Middle Panel - Instance Viewer -->
+        <div class="flex-1 bg-background border-r border-border flex flex-col">
+            <div class="p-5 border-b border-border">
+                <h2 class="text-lg font-semibold">Chat History</h2>
+                <p class="text-sm text-muted-foreground mt-1">Your recent conversations and memory queries</p>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto p-5 space-y-4">
+                <!-- Memory Entries List -->
+                <div class="memory-entry card p-4 cursor-pointer transition-all hover:border-primary/50">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="font-medium">Project Requirements Discussion</h3>
+                            <p class="text-sm text-muted-foreground mt-1">Extracted from Slack conversation with design team</p>
+                        </div>
+                        <span class="text-xs text-muted-foreground whitespace-nowrap">2 hours ago</span>
+                    </div>
+                    <div class="mt-3 text-sm">
+                        <p class="line-clamp-2">The client wants the dashboard to have a dark mode option and responsive design for mobile devices. They also mentioned needing export functionality for all data visualizations.</p>
+                    </div>
+                    <div class="mt-3 flex flex-wrap gap-1">
+                        <span class="badge badge-ai-1">#design</span>
+                        <span class="badge badge-ai-2">#requirements</span>
+                        <span class="badge badge-ai-3">#client</span>
+                    </div>
+                </div>
+                
+                <div class="memory-entry card p-4 cursor-pointer transition-all hover:border-primary/50">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="font-medium">API Documentation Notes</h3>
+                            <p class="text-sm text-muted-foreground mt-1">Uploaded document</p>
+                        </div>
+                        <span class="text-xs text-muted-foreground whitespace-nowrap">Yesterday</span>
+                    </div>
+                    <div class="mt-3 text-sm">
+                        <p class="line-clamp-2">The authentication endpoint requires a JWT token in the header. Rate limiting is set to 100 requests per minute per API key. Error responses follow the standard HTTP status codes.</p>
+                    </div>
+                    <div class="mt-3 flex flex-wrap gap-1">
+                        <span class="badge badge-ai-1">#api</span>
+                        <span class="badge badge-ai-2">#documentation</span>
+                        <span class="badge badge-ai-3">#technical</span>
+                    </div>
+                </div>
+                
+                <div class="memory-entry card p-4 cursor-pointer transition-all hover:border-primary/50">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="font-medium">Meeting Notes: Q3 Planning</h3>
+                            <p class="text-sm text-muted-foreground mt-1">From Google Calendar integration</p>
+                        </div>
+                        <span class="text-xs text-muted-foreground whitespace-nowrap">2 days ago</span>
+                    </div>
+                    <div class="mt-3 text-sm">
+                        <p class="line-clamp-2">Priorities for Q3: 1. Implement user feedback system 2. Add advanced analytics dashboard 3. Improve mobile experience 4. Optimize database queries for better performance.</p>
+                    </div>
+                    <div class="mt-3 flex flex-wrap gap-1">
+                        <span class="badge badge-ai-1">#meeting</span>
+                        <span class="badge badge-ai-2">#planning</span>
+                        <span class="badge badge-ai-3">#Q3</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Chat Input -->
+            <div class="p-5 border-t border-border bg-card">
+                <form class="flex items-center space-x-3">
+                    <div class="flex-1 relative">
+                        <input type="text" placeholder="Query your memory..." class="input w-full pr-10">
+                        <button type="button" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                            <i data-lucide="paperclip" class="h-5 w-5"></i>
+                        </button>
+                    </div>
+                    <button type="submit" class="btn-primary p-3 rounded-lg">
+                        <i data-lucide="send" class="h-5 w-5"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Right Panel - LLM Response -->
+        <div class="w-96 bg-card flex flex-col">
+            <div class="p-5 border-b border-border">
+                <h2 class="text-lg font-semibold">AI Response</h2>
+                <p class="text-sm text-muted-foreground mt-1">Based on your memory context</p>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto p-5">
+                <div class="space-y-4">
+                    <p>Based on your memory, here's what I found about the project requirements:</p>
+                    
+                    <div class="bg-secondary/30 p-4 rounded-lg">
+                        <p class="text-sm font-medium">Relevant context from your memory:</p>
+                        <ul class="text-sm mt-2 space-y-1.5">
+                            <li class="flex items-start">
+                                <span class="text-primary mr-2">•</span>
+                                "The client wants the dashboard to have a dark mode option and responsive design for mobile devices."
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-primary mr-2">•</span>
+                                "They also mentioned needing export functionality for all data visualizations."
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <p>For implementing these features, I would recommend:</p>
+                    
+                    <ol class="space-y-2 pl-5">
+                        <li class="flex items-start">
+                            <span class="text-primary mr-2">1.</span>
+                            Using CSS variables for theming to easily support dark mode
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-primary mr-2">2.</span>
+                            Implementing a mobile-first responsive design approach
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-primary mr-2">3.</span>
+                            Adding export options for charts (PDF, PNG, CSV formats)
+                        </li>
+                    </ol>
+                    
+                    <p>Would you like me to elaborate on any of these implementation details?</p>
+                    
+                    <div class="mt-6 pt-4 border-t border-border">
+                        <h4 class="font-medium text-sm">Sources:</h4>
+                        <ul class="text-xs text-muted-foreground mt-2 space-y-1">
+                            <li class="flex items-center">
+                                <i data-lucide="file-text" class="h-3 w-3 mr-1.5"></i>
+                                Project Requirements Discussion (2 hours ago)
+                            </li>
+                            <li class="flex items-center">
+                                <i data-lucide="file-text" class="h-3 w-3 mr-1.5"></i>
+                                API Documentation Notes (yesterday)
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-4 border-t border-border flex justify-between">
+                <button class="btn-secondary text-sm py-2 px-3 flex items-center">
+                    <i data-lucide="copy" class="h-4 w-4 mr-1.5"></i>
+                    Copy
+                </button>
+                <div class="flex space-x-2">
+                    <button class="btn-secondary text-sm py-2 px-3 flex items-center">
+                        <i data-lucide="thumbs-up" class="h-4 w-4 mr-1.5"></i>
+                        Like
+                    </button>
+                    <button class="btn-secondary text-sm py-2 px-3 flex items-center">
+                        <i data-lucide="thumbs-down" class="h-4 w-4 mr-1.5"></i>
+                        Dislike
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Data Modal -->
+<div id="addDataModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+    <div class="fixed inset-0 bg-black/70 backdrop-blur-sm" id="modalBackdrop"></div>
+    <div class="relative bg-card rounded-xl border border-border shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="sticky top-0 bg-card border-b border-border p-6 rounded-t-xl flex justify-between items-center">
+            <h2 class="text-xl font-semibold">Add New Memory</h2>
+            <button id="closeModal" class="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-full hover:bg-secondary">
+                <i data-lucide="x" class="h-6 w-6"></i>
+            </button>
+        </div>
+        
+        <form method="POST" enctype="multipart/form-data" class="space-y-6 p-6">
             <div>
-                <label for="memory_text" class="block font-medium mb-2">Text</label>
+                <label for="memory_text" class="block font-medium mb-2">Text Input</label>
                 <textarea id="memory_text" name="memory_text" rows="4" class="input w-full" placeholder="Add your memory text..."></textarea>
             </div>
+            
             <div>
-                <label for="memory_file" class="block font-medium mb-2">Upload Document (PDF, PPT, DOC, etc.)</label>
-                <input type="file" id="memory_file" name="memory_file" accept=".pdf,.ppt,.pptx,.doc,.docx,.txt" class="input w-full" />
+                <label for="memory_file" class="block font-medium mb-2">Upload Document</label>
+                <div class="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer" id="dropZone">
+                    <i data-lucide="upload-cloud" class="h-12 w-12 text-muted-foreground mx-auto"></i>
+                    <p class="mt-2 text-sm text-muted-foreground">Drag and drop your file here, or click to browse</p>
+                    <input type="file" id="memory_file" name="memory_file" accept=".pdf,.ppt,.pptx,.doc,.docx,.txt" class="hidden" />
+                    <button type="button" id="fileUploadBtn" class="btn-secondary mt-3">Select File</button>
+                </div>
+                <p class="text-xs text-muted-foreground mt-2">Supported formats: PDF, PPT, DOC, TXT (Max 25MB)</p>
+                
+                <!-- File preview container -->
+                <div id="filePreview" class="mt-4 hidden">
+                    <div class="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
+                        <div class="flex items-center space-x-3">
+                            <i data-lucide="file-text" class="h-5 w-5 text-primary"></i>
+                            <div>
+                                <p id="fileName" class="text-sm font-medium"></p>
+                                <p id="fileSize" class="text-xs text-muted-foreground"></p>
+                            </div>
+                        </div>
+                        <button type="button" id="removeFileBtn" class="text-muted-foreground hover:text-destructive transition-colors p-1">
+                            <i data-lucide="trash-2" class="h-4 w-4"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Error message container -->
+                <div id="fileError" class="mt-2 text-xs text-destructive hidden"></div>
             </div>
-            <button type="submit" class="btn-primary w-full">Save Memory</button>
+            
+            <div>
+                <label for="memory_tags" class="block font-medium mb-2">Tags</label>
+                <input type="text" id="memory_tags" name="memory_tags" class="input w-full" placeholder="Add tags (comma separated)" />
+            </div>
+            
+            <div class="flex justify-end space-x-3 pt-4 border-t border-border">
+                <button type="button" id="cancelModal" class="btn-secondary">Cancel</button>
+                <button type="submit" class="btn-primary">Save Memory</button>
+            </div>
         </form>
     </div>
 </div>
+
+<style>
+    .memory-dashboard {
+        /* Using the same variables as base.html */
+    }
+
+    .memory-dashboard .nav-item {
+        display: flex;
+        align-items: center;
+        color: hsl(var(--muted-foreground));
+        transition: all 0.2s ease;
+    }
+
+    .memory-dashboard .nav-item:hover {
+        background-color: hsl(var(--secondary));
+        color: hsl(var(--foreground));
+    }
+
+    .memory-dashboard .nav-item.active {
+        background-color: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+    }
+
+    .memory-dashboard .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .memory-dashboard .switch {
+        position: relative;
+        display: inline-block;
+        width: 40px;
+        height: 22px;
+    }
+
+    .memory-dashboard .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .memory-dashboard .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: hsl(var(--muted));
+        transition: .4s;
+    }
+
+    .memory-dashboard .slider:before {
+        position: absolute;
+        content: "";
+        height: 16px;
+        width: 16px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: .4s;
+    }
+
+    .memory-dashboard input:checked + .slider {
+        background-color: hsl(var(--primary));
+    }
+
+    .memory-dashboard input:checked + .slider:before {
+        transform: translateX(18px);
+    }
+
+    .memory-dashboard .slider.round {
+        border-radius: 34px;
+    }
+
+    .memory-dashboard .slider.round:before {
+        border-radius: 50%;
+    }
+
+    /* Modal styles */
+    #addDataModal {
+        transition: opacity 0.2s ease;
+    }
+
+    #addDataModal:not(.hidden) {
+        display: flex;
+        opacity: 1;
+    }
+
+    /* File preview styles */
+    #filePreview {
+        transition: all 0.3s ease;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 1024px) {
+        .memory-dashboard .w-64 {
+            width: 220px;
+        }
+        .memory-dashboard .w-96 {
+            width: 320px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .memory-dashboard .flex {
+            flex-direction: column;
+        }
+        .memory-dashboard .w-64,
+        .memory-dashboard .w-96 {
+            width: 100%;
+        }
+        .memory-dashboard .border-r {
+            border-right: none;
+            border-bottom: 1px solid hsl(var(--border));
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        // Modal functionality
+        const modal = document.getElementById('addDataModal');
+        const modalBackdrop = document.getElementById('modalBackdrop');
+        const addBtn = document.getElementById('addDataBtn');
+        const closeBtn = document.getElementById('closeModal');
+        const cancelBtn = document.getElementById('cancelModal');
+        const fileUploadBtn = document.getElementById('fileUploadBtn');
+        const fileInput = document.getElementById('memory_file');
+        const dropZone = document.getElementById('dropZone');
+        const filePreview = document.getElementById('filePreview');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const removeFileBtn = document.getElementById('removeFileBtn');
+        const fileError = document.getElementById('fileError');
+        
+        // Function to show modal
+        function showModal() {
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; // Prevent scrolling
+        }
+        
+        // Function to hide modal
+        function hideModal() {
+            modal.classList.add('hidden');
+            document.body.style.overflow = ''; // Re-enable scrolling
+            // Reset file input and preview when modal is closed
+            resetFileInput();
+        }
+        
+        // Function to format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        // Function to validate file size (max 25MB)
+        function validateFileSize(file) {
+            const maxSize = 25 * 1024 * 1024; // 25MB in bytes
+            return file.size <= maxSize;
+        }
+        
+        // Function to show file preview
+        function showFilePreview(file) {
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            filePreview.classList.remove('hidden');
+            fileError.classList.add('hidden');
+        }
+        
+        // Function to hide file preview
+        function hideFilePreview() {
+            filePreview.classList.add('hidden');
+            fileInput.value = '';
+        }
+        
+        // Function to show file error
+        function showFileError(message) {
+            fileError.textContent = message;
+            fileError.classList.remove('hidden');
+            filePreview.classList.add('hidden');
+        }
+        
+        // Function to reset file input
+        function resetFileInput() {
+            fileInput.value = '';
+            filePreview.classList.add('hidden');
+            fileError.classList.add('hidden');
+        }
+        
+        // Event listeners
+        addBtn.addEventListener('click', showModal);
+        closeBtn.addEventListener('click', hideModal);
+        cancelBtn.addEventListener('click', hideModal);
+        modalBackdrop.addEventListener('click', hideModal);
+        
+        // File input change event
+        fileInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const file = this.files[0];
+                
+                // Validate file size
+                if (!validateFileSize(file)) {
+                    showFileError('File size exceeds the maximum limit of 25MB');
+                    return;
+                }
+                
+                // Show file preview
+                showFilePreview(file);
+            }
+        });
+        
+        // Remove file button event
+        removeFileBtn.addEventListener('click', function() {
+            hideFilePreview();
+        });
+        
+        fileUploadBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+        
+        dropZone.addEventListener('click', () => {
+            fileInput.click();
+        });
+        
+        // Drag and drop functionality
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight() {
+            dropZone.classList.add('border-primary');
+        }
+        
+        function unhighlight() {
+            dropZone.classList.remove('border-primary');
+        }
+        
+        dropZone.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            if (files && files[0]) {
+                const file = files[0];
+                
+                // Validate file size
+                if (!validateFileSize(file)) {
+                    showFileError('File size exceeds the maximum limit of 25MB');
+                    return;
+                }
+                
+                // Set file to input and show preview
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                fileInput.files = dataTransfer.files;
+                
+                // Show file preview
+                showFilePreview(file);
+            }
+        }
+        
+        // Close modal with Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                hideModal();
+            }
+        });
+        
+        // Navigation items
+        const navItems = document.querySelectorAll('.nav-item');
+        navItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                navItems.forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+            });
+        });
+        
+        // Memory entry click
+        const memoryEntries = document.querySelectorAll('.memory-entry');
+        memoryEntries.forEach(entry => {
+            entry.addEventListener('click', () => {
+                // Load the full memory content
+                console.log('Memory entry clicked');
+            });
+        });
+    });
+</script>
 {% endblock %}
