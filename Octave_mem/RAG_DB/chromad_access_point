@@ -1,0 +1,54 @@
+import os
+from dotenv import load_dotenv
+import chromadb
+
+# --- 1. Load .env ---
+load_dotenv()
+
+CHROMA_API_KEY = os.getenv("CHROMA_API_KEY")
+CHROMA_TENANT = os.getenv("CHROMA_TENANT")
+CHROMA_DATABASE = os.getenv("CHROMA_DATABASE")
+
+import chromadb
+  
+client = chromadb.CloudClient(
+  api_key=CHROMA_API_KEY,
+  tenant=CHROMA_TENANT,
+  database=CHROMA_DATABASE
+)
+# --- 3. Create/Get Collection ---
+collection = client.get_or_create_collection(name="my_collection")
+
+# --- 4. Write (Insert) ---
+collection.add(
+    ids=["doc3", "doc4"],
+    documents=[
+        "ChromaDB is a vector database for embeddings.",
+        "This is a cloud-based storage example using Chroma."
+    ],
+    metadatas=[{
+        "topic": "example",
+        "author": "Sanket",
+        "source": "manual_upload"
+        },
+        {
+        "topic": "ex2",
+        "author": "Sanke2t",
+        "source": "manual_uploa2d"
+        }]
+)
+print("✅ Documents inserted into Chroma Cloud")
+
+# --- 5. Read (Query) ---
+results = collection.query(
+    query_texts=["What is ChromaDB used for?"],
+    n_results=2
+)
+
+print("\n🔍 Query Results:")
+for doc, metadata, doc_id in zip(results["documents"][0], results["metadatas"][0], results["ids"][0]):
+    print(f"ID: {doc_id}, Doc: {doc}, Metadata: {metadata}")
+
+# --- 6. Fetch by ID ---
+fetched = collection.get(ids=["doc1"])
+print("\n📂 Fetch by ID:", fetched)
