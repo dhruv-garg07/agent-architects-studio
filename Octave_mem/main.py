@@ -1,44 +1,49 @@
-from RAG_DB.chroma_reader import ChromaReader
-from RAG_DB.chroma_collection_manager import ChromaCollectionManager
+from RAG_DB.chroma_collection_wrapper import ChromaCollectionWrapper
 
 if __name__ == "__main__":
-    reader = ChromaReader()
-
-    # 🔍 Search without metadata filter
-    results = reader.search(
-        collection_name="my_collection",
-        query="Chroma",
-        n_results=2
-    )
-    print("Results (no filter):", results)
-
-    # 🔍 Search with metadata filter
-    filtered_results = reader.search(
-        collection_name="my_collection",
-        query="Chroma",
-        metadata_filter = {
-            "$and": [
-                {"author": "Sanket"},
-                {"topic": "example"}
-            ]
-        }
-    )
-    print("Results (with filter):", filtered_results)
-
+    wrapper = ChromaCollectionWrapper()
     
-    # COLLECTION MGMT
-    manager = ChromaCollectionManager()
-
-    # 1️⃣ Create empty collection
-    print(manager.create_collection("new_empty_collection"))
-
-    # 2️⃣ Create collection with data
-    print(manager.create_collection(
+    # Single operation with automatic verification
+    result = wrapper.create_or_update_collection_with_verify(
         collection_name="research_papers",
         ids=["doc1", "doc2"],
         documents=["Paper on AI", "Paper on IoT"],
         metadatas=[{"author": "Sanket"}, {"author": "John"}]
-    ))
-
-    # 3️⃣ Try to create an already existing collection
-    print(manager.create_collection("research_papers"))
+    )
+    
+    print("Operation Result:", result["result"])
+    print("Verification Success:", result["success"])
+    print("Document Count:", result["verification"]["document_count"])
+    print("Actual IDs:", result["verification"]["actual_ids"])
+    
+    # Bulk operations
+    operations = [
+        {
+            "type": "create_or_update",
+            "collection_name": "test_collection_1",
+            "ids": ["id1", "id2"],
+            "documents": ["doc1", "doc2"],
+            "metadatas": [{"cat": "A"}, {"cat": "B"}]
+        },
+        {
+            "type": "update",
+            "collection_name": "test_collection_1",
+            "ids": ["id3"],
+            "documents": ["doc3"],
+            "metadatas": [{"cat": "C"}]
+        },
+        {
+            "type": "replace",
+            "collection_name": "test_collection_1",
+            "ids": ["new_id1", "new_id2"],
+            "documents": ["new_doc1", "new_doc2"],
+            "metadatas": [{"cat": "X"}, {"cat": "Y"}]
+        }
+    ]
+    
+    bulk_results = wrapper.bulk_operations_with_verification(operations)
+    for i, result in enumerate(bulk_results):
+        print(f"\nOperation {i+1}:")
+        print(f"Success: {result['success']}")
+        print(f"Result: {result['result']}")
+        print(f"Document Count: {result['verification'].get('document_count', 'N/A')}")
