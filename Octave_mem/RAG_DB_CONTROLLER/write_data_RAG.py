@@ -96,7 +96,7 @@ class RAG_DB_Controller:
         # For simplicity, using a fixed thread or timestamp-based thread
         return f"thread_{int(time.time())}"
     
-    # Exract metadata using LLM calls.
+    # Extract metadata using LLM calls.
     def extract_metadata_via_llm(self, content_data: str, message_type: str = "user") -> Dict:
         """Extract metadata using LLM calls."""
         if message_type == "user":
@@ -148,6 +148,8 @@ class RAG_DB_Controller:
 
 # Example usage:
 # Better to manage sessions outside this class.
-controller = RAG_DB_Controller(database=os.getenv("CHROMA_DATABASE_CHAT_HISTORY"))  
-result = controller.send_data_to_rag_db(user_ID="user123", content_data="You are good at it no need to improve it.", is_reply_to=1, message_type="llm", conversation_thread="thread_1758555372")
+
+# 1. Database - Chat history, Manual data, file uploads, external API.
+controller_chatH = RAG_DB_Controller(database=os.getenv("CHROMA_DATABASE_CHAT_HISTORY"))  
+result = controller_chatH.send_data_to_rag_db(user_ID="user123", content_data="You are good at it no need to improve it.", is_reply_to=1, message_type="llm", conversation_thread="thread_1758555372")
 print(result)
