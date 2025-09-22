@@ -4,10 +4,12 @@ from dotenv import load_dotenv
 from RAG_DB.chroma_collection_manager import ChromaCollectionManager
 
 class ChromaCollectionWrapper:
-    def __init__(self):
+    def __init__(self, database: str = None):
         """Initialize the wrapper with ChromaCollectionManager."""
         load_dotenv()
-        self.manager = ChromaCollectionManager()
+        if database is None:
+            database = os.getenv("CHROMA_DATABASE")
+        self.manager = ChromaCollectionManager(database=database)
     
     def create_or_update_collection_with_verify(
         self,
@@ -172,3 +174,12 @@ class ChromaCollectionWrapper:
             results.append(result)
         
         return results
+    
+    def get_collection_info(self, collection_name: str) -> Dict:
+        """
+        Get information about a specific collection.
+        
+        Returns:
+            Dict with collection details or error message.
+        """
+        return self.manager.get_collection_info(collection_name)

@@ -4,13 +4,18 @@ from dotenv import load_dotenv
 import chromadb
 
 class ChromaCollectionManager:
-    def __init__(self):
+    def __init__(self, database: str = None):
         # Load env vars
-        load_dotenv()  # Added missing load_dotenv()
+        load_dotenv()
         self.api_key = os.getenv("CHROMA_API_KEY")
         self.tenant = os.getenv("CHROMA_TENANT")
-        self.database = os.getenv("CHROMA_DATABASE")
 
+        # Use provided database or fallback to env var
+        if database is None:
+            self.database = os.getenv("CHROMA_DATABASE")
+        else:
+            self.database = database
+        print(f"Using Chroma Database: {self.database}")
         # Connect to Chroma Cloud
         self.client = chromadb.CloudClient(
             api_key=self.api_key,
