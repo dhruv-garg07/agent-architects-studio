@@ -150,6 +150,11 @@ class RAG_DB_Controller:
 # Better to manage sessions outside this class.
 
 # 1. Database - Chat history, Manual data, file uploads, external API.
-controller_chatH = RAG_DB_Controller(database=os.getenv("CHROMA_DATABASE_CHAT_HISTORY"))  
-result = controller_chatH.send_data_to_rag_db(user_ID="user123", content_data="You are good at it no need to improve it.", is_reply_to=1, message_type="llm", conversation_thread="thread_1758555372")
-print(result)
+# controller_chatH = RAG_DB_Controller(database=os.getenv("CHROMA_DATABASE_CHAT_HISTORY"))  
+# result = controller_chatH.send_data_to_rag_db(user_ID="user123", content_data="You are good at it no need to improve it.", is_reply_to=1, message_type="llm", conversation_thread="thread_1758555372")
+# print(result)
+
+# 2. Database - FILE UPLOADS
+controller_fileDB = RAG_DB_Controller(database=os.getenv("CHROMA_DATABASE_FILE_DATA"))
+result_file = controller_fileDB.send_data_to_rag_db(user_ID="user123", content_data="File content about project plan and milestones.", is_reply_to=-1, message_type="user")
+print(result_file)
