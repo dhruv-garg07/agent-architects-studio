@@ -11,11 +11,27 @@
             <h1 class="text-xl font-semibold">Memory Dashboard</h1>
         </div>
         <div class="flex items-center space-x-4">
+            <!-- Session Management -->
+            <div id="sessionControls" class="flex items-center space-x-3">
+                <!-- New Session Button (shown when no sessions exist) -->
+                <button id="newSessionBtn" class="btn-primary flex items-center space-x-2 hidden">
+                    <i data-lucide="plus" class="h-4 w-4"></i>
+                    <span>New Session</span>
+                </button>
+                <!-- Session Selector (shown when sessions exist) -->
+                <div id="sessionSelector" class="hidden">
+                    <select id="sessionDropdown" class="input bg-card border-border">
+                        <option value="">Select Session</option>
+                    </select>
+                </div>
+            </div>
+            
             <!-- Add Data Button -->
             <button id="addDataBtn" class="btn-primary flex items-center space-x-2">
                 <i data-lucide="plus" class="h-4 w-4"></i>
                 <span>Add Data</span>
             </button>
+            
             <!-- User Profile/Notifications -->
             <div class="flex items-center space-x-3">
                 <button class="p-2 rounded-full hover:bg-secondary transition-colors">
@@ -30,27 +46,40 @@
 
     <!-- Main Dashboard Content -->
     <div class="flex flex-1 overflow-hidden">
-        <!-- Left Panel - Navigation -->
-        <div class="w-64 bg-card border-r border-border flex flex-col">
+        <!-- Left Panel - Memory Sources & Sessions -->
+        <div class="w-80 bg-card border-r border-border flex flex-col">
             <div class="p-5">
                 <h2 class="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Memory Sources</h2>
                 <nav class="space-y-1">
-                    <a href="#" class="nav-item active flex items-center space-x-3 py-2 px-3 rounded-lg">
+                    <a href="#" class="nav-item active flex items-center space-x-3 py-2 px-3 rounded-lg" data-section="sessions">
                         <i data-lucide="message-square" class="h-5 w-5"></i>
-                        <span>Chat History</span>
+                        <span>Chat Sessions</span>
                     </a>
-                    <a href="#" class="nav-item flex items-center space-x-3 py-2 px-3 rounded-lg">
+                    <a href="#" class="nav-item flex items-center space-x-3 py-2 px-3 rounded-lg" data-section="manual">
                         <i data-lucide="file-text" class="h-5 w-5"></i>
                         <span>Manual Data</span>
                     </a>
-                    <a href="#" class="nav-item flex items-center space-x-3 py-2 px-3 rounded-lg">
+                    <a href="#" class="nav-item flex items-center space-x-3 py-2 px-3 rounded-lg" data-section="integrations">
                         <i data-lucide="link" class="h-5 w-5"></i>
                         <span>External Integrations</span>
                     </a>
                 </nav>
             </div>
             
-            <div class="mt-auto p-5 border-t border-border">
+            <!-- Sessions Panel -->
+            <div id="sessionsPanel" class="flex-1 overflow-y-auto p-5 border-t border-border">
+                <div id="noSessionsMessage" class="text-center py-8">
+                    <i data-lucide="message-square" class="h-12 w-12 text-muted-foreground mx-auto mb-3"></i>
+                    <p class="text-muted-foreground">No chat sessions yet</p>
+                    <p class="text-sm text-muted-foreground mt-1">Start a new conversation to create your first session</p>
+                </div>
+                
+                <div id="sessionsList" class="space-y-3 hidden">
+                    <!-- Sessions will be dynamically populated here -->
+                </div>
+            </div>
+            
+            <div class="p-5 border-t border-border">
                 <h2 class="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Memory Settings</h2>
                 <div class="space-y-3">
                     <div class="flex items-center justify-between">
@@ -71,76 +100,30 @@
             </div>
         </div>
 
-        <!-- Middle Panel - Instance Viewer -->
+        <!-- Center Panel - AI Response & Conversation -->
         <div class="flex-1 bg-background border-r border-border flex flex-col">
             <div class="p-5 border-b border-border">
-                <h2 class="text-lg font-semibold">Chat History</h2>
-                <p class="text-sm text-muted-foreground mt-1">Your recent conversations and memory queries</p>
+                <h2 class="text-lg font-semibold">AI Assistant</h2>
+                <p class="text-sm text-muted-foreground mt-1" id="conversationContext">Ask questions about your memory data</p>
             </div>
             
-            <div class="flex-1 overflow-y-auto p-5 space-y-4">
-                <!-- Memory Entries List -->
-                <div class="memory-entry card p-4 cursor-pointer transition-all hover:border-primary/50">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <h3 class="font-medium">Project Requirements Discussion</h3>
-                            <p class="text-sm text-muted-foreground mt-1">Extracted from Slack conversation with design team</p>
-                        </div>
-                        <span class="text-xs text-muted-foreground whitespace-nowrap">2 hours ago</span>
-                    </div>
-                    <div class="mt-3 text-sm">
-                        <p class="line-clamp-2">The client wants the dashboard to have a dark mode option and responsive design for mobile devices. They also mentioned needing export functionality for all data visualizations.</p>
-                    </div>
-                    <div class="mt-3 flex flex-wrap gap-1">
-                        <span class="badge badge-ai-1">#design</span>
-                        <span class="badge badge-ai-2">#requirements</span>
-                        <span class="badge badge-ai-3">#client</span>
-                    </div>
+            <!-- Conversation History -->
+            <div id="conversationHistory" class="flex-1 overflow-y-auto p-5 space-y-6">
+                <div class="text-center py-12 text-muted-foreground" id="emptyConversation">
+                    <i data-lucide="message-square" class="h-16 w-16 mx-auto mb-4 opacity-50"></i>
+                    <p class="text-lg">No conversation yet</p>
+                    <p class="text-sm mt-1">Start by asking a question about your memory data</p>
                 </div>
                 
-                <div class="memory-entry card p-4 cursor-pointer transition-all hover:border-primary/50">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <h3 class="font-medium">API Documentation Notes</h3>
-                            <p class="text-sm text-muted-foreground mt-1">Uploaded document</p>
-                        </div>
-                        <span class="text-xs text-muted-foreground whitespace-nowrap">Yesterday</span>
-                    </div>
-                    <div class="mt-3 text-sm">
-                        <p class="line-clamp-2">The authentication endpoint requires a JWT token in the header. Rate limiting is set to 100 requests per minute per API key. Error responses follow the standard HTTP status codes.</p>
-                    </div>
-                    <div class="mt-3 flex flex-wrap gap-1">
-                        <span class="badge badge-ai-1">#api</span>
-                        <span class="badge badge-ai-2">#documentation</span>
-                        <span class="badge badge-ai-3">#technical</span>
-                    </div>
-                </div>
-                
-                <div class="memory-entry card p-4 cursor-pointer transition-all hover:border-primary/50">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <h3 class="font-medium">Meeting Notes: Q3 Planning</h3>
-                            <p class="text-sm text-muted-foreground mt-1">From Google Calendar integration</p>
-                        </div>
-                        <span class="text-xs text-muted-foreground whitespace-nowrap">2 days ago</span>
-                    </div>
-                    <div class="mt-3 text-sm">
-                        <p class="line-clamp-2">Priorities for Q3: 1. Implement user feedback system 2. Add advanced analytics dashboard 3. Improve mobile experience 4. Optimize database queries for better performance.</p>
-                    </div>
-                    <div class="mt-3 flex flex-wrap gap-1">
-                        <span class="badge badge-ai-1">#meeting</span>
-                        <span class="badge badge-ai-2">#planning</span>
-                        <span class="badge badge-ai-3">#Q3</span>
-                    </div>
-                </div>
+                <!-- Conversation messages will be dynamically added here -->
             </div>
             
             <!-- Chat Input -->
             <div class="p-5 border-t border-border bg-card">
-                <form class="flex items-center space-x-3">
+                <form id="chatForm" class="flex items-center space-x-3">
                     <div class="flex-1 relative">
-                        <input type="text" placeholder="Query your memory..." class="input w-full pr-10">
-                        <button type="button" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                        <input type="text" id="chatInput" placeholder="Query your memory..." class="input w-full pr-12" autocomplete="off">
+                        <button type="button" id="attachFileBtn" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
                             <i data-lucide="paperclip" class="h-5 w-5"></i>
                         </button>
                     </div>
@@ -151,81 +134,25 @@
             </div>
         </div>
 
-        <!-- Right Panel - LLM Response -->
+        <!-- Right Panel - RAG Results -->
         <div class="w-96 bg-card flex flex-col">
-            <div class="p-5 border-b border-border">
-                <h2 class="text-lg font-semibold">AI Response</h2>
-                <p class="text-sm text-muted-foreground mt-1">Based on your memory context</p>
-            </div>
-            
-            <div class="flex-1 overflow-y-auto p-5">
-                <div class="space-y-4">
-                    <p>Based on your memory, here's what I found about the project requirements:</p>
-                    
-                    <div class="bg-secondary/30 p-4 rounded-lg">
-                        <p class="text-sm font-medium">Relevant context from your memory:</p>
-                        <ul class="text-sm mt-2 space-y-1.5">
-                            <li class="flex items-start">
-                                <span class="text-primary mr-2">•</span>
-                                "The client wants the dashboard to have a dark mode option and responsive design for mobile devices."
-                            </li>
-                            <li class="flex items-start">
-                                <span class="text-primary mr-2">•</span>
-                                "They also mentioned needing export functionality for all data visualizations."
-                            </li>
-                        </ul>
-                    </div>
-                    
-                    <p>For implementing these features, I would recommend:</p>
-                    
-                    <ol class="space-y-2 pl-5">
-                        <li class="flex items-start">
-                            <span class="text-primary mr-2">1.</span>
-                            Using CSS variables for theming to easily support dark mode
-                        </li>
-                        <li class="flex items-start">
-                            <span class="text-primary mr-2">2.</span>
-                            Implementing a mobile-first responsive design approach
-                        </li>
-                        <li class="flex items-start">
-                            <span class="text-primary mr-2">3.</span>
-                            Adding export options for charts (PDF, PNG, CSV formats)
-                        </li>
-                    </ol>
-                    
-                    <p>Would you like me to elaborate on any of these implementation details?</p>
-                    
-                    <div class="mt-6 pt-4 border-t border-border">
-                        <h4 class="font-medium text-sm">Sources:</h4>
-                        <ul class="text-xs text-muted-foreground mt-2 space-y-1">
-                            <li class="flex items-center">
-                                <i data-lucide="file-text" class="h-3 w-3 mr-1.5"></i>
-                                Project Requirements Discussion (2 hours ago)
-                            </li>
-                            <li class="flex items-center">
-                                <i data-lucide="file-text" class="h-3 w-3 mr-1.5"></i>
-                                API Documentation Notes (yesterday)
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="p-4 border-t border-border flex justify-between">
-                <button class="btn-secondary text-sm py-2 px-3 flex items-center">
-                    <i data-lucide="copy" class="h-4 w-4 mr-1.5"></i>
-                    Copy
-                </button>
+            <div class="p-5 border-b border-border flex justify-between items-center">
+                <h2 class="text-lg font-semibold">RAG Results</h2>
                 <div class="flex space-x-2">
-                    <button class="btn-secondary text-sm py-2 px-3 flex items-center">
-                        <i data-lucide="thumbs-up" class="h-4 w-4 mr-1.5"></i>
-                        Like
-                    </button>
-                    <button class="btn-secondary text-sm py-2 px-3 flex items-center">
-                        <i data-lucide="thumbs-down" class="h-4 w-4 mr-1.5"></i>
-                        Dislike
+                    <button id="exportResultsBtn" class="btn-secondary text-sm py-1 px-2 flex items-center" title="Export Results">
+                        <i data-lucide="download" class="h-4 w-4"></i>
                     </button>
                 </div>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto p-5 space-y-4" id="ragResults">
+                <div class="text-center py-12 text-muted-foreground" id="emptyRagResults">
+                    <i data-lucide="search" class="h-16 w-16 mx-auto mb-4 opacity-50"></i>
+                    <p class="text-lg">No results yet</p>
+                    <p class="text-sm mt-1">Ask a question to see relevant memory matches</p>
+                </div>
+                
+                <!-- RAG result blocks will be dynamically added here -->
             </div>
         </div>
     </div>
@@ -313,27 +240,165 @@
         color: hsl(var(--primary-foreground));
     }
 
-    .memory-dashboard .line-clamp-2 {
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
+    /* RAG Result Block Styling */
+    .rag-result {
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        border-radius: 8px;
+        padding: 1rem;
+        transition: all 0.2s ease;
     }
 
-    .memory-dashboard .switch {
+    .rag-result:hover {
+        border-color: hsl(var(--primary));
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .rag-result.selected {
+        border-color: hsl(var(--primary));
+        background: hsl(var(--primary)/0.05);
+    }
+
+    .rag-score {
+        display: inline-flex;
+        align-items: center;
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .rag-text-match {
+        background: hsl(var(--primary)/0.2);
+        padding: 0.1rem 0.25rem;
+        border-radius: 2px;
+        font-weight: 500;
+    }
+
+    .rag-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.75rem;
+        color: hsl(var(--muted-foreground));
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+        border-top: 1px solid hsl(var(--border)/0.5);
+    }
+
+    .rag-feedback {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .feedback-btn {
+        background: transparent;
+        border: 1px solid hsl(var(--border));
+        border-radius: 4px;
+        padding: 0.25rem 0.5rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .feedback-btn:hover {
+        background: hsl(var(--secondary));
+    }
+
+    .feedback-btn.active {
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        border-color: hsl(var(--primary));
+    }
+
+    /* Conversation Message Styling */
+    .message {
+        display: flex;
+        margin-bottom: 1.5rem;
+    }
+
+    .message.user {
+        justify-content: flex-end;
+    }
+
+    .message.assistant {
+        justify-content: flex-start;
+    }
+
+    .message-content {
+        max-width: 80%;
+        padding: 1rem;
+        border-radius: 12px;
+        position: relative;
+    }
+
+    .message.user .message-content {
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        border-bottom-right-radius: 4px;
+    }
+
+    .message.assistant .message-content {
+        background: hsl(var(--secondary));
+        border-bottom-left-radius: 4px;
+    }
+
+    .message-time {
+        font-size: 0.75rem;
+        color: hsl(var(--muted-foreground));
+        margin-top: 0.5rem;
+        text-align: right;
+    }
+
+    .message.assistant .message-time {
+        text-align: left;
+    }
+
+    /* Session List Styling */
+    .session-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+    }
+
+    .session-item:hover {
+        background: hsl(var(--secondary));
+    }
+
+    .session-item.active {
+        background: hsl(var(--primary)/0.1);
+        border-color: hsl(var(--primary));
+    }
+
+    .session-preview {
+        font-size: 0.875rem;
+        color: hsl(var(--muted-foreground));
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Switch Styling */
+    .switch {
         position: relative;
         display: inline-block;
         width: 40px;
         height: 22px;
     }
 
-    .memory-dashboard .switch input {
+    .switch input {
         opacity: 0;
         width: 0;
         height: 0;
     }
 
-    .memory-dashboard .slider {
+    .slider {
         position: absolute;
         cursor: pointer;
         top: 0;
@@ -344,7 +409,7 @@
         transition: .4s;
     }
 
-    .memory-dashboard .slider:before {
+    .slider:before {
         position: absolute;
         content: "";
         height: 16px;
@@ -355,19 +420,19 @@
         transition: .4s;
     }
 
-    .memory-dashboard input:checked + .slider {
+    input:checked + .slider {
         background-color: hsl(var(--primary));
     }
 
-    .memory-dashboard input:checked + .slider:before {
+    input:checked + .slider:before {
         transform: translateX(18px);
     }
 
-    .memory-dashboard .slider.round {
+    .slider.round {
         border-radius: 34px;
     }
 
-    .memory-dashboard .slider.round:before {
+    .slider.round:before {
         border-radius: 50%;
     }
 
@@ -388,11 +453,11 @@
 
     /* Responsive adjustments */
     @media (max-width: 1024px) {
-        .memory-dashboard .w-64 {
-            width: 220px;
+        .memory-dashboard .w-80 {
+            width: 250px;
         }
         .memory-dashboard .w-96 {
-            width: 320px;
+            width: 300px;
         }
     }
 
@@ -400,13 +465,17 @@
         .memory-dashboard .flex {
             flex-direction: column;
         }
-        .memory-dashboard .w-64,
+        .memory-dashboard .w-80,
         .memory-dashboard .w-96 {
             width: 100%;
         }
         .memory-dashboard .border-r {
             border-right: none;
             border-bottom: 1px solid hsl(var(--border));
+        }
+        
+        .message-content {
+            max-width: 90%;
         }
     }
 </style>
@@ -416,7 +485,12 @@
         // Initialize Lucide icons
         lucide.createIcons();
         
-        // Modal functionality
+        // State management
+        let currentSession = null;
+        let sessions = JSON.parse(localStorage.getItem('memorySessions')) || [];
+        let ragResults = [];
+        
+        // DOM Elements
         const modal = document.getElementById('addDataModal');
         const modalBackdrop = document.getElementById('modalBackdrop');
         const addBtn = document.getElementById('addDataBtn');
@@ -430,22 +504,410 @@
         const fileSize = document.getElementById('fileSize');
         const removeFileBtn = document.getElementById('removeFileBtn');
         const fileError = document.getElementById('fileError');
+        const chatForm = document.getElementById('chatForm');
+        const chatInput = document.getElementById('chatInput');
+        const conversationHistory = document.getElementById('conversationHistory');
+        const emptyConversation = document.getElementById('emptyConversation');
+        const ragResultsContainer = document.getElementById('ragResults');
+        const emptyRagResults = document.getElementById('emptyRagResults');
+        const sessionsPanel = document.getElementById('sessionsPanel');
+        const sessionsList = document.getElementById('sessionsList');
+        const noSessionsMessage = document.getElementById('noSessionsMessage');
+        const newSessionBtn = document.getElementById('newSessionBtn');
+        const sessionSelector = document.getElementById('sessionSelector');
+        const sessionDropdown = document.getElementById('sessionDropdown');
+        const navItems = document.querySelectorAll('.nav-item');
+        const exportResultsBtn = document.getElementById('exportResultsBtn');
         
-        // Function to show modal
-        function showModal() {
-            modal.classList.remove('hidden');
-            document.body.style.overflow = 'hidden'; // Prevent scrolling
+        // Initialize the dashboard
+        initDashboard();
+        
+        function initDashboard() {
+            updateSessionUI();
+            if (sessions.length > 0) {
+                // Load the most recent session
+                loadSession(sessions[sessions.length - 1].id);
+            }
         }
         
-        // Function to hide modal
+        function updateSessionUI() {
+            if (sessions.length === 0) {
+                // No sessions - show "New Session" button
+                newSessionBtn.classList.remove('hidden');
+                sessionSelector.classList.add('hidden');
+                sessionsList.classList.add('hidden');
+                noSessionsMessage.classList.remove('hidden');
+            } else {
+                // Sessions exist - show session selector
+                newSessionBtn.classList.add('hidden');
+                sessionSelector.classList.remove('hidden');
+                sessionsList.classList.remove('hidden');
+                noSessionsMessage.classList.add('hidden');
+                
+                // Update session dropdown
+                updateSessionDropdown();
+                
+                // Update sessions list
+                renderSessionsList();
+            }
+        }
+        
+        function updateSessionDropdown() {
+            sessionDropdown.innerHTML = '<option value="">Select Session</option>';
+            sessions.forEach(session => {
+                const option = document.createElement('option');
+                option.value = session.id;
+                option.textContent = `Session ${session.id} - ${new Date(session.createdAt).toLocaleDateString()}`;
+                sessionDropdown.appendChild(option);
+            });
+            
+            if (currentSession) {
+                sessionDropdown.value = currentSession.id;
+            }
+        }
+        
+        function renderSessionsList() {
+            sessionsList.innerHTML = '';
+            sessions.forEach(session => {
+                const sessionItem = document.createElement('div');
+                sessionItem.className = `session-item ${currentSession && currentSession.id === session.id ? 'active' : ''}`;
+                sessionItem.innerHTML = `
+                    <div class="flex-1 min-w-0">
+                        <div class="font-medium">Session ${session.id}</div>
+                        <div class="session-preview">${session.messages.length > 0 ? session.messages[session.messages.length - 1].content.substring(0, 50) + '...' : 'No messages'}</div>
+                    </div>
+                    <div class="text-xs text-muted-foreground">
+                        ${new Date(session.updatedAt).toLocaleTimeString()}
+                    </div>
+                `;
+                sessionItem.addEventListener('click', () => loadSession(session.id));
+                sessionsList.appendChild(sessionItem);
+            });
+        }
+        
+        function createNewSession() {
+            const newSession = {
+                id: sessions.length + 1,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                messages: []
+            };
+            
+            sessions.push(newSession);
+            localStorage.setItem('memorySessions', JSON.stringify(sessions));
+            updateSessionUI();
+            loadSession(newSession.id);
+        }
+        
+        function loadSession(sessionId) {
+            const session = sessions.find(s => s.id === sessionId);
+            if (!session) return;
+            
+            currentSession = session;
+            renderConversation(session.messages);
+            updateSessionUI();
+            
+            // If there are messages, simulate RAG results for the last message
+            if (session.messages.length > 0) {
+                const lastMessage = session.messages[session.messages.length - 1];
+                if (lastMessage.role === 'user') {
+                    simulateRAGResults(lastMessage.content);
+                }
+            } else {
+                clearRAGResults();
+            }
+        }
+        
+        function renderConversation(messages) {
+            conversationHistory.innerHTML = '';
+            
+            if (messages.length === 0) {
+                emptyConversation.classList.remove('hidden');
+                return;
+            }
+            
+            emptyConversation.classList.add('hidden');
+            
+            messages.forEach(message => {
+                addMessageToConversation(message.role, message.content, message.timestamp);
+            });
+            
+            // Scroll to bottom
+            conversationHistory.scrollTop = conversationHistory.scrollHeight;
+        }
+        
+        function addMessageToConversation(role, content, timestamp = new Date()) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+            
+            const timeString = typeof timestamp === 'string' ? timestamp : timestamp.toLocaleTimeString();
+            
+            messageDiv.innerHTML = `
+                <div class="message-content">
+                    <div>${content}</div>
+                    <div class="message-time">${timeString}</div>
+                </div>
+            `;
+            
+            conversationHistory.appendChild(messageDiv);
+            emptyConversation.classList.add('hidden');
+            
+            // Scroll to bottom
+            conversationHistory.scrollTop = conversationHistory.scrollHeight;
+        }
+        
+        function simulateRAGResults(query) {
+            // Clear previous results
+            clearRAGResults();
+            
+            // Simulate RAG results based on the query
+            const simulatedResults = [
+                {
+                    id: 1,
+                    score: 0.95,
+                    text: `The client specifically mentioned needing ${query.includes('dark mode') ? 'dark mode functionality' : 'responsive design'} for the dashboard. This was discussed during the project requirements meeting.`,
+                    source: 'Project Requirements Discussion',
+                    timestamp: '2 hours ago',
+                    matches: query.includes('dark mode') ? ['dark mode'] : ['responsive design']
+                },
+                {
+                    id: 2,
+                    score: 0.87,
+                    text: `API documentation indicates that authentication requires JWT tokens. ${query.includes('authentication') ? 'The authentication endpoint requires a JWT token in the header.' : 'Rate limiting is set to 100 requests per minute.'}`,
+                    source: 'API Documentation Notes',
+                    timestamp: 'Yesterday',
+                    matches: query.includes('authentication') ? ['authentication', 'JWT'] : ['rate limiting']
+                },
+                {
+                    id: 3,
+                    score: 0.76,
+                    text: `Q3 planning priorities include implementing user feedback systems and ${query.includes('analytics') ? 'adding advanced analytics dashboard' : 'improving mobile experience'}.`,
+                    source: 'Meeting Notes: Q3 Planning',
+                    timestamp: '2 days ago',
+                    matches: query.includes('analytics') ? ['analytics', 'dashboard'] : ['mobile experience']
+                }
+            ];
+            
+            ragResults = simulatedResults;
+            renderRAGResults();
+        }
+        
+        function renderRAGResults() {
+            ragResultsContainer.innerHTML = '';
+            
+            if (ragResults.length === 0) {
+                emptyRagResults.classList.remove('hidden');
+                return;
+            }
+            
+            emptyRagResults.classList.add('hidden');
+            
+            ragResults.forEach(result => {
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'rag-result';
+                resultDiv.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="rag-score">${(result.score * 100).toFixed(0)}% match</span>
+                        <button class="text-muted-foreground hover:text-foreground" onclick="toggleRAGResultSelection(${result.id})">
+                            <i data-lucide="maximize-2" class="h-4 w-4"></i>
+                        </button>
+                    </div>
+                    <div class="text-sm mb-3">
+                        ${highlightMatches(result.text, result.matches)}
+                    </div>
+                    <div class="rag-meta">
+                        <div>
+                            <span class="font-medium">${result.source}</span>
+                            <span class="ml-2">${result.timestamp}</span>
+                        </div>
+                        <div class="rag-feedback">
+                            <button class="feedback-btn" onclick="rateRAGResult(${result.id}, 'helpful')">
+                                <i data-lucide="thumbs-up" class="h-3 w-3"></i>
+                            </button>
+                            <button class="feedback-btn" onclick="rateRAGResult(${result.id}, 'not-helpful')">
+                                <i data-lucide="thumbs-down" class="h-3 w-3"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                ragResultsContainer.appendChild(resultDiv);
+            });
+            
+            // Re-initialize Lucide icons for new elements
+            lucide.createIcons();
+        }
+        
+        function highlightMatches(text, matches) {
+            let highlightedText = text;
+            matches.forEach(match => {
+                const regex = new RegExp(match, 'gi');
+                highlightedText = highlightedText.replace(regex, '<span class="rag-text-match">$&</span>');
+            });
+            return highlightedText;
+        }
+        
+        function clearRAGResults() {
+            ragResults = [];
+            ragResultsContainer.innerHTML = '';
+            emptyRagResults.classList.remove('hidden');
+        }
+        
+        // Global functions for RAG interaction
+        window.toggleRAGResultSelection = function(resultId) {
+            const result = ragResults.find(r => r.id === resultId);
+            if (result) {
+                // In a real implementation, this would update the AI response
+                console.log('Selected RAG result:', result);
+            }
+        };
+        
+        window.rateRAGResult = function(resultId, rating) {
+            const result = ragResults.find(r => r.id === resultId);
+            if (result) {
+                // In a real implementation, this would send feedback to the server
+                console.log(`Rated result ${resultId} as ${rating}`);
+                
+                // Visual feedback
+                const buttons = document.querySelectorAll(`.rag-result:nth-child(${ragResults.findIndex(r => r.id === resultId) + 1}) .feedback-btn`);
+                buttons.forEach(btn => btn.classList.remove('active'));
+                
+                const targetBtn = rating === 'helpful' ? buttons[0] : buttons[1];
+                targetBtn.classList.add('active');
+            }
+        };
+        
+        // Chat form submission
+        chatForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const message = chatInput.value.trim();
+            if (!message) return;
+            
+            // Clear input
+            chatInput.value = '';
+            
+            // Create new session if none exists
+            if (!currentSession) {
+                createNewSession();
+            }
+            
+            // Add user message to conversation
+            const userMessage = {
+                role: 'user',
+                content: message,
+                timestamp: new Date().toISOString()
+            };
+            
+            currentSession.messages.push(userMessage);
+            addMessageToConversation('user', message);
+            
+            // Update session timestamp
+            currentSession.updatedAt = new Date().toISOString();
+            localStorage.setItem('memorySessions', JSON.stringify(sessions));
+            
+            // Simulate AI response after a short delay
+            setTimeout(() => {
+                const aiResponse = generateAIResponse(message);
+                const aiMessage = {
+                    role: 'assistant',
+                    content: aiResponse,
+                    timestamp: new Date().toISOString()
+                };
+                
+                currentSession.messages.push(aiMessage);
+                addMessageToConversation('assistant', aiResponse);
+                
+                // Update session in storage
+                localStorage.setItem('memorySessions', JSON.stringify(sessions));
+                
+                // Generate RAG results
+                simulateRAGResults(message);
+                
+                // Update sessions list
+                renderSessionsList();
+            }, 1000);
+        });
+        
+        function generateAIResponse(query) {
+            // Simple response generation based on query content
+            if (query.toLowerCase().includes('dark mode')) {
+                return "Based on your memory, the client specifically requested dark mode functionality. I recommend implementing CSS variables for easy theming and ensuring all UI components support both light and dark themes.";
+            } else if (query.toLowerCase().includes('authentication')) {
+                return "From your API documentation, authentication requires JWT tokens. The endpoint expects tokens in the Authorization header with a rate limit of 100 requests per minute.";
+            } else if (query.toLowerCase().includes('analytics')) {
+                return "Your Q3 planning notes mention adding an advanced analytics dashboard. This should include data visualization exports and real-time metrics tracking.";
+            } else {
+                return "I've analyzed your memory data and found relevant information. The RAG results on the right show the most pertinent matches from your stored memories. Is there anything specific you'd like me to elaborate on?";
+            }
+        }
+        
+        // Export functionality
+        exportResultsBtn.addEventListener('click', function() {
+            if (ragResults.length === 0) {
+                alert('No results to export');
+                return;
+            }
+            
+            // Create CSV content
+            const headers = ['Score', 'Source', 'Timestamp', 'Text'];
+            const csvContent = [
+                headers.join(','),
+                ...ragResults.map(result => [
+                    result.score,
+                    `"${result.source}"`,
+                    `"${result.timestamp}"`,
+                    `"${result.text.replace(/"/g, '""')}"`
+                ].join(','))
+            ].join('\n');
+            
+            // Create and download file
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `rag-results-${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+        
+        // New session button
+        newSessionBtn.addEventListener('click', createNewSession);
+        
+        // Session dropdown change
+        sessionDropdown.addEventListener('change', function() {
+            if (this.value) {
+                loadSession(parseInt(this.value));
+            }
+        });
+        
+        // Navigation items
+        navItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                navItems.forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+                
+                // Handle section switching
+                const section = item.getAttribute('data-section');
+                // In a full implementation, this would load different content based on the section
+                console.log('Switching to section:', section);
+            });
+        });
+        
+        // Modal functionality (existing code)
+        function showModal() {
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+        
         function hideModal() {
             modal.classList.add('hidden');
-            document.body.style.overflow = ''; // Re-enable scrolling
-            // Reset file input and preview when modal is closed
+            document.body.style.overflow = '';
             resetFileInput();
         }
         
-        // Function to format file size
         function formatFileSize(bytes) {
             if (bytes === 0) return '0 Bytes';
             const k = 1024;
@@ -454,13 +916,11 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
         
-        // Function to validate file size (max 25MB)
         function validateFileSize(file) {
-            const maxSize = 25 * 1024 * 1024; // 25MB in bytes
+            const maxSize = 25 * 1024 * 1024;
             return file.size <= maxSize;
         }
         
-        // Function to show file preview
         function showFilePreview(file) {
             fileName.textContent = file.name;
             fileSize.textContent = formatFileSize(file.size);
@@ -468,60 +928,43 @@
             fileError.classList.add('hidden');
         }
         
-        // Function to hide file preview
         function hideFilePreview() {
             filePreview.classList.add('hidden');
             fileInput.value = '';
         }
         
-        // Function to show file error
         function showFileError(message) {
             fileError.textContent = message;
             fileError.classList.remove('hidden');
             filePreview.classList.add('hidden');
         }
         
-        // Function to reset file input
         function resetFileInput() {
             fileInput.value = '';
             filePreview.classList.add('hidden');
             fileError.classList.add('hidden');
         }
         
-        // Event listeners
+        // Event listeners for modal
         addBtn.addEventListener('click', showModal);
         closeBtn.addEventListener('click', hideModal);
         cancelBtn.addEventListener('click', hideModal);
         modalBackdrop.addEventListener('click', hideModal);
         
-        // File input change event
         fileInput.addEventListener('change', function() {
             if (this.files && this.files[0]) {
                 const file = this.files[0];
-                
-                // Validate file size
                 if (!validateFileSize(file)) {
                     showFileError('File size exceeds the maximum limit of 25MB');
                     return;
                 }
-                
-                // Show file preview
                 showFilePreview(file);
             }
         });
         
-        // Remove file button event
-        removeFileBtn.addEventListener('click', function() {
-            hideFilePreview();
-        });
-        
-        fileUploadBtn.addEventListener('click', () => {
-            fileInput.click();
-        });
-        
-        dropZone.addEventListener('click', () => {
-            fileInput.click();
-        });
+        removeFileBtn.addEventListener('click', hideFilePreview);
+        fileUploadBtn.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('click', () => fileInput.click());
         
         // Drag and drop functionality
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -554,50 +997,23 @@
         function handleDrop(e) {
             const dt = e.dataTransfer;
             const files = dt.files;
-            
             if (files && files[0]) {
                 const file = files[0];
-                
-                // Validate file size
                 if (!validateFileSize(file)) {
                     showFileError('File size exceeds the maximum limit of 25MB');
                     return;
                 }
-                
-                // Set file to input and show preview
                 const dataTransfer = new DataTransfer();
                 dataTransfer.items.add(file);
                 fileInput.files = dataTransfer.files;
-                
-                // Show file preview
                 showFilePreview(file);
             }
         }
         
-        // Close modal with Escape key
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
                 hideModal();
             }
-        });
-        
-        // Navigation items
-        const navItems = document.querySelectorAll('.nav-item');
-        navItems.forEach(item => {
-            item.addEventListener('click', (e) => {
-                e.preventDefault();
-                navItems.forEach(i => i.classList.remove('active'));
-                item.classList.add('active');
-            });
-        });
-        
-        // Memory entry click
-        const memoryEntries = document.querySelectorAll('.memory-entry');
-        memoryEntries.forEach(entry => {
-            entry.addEventListener('click', () => {
-                // Load the full memory content
-                console.log('Memory entry clicked');
-            });
         });
     });
 </script>
