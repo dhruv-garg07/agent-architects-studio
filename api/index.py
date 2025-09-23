@@ -3,14 +3,43 @@
 #okay 
 import os
 import sys
+
+# Get the current file's directory
+current_dir = os.path.dirname(__file__)
+
+# Get the parent directory (one level up)
+parent_dir = os.path.abspath(os.path.join(current_dir, os.pardir))
+
+# Add parent directory to sys.path
+sys.path.insert(0, parent_dir)
+print(parent_dir)
+import sys
+import os
+
+# Get the current file's directory
+current_dir = os.path.dirname(__file__)
+
+# Go two levels up
+grandparent_dir = os.path.abspath(os.path.join(current_dir, os.pardir, os.pardir))
+
+# Add to sys.path
+sys.path.insert(0, grandparent_dir)
+
 import uuid
 import asyncio
 import smtplib
+import shutil
+import tempfile
+
 
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, abort
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
-from werkzeug.security import check_password_hash, generate_password_hash
+
+from werkzeug.utils import secure_filename
 from datetime import datetime
+# Fix import for Octave_mem when running from api/
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from Octave_mem.RAG_DB_CONTROLLER.write_data_RAG_file_uploads import RAG_DB_Controller_FILE_DATA
 
 from supabase import create_client, Client
 import json
@@ -992,26 +1021,49 @@ def update_waitlist_count():
 @login_required
 def memory():
     if request.method == 'POST':
-        # Handle text input and file upload here
         text = request.form.get('memory_text')
-        file = request.files.get('memory_file')
-        # Accept all document and image types
+        files = request.files.getlist('memory_file')  # Accept multiple files
+
         allowed_extensions = [
-            '.pdf', '.ppt', '.pptx', '.doc', '.docx', '.txt', '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg', '.webp', '.heic', '.tiff', '.xls', '.xlsx', '.csv'
+            '.pdf', '.ppt', '.pptx', '.doc', '.docx', '.txt',
+            '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg',
+            '.webp', '.heic', '.tiff', '.xls', '.xlsx', '.csv'
         ]
-        if file:
-            filename = file.filename
-            ext = os.path.splitext(filename)[1].lower()
-            if ext not in allowed_extensions:
-                flash('Unsupported file type. Please upload a valid document or image.', 'error')
-                return redirect(url_for('memory'))
-            # Save file (example: to local 'uploads' folder)
-            upload_folder = os.path.join(app.root_path, 'uploads')
-            os.makedirs(upload_folder, exist_ok=True)
-            file.save(os.path.join(upload_folder, filename))
-        # Save text as needed (e.g., to database)
-        # flash('Memory saved!', 'success')
+
+        controller = RAG_DB_Controller_FILE_DATA()
+        # Handle multiple files
+        for file in files:
+            if file and file.filename:
+                filename = file.filename
+                ext = os.path.splitext(filename)[1].lower()
+                if ext not in allowed_extensions:
+                    flash(f'Unsupported file type: {filename}', 'error')
+                    continue
+                with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
+                    file.save(tmp.name)
+                    file_path = tmp.name
+                controller.update_file_data_to_db(
+                    user_ID=str(current_user.id),
+                    file_path=file_path,
+                    message_type="user",
+                    file_name=filename
+                )
+                try:
+                    os.remove(file_path)
+                except Exception as e:
+                    print(f"Error deleting temp file: {e}")
+
+        # Handle plain text (no file case) → send directly to DB
+        if text:
+            controller.send_data_to_rag_db(
+                user_ID=str(current_user.id),
+                chunks=[text],
+                message_type="user"
+            )
+
+        flash('Memory saved', 'success')
         return redirect(url_for('memory'))
+
     return render_template('memory.html')
 
 # Routes

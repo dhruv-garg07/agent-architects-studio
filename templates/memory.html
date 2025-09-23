@@ -180,10 +180,10 @@
                 <div class="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer" id="dropZone">
                     <i data-lucide="upload-cloud" class="h-12 w-12 text-muted-foreground mx-auto"></i>
                     <p class="mt-2 text-sm text-muted-foreground">Drag and drop your file here, or click to browse</p>
-                    <input type="file" id="memory_file" name="memory_file" accept=".pdf,.ppt,.pptx,.doc,.docx,.txt" class="hidden" />
+                    <input type="file" id="memory_file" name="memory_file" class="hidden" multiple accept=".pdf,.ppt,.pptx,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif,.bmp,.svg,.webp,.heic,.tiff,.xls,.xlsx,.csv" />
                     <button type="button" id="fileUploadBtn" class="btn-secondary mt-3">Select File</button>
                 </div>
-                <p class="text-xs text-muted-foreground mt-2">Supported formats: PDF, PPT, DOC, TXT (Max 25MB)</p>
+                <p class="text-xs text-muted-foreground mt-2">Supported formats: PDF, PPT, DOC, TXT, JPG, PNG, GIF (Max 25MB per file)</p>
                 
                 <!-- File preview container -->
                 <div id="filePreview" class="mt-4 hidden">
@@ -905,7 +905,7 @@
         function hideModal() {
             modal.classList.add('hidden');
             document.body.style.overflow = '';
-            resetFileInput();
+            // Do not reset file input here to preserve file selection when reopening modal
         }
         
         function formatFileSize(bytes) {
@@ -921,49 +921,110 @@
             return file.size <= maxSize;
         }
         
-        function showFilePreview(file) {
-            fileName.textContent = file.name;
-            fileSize.textContent = formatFileSize(file.size);
+        // File selection state for modal
+        let selectedFiles = [];
+
+        function updateFileInputFiles() {
+            const dataTransfer = new DataTransfer();
+            selectedFiles.forEach(file => dataTransfer.items.add(file));
+            fileInput.files = dataTransfer.files;
+        }
+
+        function showFilePreview(filesArr) {
+            filePreview.innerHTML = '';
+            filesArr.forEach((file, idx) => {
+                const fileDiv = document.createElement('div');
+                fileDiv.className = 'file-preview-item flex items-center justify-between mb-2 p-2 bg-secondary/30 rounded';
+                fileDiv.innerHTML = `
+                    <span class="truncate max-w-[180px]">${file.name}</span>
+                    <span class="ml-2 text-xs text-muted-foreground">${formatFileSize(file.size)}</span>
+                    <button type="button" class="ml-2 text-destructive hover:text-red-600 delete-file-btn" data-idx="${idx}" title="Remove file">
+                        <i data-lucide="x" class="h-4 w-4"></i>
+                    </button>
+                `;
+                filePreview.appendChild(fileDiv);
+            });
             filePreview.classList.remove('hidden');
             fileError.classList.add('hidden');
+            lucide.createIcons();
         }
-        
+
         function hideFilePreview() {
             filePreview.classList.add('hidden');
+            selectedFiles = [];
+            updateFileInputFiles();
             fileInput.value = '';
         }
-        
+
         function showFileError(message) {
             fileError.textContent = message;
             fileError.classList.remove('hidden');
             filePreview.classList.add('hidden');
         }
-        
+
         function resetFileInput() {
             fileInput.value = '';
+            selectedFiles = [];
             filePreview.classList.add('hidden');
             fileError.classList.add('hidden');
         }
         
         // Event listeners for modal
-        addBtn.addEventListener('click', showModal);
-        closeBtn.addEventListener('click', hideModal);
-        cancelBtn.addEventListener('click', hideModal);
-        modalBackdrop.addEventListener('click', hideModal);
-        
-        fileInput.addEventListener('change', function() {
-            if (this.files && this.files[0]) {
-                const file = this.files[0];
-                if (!validateFileSize(file)) {
-                    showFileError('File size exceeds the maximum limit of 25MB');
-                    return;
-                }
-                showFilePreview(file);
-            }
+        addBtn.addEventListener('click', function() {
+            showModal();
+            // Only reset file input when opening modal for a new memory
+            resetFileInput();
+        });
+        closeBtn.addEventListener('click', function() {
+            hideModal();
+            resetFileInput();
+        });
+        cancelBtn.addEventListener('click', function() {
+            hideModal();
+            resetFileInput();
+        });
+        modalBackdrop.addEventListener('click', function() {
+            hideModal();
+            resetFileInput();
         });
         
+        fileInput.addEventListener('change', function() {
+            if (this.files && this.files.length > 0) {
+                for (let file of this.files) {
+                    if (!validateFileSize(file)) {
+                        showFileError('File size exceeds the maximum limit of 25MB');
+                        return;
+                    }
+                }
+                // Add new files to selectedFiles, avoiding duplicates by name+size
+                Array.from(this.files).forEach(file => {
+                    if (!selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
+                        selectedFiles.push(file);
+                    }
+                });
+                updateFileInputFiles();
+                showFilePreview(selectedFiles);
+            }
+        });
+
+        filePreview.addEventListener('click', function(e) {
+            if (e.target.closest('.delete-file-btn')) {
+                const idx = parseInt(e.target.closest('.delete-file-btn').getAttribute('data-idx'));
+                selectedFiles.splice(idx, 1);
+                updateFileInputFiles();
+                if (selectedFiles.length > 0) {
+                    showFilePreview(selectedFiles);
+                } else {
+                    hideFilePreview();
+                }
+            }
+        });
+
         removeFileBtn.addEventListener('click', hideFilePreview);
-        fileUploadBtn.addEventListener('click', () => fileInput.click());
+        fileUploadBtn.addEventListener('click', (event) => {
+            event.stopPropagation(); // Prevent click from bubbling to dropZone
+            fileInput.click();
+        });
         dropZone.addEventListener('click', () => fileInput.click());
         
         // Drag and drop functionality
@@ -993,20 +1054,24 @@
         }
         
         dropZone.addEventListener('drop', handleDrop, false);
-        
         function handleDrop(e) {
             const dt = e.dataTransfer;
             const files = dt.files;
-            if (files && files[0]) {
-                const file = files[0];
-                if (!validateFileSize(file)) {
-                    showFileError('File size exceeds the maximum limit of 25MB');
-                    return;
+            if (files && files.length > 0) {
+                for (let file of files) {
+                    if (!validateFileSize(file)) {
+                        showFileError('File size exceeds the maximum limit of 25MB');
+                        return;
+                    }
                 }
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(file);
-                fileInput.files = dataTransfer.files;
-                showFilePreview(file);
+                // Add dropped files to selectedFiles, avoiding duplicates
+                Array.from(files).forEach(file => {
+                    if (!selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
+                        selectedFiles.push(file);
+                    }
+                });
+                updateFileInputFiles();
+                showFilePreview(selectedFiles);
             }
         }
         

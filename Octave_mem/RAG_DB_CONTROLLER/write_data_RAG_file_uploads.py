@@ -28,7 +28,7 @@ sys.path.insert(0, grandparent_dir)
 
 from LLM_calls.together_get_response import stream_chat_response
 from utlis.utlis_functions import extract_json_from_string
-from utlis_docs.doc_control_chunks import process_file, fast_tag_extractor
+from Octave_mem.RAG_DB_CONTROLLER.utlis_docs.doc_control_chunks import process_file, fast_tag_extractor
 from RAG_DB.chroma_collection_wrapper import ChromaCollectionWrapper
 from typing import List, Dict, Optional
 from dotenv import load_dotenv
@@ -125,9 +125,10 @@ class RAG_DB_Controller_FILE_DATA:
             response += token
         return response
     
-    def send_data_to_rag_db(self, user_ID: str, chunks: list[str], message_type: str = "user", file_path: Optional[str] = None):
+    def send_data_to_rag_db(self, user_ID: str, chunks: list[str], message_type: str = "user", file_path: Optional[str] = None, file_name: Optional[str] = None):
         """Send data to RAG DB with metadata extraction and verification."""
-        file_path = os.path.basename(file_path)
+        # file_path = os.path.basename(file_path)
+
         if chunks is None or len(chunks) == 0:
             print("No chunks to process.")
             return {"error": "No chunks to process."}
@@ -149,7 +150,7 @@ class RAG_DB_Controller_FILE_DATA:
                 "ids": [f"id_{next_id}"],
                 "documents": [chunk],
                 "metadatas": [{
-                    "source": f"{file_path}",
+                    "source": f"{file_name}",
                     "index": next_id,
                     "message_type": message_type,
                     "timestamp": time.time(),
@@ -160,14 +161,14 @@ class RAG_DB_Controller_FILE_DATA:
             verification_result = self.wrapper.bulk_operations_with_verification([operation])
         return verification_result
     
-    def update_file_data_to_db(self, user_ID: str, file_path: str, message_type: str = "user"):
+    def update_file_data_to_db(self, user_ID: str, file_path: str, message_type: str = "user", file_name: Optional[str] = None):
         """Process file and send data to RAG DB."""
         chunks = process_file(file_path=file_path)
         if chunks is None or len(chunks) == 0:
             print("No chunks extracted from the file.")
             return {"error": "No chunks extracted from the file."}
         
-        verification_result = self.send_data_to_rag_db(user_ID=user_ID, chunks=chunks, message_type=message_type, file_path=file_path)
+        verification_result = self.send_data_to_rag_db(user_ID=user_ID, chunks=chunks, message_type=message_type, file_path=file_path, file_name=file_name)
         return verification_result
 
 # Example usage:
@@ -185,10 +186,10 @@ class RAG_DB_Controller_FILE_DATA:
 # 2. message_type will always be "user" for file uploads.
 # 3. No is_reply_to 
 # 4.
-file_path="C:/Users/Dellg/Downloads/EE316 Min2 sols.pdf"
-# chunks = process_file(file_path=file_path)
-# for chunk in chunks:
-#     print(chunk, "\n---\n")
+# file_path="C:/Users/Dellg/Downloads/EE316 Min2 sols.pdf"
+# # chunks = process_file(file_path=file_path)
+# # for chunk in chunks:
+# #     print(chunk, "\n---\n")
 
-controller_file_data = RAG_DB_Controller_FILE_DATA(database=os.getenv("CHROMA_DATABASE_FILE_DATA"))
-controller_file_data.update_file_data_to_db(user_ID="user1234", file_path=file_path, message_type="user")
+# controller_file_data = RAG_DB_Controller_FILE_DATA(database=os.getenv("CHROMA_DATABASE_FILE_DATA"))
+# controller_file_data.update_file_data_to_db(user_ID="user1234", file_path=file_path, message_type="user")
