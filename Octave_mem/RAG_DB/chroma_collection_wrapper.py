@@ -8,7 +8,7 @@ class ChromaCollectionWrapper:
         """Initialize the wrapper with ChromaCollectionManager."""
         load_dotenv()
         if database is None:
-            database = os.getenv("CHROMA_DATABASE")
+            database = os.getenv("CHROMA_DATABASE_FILE_DATA")
         self.manager = ChromaCollectionManager(database=database)
     
     def create_or_update_collection_with_verify(
@@ -24,6 +24,8 @@ class ChromaCollectionWrapper:
         Returns:
             Dict with operation result and verification details.
         """
+        
+        print("Reached inside create or update with verify")
         # Perform the operation
         result = self.manager.create_or_update_collection(
             collection_name=collection_name,
@@ -152,6 +154,7 @@ class ChromaCollectionWrapper:
             metadatas = op.get("metadatas")
             
             if op_type == "create_or_update":
+                print("Reached before create or update with verify")
                 result = self.create_or_update_collection_with_verify(
                     collection_name, ids, documents, metadatas
                 )

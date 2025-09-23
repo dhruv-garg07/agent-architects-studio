@@ -28,6 +28,7 @@ sys.path.insert(0, grandparent_dir)
 
 from LLM_calls.together_get_response import stream_chat_response
 from utlis.utlis_functions import extract_json_from_string
+from utlis_docs.doc_control_chunks import process_file, fast_tag_extractor
 from RAG_DB.chroma_collection_wrapper import ChromaCollectionWrapper
 from typing import List, Dict, Optional
 from dotenv import load_dotenv
@@ -69,18 +70,23 @@ SAMPLE_OPERATION = [{
         #     "documents": ["doc1123", "doc122"],
         #     "metadatas": [{"cat": "1234213"}, {"cat234": "q134223"}]
         # }, 
+        
 # 1. Type will always be "create_or_update" for now.
 # 2. collection_name will be the user_ID.
 # 3. ids -> Will be managed by a ID manager.
 # 4. Docs are actual chat sessions.
 # 5. Metadatas -> Will be managed by a metadata manager.
+
+
+
+
 import time
-class RAG_DB_Controller_CHAT_HISTORY:
+class RAG_DB_Controller_FILE_DATA:
     def __init__(self, database: str = None):
         """Initialize the controller with ChromaCollectionWrapper."""
         load_dotenv()
         if database is None:
-            database = os.getenv("CHROMA_DATABASE")
+            database = os.getenv("CHROMA_DATABASE_FILE_DATA")
         self.wrapper = ChromaCollectionWrapper(database=database)
     
     # Returns next available ID for a user.
@@ -119,31 +125,49 @@ class RAG_DB_Controller_CHAT_HISTORY:
             response += token
         return response
     
-    def send_data_to_rag_db(self, user_ID: str, content_data: str, is_reply_to: int, message_type: str = "user" ,conversation_thread: Optional[str] = None):
+    def send_data_to_rag_db(self, user_ID: str, chunks: list[str], message_type: str = "user", file_path: Optional[str] = None):
         """Send data to RAG DB with metadata extraction and verification."""
-        if conversation_thread is None:
-            conversation_thread = self.get_new_conversation_thread_id(user_ID)
+        file_path = os.path.basename(file_path)
+        if chunks is None or len(chunks) == 0:
+            print("No chunks to process.")
+            return {"error": "No chunks to process."}
         
-        next_id = self.id_manager(user_ID)
-        metadata_response = self.extract_metadata_via_llm(content_data, message_type)
+        ids = []
+        documents = []
+        metadatas = []
+        for chunk in chunks:
+            if not isinstance(chunk, str) or len(chunk.strip()) == 0:
+                print(f"Invalid chunk: {chunk}")
+                return {"error": f"Invalid chunk: {chunk}"}
+            
+            next_id = self.id_manager(user_ID)
+            metadata_response =  fast_tag_extractor(chunk, top_n=3)
+
+            operation = {
+                "type": "create_or_update",
+                "collection_name": user_ID,
+                "ids": [f"id_{next_id}"],
+                "documents": [chunk],
+                "metadatas": [{
+                    "source": f"{file_path}",
+                    "index": next_id,
+                    "message_type": message_type,
+                    "timestamp": time.time(),
+                    "tags": metadata_response,
+                }]
+            }
+            
+            verification_result = self.wrapper.bulk_operations_with_verification([operation])
+        return verification_result
+    
+    def update_file_data_to_db(self, user_ID: str, file_path: str, message_type: str = "user"):
+        """Process file and send data to RAG DB."""
+        chunks = process_file(file_path=file_path)
+        if chunks is None or len(chunks) == 0:
+            print("No chunks extracted from the file.")
+            return {"error": "No chunks extracted from the file."}
         
-        operation = {
-            "type": "create_or_update",
-            "collection_name": user_ID,
-            "ids": [f"id_{next_id}"],
-            "documents": [content_data],
-            "metadatas": [{
-                "source": "chat_session",
-                "index": next_id,
-                "message_type": message_type,
-                "conversation_thread": conversation_thread,
-                "timestamp": time.time(),
-                "tags": metadata_response,
-                "linked_response_id": is_reply_to  # Will be updated when LLM responds
-            }]
-        }
-        
-        verification_result = self.wrapper.bulk_operations_with_verification([operation])
+        verification_result = self.send_data_to_rag_db(user_ID=user_ID, chunks=chunks, message_type=message_type, file_path=file_path)
         return verification_result
 
 # Example usage:
@@ -156,3 +180,15 @@ class RAG_DB_Controller_CHAT_HISTORY:
 
 # 2. Database - FILE UPLOADS
 # A different database for file uploads and other manual data.
+# Difference in metadata:
+# 1. Metadata extraction might differ
+# 2. message_type will always be "user" for file uploads.
+# 3. No is_reply_to 
+# 4.
+file_path="C:/Users/Dellg/Downloads/EE316 Min2 sols.pdf"
+# chunks = process_file(file_path=file_path)
+# for chunk in chunks:
+#     print(chunk, "\n---\n")
+
+controller_file_data = RAG_DB_Controller_FILE_DATA(database=os.getenv("CHROMA_DATABASE_FILE_DATA"))
+controller_file_data.update_file_data_to_db(user_ID="user1234", file_path=file_path, message_type="user")
