@@ -20,5 +20,6 @@ chromadb>=0.5.0
 
 # RAG Orchestration
 langchain>=0.2.0
+python-docx
 
 
