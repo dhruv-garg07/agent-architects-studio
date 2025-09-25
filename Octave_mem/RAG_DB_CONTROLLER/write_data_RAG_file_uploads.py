@@ -193,3 +193,4 @@ class RAG_DB_Controller_FILE_DATA:
 
 # controller_file_data = RAG_DB_Controller_FILE_DATA(database=os.getenv("CHROMA_DATABASE_FILE_DATA"))
 # controller_file_data.update_file_data_to_db(user_ID="user1234", file_path=file_path, message_type="user")
+# NEW DATA 
