@@ -29,6 +29,7 @@ sys.path.insert(0, grandparent_dir)
 from LLM_calls.together_get_response import stream_chat_response
 from utlis.utlis_functions import extract_json_from_string
 from RAG_DB.chroma_collection_wrapper import ChromaCollectionWrapper
+from Octave_mem.RAG_DB_CONTROLLER.utlis_docs.doc_control_chunks import process_file, fast_tag_extractor
 from typing import List, Dict, Optional
 from dotenv import load_dotenv
 import os   
@@ -75,6 +76,7 @@ SAMPLE_OPERATION = [{
 # 4. Docs are actual chat sessions.
 # 5. Metadatas -> Will be managed by a metadata manager.
 import time
+
 class RAG_DB_Controller_CHAT_HISTORY:
     def __init__(self, database: str = None):
         """Initialize the controller with ChromaCollectionWrapper."""
@@ -125,7 +127,7 @@ class RAG_DB_Controller_CHAT_HISTORY:
             conversation_thread = self.get_new_conversation_thread_id(user_ID)
         
         next_id = self.id_manager(user_ID)
-        metadata_response = self.extract_metadata_via_llm(content_data, message_type)
+        metadata_response = fast_tag_extractor(content_data, top_n=3)
         
         operation = {
             "type": "create_or_update",

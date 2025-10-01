@@ -480,6 +480,11 @@
         }
     }
 </style>
+<!-- memory.html -->
+<script>
+    // expose the logged-in user's id to JS
+    window.USER_ID = "{{ current_user.id }}";
+</script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -488,7 +493,7 @@
         
         // State management
         let currentSession = null;
-        let sessions = JSON.parse(localStorage.getItem('memorySessions')) || [];
+        let sessions = [];
         let ragResults = [];
         
         // DOM Elements
@@ -523,14 +528,69 @@
         // Initialize the dashboard
         initDashboard();
         
-        function initDashboard() {
+        async function initDashboard() {
+            await refreshSessionsFromServer();
             updateSessionUI();
             if (sessions.length > 0) {
-                // Load the most recent session
-                loadSession(sessions[sessions.length - 1].id);
+                // load most recent (index 0 if you return newest-first)
+                await loadSession(sessions[0].id);
             }
         }
         
+        // Replaces your current refreshSessionsFromServer()
+        async function refreshSessionsFromServer() {
+            const res = await fetch('/api/get_sessions?id={{ current_user.id }}');
+            const ids = await res.json();  // ["uuid1","uuid2",...]
+
+            if (!Array.isArray(ids)) { sessions = []; return; }
+
+            const enriched = await Promise.all(
+                ids.map(async (thread_id) => {
+                try {
+                    const r = await fetch(`/api/sessions/${thread_id}/messages?id={{ current_user.id }}`);
+                    const { messages = [] } = await r.json(); // raw Chroma rows
+
+                    // pick the latest message by timestamp (fallback: metadata.index)
+                    const last = messages
+                    .slice()
+                    .sort((a, b) => {
+                        const ta = (a.metadata?.timestamp ?? 0);
+                        const tb = (b.metadata?.timestamp ?? 0);
+                        if (tb !== ta) return tb - ta;
+                        const ia = (a.metadata?.index ?? 0);
+                        const ib = (b.metadata?.index ?? 0);
+                        return ib - ia;
+                    })[0];
+
+                    const ts = last?.metadata?.timestamp
+                    ? new Date(last.metadata.timestamp * 1000).toISOString()
+                    : new Date().toISOString();
+
+                    const preview = last?.document || 'No messages';
+
+                    return {
+                    id: thread_id,            // UUID from server
+                    createdAt: ts,            // you can refine if you store session-created time
+                    updatedAt: ts,
+                    preview,
+                    };
+                } catch (e) {
+                    return {
+                    id: thread_id,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    preview: 'No messages',
+                    };
+                }
+                })
+            );
+
+            enriched.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+            sessions = enriched;
+        }
+
+
+
         function updateSessionUI() {
             if (sessions.length === 0) {
                 // No sessions - show "New Session" button
@@ -554,70 +614,94 @@
         }
         
         function updateSessionDropdown() {
-            sessionDropdown.innerHTML = '<option value="">Select Session</option>';
-            sessions.forEach(session => {
-                const option = document.createElement('option');
-                option.value = session.id;
-                option.textContent = `Session ${session.id} - ${new Date(session.createdAt).toLocaleDateString()}`;
-                sessionDropdown.appendChild(option);
-            });
-            
-            if (currentSession) {
-                sessionDropdown.value = currentSession.id;
-            }
+        sessionDropdown.innerHTML = '<option value="">Select Session</option>';
+        sessions.forEach(s => {
+            const option = document.createElement('option');
+            option.value = s.id;
+            option.textContent = `Session ${s.id.slice(0,8)}… — ${new Date(s.createdAt).toLocaleDateString()}`;
+            sessionDropdown.appendChild(option);
+        });
+        if (currentSession) sessionDropdown.value = currentSession.id;
         }
-        
+
         function renderSessionsList() {
-            sessionsList.innerHTML = '';
-            sessions.forEach(session => {
-                const sessionItem = document.createElement('div');
-                sessionItem.className = `session-item ${currentSession && currentSession.id === session.id ? 'active' : ''}`;
-                sessionItem.innerHTML = `
-                    <div class="flex-1 min-w-0">
-                        <div class="font-medium">Session ${session.id}</div>
-                        <div class="session-preview">${session.messages.length > 0 ? session.messages[session.messages.length - 1].content.substring(0, 50) + '...' : 'No messages'}</div>
-                    </div>
-                    <div class="text-xs text-muted-foreground">
-                        ${new Date(session.updatedAt).toLocaleTimeString()}
-                    </div>
-                `;
-                sessionItem.addEventListener('click', () => loadSession(session.id));
-                sessionsList.appendChild(sessionItem);
-            });
+        sessionsList.innerHTML = '';
+        sessions.forEach(s => {
+            const sessionItem = document.createElement('div');
+            sessionItem.className = `session-item ${currentSession && currentSession.id === s.id ? 'active' : ''}`;
+            sessionItem.innerHTML = `
+            <div class="flex-1 min-w-0">
+                <div class="font-medium">Session ${s.id.slice(0,8)}…</div>
+                <div class="session-preview">${(s.preview || 'No messages').substring(0, 50)}...</div>
+            </div>
+            <div class="text-xs text-muted-foreground">${new Date(s.updatedAt).toLocaleTimeString()}</div>
+            `;
+            sessionItem.addEventListener('click', () => loadSession(s.id));
+            sessionsList.appendChild(sessionItem);
+        });
         }
+
+
         
-        function createNewSession() {
+        async function createNewSession() {
+            const res = await fetch('/api/create_session', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    user_id: '{{current_user.id}}',
+                })
+            });
+            const { thread_id, createdAt } = await res.json();
+
             const newSession = {
-                id: sessions.length + 1,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
+                id: thread_id,                // UUID from backend
+                createdAt: createdAt,
+                updatedAt: createdAt,
                 messages: []
             };
-            
-            sessions.push(newSession);
-            localStorage.setItem('memorySessions', JSON.stringify(sessions));
+
+            // Put the new session at the top for UX
+            sessions.unshift(newSession);
             updateSessionUI();
-            loadSession(newSession.id);
+            await loadSession(newSession.id);
         }
+
         
-        function loadSession(sessionId) {
+        async function loadSession(sessionId) {
             const session = sessions.find(s => s.id === sessionId);
             if (!session) return;
-            
+
             currentSession = session;
-            renderConversation(session.messages);
+
+            const res = await fetch(`/api/sessions/${currentSession.id}/messages?id={{ current_user.id }}`);
+            const data = await res.json();
+            const rows = data.messages || [];
+
+            // sort ascending for display
+            rows.sort((a, b) => {
+                const ta = (a.metadata?.timestamp ?? 0);
+                const tb = (b.metadata?.timestamp ?? 0);
+                if (ta !== tb) return ta - tb;
+                const ia = (a.metadata?.index ?? 0);
+                const ib = (b.metadata?.index ?? 0);
+                return ia - ib;
+            });
+
+            currentSession.messages = rows.map(r => ({
+                role: (r.metadata?.message_type === 'llm') ? 'assistant' : 'user',
+                content: r.document || '',
+                timestamp: r.metadata?.timestamp
+                ? new Date(r.metadata.timestamp * 1000).toISOString()
+                : new Date().toISOString()
+            }));
+
+            renderConversation(currentSession.messages);
             updateSessionUI();
-            
-            // If there are messages, simulate RAG results for the last message
-            if (session.messages.length > 0) {
-                const lastMessage = session.messages[session.messages.length - 1];
-                if (lastMessage.role === 'user') {
-                    simulateRAGResults(lastMessage.content);
-                }
-            } else {
-                clearRAGResults();
-            }
+            clearRAGResults();
         }
+
+
+
         
         function renderConversation(messages) {
             conversationHistory.innerHTML = '';
@@ -778,69 +862,53 @@
         };
         
         // Chat form submission
-        chatForm.addEventListener('submit', function(e) {
+        chatForm.addEventListener('submit', async function(e) {
             e.preventDefault();
-            
             const message = chatInput.value.trim();
             if (!message) return;
-            
-            // Clear input
+
             chatInput.value = '';
-            
-            // Create new session if none exists
+
+            // Ensure a server session exists
             if (!currentSession) {
-                createNewSession();
+                await createNewSession();
             }
-            
-            // Add user message to conversation
-            const userMessage = {
-                role: 'user',
-                content: message,
-                timestamp: new Date().toISOString()
-            };
-            
+
+            // Optimistic UI: show user message
+            const userMessage = { role: 'user', content: message, timestamp: new Date().toISOString() };
             currentSession.messages.push(userMessage);
             addMessageToConversation('user', message);
-            
-            // Update session timestamp
             currentSession.updatedAt = new Date().toISOString();
-            localStorage.setItem('memorySessions', JSON.stringify(sessions));
-            
-            // Simulate AI response after a short delay
-            setTimeout(() => {
-                const aiResponse = generateAIResponse(message);
-                const aiMessage = {
-                    role: 'assistant',
-                    content: aiResponse,
-                    timestamp: new Date().toISOString()
-                };
-                
-                currentSession.messages.push(aiMessage);
-                addMessageToConversation('assistant', aiResponse);
-                
-                // Update session in storage
-                localStorage.setItem('memorySessions', JSON.stringify(sessions));
-                
-                // Generate RAG results
-                simulateRAGResults(message);
-                
-                // Update sessions list
-                renderSessionsList();
-            }, 1000);
+
+            // Ask server to generate + store both messages in Chroma
+            const res = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                thread_id: currentSession.id,   // UUID
+                user_id: window.USER_ID,      // from base.html
+                message,
+                history: currentSession.messages
+                })
+            });
+
+            const data = await res.json();
+
+            // Show assistant reply
+            const aiMessage = { role: 'assistant', content: data.reply, timestamp: new Date().toISOString() };
+            currentSession.messages.push(aiMessage);
+            addMessageToConversation('assistant', data.reply);
+
+            // Refresh sessions list metadata from server (optional)
+            await refreshSessionsFromServer();
+            renderSessionsList();
+
+            // RAG panel: call real endpoint or clear
+            clearRAGResults(); // replace with real fetch when ready
         });
+
         
-        function generateAIResponse(query) {
-            // Simple response generation based on query content
-            if (query.toLowerCase().includes('dark mode')) {
-                return "Based on your memory, the client specifically requested dark mode functionality. I recommend implementing CSS variables for easy theming and ensuring all UI components support both light and dark themes.";
-            } else if (query.toLowerCase().includes('authentication')) {
-                return "From your API documentation, authentication requires JWT tokens. The endpoint expects tokens in the Authorization header with a rate limit of 100 requests per minute.";
-            } else if (query.toLowerCase().includes('analytics')) {
-                return "Your Q3 planning notes mention adding an advanced analytics dashboard. This should include data visualization exports and real-time metrics tracking.";
-            } else {
-                return "I've analyzed your memory data and found relevant information. The RAG results on the right show the most pertinent matches from your stored memories. Is there anything specific you'd like me to elaborate on?";
-            }
-        }
+        
         
         // Export functionality
         exportResultsBtn.addEventListener('click', function() {
@@ -1082,5 +1150,10 @@
             }
         });
     });
+
+   
+
+
+
 </script>
 {% endblock %}

@@ -82,7 +82,20 @@ class CreatorProfile(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-
+class Profile(BaseModel):
+    """Creator profile information."""
+    id: str
+    username: str
+    full_name: Optional[str] = None
+    user_role: Optional[str] = None
+    portfolio_url: Optional[str] = None
+    expertise: Optional[str] = None
+    primary_interest: Optional[str] = None
+    github_url: Optional[str] = None
+    email: Optional[str] = 0
+    created_at: datetime
+    memory: Optional[list[str]] = None #create a list of strings
+    
 class CreatorStats(BaseModel):
     """Creator statistics."""
     agent_count: int = 0

@@ -50,6 +50,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 # Import services from the backend_examples
 from backend_examples.python.services.agents import agent_service
 from backend_examples.python.services.creators import creator_service
+
 from backend_examples.python.models import SearchFilters
 from dotenv import load_dotenv
 from email.mime.text import MIMEText
@@ -1064,7 +1065,33 @@ def memory():
         flash('Memory saved', 'success')
         return redirect(url_for('memory'))
 
-    return render_template('memory.html')
+    return render_template('memory.html', user=current_user)
+
+# @app.post("/api/chat")
+# @login_required
+# def chat():
+#     data = request.get_json(force=True)
+#     user_msg = data.get("message", "")
+#     session_id = data.get("session_id")
+#     history = data.get("context", [])
+
+#     # Call your Python AI function here
+#     reply_text = run_ai(user_msg, history=history, session_id=session_id)
+
+#     # Optionally return RAG results for the right panel
+#     rag_results = [
+#         {"id": 1, "score": 0.92, "text": "...", "source": "...", "timestamp": "...", "matches": ["..."]}
+#     ]
+
+#     return jsonify({"reply": reply_text, "rag_results": rag_results})
+
+# def run_ai(message, history, session_id):
+#     # your model / tool-calling / RAG pipeline
+#     # This function should call LLM responses from the Response controller.
+#     return f"Echo This is the AI response: {message}"  # replace with real response
+
+from api_chats import api
+app.register_blueprint(api)
 
 # Routes
 @app.route('/')
@@ -1078,7 +1105,7 @@ def homepage():
 # @app.route('/')
 # def homepage():
 #     """Homepage with waitlist count"""
-#     waitlist_count = update_waitlist_count()
+#     waitlist_count = update_waitlist_count() 
 #     return render_template('homepage.html', waitlist_count=waitlist_count)
 
 if __name__ == '__main__':
