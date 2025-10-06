@@ -1,6 +1,7 @@
 # api_chats.py
 import os, time, uuid
 from flask import Blueprint, request, jsonify
+from LLM_calls.context_manager import query_llm_with_history
 from Octave_mem.RAG_DB_CONTROLLER.write_data_RAG import RAG_DB_Controller_CHAT_HISTORY
 from Octave_mem.RAG_DB_CONTROLLER.read_data_RAG_all_DB import read_data_RAG
 api = Blueprint("api", __name__)
@@ -38,7 +39,7 @@ sys.path.insert(0, grandparent_dir)
 def run_ai(message, history, session_id):
     # your model / tool-calling / RAG pipeline
     # This function should call LLM responses from the Response controller.
-    return f"Echo This is the AI response: {message}"  # replace with real response
+    return query_llm_with_history(message, history)  # replace with real response
 
 # from LLM_calls use together_get_response functions for LLM calls.
 # Make a orchestration function that calls the LLM and tools as needed.
