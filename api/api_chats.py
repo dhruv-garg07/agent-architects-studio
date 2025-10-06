@@ -6,10 +6,61 @@ from Octave_mem.RAG_DB_CONTROLLER.read_data_RAG_all_DB import read_data_RAG
 api = Blueprint("api", __name__)
 import asyncio
 
+import os
+import sys
+# import sys, os
+sys.path.append(os.path.dirname(__file__))
+# Get the current file's directory
+current_dir = os.path.dirname(__file__)
+
+# Get the parent directory (one level up)
+parent_dir = os.path.abspath(os.path.join(current_dir, os.pardir))
+
+# Add parent directory to sys.path
+sys.path.insert(0, parent_dir)
+print(parent_dir)
+import sys
+import os
+
+# Get the current file's directory
+current_dir = os.path.dirname(__file__)
+
+# Go two levels up
+grandparent_dir = os.path.abspath(os.path.join(current_dir, os.pardir, os.pardir))
+
+# Add to sys.path
+sys.path.insert(0, grandparent_dir)
+
+# Now we have grandparent_dir, parent_dir, current_dir in sys.path.
+# Can import anything from these directories.
+
+
 def run_ai(message, history, session_id):
     # your model / tool-calling / RAG pipeline
     # This function should call LLM responses from the Response controller.
     return f"Echo This is the AI response: {message}"  # replace with real response
+
+# from LLM_calls use together_get_response functions for LLM calls.
+# Make a orchestration function that calls the LLM and tools as needed.
+# Context building from history and RAG retrieval should be done here.
+# Use agents if needed. for example if you want to call a code interpreter tool or web search tool.
+# Context building using Langchain memory modules can be done here.
+# Example: use ConversationBufferMemory to build context from history.
+# Use RAG retrieval to get relevant documents from Chroma DB.
+# Structure of Context in tree diagram:
+# Chat History ---------------> Context Builder ----------------> LLM/Agent/Tool Orchestration
+# (ConversationBufferMemory)         (RAG Retrieval)               (LLM Calls, Tool Calls)
+# (past messages)                   (Chroma DB)                   (Response generation)
+# (user_id, thread_id)              (user_id, thread_id)          (user_id, thread_id)
+# (message_id, content, role)       (relevant docs)               (final response)
+# (timestamp)                       (context)                     (tool calls)
+# (is_reply_to)
+# (conversation_thread) 
+# (message_type)
+# (note, human, llm)
+
+# We should make a separate file for running AI controls.
+# There should be Proper context building from the history and RAG retrieval.
 
 
 write_controller_chatH = RAG_DB_Controller_CHAT_HISTORY(
