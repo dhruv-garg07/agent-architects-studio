@@ -152,29 +152,24 @@ def chat_and_store():
     user_msg  = data["message"]
     history   = data.get("history", [])
 
-   
+    # 1) store the user message
+    write_controller_chatH.send_data_to_rag_db(
+        user_ID=user_id,
+        content_data=user_msg,
+        is_reply_to=None,
+        message_type="human",
+        conversation_thread=thread_id,
+    )
 
-    # 1) fetch relevant RAG data (top 5 matches)
+    # 2) fetch relevant RAG data (top 5 matches)
     rag_results = read_controller_chatH.fetch_related_to_query(
         user_ID=user_id,
         query=user_msg,
         top_k=5
     )
 
-    # 2) your AI generation (pass RAG data as context)
+    # 3) your AI generation (pass RAG data as context)
     reply_text = run_ai(user_msg, history, session_id=thread_id, rag_context=rag_results)
-
-
-     # 3) split user message into chunks and store each chunk
-    user_chunks = split_text_into_chunks(user_msg, max_sentences=8, overlap=1)
-    for chunk in user_chunks:
-        write_controller_chatH.send_data_to_rag_db(
-            user_ID=user_id,
-            content_data=chunk,
-            is_reply_to=None,
-            message_type="human",
-            conversation_thread=thread_id,
-        )
 
     # 4) split reply_text into chunks and store each chunk
     chunks = split_text_into_chunks(reply_text, max_sentences=8, overlap=1)
@@ -187,10 +182,6 @@ def chat_and_store():
             conversation_thread=thread_id,
         )
 
-   
-
-
- 
     return jsonify({"reply": reply_text})
 
 @api.post("/api/notes")
