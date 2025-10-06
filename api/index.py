@@ -3,7 +3,8 @@
 #okay 
 import os
 import sys
-
+import sys, os
+sys.path.append(os.path.dirname(__file__))
 # Get the current file's directory
 current_dir = os.path.dirname(__file__)
 
