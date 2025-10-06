@@ -23,4 +23,6 @@ langchain>=0.2.0
 python-docx
 pdfplumber
 
+langchain_community
+
 

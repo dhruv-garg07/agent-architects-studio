@@ -25,8 +25,7 @@ grandparent_dir = os.path.abspath(os.path.join(current_dir, os.pardir, os.pardir
 sys.path.insert(0, grandparent_dir)
 
 from LLM_calls.together_get_response import stream_chat_response, extract_output_after_think
-from langchain.memory import ConversationSummaryBufferMemory
-from langchain.chat_models import ChatOpenAI
+from langchain.memory import ConversationBufferMemory
 
 system_prompt = (
     "You are Deepseek, a highly capable, thoughtful, and precise AI assistant. "
@@ -41,13 +40,17 @@ def query_llm_with_history(message, history, rag_context, **kwargs):
     Args:
         message (str): The latest user message.
         history (list): List of previous messages (dicts or strings).
+        rag_context (list): List of dicts with manual/contextual data to include in prompt.
         **kwargs: Additional arguments for stream_chat_response.
     Returns:
         str: The full response from the LLM.
     """
-    # Summarize history using LangChain
-    llm = ChatOpenAI(temperature=0)
-    memory = ConversationSummaryBufferMemory(llm=llm, max_token_limit=1000, return_messages=True)
+    # Use ConversationBufferMemory for storing conversation history
+    memory = ConversationBufferMemory(return_messages=True)
+
+    print("Rag context:", rag_context)
+
+    
     if history:
         for h in history:
             if isinstance(h, dict):
@@ -60,10 +63,13 @@ def query_llm_with_history(message, history, rag_context, **kwargs):
     else:
         summary = ""
 
-    # Build prompt from summary and message
+    # Build prompt from summary, rag_context, and message
     prompt = system_prompt + "\n\n"
+    if rag_context:
+        rag_texts = [doc['document'] for doc in rag_context if 'document' in doc]
+        prompt += "Relevant Context (manual data):\n" + "\n".join(rag_texts) + "\n\n"
     if summary:
-        prompt += f"Conversation Summary: {summary}\n"
+        prompt += f"Conversation History:\n{summary}\n"
     prompt += f"User: {message}\nAI: "
 
     # Stream and collect the response
