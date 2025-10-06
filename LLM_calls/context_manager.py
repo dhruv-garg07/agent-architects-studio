@@ -25,6 +25,8 @@ grandparent_dir = os.path.abspath(os.path.join(current_dir, os.pardir, os.pardir
 sys.path.insert(0, grandparent_dir)
 
 from LLM_calls.together_get_response import stream_chat_response, extract_output_after_think
+from langchain.memory import ConversationSummaryBufferMemory
+from langchain.chat_models import ChatOpenAI
 
 system_prompt = (
     "You are Deepseek, a highly capable, thoughtful, and precise AI assistant. "
@@ -33,7 +35,7 @@ system_prompt = (
     "Reply in chat format, in a few sentences only, keep it short and precise."
 )
 
-def query_llm_with_history(message, history, **kwargs):
+def query_llm_with_history(message, history, rag_context, **kwargs):
     """
     Query Together AI LLM with the given message and history.
     Args:
@@ -43,17 +45,25 @@ def query_llm_with_history(message, history, **kwargs):
     Returns:
         str: The full response from the LLM.
     """
-    # Build prompt from history and message
-    prompt = ""
-    prompt += system_prompt + "\n\n"
+    # Summarize history using LangChain
+    llm = ChatOpenAI(temperature=0)
+    memory = ConversationSummaryBufferMemory(llm=llm, max_token_limit=1000, return_messages=True)
     if history:
         for h in history:
             if isinstance(h, dict):
                 role = h.get('role', 'user')
                 content = h.get('content', str(h))
-                prompt += f"{role.capitalize()}: {content}\n"
+                memory.save_context({"input": content if role == 'user' else ""}, {"output": content if role != 'user' else ""})
             else:
-                prompt += str(h) + "\n"
+                memory.save_context({"input": str(h)}, {"output": ""})
+        summary = memory.buffer
+    else:
+        summary = ""
+
+    # Build prompt from summary and message
+    prompt = system_prompt + "\n\n"
+    if summary:
+        prompt += f"Conversation Summary: {summary}\n"
     prompt += f"User: {message}\nAI: "
 
     # Stream and collect the response

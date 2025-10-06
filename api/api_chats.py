@@ -36,10 +36,12 @@ sys.path.insert(0, grandparent_dir)
 # Can import anything from these directories.
 
 
-def run_ai(message, history, session_id):
+def run_ai(message, history, session_id, rag_context=None):
     # your model / tool-calling / RAG pipeline
     # This function should call LLM responses from the Response controller.
-    return query_llm_with_history(message, history)  # replace with real response
+    # If rag_context is provided, add it to the context for the LLM
+
+    return query_llm_with_history(message, history, rag_context)  # replace with real response
 
 # from LLM_calls use together_get_response functions for LLM calls.
 # Make a orchestration function that calls the LLM and tools as needed.
@@ -127,6 +129,21 @@ def store_message():
     )
     return jsonify({"ok": True, "result": result})
 
+def split_text_into_chunks(text, max_sentences=5, overlap=1):
+    import re
+    # Split text into sentences (simple split, can be improved)
+    sentences = re.split(r'(?<=[.!?]) +', text)
+    chunks = []
+    i = 0
+    while i < len(sentences):
+        chunk = sentences[i:i+max_sentences]
+        if chunk:
+            chunks.append(' '.join(chunk))
+        if i + max_sentences >= len(sentences):
+            break
+        i += max_sentences - overlap
+    return chunks
+
 @api.post("/api/chat")               # (optional) generate + store assistant reply
 def chat_and_store():
     data = request.get_json(force=True)
@@ -144,17 +161,26 @@ def chat_and_store():
         conversation_thread=thread_id,
     )
 
-    # 2) your AI generation (replace with your real function)
-    reply_text = run_ai(user_msg, history, session_id=thread_id)
-
-    # 3) store assistant message
-    write_controller_chatH.send_data_to_rag_db(
+    # 2) fetch relevant RAG data (top 5 matches)
+    rag_results = read_controller_chatH.fetch_related_to_query(
         user_ID=user_id,
-        content_data=reply_text,
-        is_reply_to=None,   # or link to last user msg id if you track it
-        message_type="llm",
-        conversation_thread=thread_id,
+        query=user_msg,
+        top_k=5
     )
+
+    # 3) your AI generation (pass RAG data as context)
+    reply_text = run_ai(user_msg, history, session_id=thread_id, rag_context=rag_results)
+
+    # 4) split reply_text into chunks and store each chunk
+    chunks = split_text_into_chunks(reply_text, max_sentences=8, overlap=1)
+    for chunk in chunks:
+        write_controller_chatH.send_data_to_rag_db(
+            user_ID=user_id,
+            content_data=chunk,
+            is_reply_to=None,
+            message_type="llm",
+            conversation_thread=thread_id,
+        )
 
     return jsonify({"reply": reply_text})
 
