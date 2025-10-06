@@ -211,6 +211,9 @@ def submit_agent():
             if key and value:  # Only add non-empty auth fields
                 authentication[key] = value
         
+        # Not much 
+        okay_ish = True
+        
         agent_data = {
             'name': request.form.get('name'),
             'description': request.form.get('description'),
