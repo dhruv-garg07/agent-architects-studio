@@ -495,7 +495,8 @@
         let currentSession = null;
         let sessions = [];
         let ragResults = [];
-        
+        let currentSendToken = 0;
+
         // DOM Elements
         const modal = document.getElementById('addDataModal');
         const modalBackdrop = document.getElementById('modalBackdrop');
@@ -532,86 +533,23 @@
             await refreshSessionsFromServer();
             updateSessionUI();
             if (sessions.length > 0) {
-                // load most recent (index 0 if you return newest-first)
-                await loadSession(sessions[0].id);
+                await loadSession(sessions[0].id); // newest first
+            } else {
+                renderConversation([]); // empty state
             }
-        }
-        
-        // Replaces your current refreshSessionsFromServer()
-        async function refreshSessionsFromServer() {
-            const res = await fetch('/api/get_sessions?id={{ current_user.id }}');
-            const ids = await res.json();  // ["uuid1","uuid2",...]
-
-            if (!Array.isArray(ids)) { sessions = []; return; }
-
-            const enriched = await Promise.all(
-                ids.map(async (thread_id) => {
-                try {
-                    const r = await fetch(`/api/sessions/${thread_id}/messages?id={{ current_user.id }}`);
-                    const { messages = [] } = await r.json(); // raw Chroma rows
-
-                    // pick the latest message by timestamp (fallback: metadata.index)
-                    const last = messages
-                    .slice()
-                    .sort((a, b) => {
-                        const ta = (a.metadata?.timestamp ?? 0);
-                        const tb = (b.metadata?.timestamp ?? 0);
-                        if (tb !== ta) return tb - ta;
-                        const ia = (a.metadata?.index ?? 0);
-                        const ib = (b.metadata?.index ?? 0);
-                        return ib - ia;
-                    })[0];
-
-                    const ts = last?.metadata?.timestamp
-                    ? new Date(last.metadata.timestamp * 1000).toISOString()
-                    : new Date().toISOString();
-
-                    const preview = last?.document || 'No messages';
-
-                    return {
-                    id: thread_id,            // UUID from server
-                    createdAt: ts,            // you can refine if you store session-created time
-                    updatedAt: ts,
-                    preview,
-                    };
-                } catch (e) {
-                    return {
-                    id: thread_id,
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
-                    preview: 'No messages',
-                    };
-                }
-                })
-            );
-
-            enriched.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-            sessions = enriched;
         }
 
 
 
         function updateSessionUI() {
-            if (sessions.length === 0) {
-                // No sessions - show "New Session" button
-                newSessionBtn.classList.remove('hidden');
-                sessionSelector.classList.add('hidden');
-                sessionsList.classList.add('hidden');
-                noSessionsMessage.classList.remove('hidden');
-            } else {
-                // Sessions exist - show session selector
-                newSessionBtn.classList.add('hidden');
-                sessionSelector.classList.remove('hidden');
-                sessionsList.classList.remove('hidden');
-                noSessionsMessage.classList.add('hidden');
-                
-                // Update session dropdown
-                updateSessionDropdown();
-                
-                // Update sessions list
-                renderSessionsList();
-            }
+        newSessionBtn.classList.remove('hidden');      // <-- always visible
+        sessionSelector.classList.toggle('hidden', sessions.length === 0);
+        sessionsList.classList.toggle('hidden', sessions.length === 0);
+        noSessionsMessage.classList.toggle('hidden', sessions.length !== 0);
+        updateSessionDropdown();
+        renderSessionsList();
         }
+
         
         function updateSessionDropdown() {
         sessionDropdown.innerHTML = '<option value="">Select Session</option>';
@@ -627,18 +565,67 @@
         function renderSessionsList() {
         sessionsList.innerHTML = '';
         sessions.forEach(s => {
-            const sessionItem = document.createElement('div');
-            sessionItem.className = `session-item ${currentSession && currentSession.id === s.id ? 'active' : ''}`;
-            sessionItem.innerHTML = `
+            const el = document.createElement('div');
+            el.className = `session-item ${currentSession && currentSession.id === s.id ? 'active' : ''}`;
+            el.innerHTML = `
             <div class="flex-1 min-w-0">
                 <div class="font-medium">Session ${s.id.slice(0,8)}…</div>
-                <div class="session-preview">${(s.preview || 'No messages').substring(0, 50)}...</div>
+                <div class="session-preview">${(s.preview || 'No messages').substring(0,50)}...</div>
             </div>
             <div class="text-xs text-muted-foreground">${new Date(s.updatedAt).toLocaleTimeString()}</div>
             `;
-            sessionItem.addEventListener('click', () => loadSession(s.id));
-            sessionsList.appendChild(sessionItem);
+            el.addEventListener('click', () => loadSession(s.id));
+            sessionsList.appendChild(el);
         });
+        }
+
+        sessionDropdown.addEventListener('change', function() {
+        if (this.value) loadSession(this.value);
+        });
+        newSessionBtn.addEventListener('click', createNewSession);
+
+
+        // New function
+        async function refreshSessionsFromServer() {
+            const res = await fetch(`/api/get_sessions?id={{ current_user.id }}`);
+            const ids = await res.json();  // ["uuid1","uuid2",...]
+
+            if (!Array.isArray(ids)) { sessions = []; return; }
+
+            const enriched = await Promise.all(ids.map(async (thread_id) => {
+                try {
+                const r = await fetch(`/api/sessions/${thread_id}/messages?id=${encodeURIComponent(window.USER_ID)}`);
+                const { messages = [] } = await r.json();
+
+                const last = messages.slice().sort((a, b) => {
+                    const ta = (a.metadata?.timestamp ?? 0), tb = (b.metadata?.timestamp ?? 0);
+                    if (tb !== ta) return tb - ta;
+                    const ia = (a.metadata?.index ?? 0), ib = (b.metadata?.index ?? 0);
+                    return ib - ia;
+                })[0];
+
+                const iso = last?.metadata?.timestamp
+                    ? new Date(last.metadata.timestamp * 1000).toISOString()
+                    : new Date().toISOString();
+
+                return {
+                    id: thread_id,
+                    createdAt: iso,
+                    updatedAt: iso,
+                    preview: last?.document || 'No messages'
+                };
+                } catch {
+                return {
+                    id: thread_id,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    preview: 'No messages'
+                };
+                }
+            }));
+
+            enriched.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+            sessions = enriched;
         }
 
 
@@ -653,28 +640,40 @@
             });
             const { thread_id, createdAt } = await res.json();
 
+            // Put new session at the top
             const newSession = {
                 id: thread_id,                // UUID from backend
-                createdAt: createdAt,
-                updatedAt: createdAt,
+                createdAt: createdAt || new Date().toISOString(),
+                updatedAt: createdAt || new Date().toISOString(),
                 messages: []
             };
 
-            // Put the new session at the top for UX
-            sessions.unshift(newSession);
-            updateSessionUI();
-            await loadSession(newSession.id);
+
+        sessions.unshift(newSession);
+        currentSession = newSession;
+
+        updateSessionUI();
+        // Clear the chat area immediately (nice UX) then load from server (will be empty)
+        renderConversation([]);
+        await loadSession(newSession.id);
         }
 
-        
+        let currentLoadToken = 0;
+
         async function loadSession(sessionId) {
             const session = sessions.find(s => s.id === sessionId);
             if (!session) return;
-
+            
+            const myToken = ++currentLoadToken;       // capture token for this load
             currentSession = session;
+            renderConversation([]);           // clear immediately for better UX    
+            clearRAGResults();
 
             const res = await fetch(`/api/sessions/${currentSession.id}/messages?id={{ current_user.id }}`);
             const data = await res.json();
+
+            if (myToken !== currentLoadToken) return; // a newer load started, abort
+            
             const rows = data.messages || [];
 
             // sort ascending for display
@@ -697,6 +696,8 @@
 
             renderConversation(currentSession.messages);
             updateSessionUI();
+            // Just clear RAG results when loading a session
+            // JUST CHECK AGAIN - NEEDS IMPROVEMENT - CHECK LOGIN AGAIN
             clearRAGResults();
         }
 
@@ -874,6 +875,10 @@
                 await createNewSession();
             }
 
+            // New logic here as well.
+            const myToken = ++currentSendToken;
+            const thisSessionId = currentSession.id;
+
             // Optimistic UI: show user message
             const userMessage = { role: 'user', content: message, timestamp: new Date().toISOString() };
             currentSession.messages.push(userMessage);
@@ -893,6 +898,12 @@
             });
 
             const data = await res.json();
+
+            // If user switched session during await, do not append to the new session
+            if (myToken !== currentSendToken || !currentSession || currentSession.id !== thisSessionId) {
+                // Optionally: silently ignore, or refresh that session in background
+                return;
+            }
 
             // Show assistant reply
             const aiMessage = { role: 'assistant', content: data.reply, timestamp: new Date().toISOString() };
