@@ -3,7 +3,7 @@
 {% block title %}Memory Dashboard | AI Agent Marketplace{% endblock %}
 
 {% block content %}
-<div class="memory-dashboard bg-background text-foreground flex flex-col" style="height:100vh; min-height:0;">
+<div class="memory-dashboard min-h-screen bg-background text-foreground flex flex-col">
     <!-- Top Navigation Bar -->
     <header class="bg-card border-b border-border py-4 px-6 flex justify-between items-center shrink-0">
         <div class="flex items-center space-x-3">
@@ -105,7 +105,7 @@
             
             <!-- Scrollable Conversation Area -->
             <div class="flex-1 overflow-hidden relative">
-                <div id="conversationHistory" class="absolute inset-0 overflow-y-auto p-5 space-y-6 pb-32"> <!-- Add pb-32 for input height -->
+                <div id="conversationHistory" class="absolute inset-0 overflow-y-auto p-5 space-y-6">
                     <div class="text-center py-12 text-muted-foreground" id="emptyConversation">
                         <i data-lucide="message-square" class="h-16 w-16 mx-auto mb-4 opacity-50"></i>
                         <p class="text-lg">No conversation yet</p>
@@ -127,20 +127,21 @@
                         </div>
                     </div>
                 </div>
-                <!-- Fixed Chat Input -->
-                <div class="w-full absolute left-0 bottom-0 bg-card border-t border-border p-5 z-20">
-                    <form id="chatForm" class="flex items-center space-x-3">
-                        <div class="flex-1 relative">
-                            <input type="text" id="chatInput" placeholder="Query your memory..." class="input w-full pr-12" autocomplete="off">
-                            <button type="button" id="attachFileBtn" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
-                                <i data-lucide="paperclip" class="h-5 w-5"></i>
-                            </button>
-                        </div>
-                        <button type="submit" class="btn-primary p-3 rounded-lg">
-                            <i data-lucide="send" class="h-5 w-5"></i>
+            </div>
+            
+            <!-- Fixed Chat Input -->
+            <div class="shrink-0 bg-card border-t border-border p-5 sticky-chat-input">
+                <form id="chatForm" class="flex items-center space-x-3">
+                    <div class="flex-1 relative">
+                        <input type="text" id="chatInput" placeholder="Query your memory..." class="input w-full pr-12" autocomplete="off">
+                        <button type="button" id="attachFileBtn" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+                            <i data-lucide="paperclip" class="h-5 w-5"></i>
                         </button>
-                    </form>
-                </div>
+                    </div>
+                    <button type="submit" class="btn-primary p-3 rounded-lg">
+                        <i data-lucide="send" class="h-5 w-5"></i>
+                    </button>
+                </form>
             </div>
         </div>
 
