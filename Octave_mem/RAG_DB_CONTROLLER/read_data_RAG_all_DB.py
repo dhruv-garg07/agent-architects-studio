@@ -195,7 +195,8 @@ class read_data_RAG:
             results = self.manager.get_collection(user_id).query(
                 query_texts=[""],  # Empty query to fetch all documents
                 # n_results=top_k,
-                where=filter_metadata
+                where=filter_metadata,
+                n_results=top_k
             )
             ids = results.get("ids", [[]])[0]
             documents = results.get("documents", [[]])[0]
@@ -208,7 +209,11 @@ class read_data_RAG:
                     "document": doc,
                     "metadata": meta
                 })
+                
             
+            # Sort by index or timestamp
+            chat_history.sort(key=lambda x: x["metadata"].get("index", 0))
+
             return chat_history
         except Exception as e:
             print(f"Error fetching chat history for conversation thread {conversation_thread}: {e}")
@@ -338,40 +343,40 @@ class read_data_RAG:
             print(f"Error creating session: {e}")
             return None
 # Dhruv look at examples to call from index.py
-if __name__ == "__main__":
-    reader = read_data_RAG(database=os.getenv("CHROMA_DATABASE_CHAT_HISTORY"))
-    user_id = "2cdaa777-c623-4912-96ff-6449e8bca7ed"
-    # chat_history = reader.fetch(user_ID=user_id, top_k=2)
-    # print(f"Chat history for {user_id}:")
-    # for entry in chat_history:
-    #     print(entry)
+# if __name__ == "__main__":
+#     reader = read_data_RAG(database=os.getenv("CHROMA_DATABASE_CHAT_HISTORY"))
+#     user_id = "2cdaa777-c623-4912-96ff-6449e8bca7ed"
+#     # chat_history = reader.fetch(user_ID=user_id, top_k=2)
+#     # print(f"Chat history for {user_id}:")
+#     # for entry in chat_history:
+#     #     print(entry)
     
-    # # Example of fetching with metadata filter
-    # filter_meta = {"index": 10}
-    # filtered_history = reader.fetch_with_filter(user_ID=user_id, filter_metadata=filter_meta, top_k=2)
-    # print(f"\nFiltered chat history for {user_id} with metadata {filter_meta}:  ")
-    # for entry in filtered_history:
-    #     print(entry)
+#     # # Example of fetching with metadata filter
+#     # filter_meta = {"index": 10}
+#     # filtered_history = reader.fetch_with_filter(user_ID=user_id, filter_metadata=filter_meta, top_k=2)
+#     # print(f"\nFiltered chat history for {user_id} with metadata {filter_meta}:  ")
+#     # for entry in filtered_history:
+#     #     print(entry)
         
-    # # Example of fetching related to a query
-    # query_text = "image is recieved"        
-    # related_history = reader.fetch_related_to_query(user_ID=user_id, query=query_text, top_k=2)
-    # print(f"\nChat history for {user_id} related to query '{query_text}':  ")
-    # for entry in related_history:        
-    #     print(entry)
+#     # # Example of fetching related to a query
+#     # query_text = "image is recieved"        
+#     # related_history = reader.fetch_related_to_query(user_ID=user_id, query=query_text, top_k=2)
+#     # print(f"\nChat history for {user_id} related to query '{query_text}':  ")
+#     # for entry in related_history:        
+#     #     print(entry)
 
-#     # Example of fetching by document ID
-#     doc_id = "id_5"
-#     entry_by_id = reader.fetch_with_id(user_ID=user_id, doc_id=doc_id)
-#     print(f"\nChat entry for {user_id} with document ID '{doc_id  }':  ") 
-#     print(entry_by_id)
+# #     # Example of fetching by document ID
+# #     doc_id = "id_5"
+# #     entry_by_id = reader.fetch_with_id(user_ID=user_id, doc_id=doc_id)
+# #     print(f"\nChat entry for {user_id} with document ID '{doc_id  }':  ") 
+# #     print(entry_by_id)
 
-#    # Example of fetching by conversation thread   
-    conversation_thread = "f0fe53e8-4813-4dcb-a365-f767c0cd888b"  # Replace with an actual thread ID
-    thread_history = reader.fetch_by_conversation_thread(user_id=user_id, conversation_thread=conversation_thread, top_k=2)
-    print(f"\nChat history for conversation thread '{conversation_thread}':  ")       
-    for entry in thread_history:        
-        print(entry)
+# #    # Example of fetching by conversation thread   
+#     conversation_thread = "f0fe53e8-4813-4dcb-a365-f767c0cd888b"  # Replace with an actual thread ID
+#     thread_history = reader.fetch_by_conversation_thread(user_id=user_id, conversation_thread=conversation_thread, top_k=100)
+#     print(f"\nChat history for conversation thread '{conversation_thread}':  ")       
+#     for entry in thread_history:        
+#         print(entry)
 
 # import asyncio
 # if __name__ == "__main__":
