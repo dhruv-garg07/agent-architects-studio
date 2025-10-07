@@ -5,7 +5,7 @@
 {% block content %}
 <div class="memory-dashboard min-h-screen bg-background text-foreground flex flex-col">
     <!-- Top Navigation Bar -->
-    <header class="bg-card border-b border-border py-4 px-6 flex justify-between items-center">
+    <header class="bg-card border-b border-border py-4 px-6 flex justify-between items-center shrink-0">
         <div class="flex items-center space-x-3">
             <i data-lucide="brain" class="h-7 w-7 text-primary"></i>
             <h1 class="text-xl font-semibold">Memory Dashboard</h1>
@@ -13,12 +13,10 @@
         <div class="flex items-center space-x-4">
             <!-- Session Management -->
             <div id="sessionControls" class="flex items-center space-x-3">
-                <!-- New Session Button (shown when no sessions exist) -->
                 <button id="newSessionBtn" class="btn-primary flex items-center space-x-2 hidden">
                     <i data-lucide="plus" class="h-4 w-4"></i>
                     <span>New Session</span>
                 </button>
-                <!-- Session Selector (shown when sessions exist) -->
                 <div id="sessionSelector" class="hidden">
                     <select id="sessionDropdown" class="input bg-card border-border">
                         <option value="">Select Session</option>
@@ -26,13 +24,11 @@
                 </div>
             </div>
             
-            <!-- Add Data Button -->
             <button id="addDataBtn" class="btn-primary flex items-center space-x-2">
                 <i data-lucide="plus" class="h-4 w-4"></i>
                 <span>Add Data</span>
             </button>
             
-            <!-- User Profile/Notifications -->
             <div class="flex items-center space-x-3">
                 <button class="p-2 rounded-full hover:bg-secondary transition-colors">
                     <i data-lucide="bell" class="h-5 w-5"></i>
@@ -47,7 +43,7 @@
     <!-- Main Dashboard Content -->
     <div class="flex flex-1 overflow-hidden">
         <!-- Left Panel - Memory Sources & Sessions -->
-        <div class="w-80 bg-card border-r border-border flex flex-col">
+        <div class="w-80 bg-card border-r border-border flex flex-col shrink-0">
             <div class="p-5">
                 <h2 class="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Memory Sources</h2>
                 <nav class="space-y-1">
@@ -66,7 +62,6 @@
                 </nav>
             </div>
             
-            <!-- Sessions Panel -->
             <div id="sessionsPanel" class="flex-1 overflow-y-auto p-5 border-t border-border">
                 <div id="noSessionsMessage" class="text-center py-8">
                     <i data-lucide="message-square" class="h-12 w-12 text-muted-foreground mx-auto mb-3"></i>
@@ -79,7 +74,7 @@
                 </div>
             </div>
             
-            <div class="p-5 border-t border-border">
+            <div class="p-5 border-t border-border shrink-0">
                 <h2 class="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Memory Settings</h2>
                 <div class="space-y-3">
                     <div class="flex items-center justify-between">
@@ -100,26 +95,42 @@
             </div>
         </div>
 
-        <!-- Center Panel - AI Response & Conversation -->
-        <div class="flex-1 bg-background border-r border-border flex flex-col">
-            <div class="p-5 border-b border-border">
+        <!-- Center Panel - FIXED CHAT LAYOUT -->
+        <div class="flex-1 bg-background border-r border-border flex flex-col relative min-h-0">
+            <!-- Header -->
+            <div class="shrink-0 p-5 border-b border-border bg-background z-10">
                 <h2 class="text-lg font-semibold">AI Assistant</h2>
                 <p class="text-sm text-muted-foreground mt-1" id="conversationContext">Ask questions about your memory data</p>
             </div>
             
-            <!-- Conversation History -->
-            <div id="conversationHistory" class="flex-1 overflow-y-auto p-5 space-y-6">
-                <div class="text-center py-12 text-muted-foreground" id="emptyConversation">
-                    <i data-lucide="message-square" class="h-16 w-16 mx-auto mb-4 opacity-50"></i>
-                    <p class="text-lg">No conversation yet</p>
-                    <p class="text-sm mt-1">Start by asking a question about your memory data</p>
+            <!-- Scrollable Conversation Area -->
+            <div class="flex-1 overflow-hidden relative">
+                <div id="conversationHistory" class="absolute inset-0 overflow-y-auto p-5 space-y-6">
+                    <div class="text-center py-12 text-muted-foreground" id="emptyConversation">
+                        <i data-lucide="message-square" class="h-16 w-16 mx-auto mb-4 opacity-50"></i>
+                        <p class="text-lg">No conversation yet</p>
+                        <p class="text-sm mt-1">Start by asking a question about your memory data</p>
+                    </div>
+                    
+                    <!-- Conversation messages will be dynamically added here -->
+                    <!-- Example messages for testing -->
+                    <div class="message user">
+                        <div class="message-content">
+                            <p>Hello, how can I see my recent memory data?</p>
+                            <div class="message-time">12:00 PM</div>
+                        </div>
+                    </div>
+                    <div class="message assistant">
+                        <div class="message-content">
+                            <p>I can help you explore your memory data! You can ask me questions about your recent sessions, search for specific information, or analyze patterns in your data.</p>
+                            <div class="message-time">12:01 PM</div>
+                        </div>
+                    </div>
                 </div>
-                
-                <!-- Conversation messages will be dynamically added here -->
             </div>
             
-            <!-- Chat Input -->
-            <div class="p-5 border-t border-border bg-card">
+            <!-- Fixed Chat Input -->
+            <div class="shrink-0 bg-card border-t border-border p-5 sticky-chat-input">
                 <form id="chatForm" class="flex items-center space-x-3">
                     <div class="flex-1 relative">
                         <input type="text" id="chatInput" placeholder="Query your memory..." class="input w-full pr-12" autocomplete="off">
@@ -135,8 +146,8 @@
         </div>
 
         <!-- Right Panel - RAG Results -->
-        <div class="w-96 bg-card flex flex-col">
-            <div class="p-5 border-b border-border flex justify-between items-center">
+        <div class="w-96 bg-card flex flex-col shrink-0">
+            <div class="p-5 border-b border-border flex justify-between items-center shrink-0">
                 <h2 class="text-lg font-semibold">RAG Results</h2>
                 <div class="flex space-x-2">
                     <button id="exportResultsBtn" class="btn-secondary text-sm py-1 px-2 flex items-center" title="Export Results">
@@ -151,8 +162,6 @@
                     <p class="text-lg">No results yet</p>
                     <p class="text-sm mt-1">Ask a question to see relevant memory matches</p>
                 </div>
-                
-                <!-- RAG result blocks will be dynamically added here -->
             </div>
         </div>
     </div>
@@ -185,7 +194,6 @@
                 </div>
                 <p class="text-xs text-muted-foreground mt-2">Supported formats: PDF, PPT, DOC, TXT, JPG, PNG, GIF (Max 25MB per file)</p>
                 
-                <!-- File preview container -->
                 <div id="filePreview" class="mt-4 hidden">
                     <div class="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
                         <div class="flex items-center space-x-3">
@@ -201,7 +209,6 @@
                     </div>
                 </div>
                 
-                <!-- Error message container -->
                 <div id="fileError" class="mt-2 text-xs text-destructive hidden"></div>
             </div>
             
@@ -219,11 +226,68 @@
 </div>
 
 <style>
-    /* Memory Dashboard Specific Styles */
+    /* CRITICAL: Chat Layout Fixes */
     .memory-dashboard {
-        /* Using the same variables as base.html */
+        height: 100vh;
+        overflow: hidden;
     }
 
+    .memory-dashboard .flex-1 {
+        min-height: 0;
+    }
+
+    /* Center Panel - Absolute Positioning for Scroll Area */
+    .memory-dashboard .relative {
+        position: relative;
+    }
+
+    .memory-dashboard .absolute.inset-0 {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+    }
+
+    /* Conversation History Scroll Area */
+    #conversationHistory {
+        padding-bottom: 1rem;
+        box-sizing: border-box;
+    }
+
+    /* Smooth scrolling */
+    #conversationHistory {
+        scroll-behavior: smooth;
+        scrollbar-width: thin;
+        scrollbar-color: hsl(var(--border)) transparent;
+    }
+
+    #conversationHistory::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    #conversationHistory::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    #conversationHistory::-webkit-scrollbar-thumb {
+        background-color: hsl(var(--border));
+        border-radius: 3px;
+    }
+
+    #conversationHistory::-webkit-scrollbar-thumb:hover {
+        background-color: hsl(var(--muted-foreground));
+    }
+
+    /* Sticky Chat Input */
+    .sticky-chat-input {
+        background: hsl(var(--card));
+        border-top: 1px solid hsl(var(--border));
+        box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.1);
+        z-index: 10;
+    }
+
+    /* Existing Memory Dashboard Styles */
     .memory-dashboard .nav-item {
         display: flex;
         align-items: center;
@@ -478,8 +542,43 @@
         .message-content {
             max-width: 90%;
         }
+        
+        /* Mobile-specific chat input styling */
+        .sticky-chat-input {
+            padding: 0.75rem;
+        }
+        
+        /* Ensure proper scrolling on mobile */
+        #conversationHistory {
+            -webkit-overflow-scrolling: touch;
+        }
     }
 </style>
+
+<script>
+    // Auto-scroll to bottom functionality
+    function scrollToBottom() {
+        const conversationHistory = document.getElementById('conversationHistory');
+        if (conversationHistory) {
+            conversationHistory.scrollTop = conversationHistory.scrollHeight;
+        }
+    }
+
+    // Initialize on load and whenever new messages are added
+    document.addEventListener('DOMContentLoaded', function() {
+        scrollToBottom();
+        
+        // Example: Add this to your message submission logic
+        // document.getElementById('chatForm').addEventListener('submit', function(e) {
+        //     e.preventDefault();
+        //     // Add your message logic here
+        //     setTimeout(scrollToBottom, 100);
+        // });
+    });
+
+    // Also scroll when window resizes
+    window.addEventListener('resize', scrollToBottom);
+</script>
 <!-- memory.html -->
 <script>
     // expose the logged-in user's id to JS
@@ -699,6 +798,14 @@
             // Just clear RAG results when loading a session
             // JUST CHECK AGAIN - NEEDS IMPROVEMENT - CHECK LOGIN AGAIN
             clearRAGResults();
+
+            //  rag result
+            const lastUser = [...currentSession.messages].reverse().find(m => m.role === 'user');
+                if (lastUser?.content) {
+                await fetchRAGResults({ query: lastUser.content, threadId: currentSession.id, topK: 5 });
+                } else {
+                clearRAGResults();
+                }
         }
 
 
@@ -742,41 +849,51 @@
             conversationHistory.scrollTop = conversationHistory.scrollHeight;
         }
         
-        function simulateRAGResults(query) {
-            // Clear previous results
-            clearRAGResults();
-            
-            // Simulate RAG results based on the query
-            const simulatedResults = [
-                {
-                    id: 1,
-                    score: 0.95,
-                    text: `The client specifically mentioned needing ${query.includes('dark mode') ? 'dark mode functionality' : 'responsive design'} for the dashboard. This was discussed during the project requirements meeting.`,
-                    source: 'Project Requirements Discussion',
-                    timestamp: '2 hours ago',
-                    matches: query.includes('dark mode') ? ['dark mode'] : ['responsive design']
-                },
-                {
-                    id: 2,
-                    score: 0.87,
-                    text: `API documentation indicates that authentication requires JWT tokens. ${query.includes('authentication') ? 'The authentication endpoint requires a JWT token in the header.' : 'Rate limiting is set to 100 requests per minute.'}`,
-                    source: 'API Documentation Notes',
-                    timestamp: 'Yesterday',
-                    matches: query.includes('authentication') ? ['authentication', 'JWT'] : ['rate limiting']
-                },
-                {
-                    id: 3,
-                    score: 0.76,
-                    text: `Q3 planning priorities include implementing user feedback systems and ${query.includes('analytics') ? 'adding advanced analytics dashboard' : 'improving mobile experience'}.`,
-                    source: 'Meeting Notes: Q3 Planning',
-                    timestamp: '2 days ago',
-                    matches: query.includes('analytics') ? ['analytics', 'dashboard'] : ['mobile experience']
-                }
-            ];
-            
-            ragResults = simulatedResults;
+        async function fetchRAGResults({ query, threadId, topK = 5 }) {
+            const res = await fetch('/api/rag', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                user_id: window.USER_ID,   // set in memory.html
+                thread_id: threadId,       // currentSession.id
+                query,
+                top_k: topK
+                })
+            });
+            const data = await res.json();
+            ragResults = (data.results || []).map(r => ({
+                id: r.id,
+                score: r.score ?? 0,
+                text: r.text ?? '',
+                source: r.source ?? 'Unknown',
+                timestamp: r.timestamp ?? '',
+                matches: Array.isArray(r.matches) ? r.matches : []
+            }));
             renderRAGResults();
         }
+
+        async function refreshRAGForLastUserMessage() {
+            const lastUser = [...(currentSession?.messages || [])].reverse().find(m => m.role === 'user');
+            if (!lastUser) return;
+            const res = await fetch('/api/rag', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                user_id: window.USER_ID,
+                thread_id: currentSession.id,
+                query: lastUser.content,
+                top_k: 5
+                })
+            });
+            const data = await res.json();
+            ragResults = (data.results || []).map(r => ({
+                id: r.id, score: r.score ?? 0, text: r.text ?? '',
+                source: r.source ?? 'Unknown', timestamp: r.timestamp ?? '',
+                matches: Array.isArray(r.matches) ? r.matches : []
+            }));
+            renderRAGResults();
+        }
+
         
         function renderRAGResults() {
             ragResultsContainer.innerHTML = '';
@@ -847,20 +964,22 @@
             }
         };
         
-        window.rateRAGResult = function(resultId, rating) {
-            const result = ragResults.find(r => r.id === resultId);
-            if (result) {
-                // In a real implementation, this would send feedback to the server
-                console.log(`Rated result ${resultId} as ${rating}`);
-                
-                // Visual feedback
-                const buttons = document.querySelectorAll(`.rag-result:nth-child(${ragResults.findIndex(r => r.id === resultId) + 1}) .feedback-btn`);
-                buttons.forEach(btn => btn.classList.remove('active'));
-                
-                const targetBtn = rating === 'helpful' ? buttons[0] : buttons[1];
-                targetBtn.classList.add('active');
-            }
+        window.rateRAGResult = async function(resultId, rating) {
+            try {
+                await fetch('/api/rag/feedback', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    user_id: window.USER_ID,
+                    thread_id: currentSession?.id,
+                    result_id: resultId,
+                    rating
+                })
+                });
+            } catch {}
+            // existing visual feedback code can stay
         };
+
         
         // Chat form submission
         chatForm.addEventListener('submit', async function(e) {
@@ -913,15 +1032,51 @@
             // Refresh sessions list metadata from server (optional)
             await refreshSessionsFromServer();
             renderSessionsList();
-
-            // RAG panel: call real endpoint or clear
-            clearRAGResults(); // replace with real fetch when ready
-
-            // Simulate RAG results for demo purposes
+            
+            // RAG panel: if backend sent rag_results, render them; else clear
+            if (Array.isArray(data.rag_results)) {
+            ragResults = data.rag_results.map(r => ({
+                id: r.id,
+                score: r.score ?? 0,
+                text: r.text ?? '',
+                source: r.source ?? 'Unknown',
+                timestamp: r.timestamp ?? '',
+                matches: Array.isArray(r.matches) ? r.matches : []
+            }));
+            renderRAGResults();
+            } else {
+                clearRAGResults();
+            }
         });
 
         
-        
+        window.rateRAGResult = async function(resultId, rating) {
+            const result = ragResults.find(r => r.id === resultId);
+            if (!result) return;
+
+            try {
+                await fetch('/api/rag/feedback', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    user_id: window.USER_ID,
+                    thread_id: currentSession?.id,
+                    result_id: resultId,
+                    rating
+                })
+                });
+            } catch (e) {
+                console.warn('RAG feedback failed', e);
+            }
+
+            // Visual feedback (existing code stays)
+            const idx = ragResults.findIndex(r => r.id === resultId);
+            const buttons = document.querySelectorAll(`.rag-result:nth-child(${idx + 1}) .feedback-btn`);
+            buttons.forEach(btn => btn.classList.remove('active'));
+            const targetBtn = rating === 'helpful' ? buttons[0] : buttons[1];
+            targetBtn.classList.add('active');
+        };
+
         
         // Export functionality
         exportResultsBtn.addEventListener('click', function() {

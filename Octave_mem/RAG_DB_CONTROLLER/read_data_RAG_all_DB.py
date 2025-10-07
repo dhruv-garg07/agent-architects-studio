@@ -110,45 +110,40 @@ class read_data_RAG:
             print(f"Error fetching filtered chat history for {user_ID}: {e}")
             return []
         
+   # In your controller (or add a new method if you prefer)
     def fetch_related_to_query(
-        self, 
-        user_ID: str, 
-        query: str, 
+        self,
+        user_ID: str,
+        query: str,
         top_k: int = 5
-    ) -> List[Dict]:
-        """
-        Fetch chat history for a given user_ID (collection name) related to a specific query.
-        
-        Args:
-            user_ID (str): The user ID or collection name.
-            query (str): The query text to find related documents.
-            top_k (int): Number of top similar documents to retrieve.
-        """
+    ) -> list[dict]:
         collection = self.manager.get_collection(user_ID)
         if collection is None:
             print(f"Collection {user_ID} does not exist.")
             return []
-        
+
         try:
-            results = collection.query(
-                query_texts=[query],
-                n_results=top_k
-            )
-            documents = results.get("documents", [[]])[0]
-            metadatas = results.get("metadatas", [[]])[0]
-            
-            chat_history = []
-            for doc, meta in zip(documents, metadatas):
-                chat_history.append({
+            results = collection.query(query_texts=[query], n_results=top_k)
+            # results like:
+            # {'ids': [[...]], 'distances': [[...]], 'documents': [[...]], 'metadatas': [[...]] ...}
+            ids        = results.get("ids", [[]])[0]
+            docs       = results.get("documents", [[]])[0]
+            metadatas  = results.get("metadatas", [[]])[0]
+            distances  = results.get("distances", [[]])[0]  # lower is better in Chroma
+
+            out = []
+            for i, (id_, doc, meta, dist) in enumerate(zip(ids, docs, metadatas, distances)):
+                out.append({
+                    "id": id_,
                     "document": doc,
-                    "metadata": meta
+                    "metadata": meta,
+                    "distance": float(dist),  # keep raw distance; we'll convert to score in API
                 })
-            
-            return chat_history
+            return out
         except Exception as e:
             print(f"Error fetching chat history related to query for {user_ID}: {e}")
             return []
-        
+
     def fetch_with_id(
         self, 
         user_ID: str, 
@@ -343,27 +338,27 @@ class read_data_RAG:
             print(f"Error creating session: {e}")
             return None
 # Dhruv look at examples to call from index.py
-# if __name__ == "__main__":
-#     reader = read_data_RAG(database=os.getenv("CHROMA_DATABASE_CHAT_HISTORY"))
-#     user_id = "user123"
-#     chat_history = reader.fetch(user_ID=user_id, top_k=2)
-#     print(f"Chat history for {user_id}:")
-#     for entry in chat_history:
-#         print(entry)
+if __name__ == "__main__":
+    reader = read_data_RAG(database=os.getenv("CHROMA_DATABASE_CHAT_HISTORY"))
+    user_id = "2cdaa777-c623-4912-96ff-6449e8bca7ed"
+    # chat_history = reader.fetch(user_ID=user_id, top_k=2)
+    # print(f"Chat history for {user_id}:")
+    # for entry in chat_history:
+    #     print(entry)
     
-#     # Example of fetching with metadata filter
-#     filter_meta = {"index": 10}
-#     filtered_history = reader.fetch_with_filter(user_ID=user_id, filter_metadata=filter_meta, top_k=2)
-#     print(f"\nFiltered chat history for {user_id} with metadata {filter_meta}:  ")
-#     for entry in filtered_history:
-#         print(entry)
+    # # Example of fetching with metadata filter
+    # filter_meta = {"index": 10}
+    # filtered_history = reader.fetch_with_filter(user_ID=user_id, filter_metadata=filter_meta, top_k=2)
+    # print(f"\nFiltered chat history for {user_id} with metadata {filter_meta}:  ")
+    # for entry in filtered_history:
+    #     print(entry)
         
-#     # Example of fetching related to a query
-#     query_text = "image is recieved"        
-#     related_history = reader.fetch_related_to_query(user_ID=user_id, query=query_text, top_k=2)
-#     print(f"\nChat history for {user_id} related to query '{query_text}':  ")
-#     for entry in related_history:        
-#         print(entry)
+    # # Example of fetching related to a query
+    # query_text = "image is recieved"        
+    # related_history = reader.fetch_related_to_query(user_ID=user_id, query=query_text, top_k=2)
+    # print(f"\nChat history for {user_id} related to query '{query_text}':  ")
+    # for entry in related_history:        
+    #     print(entry)
 
 #     # Example of fetching by document ID
 #     doc_id = "id_5"
@@ -372,32 +367,32 @@ class read_data_RAG:
 #     print(entry_by_id)
 
 #    # Example of fetching by conversation thread   
-    # conversation_thread = "12d58d33-6d86-4346-b6fb-57d865cc4eb5"  # Replace with an actual thread ID
-    # thread_history = reader.fetch_by_conversation_thread(user_id=user_id, conversation_thread=conversation_thread, top_k=2)
-    # print(f"\nChat history for conversation thread '{conversation_thread}':  ")       
-    # for entry in thread_history:        
-    #     print(entry)
+    conversation_thread = "f0fe53e8-4813-4dcb-a365-f767c0cd888b"  # Replace with an actual thread ID
+    thread_history = reader.fetch_by_conversation_thread(user_id=user_id, conversation_thread=conversation_thread, top_k=2)
+    print(f"\nChat history for conversation thread '{conversation_thread}':  ")       
+    for entry in thread_history:        
+        print(entry)
 
-import asyncio
-if __name__ == "__main__":
-    reader = read_data_RAG(database=os.getenv("CHROMA_DATABASE_CHAT_HISTORY"))
-    id = "2cdaa777-c623-4912-96ff-6449e8bca7ed"
-    profile_info = asyncio.run(reader.profile_info_by_id(id=id))
-    print(f"Profile info for {id}: {profile_info}")
+# import asyncio
+# if __name__ == "__main__":
+#     reader = read_data_RAG(database=os.getenv("CHROMA_DATABASE_CHAT_HISTORY"))
+#     id = "2cdaa777-c623-4912-96ff-6449e8bca7ed"
+#     profile_info = asyncio.run(reader.profile_info_by_id(id=id))
+#     print(f"Profile info for {id}: {profile_info}")
     
-    username = "sanketwadhwa"
-    profile_info_username = asyncio.run(reader.profile_info_by_username(username=username))
-    print(f"Profile info for username {username}: {profile_info_username}")
+#     username = "sanketwadhwa"
+#     profile_info_username = asyncio.run(reader.profile_info_by_username(username=username))
+#     print(f"Profile info for username {username}: {profile_info_username}")
     
-    # Example of update user_memory:
-    # memory = [f"NEW_SESSION_ID", "ANOTHER_SESSION_ID"]
-    # updated_profile = asyncio.run(reader.update_user_memory(id=id, memory=memory))  
+#     # Example of update user_memory:
+#     # memory = [f"NEW_SESSION_ID", "ANOTHER_SESSION_ID"]
+#     # updated_profile = asyncio.run(reader.update_user_memory(id=id, memory=memory))  
     
-    # Example of append session_id to user_memory:
-    session_id = "APPENDED_SESSION_ID_2"  
-    appended_profile = asyncio.run(reader.append_sessionid_to_memory(id=id, session_id=session_id))
-    print(f"Appended profile info for {id}: {appended_profile}")
+#     # Example of append session_id to user_memory:
+#     session_id = "APPENDED_SESSION_ID_2"  
+#     appended_profile = asyncio.run(reader.append_sessionid_to_memory(id=id, session_id=session_id))
+#     print(f"Appended profile info for {id}: {appended_profile}")
     
-    # Example of list all session_ids in user_memory:
-    session_ids = asyncio.run(reader.list_session_ids(id=id))   
-    print(f"Session IDs for {id}: {session_ids}")
+#     # Example of list all session_ids in user_memory:
+#     session_ids = asyncio.run(reader.list_session_ids(id=id))   
+#     print(f"Session IDs for {id}: {session_ids}")

@@ -1,6 +1,6 @@
 # api_chats.py
 import os, time, uuid
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, abort
 from LLM_calls.context_manager import query_llm_with_history
 from Octave_mem.RAG_DB_CONTROLLER.write_data_RAG import RAG_DB_Controller_CHAT_HISTORY
 from Octave_mem.RAG_DB_CONTROLLER.read_data_RAG_all_DB import read_data_RAG
@@ -144,30 +144,41 @@ def split_text_into_chunks(text, max_sentences=5, overlap=1):
         i += max_sentences - overlap
     return chunks
 
-@api.post("/api/chat")               # (optional) generate + store assistant reply
+@api.post("/api/chat")
 def chat_and_store():
-    data = request.get_json(force=True)
-    thread_id = data.get("thread_id")
-    user_id   = data.get("user_id")
+    import time, re
+    data      = request.get_json(force=True)
+    thread_id = data["thread_id"]
+    user_id   = data["user_id"]
     user_msg  = data["message"]
     history   = data.get("history", [])
+    top_k     = 5
+    t0        = time.time()
 
-   
+    def _norm(s: str) -> str:
+        return re.sub(r"\s+", " ", (s or "").strip().lower())
 
-    # 1) fetch relevant RAG data (top 5 matches)
-    rag_results = read_controller_chatH.fetch_related_to_query(
-        user_ID=user_id,
-        query=user_msg,
-        top_k=5
+    # 1) RAG FIRST (so it can't see this very message)
+    raw_rows = read_controller_chatH.fetch_related_to_query(
+        user_ID=user_id, query=user_msg, top_k=top_k
     )
+    # keep only this thread (if desired)
+    raw_rows = [r for r in raw_rows
+                if (r.get("metadata") or {}).get("conversation_thread") == thread_id]
 
-    # 2) your AI generation (pass RAG data as context)
-    reply_text = run_ai(user_msg, history, session_id=thread_id, rag_context=rag_results)
+    # drop anything that is basically the same text as the query (belt & suspenders)
+    qn = _norm(user_msg)
+    raw_rows = [r for r in raw_rows if _norm(r.get("document") or "") != qn]
 
+    # normalize -> UI shape
+    q_terms = [t.lower() for t in user_msg.split() if len(t) > 2]
+    rag_results = _normalize_rag_rows(raw_rows, q_terms)  # uses _to_score & _epoch_to_human as before
 
-     # 3) split user message into chunks and store each chunk
-    user_chunks = split_text_into_chunks(user_msg, max_sentences=8, overlap=1)
-    for chunk in user_chunks:
+    # 2) generate reply using RAG context
+    reply_text = run_ai(user_msg, history, session_id=thread_id, rag_context=raw_rows)
+
+    # 3) NOW store the user message (after RAG) and then the reply
+    for chunk in split_text_into_chunks(user_msg, max_sentences=8, overlap=1):
         write_controller_chatH.send_data_to_rag_db(
             user_ID=user_id,
             content_data=chunk,
@@ -176,9 +187,7 @@ def chat_and_store():
             conversation_thread=thread_id,
         )
 
-    # 4) split reply_text into chunks and store each chunk
-    chunks = split_text_into_chunks(reply_text, max_sentences=8, overlap=1)
-    for chunk in chunks:
+    for chunk in split_text_into_chunks(reply_text, max_sentences=8, overlap=1):
         write_controller_chatH.send_data_to_rag_db(
             user_ID=user_id,
             content_data=chunk,
@@ -187,11 +196,7 @@ def chat_and_store():
             conversation_thread=thread_id,
         )
 
-   
-
-
- 
-    return jsonify({"reply": reply_text})
+    return jsonify({"reply": reply_text, "rag_results": rag_results})
 
 @api.post("/api/notes")
 def store_note():
@@ -206,3 +211,91 @@ def store_note():
 
 # Create HTML for new session
 # Update the function here to get the messages from the RAG DB
+def _epoch_to_human(ts):
+    try:
+        return time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(float(ts)))
+    except Exception:
+        return time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
+
+@api.post("/api/rag")
+def rag_search():
+    data = request.get_json(force=True) or {}
+    user_id   = data.get("user_id")
+    query     = (data.get("query") or "").strip()
+    thread_id = data.get("thread_id")  # optional
+    top_k     = int(data.get("top_k", 5))
+
+    if not user_id or not query:
+        abort(400, "Missing user_id or query")
+
+    rows = read_controller_chatH.fetch_related_to_query(
+        user_ID=user_id,
+        query=query,
+        top_k=top_k
+    )
+
+    # Optional filter to current thread
+    if thread_id:
+        rows = [r for r in rows if (r.get("metadata") or {}).get("conversation_thread") == thread_id]
+
+    # distance -> score (monotonic): lower distance => higher score
+    def to_score(d):
+        try:
+            return 1.0 / (1.0 + float(d))
+        except Exception:
+            return 0.0
+
+    # build UI results
+    q_terms = [t.lower() for t in query.split() if len(t) > 2]
+    results = []
+    for i, r in enumerate(rows):
+        meta = r.get("metadata", {})
+        results.append({
+            "id": r.get("id") or f"res_{i+1}",
+            "score": to_score(r.get("distance")),
+            "text": r.get("document") or "",
+            "source": meta.get("source") or "chat_session",
+            "timestamp": _epoch_to_human(meta.get("timestamp")),
+            "matches": q_terms,  # your frontend will highlight these
+        })
+
+    # sort by score desc
+    results.sort(key=lambda x: x["score"], reverse=True)
+
+    return jsonify({"results": results})
+
+@api.post("/api/rag/feedback")
+def rag_feedback():
+    d = request.get_json(force=True)
+    # d: {user_id, thread_id, result_id, rating}
+    # persist feedback somewhere (e.g., a table or Chroma metadata)
+    return jsonify({"ok": True})
+
+# api.py
+def _epoch_to_human(ts):
+    import time
+    try:
+        return time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(float(ts)))
+    except Exception:
+        return time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
+
+def _to_score(distance):
+    try:
+        return 1.0 / (1.0 + float(distance))  # lower distance => higher score
+    except Exception:
+        return 0.0
+
+def _normalize_rag_rows(rows, query_terms):
+    results = []
+    for i, r in enumerate(rows or []):
+        meta = r.get("metadata", {})
+        results.append({
+            "id": r.get("id") or f"res_{i+1}",
+            "score": _to_score(r.get("distance")),
+            "text": r.get("document") or "",
+            "source": meta.get("source") or "chat_session",
+            "timestamp": _epoch_to_human(meta.get("timestamp")),
+            "matches": query_terms,
+        })
+    results.sort(key=lambda x: x["score"], reverse=True)
+    return results
