@@ -31,23 +31,24 @@ def intelligent_query_rewriter(query: str):
     prompt = (
         "You are an expert at rewriting user queries to be more specific and context-aware. "
         "Given the user's query, rewrite it to improve clarity and focus. "
+        "Break the query into simpler parts if needed and enable chain of thought reasoning."
+        "Use keywords and context for better rag query."
         "If the query is already clear, return it as is.\n\n"
         f"User Query: {query}\n\n"
         "Rewritten Query:"
     )
-    full_response = stream_chat_response(
-        system=system_prompt,
-        prompt=prompt,
-        memory=memory,
-        api_key=os.getenv("TOGETHER_API_KEY"),
-        model="togethercomputer/RedPajama-INCITE-7B-Instruct-v0.1",
-        temperature=0.3,
-        max_new_tokens=150,
-        top_p=0.9,
-        frequency_penalty=0,
-        presence_penalty=0,
-        stop=["\n\n"],
-        stream=False
+    full_response = "".join(
+        stream_chat_response(
+            prompt=prompt,
+            model="meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
+            max_tokens=150,
+            temperature=0.3,
+            top_p=0.9,
+            top_k=5,
+            repetition_penalty=0.8,
+            stop=["\n\n"],
+            verbose=False
+        )
     )
     rewritten_query = extract_output_after_think(full_response)
     return rewritten_query.strip() if rewritten_query else query

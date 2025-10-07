@@ -2,6 +2,7 @@
 import os, time, uuid
 from flask import Blueprint, request, jsonify, abort
 from LLM_calls.context_manager import query_llm_with_history
+from LLM_calls.intelligent_query_rewritten import intelligent_query_rewriter
 from Octave_mem.RAG_DB_CONTROLLER.write_data_RAG import RAG_DB_Controller_CHAT_HISTORY
 from Octave_mem.RAG_DB_CONTROLLER.read_data_RAG_all_DB import read_data_RAG
 api = Blueprint("api", __name__)
@@ -133,7 +134,7 @@ def store_message():
     )
     return jsonify({"ok": True, "result": result})
 
-def split_text_into_chunks(text, max_sentences=5, overlap=1):
+def split_text_into_chunks(text, max_sentences=4, overlap=1):
     import re
     # Split text into sentences (simple split, can be improved)
     sentences = re.split(r'(?<=[.!?]) +', text)
@@ -161,35 +162,38 @@ def chat_and_store():
 
     def _norm(s: str) -> str:
         return re.sub(r"\s+", " ", (s or "").strip().lower())
-        
+
+    rewritten_user_msg = intelligent_query_rewriter(user_msg) 
+    print(f"Rewritten user msg: {rewritten_user_msg}")
+
     # 1) RAG FIRST (so it can't see this very message)
     raw_rows = read_controller_chatH.fetch_related_to_query(
-        user_ID=user_id, query=user_msg, top_k=top_k
+        user_ID=user_id, query=rewritten_user_msg, top_k=top_k
     )
     
     # Also fetch from file_data DB
     raw_rows_file_data = read_controller_file_data.fetch_related_to_query(
-        user_ID=user_id, query=user_msg, top_k=top_k
+        user_ID=user_id, query=rewritten_user_msg, top_k=top_k
     )
 
     raw_rows.extend(raw_rows_file_data)
 
 
-    
+
     # drop anything that is basically the same text as the query (belt & suspenders)
-    qn = _norm(user_msg)
+    qn = _norm(rewritten_user_msg)
     raw_rows = [r for r in raw_rows if _norm(r.get("document") or "") != qn]
 
     # normalize -> UI shape
-    q_terms = [t.lower() for t in user_msg.split() if len(t) > 2]
+    q_terms = [t.lower() for t in rewritten_user_msg.split() if len(t) > 2]
     rag_results = _normalize_rag_rows(raw_rows, q_terms)  # uses _to_score & _epoch_to_human as before
 
     print("raw_rows:", raw_rows)
     # 2) generate reply using RAG context
-    reply_text = run_ai(user_msg, history, session_id=thread_id, rag_context=raw_rows)
+    reply_text = run_ai(rewritten_user_msg, history, session_id=thread_id, rag_context=raw_rows)
 
     # 3) NOW store the user message (after RAG) and then the reply
-    for chunk in split_text_into_chunks(user_msg, max_sentences=8, overlap=1):
+    for chunk in split_text_into_chunks(user_msg, max_sentences=4, overlap=1):
         write_controller_chatH.send_data_to_rag_db(
             user_ID=user_id,
             content_data=chunk,
@@ -198,7 +202,7 @@ def chat_and_store():
             conversation_thread=thread_id,
         )
 
-    for chunk in split_text_into_chunks(reply_text, max_sentences=8, overlap=1):
+    for chunk in split_text_into_chunks(reply_text, max_sentences=4, overlap=1):
         write_controller_chatH.send_data_to_rag_db(
             user_ID=user_id,
             content_data=chunk,
