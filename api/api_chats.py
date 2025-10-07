@@ -75,6 +75,10 @@ read_controller_chatH = read_data_RAG(
     database=os.getenv("CHROMA_DATABASE_CHAT_HISTORY")  # Use the same DB for reading   
 )
 
+read_controller_file_data = read_data_RAG(
+    database=os.getenv("CHROMA_DATABASE_FILE_DATA")  # Use the same DB for reading   
+)
+
 def _thread_id():
     return f"thread_{int(time.time())}"
 
@@ -157,11 +161,20 @@ def chat_and_store():
 
     def _norm(s: str) -> str:
         return re.sub(r"\s+", " ", (s or "").strip().lower())
-
+        
     # 1) RAG FIRST (so it can't see this very message)
     raw_rows = read_controller_chatH.fetch_related_to_query(
         user_ID=user_id, query=user_msg, top_k=top_k
     )
+    
+    # Also fetch from file_data DB
+    raw_rows_file_data = read_controller_file_data.fetch_related_to_query(
+        user_ID=user_id, query=user_msg, top_k=top_k
+    )
+
+    raw_rows.extend(raw_rows_file_data)
+
+
     
     # drop anything that is basically the same text as the query (belt & suspenders)
     qn = _norm(user_msg)
