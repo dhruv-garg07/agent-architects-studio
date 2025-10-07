@@ -162,10 +162,7 @@ def chat_and_store():
     raw_rows = read_controller_chatH.fetch_related_to_query(
         user_ID=user_id, query=user_msg, top_k=top_k
     )
-    # keep only this thread (if desired)
-    raw_rows = [r for r in raw_rows
-                if (r.get("metadata") or {}).get("conversation_thread") == thread_id]
-
+    
     # drop anything that is basically the same text as the query (belt & suspenders)
     qn = _norm(user_msg)
     raw_rows = [r for r in raw_rows if _norm(r.get("document") or "") != qn]
@@ -174,6 +171,7 @@ def chat_and_store():
     q_terms = [t.lower() for t in user_msg.split() if len(t) > 2]
     rag_results = _normalize_rag_rows(raw_rows, q_terms)  # uses _to_score & _epoch_to_human as before
 
+    print("raw_rows:", raw_rows)
     # 2) generate reply using RAG context
     reply_text = run_ai(user_msg, history, session_id=thread_id, rag_context=raw_rows)
 
