@@ -157,7 +157,7 @@ def chat_and_store():
     user_id   = data["user_id"]
     user_msg  = data["message"]
     history   = data.get("history", [])
-    top_k     = 5
+    top_k     = 3
     t0        = time.time()
 
     def _norm(s: str) -> str:
@@ -168,12 +168,12 @@ def chat_and_store():
 
     # 1) RAG FIRST (so it can't see this very message)
     raw_rows = read_controller_chatH.fetch_related_to_query(
-        user_ID=user_id, query=rewritten_user_msg, top_k=top_k
+        user_ID=user_id, query=f"{rewritten_user_msg} query: {user_msg}", top_k=top_k
     )
     
     # Also fetch from file_data DB
     raw_rows_file_data = read_controller_file_data.fetch_related_to_query(
-        user_ID=user_id, query=rewritten_user_msg, top_k=top_k
+        user_ID=user_id, query=f"{rewritten_user_msg} query: {user_msg}", top_k=top_k
     )
 
     raw_rows.extend(raw_rows_file_data)
@@ -188,9 +188,10 @@ def chat_and_store():
     q_terms = [t.lower() for t in rewritten_user_msg.split() if len(t) > 2]
     rag_results = _normalize_rag_rows(raw_rows, q_terms)  # uses _to_score & _epoch_to_human as before
 
-    print("raw_rows:", raw_rows)
+    # print("raw_rows:", raw_rows)
+    
     # 2) generate reply using RAG context
-    reply_text = run_ai(rewritten_user_msg, history, session_id=thread_id, rag_context=raw_rows)
+    reply_text = run_ai(f"{rewritten_user_msg} query: {user_msg}", history, session_id=thread_id, rag_context=raw_rows)
 
     # 3) NOW store the user message (after RAG) and then the reply
     for chunk in split_text_into_chunks(user_msg, max_sentences=4, overlap=1):

@@ -48,7 +48,7 @@ def query_llm_with_history(message, history, rag_context, **kwargs):
     # Use ConversationBufferMemory for storing conversation history
     memory = ConversationBufferMemory(return_messages=True)
 
-    print("Rag context:", rag_context)
+    # print("Rag context:", rag_context)
 
     
     if history:
@@ -71,6 +71,7 @@ def query_llm_with_history(message, history, rag_context, **kwargs):
     if summary:
         prompt += f"Conversation History:\n{summary}\n"
     prompt += f"User: {message}\nAI: "
+    print("Final Prompt:\n", prompt)
 
     # Stream and collect the response
     response = ""

@@ -51,5 +51,6 @@ def intelligent_query_rewriter(query: str):
             verbose=False
         )
     )
-    rewritten_query = extract_output_after_think(full_response)
+    print("full_response: ",full_response)
+    rewritten_query = full_response
     return rewritten_query.strip() if rewritten_query else query
