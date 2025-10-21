@@ -125,6 +125,17 @@ class RAG_DB_Controller_FILE_DATA:
             response += token
         return response
     
+    def calculate_importance_score(self, content_data: str) -> float:
+        """Calculate an importance score for the content data."""
+        # Simple heuristic: longer messages might be more important
+        length = len(content_data)
+        if length < 50:
+            return 0.1
+        elif length < 200:
+            return 0.5
+        else:
+            return 0.9
+
     def send_data_to_rag_db(self, user_ID: str, chunks: list[str], message_type: str = "user", file_path: Optional[str] = None, file_name: Optional[str] = None):
         """Send data to RAG DB with metadata extraction and verification."""
         # file_path = os.path.basename(file_path)
@@ -144,6 +155,8 @@ class RAG_DB_Controller_FILE_DATA:
             next_id = self.id_manager(user_ID)
             metadata_response =  fast_tag_extractor(chunk, top_n=3)
 
+            # CALCULATE IMPORTANCE SCORE
+            importance_score = self.calculate_importance_score(chunk)
             operation = {
                 "type": "create_or_update",
                 "collection_name": user_ID,
@@ -155,6 +168,7 @@ class RAG_DB_Controller_FILE_DATA:
                     "message_type": message_type,
                     "timestamp": time.time(),
                     "tags": metadata_response,
+                    # "Importance_Score": importance_score,
                 }]
             }
             
@@ -194,3 +208,5 @@ class RAG_DB_Controller_FILE_DATA:
 # controller_file_data = RAG_DB_Controller_FILE_DATA(database=os.getenv("CHROMA_DATABASE_FILE_DATA"))
 # controller_file_data.update_file_data_to_db(user_ID="user1234", file_path=file_path, message_type="user")
 # NEW DATA 
+
+# Let make some new knowledge graphs.
