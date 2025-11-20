@@ -1,259 +1,275 @@
-
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getUserAgents, createAgent, updateAgent, deleteAgent } from "@/lib/api/agents";
+import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import {
-  getUserAgents,
-  createAgent,
-  updateAgent,
-  deleteAgent,
-} from "@/lib/api/agents";
-import type { Tables } from "@/integrations/supabase/types";
-import {
-  Plus,
-  Eye,
-  Trash2,
-  Edit,
-  Star,
-  Users,
-  TrendingUp,
-  Settings,
-  FileText,
-  Code,
-  Play,
-  Database,
-  Globe,
   AlertCircle,
-  Clock
+  BarChart3,
+  CheckCircle2,
+  Edit3,
+  Eye,
+  Loader2,
+  Plus,
+  Rocket,
+  Trash2,
+  TrendingUp,
 } from "lucide-react";
-import AgentVerification from "@/components/AgentVerification";
 
-interface Agent {
-  id: string;
+type Agent = Tables<"agent_profiles">;
+
+type FormState = {
   name: string;
   description: string;
   category: string;
+  model: string;
+  tags: string;
+  modalities: string;
+  capabilities: string;
+  githubUrl: string;
+  license: string;
   status: string;
-  created_at: string;
-  total_runs: number;
-  avg_rating: number;
-  upvotes: number;
-}
+};
+
+const emptyForm: FormState = {
+  name: "",
+  description: "",
+  category: "",
+  model: "",
+  tags: "",
+  modalities: "",
+  capabilities: "",
+  githubUrl: "",
+  license: "MIT",
+  status: "draft",
+};
+
+const categories = [
+  "Code Generation",
+  "Data Analysis",
+  "Automation",
+  "Content Creation",
+  "Customer Service",
+  "Research",
+  "Design",
+  "Marketing",
+];
+
+const models = ["GPT-4", "Claude 3.5", "LangChain", "Gemini", "Custom"];
+const statuses = ["draft", "pending_review", "published", "suspended"];
+
+const toList = (value: string) =>
+  value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
 
 const CreatorStudio = () => {
-  const [user, setUser] = useState<any>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
   const [agents, setAgents] = useState<Agent[]>([]);
+  const [activeTab, setActiveTab] = useState("overview");
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("agents");
+  const [isSaving, setIsSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formData, setFormData] = useState<FormState>(emptyForm);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("overview");
-  const [editingAgentId, setEditingAgentId] = useState<string | null>(null);
-  
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    category: "",
-    model: "gpt-4",
-    tags: [] as string[],
-    capabilities: [] as string[],
-    modalities: [] as string[]
-  });
 
   useEffect(() => {
-    checkAuth();
+    let mounted = true;
+
+    const hydrate = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!mounted) return;
+      const sessionUser = data.session?.user ?? null;
+      setUserId(sessionUser?.id ?? null);
+      if (sessionUser?.id) {
+        await loadAgents(sessionUser.id);
+      }
+      setIsLoading(false);
+    };
+
+    hydrate();
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      const nextUserId = session?.user?.id ?? null;
+      setUserId(nextUserId);
+      if (nextUserId) loadAgents(nextUserId);
+    });
+
+    return () => {
+      mounted = false;
+      authListener?.subscription.unsubscribe();
+    };
   }, []);
 
-  const fetchUserAgents = async (userId: string) => {
+  const loadAgents = async (creatorId: string) => {
     try {
-      const data = await getUserAgents(userId);
-      setMyAgents(data);
+      const records = await getUserAgents(creatorId);
+      setAgents(records);
     } catch (error) {
-      console.error('Error fetching user agents:', error);
+      console.error("Error fetching user agents:", error);
       toast({
-        title: "Error",
-        description: "Failed to fetch your agents",
+        title: "Could not load agents",
+        description: "We ran into an issue pulling your agents. Please try again.",
         variant: "destructive",
       });
     }
   };
 
-  const categories = [
-    "Code Generation", "Data Analysis", "Content Creation", 
-    "Automation", "Research", "Customer Service", "Design", "Marketing"
-  ];
+  const stats = useMemo(() => {
+    const published = agents.filter((agent) => agent.status === "published").length;
+    const totalRuns = agents.reduce((sum, agent) => sum + (agent.total_runs ?? 0), 0);
+    const avgRating =
+      agents.length === 0
+        ? 0
+        : agents.reduce((sum, agent) => sum + (agent.avg_rating ?? 0), 0) / agents.length;
 
-  const models = ["GPT-4", "Claude 3.5", "LangChain", "Custom", "Gemini"];
-  
-  const modalities = ["Text", "Vision", "Audio", "Multimodal"];
-  const capabilities = [
-    "Code Generation", "Data Analysis", "Web Search", "File Processing",
-    "API Integration", "Database Queries", "Image Generation", "Text Processing"
-  ];
-  const protocols = ["REST API", "GraphQL", "WebSocket", "gRPC", "Custom"];
-  const handleNewAgent = () => {
-    setFormData({
-      name: "",
-      description: "",
-      category: "",
-      tags: [],
-      githubUrl: "",
-      model: "",
-      license: "MIT",
-      modalities: [],
-      capabilities: [],
-      ioSchema: "",
-      protocols: [],
-      runtimeDependencies: [],
-      dockerfileUrl: "",
-    });
-    setEditingAgentId(null);
-    setCurrentStep(1);
+    return {
+      published,
+      totalRuns,
+      avgRating: Number.isFinite(avgRating) ? avgRating : 0,
+    };
+  }, [agents]);
+
+  const startCreate = () => {
+    setEditingId(null);
+    setFormData(emptyForm);
     setActiveTab("foundry");
   };
 
-  const startEditing = (agent: Tables<'agent_profiles'>) => {
+  const startEditing = (agent: Agent) => {
+    setEditingId(agent.id);
     setFormData({
-      name: agent.name || "",
-      description: agent.description || "",
-      category: agent.category || "",
-      tags: agent.tags || [],
-      githubUrl: agent.github_url || "",
-      model: agent.model || "",
-      license: agent.license || "MIT",
-      modalities: agent.modalities || [],
-      capabilities: agent.capabilities || [],
-      ioSchema: agent.io_schema ? JSON.stringify(agent.io_schema, null, 2) : "",
-      protocols: agent.protocols || [],
-      runtimeDependencies: agent.runtime_dependencies || [],
-      dockerfileUrl: agent.dockerfile_url || "",
+      name: agent.name ?? "",
+      description: agent.description ?? "",
+      category: agent.category ?? "",
+      model: agent.model ?? "",
+      tags: (agent.tags ?? []).join(", "),
+      modalities: (agent.modalities ?? []).join(", "),
+      capabilities: (agent.capabilities ?? []).join(", "),
+      githubUrl: agent.github_url ?? "",
+      license: agent.license ?? "MIT",
+      status: agent.status ?? "draft",
     });
-    setEditingAgentId(agent.id);
-    setCurrentStep(1);
     setActiveTab("foundry");
   };
 
-  const handleView = (id: string) => navigate(`/agent/${id}`);
-
-  const handleDelete = async (id: string) => {
-    try {
-      await deleteAgent(id);
-      toast({ title: "Agent deleted", description: "The agent has been removed." });
-      if (user) fetchUserAgents(user.id);
-    } catch (error) {
-      console.error('Error deleting agent:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete agent",
-        variant: "destructive",
-      });
-    }
+  const resetForm = () => {
+    setEditingId(null);
+    setFormData(emptyForm);
   };
 
   const handleSubmit = async () => {
-    if (!user) {
+    if (!userId) {
       toast({
-        title: "Authentication required",
-        description: "Please log in to submit an agent",
+        title: "Sign in required",
+        description: "You need an account to create or edit an agent.",
         variant: "destructive",
       });
       return;
     }
 
+    if (!formData.name.trim() || !formData.description.trim()) {
+      toast({
+        title: "Missing details",
+        description: "Please add a name and description before saving.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSaving(true);
+
+    const basePayload: TablesInsert<"agent_profiles"> & TablesUpdate<"agent_profiles"> = {
+      creator_id: userId,
+      name: formData.name.trim(),
+      description: formData.description.trim(),
+      category: formData.category || null,
+      model: formData.model || null,
+      tags: toList(formData.tags),
+      modalities: toList(formData.modalities),
+      capabilities: toList(formData.capabilities),
+      github_url: formData.githubUrl || null,
+      license: formData.license || "MIT",
+      status: formData.status || "draft",
+    };
+
     try {
-      const agentData = {
-        creator_id: user.id,
-        name: formData.name,
-        description: formData.description,
-        category: formData.category,
-        tags: formData.tags,
-        github_url: formData.githubUrl,
-        model: formData.model,
-        license: formData.license,
-        modalities: formData.modalities,
-        capabilities: formData.capabilities,
-        io_schema: formData.ioSchema ? JSON.parse(formData.ioSchema) : null,
-        protocols: formData.protocols,
-        runtime_dependencies: formData.runtimeDependencies,
-        dockerfile_url: formData.dockerfileUrl,
-        status: 'review',
-      };
-
-      if (editingAgentId) {
-        await updateAgent(editingAgentId, agentData);
-        toast({ title: "Agent updated", description: "Your agent has been updated" });
+      if (editingId) {
+        const updated = await updateAgent(editingId, basePayload);
+        setAgents((previous) =>
+          previous.map((agent) => (agent.id === editingId ? updated : agent)),
+        );
+        toast({ title: "Agent updated", description: `${formData.name} has been saved.` });
       } else {
-        await createAgent(agentData);
-        toast({ title: "Success!", description: "Your agent has been submitted for review" });
+        const created = await createAgent(basePayload);
+        setAgents((previous) => [created, ...previous]);
+        toast({
+          title: "Agent submitted",
+          description: "We saved your agent. If it requires review, we will notify you.",
+        });
       }
-
-      handleNewAgent();
-      if (user) fetchUserAgents(user.id);
+      resetForm();
       setActiveTab("agents");
     } catch (error) {
-      console.error('Error submitting for review:', error);
+      console.error("Error saving agent:", error);
       toast({
-        title: "Error",
-        description: "Failed to submit agent",
+        title: "Save failed",
+        description: "We could not save your agent. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteAgent(id);
+      setAgents((previous) => previous.filter((agent) => agent.id !== id));
+      toast({ title: "Agent removed", description: "The agent has been deleted." });
+    } catch (error) {
+      console.error("Error deleting agent:", error);
+      toast({
+        title: "Delete failed",
+        description: "We could not delete this agent. Please try again.",
         variant: "destructive",
       });
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "published": return "sage";
-      case "draft": return "secondary";
-      case "pending_review": return "soft-ochre";
-      case "approved": return "sage";
-      case "rejected": return "destructive";
-      default: return "secondary";
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "published": return <CheckCircle className="w-4 h-4" />;
-      case "pending_review": return <Clock className="w-4 h-4" />;
-      case "draft": return <FileText className="w-4 h-4" />;
-      case "rejected": return <AlertTriangle className="w-4 h-4" />;
-      default: return <FileText className="w-4 h-4" />;
-    }
-  };
-
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 lg:px-8 py-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="w-8 h-8 animate-spin mx-auto mb-2 border-2 border-primary border-t-transparent rounded-full" />
-            <p className="text-muted-foreground">Loading Creator Studio...</p>
-          </div>
+      <div className="container mx-auto px-4 lg:px-8 py-12">
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <div className="w-10 h-10 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          <p className="text-muted-foreground text-sm">Loading Creator Studio...</p>
         </div>
       </div>
     );
   }
 
-  if (!user) {
+  if (!userId) {
     return (
-      <div className="container mx-auto px-4 lg:px-8 py-8">
+      <div className="container mx-auto px-4 lg:px-8 py-12">
         <Card className="card-elevated">
-          <CardContent className="py-8 text-center">
-            <AlertTriangle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Authentication Required</h3>
-            <p className="text-muted-foreground mb-4">
-              Please sign in to access Creator Studio
+          <CardContent className="py-10 text-center space-y-3">
+            <AlertCircle className="w-10 h-10 text-muted-foreground mx-auto" />
+            <h3 className="text-xl font-semibold">Sign in to continue</h3>
+            <p className="text-muted-foreground">
+              The Creator Studio lets you publish, edit, and track your agents.
             </p>
-            <Button onClick={() => window.location.href = '/auth'}>
-              Sign In
+            <Button onClick={() => navigate("/auth")} className="mt-2">
+              Go to sign in
             </Button>
           </CardContent>
         </Card>
@@ -262,236 +278,327 @@ const CreatorStudio = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 lg:px-8 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl lg:text-4xl font-bold font-inter mb-2">
-              Creator Studio
-            </h1>
-            <p className="text-muted-foreground">
-              Professional agent foundry for the Manhattan Project community
-            </p>
-          </div>
-          <Button className="bg-primary hover:bg-primary-hover" onClick={handleNewAgent}>
+    <div className="container mx-auto px-4 lg:px-8 py-10 space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <p className="text-sm uppercase tracking-wide text-muted-foreground">Creator Studio</p>
+          <h1 className="text-3xl lg:text-4xl font-bold font-inter mt-1">Build with clarity</h1>
+          <p className="text-muted-foreground mt-2">
+            Minimal workflow to draft, publish, and monitor your agents.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <Button variant="outline" onClick={() => setActiveTab("agents")}>
+            <Eye className="w-4 h-4 mr-2" />
+            View agents
+          </Button>
+          <Button onClick={startCreate}>
             <Plus className="w-4 h-4 mr-2" />
-            New Agent
+            New agent
           </Button>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid grid-cols-4 w-full">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="agents">My Agents ({myAgents.length})</TabsTrigger>
-          <TabsTrigger value="foundry">Agent Foundry</TabsTrigger>
+          <TabsTrigger value="agents">Agents</TabsTrigger>
+          <TabsTrigger value="foundry">Foundry</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          {isAdmin && <TabsTrigger value="verification">Verification</TabsTrigger>}
         </TabsList>
 
-        <TabsContent value="agents">
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold">Your Agents</h2>
-              <Button onClick={() => setActiveTab("create")} className="btn-primary">
-                <Plus className="w-4 h-4 mr-2" />
-                Create Agent
-              </Button>
-            </div>
-
-            {agents.length === 0 ? (
-              <Card className="card-elevated">
-                <CardContent className="py-12 text-center">
-                  <FileText className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No agents yet</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Create your first AI agent to get started
-                  </p>
-                  <Button onClick={() => setActiveTab("create")} className="btn-primary">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Your First Agent
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {agents.map((agent) => (
-                  <Card key={agent.id} className="card-elevated hover:shadow-lg transition-shadow">
-                    <CardHeader className="pb-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-semibold">
-                            {agent.name.charAt(0)}
-                          </div>
-                          <div>
-                            <CardTitle className="text-lg">{agent.name}</CardTitle>
-                            <Badge className={`btn-${getStatusColor(agent.status)} mt-1`}>
-                              {getStatusIcon(agent.status)}
-                              <span className="ml-1 capitalize">{agent.status.replace('_', ' ')}</span>
-                            </Badge>
-                          </div>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                        {agent.description}
-                      </p>
-                      
-                      <div className="grid grid-cols-3 gap-4 mb-4 text-center">
-                        <div>
-                          <div className="font-semibold text-lg">{agent.total_runs}</div>
-                          <div className="text-xs text-muted-foreground">Runs</div>
-                        </div>
-                        <div>
-                          <div className="font-semibold text-lg">{agent.avg_rating.toFixed(1)}</div>
-                          <div className="text-xs text-muted-foreground">Rating</div>
-                        </div>
-                        <p className="text-muted-foreground text-sm">{agent.description}</p>
-                        <div className="flex items-center space-x-4 mt-2 text-sm text-muted-foreground">
-                          <span>Updated {agent.lastUpdated}</span>
-                          {agent.status === "published" && (
-                            <>
-                              <span>•</span>
-                              <span>{agent.rating} rating</span>
-                              <span>•</span>
-                              <span>{agent.runs} runs</span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <Button variant="outline" size="sm" onClick={() => handleView(agent.id)}>
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => startEditing(agent)}>
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => toast({ title: "Coming soon", description: "Advanced settings will be available soon" })}
-                      >
-                        <Settings className="w-4 h-4" />
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleDelete(agent.id)}>
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="create">
-          <div className="max-w-2xl mx-auto space-y-6">
-            <h2 className="text-2xl font-bold">Create New Agent</h2>
-            
+        <TabsContent value="overview" className="space-y-6">
+          <div className="grid md:grid-cols-3 gap-4">
             <Card className="card-elevated">
-              <CardHeader>
-                <CardTitle>Agent Details</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="p-6 flex items-center justify-between">
                 <div>
-                  <Label htmlFor="agent-name">Agent Name</Label>
-                  <Input
-                    id="agent-name"
-                    placeholder="Enter agent name"
-                    value={newAgent.name}
-                    onChange={(e) => setNewAgent({ ...newAgent, name: e.target.value })}
-                  />
+                  <p className="text-sm text-muted-foreground">Published agents</p>
+                  <p className="text-3xl font-semibold mt-1">{stats.published}</p>
                 </div>
-
+                <CheckCircle2 className="w-8 h-8 text-primary" />
+              </CardContent>
+            </Card>
+            <Card className="card-elevated">
+              <CardContent className="p-6 flex items-center justify-between">
                 <div>
-                  <Label htmlFor="agent-description">Description</Label>
-                  <Textarea
-                    id="agent-description"
-                    placeholder="Describe what your agent does..."
-                    value={newAgent.description}
-                    onChange={(e) => setNewAgent({ ...newAgent, description: e.target.value })}
-                  />
+                  <p className="text-sm text-muted-foreground">Total runs</p>
+                  <p className="text-3xl font-semibold mt-1">{stats.totalRuns.toLocaleString()}</p>
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="agent-category">Category</Label>
-                    <Select value={newAgent.category} onValueChange={(value) => setNewAgent({ ...newAgent, category: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="productivity">Productivity</SelectItem>
-                        <SelectItem value="creative">Creative</SelectItem>
-                        <SelectItem value="data-analysis">Data Analysis</SelectItem>
-                        <SelectItem value="customer-service">Customer Service</SelectItem>
-                        <SelectItem value="automation">Automation</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="agent-model">Model</Label>
-                    <Select value={newAgent.model} onValueChange={(value) => setNewAgent({ ...newAgent, model: value })}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="gpt-4">GPT-4</SelectItem>
-                        <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
-                        <SelectItem value="claude-3">Claude 3</SelectItem>
-                        <SelectItem value="gemini-pro">Gemini Pro</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <Rocket className="w-8 h-8 text-primary" />
+              </CardContent>
+            </Card>
+            <Card className="card-elevated">
+              <CardContent className="p-6 flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Average rating</p>
+                  <p className="text-3xl font-semibold mt-1">
+                    {stats.avgRating ? stats.avgRating.toFixed(1) : "—"}
+                  </p>
                 </div>
-
-                <div className="flex space-x-4 pt-4">
-                  <Button 
-                    onClick={handleCreateAgent}
-                    disabled={isCreating || !newAgent.name || !newAgent.description}
-                    className="btn-primary flex-1"
-                  >
-                    {isCreating ? "Creating..." : "Create Agent"}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setActiveTab("agents")}
-                    className="flex-1"
-                  >
-                    Cancel
-                  </Button>
-                </div>
+                <TrendingUp className="w-8 h-8 text-primary" />
               </CardContent>
             </Card>
           </div>
+          <Card className="card-elevated">
+            <CardContent className="p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-semibold">Ship faster</h3>
+                <p className="text-muted-foreground">
+                  Keep drafts lean, then mark them published when they feel solid.
+                </p>
+              </div>
+              <Button variant="outline" onClick={startCreate}>
+                <Plus className="w-4 h-4 mr-2" />
+                Start a draft
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="agents" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold">Your agents</h2>
+            <Button variant="outline" onClick={startCreate}>
+              <Plus className="w-4 h-4 mr-2" />
+              New agent
+            </Button>
+          </div>
+
+          {agents.length === 0 ? (
+            <Card className="card-elevated">
+              <CardContent className="py-10 text-center space-y-3">
+                <h3 className="text-lg font-semibold">Nothing here yet</h3>
+                <p className="text-muted-foreground">
+                  Draft your first agent to see it appear here.
+                </p>
+                <Button onClick={startCreate}>Create agent</Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-4">
+              {agents.map((agent) => (
+                <Card key={agent.id} className="card-elevated">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <CardTitle className="text-lg">{agent.name}</CardTitle>
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {agent.description}
+                        </p>
+                      </div>
+                      <Badge variant="secondary" className="capitalize">
+                        {agent.status ?? "draft"}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Rocket className="w-4 h-4" />
+                        <span>{agent.total_runs ?? 0} runs</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <TrendingUp className="w-4 h-4" />
+                        <span>{agent.avg_rating?.toFixed(1) ?? "—"} rating</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => navigate(`/agent/${agent.id}`)}>
+                        <Eye className="w-4 h-4 mr-1" />
+                        View
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => startEditing(agent)}>
+                        <Edit3 className="w-4 h-4 mr-1" />
+                        Edit
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleDelete(agent.id)}>
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        Delete
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="foundry" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold">
+              {editingId ? "Edit agent" : "Create agent"}
+            </h2>
+            {editingId && (
+              <Button variant="outline" size="sm" onClick={resetForm}>
+                Reset
+              </Button>
+            )}
+          </div>
+
+          <Card className="card-elevated">
+            <CardContent className="space-y-4 p-6">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Name</Label>
+                  <Input
+                    id="name"
+                    placeholder="Give your agent a concise name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="category">Category</Label>
+                  <Select
+                    value={formData.category || "none"}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, category: value === "none" ? "" : value })
+                    }
+                  >
+                    <SelectTrigger id="category">
+                      <SelectValue placeholder="Pick a category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Unspecified</SelectItem>
+                      {categories.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  placeholder="Describe what your agent does and how it behaves."
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="min-h-[120px]"
+                />
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="model">Model</Label>
+                  <Select
+                    value={formData.model || "none"}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, model: value === "none" ? "" : value })
+                    }
+                  >
+                    <SelectTrigger id="model">
+                      <SelectValue placeholder="Select a model" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Not specified</SelectItem>
+                      {models.map((model) => (
+                        <SelectItem key={model} value={model}>
+                          {model}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status</Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(value) => setFormData({ ...formData, status: value })}
+                  >
+                    <SelectTrigger id="status">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statuses.map((status) => (
+                        <SelectItem key={status} value={status}>
+                          {status.replace("_", " ")}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="tags">Tags</Label>
+                  <Input
+                    id="tags"
+                    placeholder="comma separated — eg: TypeScript, tooling"
+                    value={formData.tags}
+                    onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="modalities">Modalities</Label>
+                  <Input
+                    id="modalities"
+                    placeholder="comma separated — eg: text, vision"
+                    value={formData.modalities}
+                    onChange={(e) => setFormData({ ...formData, modalities: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="capabilities">Capabilities</Label>
+                <Input
+                  id="capabilities"
+                  placeholder="comma separated — eg: code generation, retrieval"
+                  value={formData.capabilities}
+                  onChange={(e) => setFormData({ ...formData, capabilities: e.target.value })}
+                />
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="github">GitHub URL</Label>
+                  <Input
+                    id="github"
+                    placeholder="https://github.com/your-agent"
+                    value={formData.githubUrl}
+                    onChange={(e) => setFormData({ ...formData, githubUrl: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="license">License</Label>
+                  <Input
+                    id="license"
+                    placeholder="MIT, Apache-2.0..."
+                    value={formData.license}
+                    onChange={(e) => setFormData({ ...formData, license: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <Button onClick={handleSubmit} disabled={isSaving}>
+                  {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                  {isSaving ? "Saving..." : editingId ? "Save changes" : "Create agent"}
+                </Button>
+                <Button variant="outline" onClick={resetForm} disabled={isSaving}>
+                  Clear
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="analytics">
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Analytics</h2>
-            <Card className="card-elevated">
-              <CardContent className="py-12 text-center">
-                <BarChart3 className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Analytics Dashboard</h3>
-                <p className="text-muted-foreground">
-                  Detailed analytics for your agents coming soon
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+          <Card className="card-elevated">
+            <CardContent className="py-12 text-center space-y-3">
+              <BarChart3 className="w-12 h-12 text-muted-foreground mx-auto" />
+              <h3 className="text-lg font-semibold">Analytics coming soon</h3>
+              <p className="text-muted-foreground">
+                We are building a clean dashboard for runs, conversions, and reliability.
+              </p>
+            </CardContent>
+          </Card>
         </TabsContent>
-
-        {isAdmin && (
-          <TabsContent value="verification">
-            <AgentVerification isAdmin={isAdmin} />
-          </TabsContent>
-        )}
       </Tabs>
     </div>
   );
