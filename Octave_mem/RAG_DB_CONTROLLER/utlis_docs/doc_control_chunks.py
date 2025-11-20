@@ -2,7 +2,7 @@ import os
 import docx
 import csv
 import pdfplumber
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 def extract_text(file_path: str) -> str:
     ext = os.path.splitext(file_path)[1].lower()
