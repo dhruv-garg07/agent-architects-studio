@@ -157,7 +157,7 @@ def chat_and_store():
     user_id   = data["user_id"]
     user_msg  = data["message"]
     history   = data.get("history", [])
-    top_k     = 3
+    top_k     = 20
     t0        = time.time()
 
     def _norm(s: str) -> str:
@@ -171,12 +171,14 @@ def chat_and_store():
         user_ID=user_id, query=f"{rewritten_user_msg} query: {user_msg}", top_k=top_k
     )
     
+    # Based on the query it should tell whether to fetch from file_data DB or not:
+    
     # Also fetch from file_data DB
     raw_rows_file_data = read_controller_file_data.fetch_related_to_query(
         user_ID=user_id, query=f"{rewritten_user_msg} query: {user_msg}", top_k=top_k
     )
 
-    raw_rows.extend(raw_rows_file_data)
+    # raw_rows.extend(raw_rows_file_data)
 
 
 
@@ -193,24 +195,44 @@ def chat_and_store():
     # 2) generate reply using RAG context
     reply_text = run_ai(f"{rewritten_user_msg} query: {user_msg}", history, session_id=thread_id, rag_context=raw_rows)
 
-    # 3) NOW store the user message (after RAG) and then the reply
-    for chunk in split_text_into_chunks(user_msg, max_sentences=4, overlap=1):
-        write_controller_chatH.send_data_to_rag_db(
-            user_ID=user_id,
-            content_data=chunk,
-            is_reply_to=None,
-            message_type="human",
-            conversation_thread=thread_id,
-        )
+    # 3) Store messages in background using threads
+    def store_messages_background():
+        try:
+            # Store user message chunks
+            for chunk in split_text_into_chunks(user_msg, max_sentences=4, overlap=1):
+                write_controller_chatH.send_data_to_rag_db(
+                    user_ID=user_id,
+                    content_data=chunk,
+                    is_reply_to=None,
+                    message_type="human",
+                    conversation_thread=thread_id,
+                )
+            
+            # Store reply chunks
+            for chunk in split_text_into_chunks(reply_text, max_sentences=4, overlap=1):
+                write_controller_chatH.send_data_to_rag_db(
+                    user_ID=user_id,
+                    content_data=chunk,
+                    is_reply_to=None,
+                    message_type="llm",
+                    conversation_thread=thread_id,
+                )
+            
+            # The chat histories should be send into a SQL database
+            # Then the facts from the chat history can be linked to the RAG DB entries as needed.
+            # Need for separate bins for long term and short term memory - Both are sliding windows but separate inertia and speed.
+            # KG - retrieval from knowledge graph can be added here as well.
+            # Temporal, spatial, emotional tag are added here as well.
+            # Based on these, CRUD operations can be performed on the RAG DB entries as well.
+            # Then provenance can be built for the LLM responses. 
+        except Exception as e:
+            print(f"Error in background storage: {str(e)}")
 
-    for chunk in split_text_into_chunks(reply_text, max_sentences=4, overlap=1):
-        write_controller_chatH.send_data_to_rag_db(
-            user_ID=user_id,
-            content_data=chunk,
-            is_reply_to=None,
-            message_type="llm",
-            conversation_thread=thread_id,
-        )
+    # Start storage in background thread
+    from threading import Thread
+    thread = Thread(target=store_messages_background)
+    thread.daemon = True  # Thread will exit when main thread exits
+    thread.start()
 
     return jsonify({"reply": reply_text, "rag_results": rag_results})
 
