@@ -13,6 +13,7 @@ import Explore from "./pages/Explore";
 import AgentDetail from "./pages/AgentDetail";
 import Leaderboard from "./pages/Leaderboard";
 import CreatorStudio from "./pages/CreatorStudio";
+import Creators from "./pages/Creators";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 

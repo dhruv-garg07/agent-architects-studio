@@ -1,10 +1,7 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Search, User, Plus, Menu, X, LogOut } from "lucide-react";
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { User as SupabaseUser } from "@supabase/supabase-js";
-import { useToast } from "@/components/ui/use-toast";
+import { Search, User, Plus, Menu, X } from "lucide-react";
+import { useState } from "react";
 
 const Layout = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -49,7 +46,7 @@ const Layout = () => {
             </nav>
 
             {/* Actions */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
               <Button variant="ghost" size="sm" className="hidden sm:flex" onClick={() => navigate('/explore')}>
                 <Search className="w-4 h-4 mr-2" />
                 Search
@@ -94,7 +91,15 @@ const Layout = () => {
                     {item.name}
                   </NavLink>
                 ))}
-                <Button variant="ghost" size="sm" className="justify-start">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="justify-start"
+                  onClick={() => {
+                    navigate("/explore");
+                    setMobileMenuOpen(false);
+                  }}
+                >
                   <Search className="w-4 h-4 mr-2" />
                   Search
                 </Button>
@@ -129,20 +134,20 @@ const Layout = () => {
             <div>
               <h3 className="font-medium mb-4">Platform</h3>
               <div className="space-y-3 text-sm text-muted-foreground">
-                <a href="/explore" className="block hover:text-primary transition-colors">Explore Agents</a>
-                <a href="/submit" className="block hover:text-primary transition-colors">Submit Agent</a>
-                <a href="/docs" className="block hover:text-primary transition-colors">Documentation</a>
-                <a href="/api" className="block hover:text-primary transition-colors">API</a>
+                <NavLink to="/explore" className="block hover:text-primary transition-colors">Explore Agents</NavLink>
+                <NavLink to="/submit" className="block hover:text-primary transition-colors">Submit Agent</NavLink>
+                <NavLink to="/docs" className="block hover:text-primary transition-colors">Documentation</NavLink>
+                <NavLink to="/api" className="block hover:text-primary transition-colors">API</NavLink>
               </div>
             </div>
             
             <div>
               <h3 className="font-medium mb-4">Community</h3>
               <div className="space-y-3 text-sm text-muted-foreground">
-                <a href="/creators" className="block hover:text-primary transition-colors">Top Creators</a>
-                <a href="/leaderboard" className="block hover:text-primary transition-colors">Leaderboard</a>
-                <a href="/discord" className="block hover:text-primary transition-colors">Discord</a>
-                <a href="/github" className="block hover:text-primary transition-colors">GitHub</a>
+                <NavLink to="/creators" className="block hover:text-primary transition-colors">Top Creators</NavLink>
+                <NavLink to="/leaderboard" className="block hover:text-primary transition-colors">Leaderboard</NavLink>
+                <NavLink to="/discord" className="block hover:text-primary transition-colors">Discord</NavLink>
+                <NavLink to="/github" className="block hover:text-primary transition-colors">GitHub</NavLink>
               </div>
             </div>
           </div>
@@ -152,9 +157,9 @@ const Layout = () => {
           <div className="flex flex-col md:flex-row justify-between items-center text-sm text-muted-foreground">
             <p>&copy; 2024 The Manhattan Project. Built for the AI community.</p>
             <div className="flex space-x-6 mt-4 md:mt-0">
-              <a href="/privacy" className="hover:text-primary transition-colors">Privacy</a>
-              <a href="/terms" className="hover:text-primary transition-colors">Terms</a>
-              <a href="/contact" className="hover:text-primary transition-colors">Contact</a>
+              <NavLink to="/privacy" className="hover:text-primary transition-colors">Privacy</NavLink>
+              <NavLink to="/terms" className="hover:text-primary transition-colors">Terms</NavLink>
+              <NavLink to="/contact" className="hover:text-primary transition-colors">Contact</NavLink>
             </div>
           </div>
         </div>

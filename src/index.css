@@ -8,59 +8,57 @@
 
 @layer base {
   :root {
-    /* Canvas Background - Clean off-white with subtle texture */
-    --background: 45 15% 98%;
-    --foreground: 220 9% 15%;
+    /* Canvas */
+    --background: 210 24% 98%;
+    --foreground: 222 20% 12%;
 
-    /* Card System - Clean paper feel */
+    /* Surfaces */
     --card: 0 0% 100%;
-    --card-foreground: 220 9% 15%;
-    --card-border: 45 15% 92%;
+    --card-foreground: 222 20% 12%;
+    --card-border: 210 12% 90%;
 
-    /* Interactive Elements */
+    /* Popovers */
     --popover: 0 0% 100%;
-    --popover-foreground: 220 9% 15%;
+    --popover-foreground: 222 20% 12%;
 
-    /* Brand Colors - Sophisticated and professional */
-    --primary: 220 9% 15%;
+    /* Brand */
+    --primary: 222 18% 18%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 220 9% 25%;
+    --primary-hover: 222 18% 24%;
 
-    /* Soft Crayon Colors */
-    --sage: 120 15% 75%;
-    --sage-foreground: 120 25% 25%;
-    --dusty-blue: 205 25% 70%;
-    --dusty-blue-foreground: 205 35% 25%;
-    --soft-ochre: 35 35% 75%;
-    --soft-ochre-foreground: 35 45% 25%;
-    --warm-coral: 15 35% 75%;
-    --warm-coral-foreground: 15 45% 25%;
+    /* Accents */
+    --sage: 150 14% 60%;
+    --sage-foreground: 147 18% 18%;
+    --dusty-blue: 207 20% 58%;
+    --dusty-blue-foreground: 210 28% 16%;
+    --soft-ochre: 40 30% 66%;
+    --soft-ochre-foreground: 34 32% 22%;
+    --warm-coral: 15 32% 62%;
+    --warm-coral-foreground: 14 36% 24%;
 
     /* UI Elements */
-    --secondary: 45 15% 95%;
-    --secondary-foreground: 220 9% 15%;
+    --secondary: 210 16% 95%;
+    --secondary-foreground: 222 18% 18%;
 
-    --muted: 45 15% 94%;
-    --muted-foreground: 220 6% 50%;
+    --muted: 210 16% 93%;
+    --muted-foreground: 222 10% 45%;
 
-    --accent: 120 15% 75%;
-    --accent-foreground: 120 25% 25%;
+    --accent: 210 18% 88%;
+    --accent-foreground: 222 18% 18%;
 
-    --destructive: 0 65% 60%;
+    --destructive: 0 65% 58%;
     --destructive-foreground: 0 0% 100%;
 
     /* Borders and Inputs */
-    --border: 45 15% 88%;
-    --input: 45 15% 94%;
-    --ring: 220 9% 15%;
+    --border: 210 16% 88%;
+    --input: 210 16% 94%;
+    --ring: 222 18% 18%;
 
     /* Design System Variables */
-    --radius: 0.75rem;
-    --shadow-soft: 0 2px 8px -2px hsl(220 9% 15% / 0.08);
-    --shadow-elevated: 0 8px 32px -8px hsl(220 9% 15% / 0.12);
-    
-    /* Transitions */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --radius: 0.65rem;
+    --shadow-soft: 0 6px 18px -8px hsl(222 20% 12% / 0.12);
+    --shadow-elevated: 0 18px 38px -14px hsl(222 20% 12% / 0.14);
+    --transition-smooth: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-spring: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 
     --sidebar-background: 0 0% 98%;
@@ -126,11 +124,7 @@
 
   body {
     @apply bg-background text-foreground font-inter;
-    background-image: 
-      radial-gradient(circle at 25% 25%, hsl(var(--sage)) 0%, transparent 50%),
-      radial-gradient(circle at 75% 75%, hsl(var(--dusty-blue)) 0%, transparent 50%);
-    background-size: 1200px 1200px;
-    background-attachment: fixed;
+    background: linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--secondary)) 100%);
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -173,8 +167,8 @@
   }
 
   .card-elevated:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 40px -12px hsl(220 9% 15% / 0.15);
+    transform: translateY(-1px);
+    box-shadow: 0 16px 32px -18px hsl(222 20% 12% / 0.16);
   }
 
   /* Button variants for the design system */

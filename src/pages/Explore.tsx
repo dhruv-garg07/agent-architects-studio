@@ -180,12 +180,32 @@ const Explore = () => {
 
   if (isLoading && agents.length === 0) {
     return (
-      <div className="container mx-auto px-4 lg:px-8 py-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="w-8 h-8 animate-spin mx-auto mb-2 border-2 border-primary border-t-transparent rounded-full" />
-            <p className="text-muted-foreground">Loading agents...</p>
-          </div>
+      <div className="container mx-auto px-4 lg:px-8 py-10 space-y-6">
+        <div>
+          <div className="h-6 w-32 bg-muted animate-pulse rounded" />
+          <div className="h-4 w-64 bg-muted animate-pulse rounded mt-2" />
+        </div>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div
+              key={`skeleton-${index}`}
+              className="card-elevated p-6 space-y-4 animate-pulse"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-muted rounded-lg" />
+                <div className="space-y-2 flex-1">
+                  <div className="h-4 bg-muted rounded w-2/3" />
+                  <div className="h-3 bg-muted rounded w-1/2" />
+                </div>
+              </div>
+              <div className="h-3 bg-muted rounded w-full" />
+              <div className="h-3 bg-muted rounded w-5/6" />
+              <div className="flex items-center gap-3">
+                <div className="h-6 w-16 bg-muted rounded-full" />
+                <div className="h-6 w-10 bg-muted rounded-full" />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
