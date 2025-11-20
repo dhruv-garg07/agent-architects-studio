@@ -79,4 +79,4 @@ def query_llm_with_history(message, history, rag_context, **kwargs):
         response += token
         print(token, end='', flush=True)  # Print tokens as they arrive
 
-    return extract_output_after_think(response)
+    return response

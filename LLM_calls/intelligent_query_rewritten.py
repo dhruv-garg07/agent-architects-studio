@@ -41,7 +41,7 @@ def intelligent_query_rewriter(query: str):
     full_response = "".join(
         stream_chat_response(
             prompt=prompt,
-            model="meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
+            model="ServiceNow-AI/Apriel-1.5-15b-Thinker",
             max_tokens=150,
             temperature=0.3,
             top_p=0.9,

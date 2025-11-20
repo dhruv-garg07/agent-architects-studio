@@ -33,7 +33,7 @@ def extract_output_after_think(response: str) -> str:
 
 def stream_chat_response(
     prompt: str,
-    model: str = "deepseek-ai/DeepSeek-R1-Distill-Llama-70B-free",
+    model: str = "ServiceNow-AI/Apriel-1.5-15b-Thinker",
     max_tokens: int = 5000,
     temperature: float = 0.7,
     top_p: float = 0.9,
@@ -80,10 +80,20 @@ def stream_chat_response(
             )
 
             # Begin streaming
+            # print(response)
+            # return(response.choices[0].message.content)
             for chunk in response:
+                if chunk is None:
+                    break
+
+                # Defensive check for empty or missing choices
+                if not hasattr(chunk, "choices") or not chunk.choices:
+                    continue
+
                 delta = chunk.choices[0].delta
                 if hasattr(delta, "content") and delta.content:
-                    yield delta.content
+                    if delta.content != "<|end|>":
+                        yield delta.content
 
             end_time = time.time()
             if verbose:
