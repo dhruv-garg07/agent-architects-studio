@@ -1,16 +1,6 @@
 # api_chats.py
-import os, time, uuid
-from flask import Blueprint, request, jsonify, abort
-from LLM_calls.context_manager import query_llm_with_history
-from LLM_calls.intelligent_query_rewritten import intelligent_query_rewriter
-from Octave_mem.RAG_DB_CONTROLLER.write_data_RAG import RAG_DB_Controller_CHAT_HISTORY
-from Octave_mem.RAG_DB_CONTROLLER.read_data_RAG_all_DB import read_data_RAG
-api = Blueprint("api", __name__)
-import asyncio
+import os, time, uuid, sys
 
-import os
-import sys
-# import sys, os
 sys.path.append(os.path.dirname(__file__))
 # Get the current file's directory
 current_dir = os.path.dirname(__file__)
@@ -21,8 +11,6 @@ parent_dir = os.path.abspath(os.path.join(current_dir, os.pardir))
 # Add parent directory to sys.path
 sys.path.insert(0, parent_dir)
 print(parent_dir)
-import sys
-import os
 
 # Get the current file's directory
 current_dir = os.path.dirname(__file__)
@@ -36,6 +24,25 @@ sys.path.insert(0, grandparent_dir)
 # Now we have grandparent_dir, parent_dir, current_dir in sys.path.
 # Can import anything from these directories.
 
+
+from flask import Blueprint, request, jsonify, abort
+from LLM_calls.context_manager import query_llm_with_history
+from LLM_calls.intelligent_query_rewritten import intelligent_query_rewriter
+from Octave_mem.RAG_DB_CONTROLLER.write_data_RAG import RAG_DB_Controller_CHAT_HISTORY
+from Octave_mem.RAG_DB_CONTROLLER.read_data_RAG_all_DB import read_data_RAG
+from Octave_mem.SqlDB.sqlDbController import add_message, get_chat_history_by_session
+api = Blueprint("api", __name__)
+import asyncio
+
+import os
+import sys
+# import sys, os
+
+# MessageType enum-like class for message roles
+class MessageType:
+    HUMAN = "human"
+    LLM = "llm"
+    NOTE = "note"
 
 def run_ai(message, history, session_id, rag_context=None):
     # your model / tool-calling / RAG pipeline
@@ -54,10 +61,10 @@ def run_ai(message, history, session_id, rag_context=None):
 # Structure of Context in tree diagram:
 # Chat History ---------------> Context Builder ----------------> LLM/Agent/Tool Orchestration
 # (ConversationBufferMemory)         (RAG Retrieval)               (LLM Calls, Tool Calls)
-# (past messages)                   (Chroma DB)                   (Response generation)
-# (user_id, thread_id)              (user_id, thread_id)          (user_id, thread_id)
-# (message_id, content, role)       (relevant docs)               (final response)
-# (timestamp)                       (context)                     (tool calls)
+# (past messages)                   (Chroma DB)                   (user_id, thread_id)
+# (user_id, thread_id)              (user_id, thread_id)          (message_id, content, role)
+# (message_id, content, role)       (relevant docs)               (timestamp)
+# (timestamp)                       (context)                     (is_reply_to)
 # (is_reply_to)
 # (conversation_thread) 
 # (message_type)
@@ -111,8 +118,9 @@ def get_messages(thread_id):
     print(f"Loading messages for user {id} in thread {thread_id}")
     # implement a real read from Chroma if you have it;
     # otherwise return [] and keep local cache for now
-    messages = read_controller_chatH.fetch_by_conversation_thread(user_id=id, conversation_thread=thread_id, top_k=100)
-    print(messages)
+    messages = get_chat_history_by_session(user_id=id, session_id=thread_id, top_k=100)
+
+    print("Fetched messages::::::::: \n\n\n\n\n\n\n", messages)
     return jsonify({"messages": messages})
 
 # @api.post("/api/messages")           # store ONE message
@@ -200,26 +208,23 @@ def chat_and_store():
     def store_messages_background():
         try:
             # Store user message chunks
-
-
-            
-
+            add_message(user_id, MessageType.HUMAN, user_msg, session_id=thread_id)
             for chunk in split_text_into_chunks(user_msg, max_sentences=4, overlap=1):
                 write_controller_chatH.send_data_to_rag_db(
                     user_ID=user_id,
                     content_data=chunk,
                     is_reply_to=None,
-                    message_type="human",
+                    message_type=MessageType.HUMAN,
                     conversation_thread=thread_id,
                 )
-            
             # Store reply chunks
+            add_message(user_id, MessageType.LLM, reply_text, session_id=thread_id)
             for chunk in split_text_into_chunks(reply_text, max_sentences=4, overlap=1):
                 write_controller_chatH.send_data_to_rag_db(
                     user_ID=user_id,
                     content_data=chunk,
                     is_reply_to=None,
-                    message_type="llm",
+                    message_type=MessageType.LLM,
                     conversation_thread=thread_id,
                 )
             
@@ -248,7 +253,7 @@ def store_note():
         user_ID=d.get("user_id","user123"),
         content_data=d["text"],
         is_reply_to=None,
-        message_type="note",
+        message_type=MessageType.NOTE,
         conversation_thread=d["thread_id"]
     ))
 
@@ -342,3 +347,5 @@ def _normalize_rag_rows(rows, query_terms):
         })
     results.sort(key=lambda x: x["score"], reverse=True)
     return results
+
+

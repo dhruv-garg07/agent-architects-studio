@@ -23,17 +23,18 @@
                     </select>
                 </div>
             </div>
-            
+
             <button id="addDataBtn" class="btn-primary flex items-center space-x-2">
                 <i data-lucide="plus" class="h-4 w-4"></i>
                 <span>Add Data</span>
             </button>
-            
+
             <div class="flex items-center space-x-3">
                 <button class="p-2 rounded-full hover:bg-secondary transition-colors">
                     <i data-lucide="bell" class="h-5 w-5"></i>
                 </button>
-                <div class="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium shadow-md">
+                <div
+                    class="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium shadow-md">
                     U
                 </div>
             </div>
@@ -47,7 +48,8 @@
             <div class="p-5">
                 <h2 class="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Memory Sources</h2>
                 <nav class="space-y-1">
-                    <a href="#" class="nav-item active flex items-center space-x-3 py-2 px-3 rounded-lg" data-section="sessions">
+                    <a href="#" class="nav-item active flex items-center space-x-3 py-2 px-3 rounded-lg"
+                        data-section="sessions">
                         <i data-lucide="message-square" class="h-5 w-5"></i>
                         <span>Chat Sessions</span>
                     </a>
@@ -55,25 +57,27 @@
                         <i data-lucide="file-text" class="h-5 w-5"></i>
                         <span>Manual Data</span>
                     </a>
-                    <a href="#" class="nav-item flex items-center space-x-3 py-2 px-3 rounded-lg" data-section="integrations">
+                    <a href="#" class="nav-item flex items-center space-x-3 py-2 px-3 rounded-lg"
+                        data-section="integrations">
                         <i data-lucide="link" class="h-5 w-5"></i>
                         <span>External Integrations</span>
                     </a>
                 </nav>
             </div>
-            
+
             <div id="sessionsPanel" class="flex-1 overflow-y-auto p-5 border-t border-border">
                 <div id="noSessionsMessage" class="text-center py-8">
                     <i data-lucide="message-square" class="h-12 w-12 text-muted-foreground mx-auto mb-3"></i>
                     <p class="text-muted-foreground">No chat sessions yet</p>
-                    <p class="text-sm text-muted-foreground mt-1">Start a new conversation to create your first session</p>
+                    <p class="text-sm text-muted-foreground mt-1">Start a new conversation to create your first session
+                    </p>
                 </div>
-                
+
                 <div id="sessionsList" class="space-y-3 hidden">
                     <!-- Sessions will be dynamically populated here -->
                 </div>
             </div>
-            
+
             <div class="p-5 border-t border-border shrink-0">
                 <h2 class="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Memory Settings</h2>
                 <div class="space-y-3">
@@ -100,9 +104,10 @@
             <!-- Header -->
             <div class="shrink-0 p-5 border-b border-border bg-background z-10">
                 <h2 class="text-lg font-semibold">AI Assistant</h2>
-                <p class="text-sm text-muted-foreground mt-1" id="conversationContext">Ask questions about your memory data</p>
+                <p class="text-sm text-muted-foreground mt-1" id="conversationContext">Ask questions about your memory
+                    data</p>
             </div>
-            
+
             <!-- Scrollable Conversation Area -->
             <div class="flex-1 overflow-hidden relative">
                 <div id="conversationHistory" class="absolute inset-0 overflow-y-auto p-5 space-y-6">
@@ -111,7 +116,7 @@
                         <p class="text-lg">No conversation yet</p>
                         <p class="text-sm mt-1">Start by asking a question about your memory data</p>
                     </div>
-                    
+
                     <!-- Conversation messages will be dynamically added here -->
                     <!-- Example messages for testing -->
                     <div class="message user">
@@ -122,19 +127,22 @@
                     </div>
                     <div class="message assistant">
                         <div class="message-content">
-                            <p>I can help you explore your memory data! You can ask me questions about your recent sessions, search for specific information, or analyze patterns in your data.</p>
+                            <p>I can help you explore your memory data! You can ask me questions about your recent
+                                sessions, search for specific information, or analyze patterns in your data.</p>
                             <div class="message-time">12:01 PM</div>
                         </div>
                     </div>
                 </div>
             </div>
-            
+
             <!-- Fixed Chat Input -->
             <div class="shrink-0 bg-card border-t border-border p-5 sticky-chat-input">
                 <form id="chatForm" class="flex items-center space-x-3">
                     <div class="flex-1 relative">
-                        <input type="text" id="chatInput" placeholder="Query your memory..." class="input w-full pr-12" autocomplete="off">
-                        <button type="button" id="attachFileBtn" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+                        <input type="text" id="chatInput" placeholder="Query your memory..." class="input w-full pr-12"
+                            autocomplete="off">
+                        <button type="button" id="attachFileBtn"
+                            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
                             <i data-lucide="paperclip" class="h-5 w-5"></i>
                         </button>
                     </div>
@@ -150,12 +158,13 @@
             <div class="p-5 border-b border-border flex justify-between items-center shrink-0">
                 <h2 class="text-lg font-semibold">RAG Results</h2>
                 <div class="flex space-x-2">
-                    <button id="exportResultsBtn" class="btn-secondary text-sm py-1 px-2 flex items-center" title="Export Results">
+                    <button id="exportResultsBtn" class="btn-secondary text-sm py-1 px-2 flex items-center"
+                        title="Export Results">
                         <i data-lucide="download" class="h-4 w-4"></i>
                     </button>
                 </div>
             </div>
-            
+
             <div class="flex-1 overflow-y-auto p-5 space-y-4" id="ragResults">
                 <div class="text-center py-12 text-muted-foreground" id="emptyRagResults">
                     <i data-lucide="search" class="h-16 w-16 mx-auto mb-4 opacity-50"></i>
@@ -170,30 +179,36 @@
 <!-- Add Data Modal -->
 <div id="addDataModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
     <div class="fixed inset-0 bg-black/70 backdrop-blur-sm" id="modalBackdrop"></div>
-    <div class="relative bg-card rounded-xl border border-border shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+    <div
+        class="relative bg-card rounded-xl border border-border shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
         <div class="sticky top-0 bg-card border-b border-border p-6 rounded-t-xl flex justify-between items-center">
             <h2 class="text-xl font-semibold">Add New Memory</h2>
-            <button id="closeModal" class="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-full hover:bg-secondary">
+            <button id="closeModal"
+                class="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-full hover:bg-secondary">
                 <i data-lucide="x" class="h-6 w-6"></i>
             </button>
         </div>
-        
+
         <form method="POST" enctype="multipart/form-data" class="space-y-6 p-6">
             <div>
                 <label for="memory_text" class="block font-medium mb-2">Text Input</label>
-                <textarea id="memory_text" name="memory_text" rows="4" class="input w-full" placeholder="Add your memory text..."></textarea>
+                <textarea id="memory_text" name="memory_text" rows="4" class="input w-full"
+                    placeholder="Add your memory text..."></textarea>
             </div>
-            
+
             <div>
                 <label for="memory_file" class="block font-medium mb-2">Upload Document</label>
-                <div class="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer" id="dropZone">
+                <div class="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer"
+                    id="dropZone">
                     <i data-lucide="upload-cloud" class="h-12 w-12 text-muted-foreground mx-auto"></i>
                     <p class="mt-2 text-sm text-muted-foreground">Drag and drop your file here, or click to browse</p>
-                    <input type="file" id="memory_file" name="memory_file" class="hidden" multiple accept=".pdf,.ppt,.pptx,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif,.bmp,.svg,.webp,.heic,.tiff,.xls,.xlsx,.csv" />
+                    <input type="file" id="memory_file" name="memory_file" class="hidden" multiple
+                        accept=".pdf,.ppt,.pptx,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif,.bmp,.svg,.webp,.heic,.tiff,.xls,.xlsx,.csv" />
                     <button type="button" id="fileUploadBtn" class="btn-secondary mt-3">Select File</button>
                 </div>
-                <p class="text-xs text-muted-foreground mt-2">Supported formats: PDF, PPT, DOC, TXT, JPG, PNG, GIF (Max 25MB per file)</p>
-                
+                <p class="text-xs text-muted-foreground mt-2">Supported formats: PDF, PPT, DOC, TXT, JPG, PNG, GIF (Max
+                    25MB per file)</p>
+
                 <div id="filePreview" class="mt-4 hidden">
                     <div class="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
                         <div class="flex items-center space-x-3">
@@ -203,20 +218,22 @@
                                 <p id="fileSize" class="text-xs text-muted-foreground"></p>
                             </div>
                         </div>
-                        <button type="button" id="removeFileBtn" class="text-muted-foreground hover:text-destructive transition-colors p-1">
+                        <button type="button" id="removeFileBtn"
+                            class="text-muted-foreground hover:text-destructive transition-colors p-1">
                             <i data-lucide="trash-2" class="h-4 w-4"></i>
                         </button>
                     </div>
                 </div>
-                
+
                 <div id="fileError" class="mt-2 text-xs text-destructive hidden"></div>
             </div>
-            
+
             <div>
                 <label for="memory_tags" class="block font-medium mb-2">Tags</label>
-                <input type="text" id="memory_tags" name="memory_tags" class="input w-full" placeholder="Add tags (comma separated)" />
+                <input type="text" id="memory_tags" name="memory_tags" class="input w-full"
+                    placeholder="Add tags (comma separated)" />
             </div>
-            
+
             <div class="flex justify-end space-x-3 pt-4 border-t border-border">
                 <button type="button" id="cancelModal" class="btn-secondary">Cancel</button>
                 <button type="submit" class="btn-primary">Save Memory</button>
@@ -485,11 +502,11 @@
         transition: .4s;
     }
 
-    input:checked + .slider {
+    input:checked+.slider {
         background-color: hsl(var(--primary));
     }
 
-    input:checked + .slider:before {
+    input:checked+.slider:before {
         transform: translateX(18px);
     }
 
@@ -521,6 +538,7 @@
         .memory-dashboard .w-80 {
             width: 250px;
         }
+
         .memory-dashboard .w-96 {
             width: 300px;
         }
@@ -530,24 +548,26 @@
         .memory-dashboard .flex {
             flex-direction: column;
         }
+
         .memory-dashboard .w-80,
         .memory-dashboard .w-96 {
             width: 100%;
         }
+
         .memory-dashboard .border-r {
             border-right: none;
             border-bottom: 1px solid hsl(var(--border));
         }
-        
+
         .message-content {
             max-width: 90%;
         }
-        
+
         /* Mobile-specific chat input styling */
         .sticky-chat-input {
             padding: 0.75rem;
         }
-        
+
         /* Ensure proper scrolling on mobile */
         #conversationHistory {
             -webkit-overflow-scrolling: touch;
@@ -565,9 +585,9 @@
     }
 
     // Initialize on load and whenever new messages are added
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         scrollToBottom();
-        
+
         // Example: Add this to your message submission logic
         // document.getElementById('chatForm').addEventListener('submit', function(e) {
         //     e.preventDefault();
@@ -586,10 +606,10 @@
 </script>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         // Initialize Lucide icons
         lucide.createIcons();
-        
+
         // State management
         let currentSession = null;
         let sessions = [];
@@ -624,10 +644,10 @@
         const sessionDropdown = document.getElementById('sessionDropdown');
         const navItems = document.querySelectorAll('.nav-item');
         const exportResultsBtn = document.getElementById('exportResultsBtn');
-        
+
         // Initialize the dashboard
         initDashboard();
-        
+
         async function initDashboard() {
             await refreshSessionsFromServer();
             updateSessionUI();
@@ -641,45 +661,45 @@
 
 
         function updateSessionUI() {
-        newSessionBtn.classList.remove('hidden');      // <-- always visible
-        sessionSelector.classList.toggle('hidden', sessions.length === 0);
-        sessionsList.classList.toggle('hidden', sessions.length === 0);
-        noSessionsMessage.classList.toggle('hidden', sessions.length !== 0);
-        updateSessionDropdown();
-        renderSessionsList();
+            newSessionBtn.classList.remove('hidden');      // <-- always visible
+            sessionSelector.classList.toggle('hidden', sessions.length === 0);
+            sessionsList.classList.toggle('hidden', sessions.length === 0);
+            noSessionsMessage.classList.toggle('hidden', sessions.length !== 0);
+            updateSessionDropdown();
+            renderSessionsList();
         }
 
-        
+
         function updateSessionDropdown() {
-        sessionDropdown.innerHTML = '<option value="">Select Session</option>';
-        sessions.forEach(s => {
-            const option = document.createElement('option');
-            option.value = s.id;
-            option.textContent = `Session ${s.id.slice(0,8)}… — ${new Date(s.createdAt).toLocaleDateString()}`;
-            sessionDropdown.appendChild(option);
-        });
-        if (currentSession) sessionDropdown.value = currentSession.id;
+            sessionDropdown.innerHTML = '<option value="">Select Session</option>';
+            sessions.forEach(s => {
+                const option = document.createElement('option');
+                option.value = s.id;
+                option.textContent = `Session ${s.id.slice(0, 8)}… — ${new Date(s.createdAt).toLocaleDateString()}`;
+                sessionDropdown.appendChild(option);
+            });
+            if (currentSession) sessionDropdown.value = currentSession.id;
         }
 
         function renderSessionsList() {
-        sessionsList.innerHTML = '';
-        sessions.forEach(s => {
-            const el = document.createElement('div');
-            el.className = `session-item ${currentSession && currentSession.id === s.id ? 'active' : ''}`;
-            el.innerHTML = `
+            sessionsList.innerHTML = '';
+            sessions.forEach(s => {
+                const el = document.createElement('div');
+                el.className = `session-item ${currentSession && currentSession.id === s.id ? 'active' : ''}`;
+                el.innerHTML = `
             <div class="flex-1 min-w-0">
-                <div class="font-medium">Session ${s.id.slice(0,8)}…</div>
-                <div class="session-preview">${(s.preview || 'No messages').substring(0,50)}...</div>
+                <div class="font-medium">Session ${s.id.slice(0, 8)}…</div>
+                <div class="session-preview">${(s.preview || 'No messages').substring(0, 50)}...</div>
             </div>
             <div class="text-xs text-muted-foreground">${new Date(s.updatedAt).toLocaleTimeString()}</div>
             `;
-            el.addEventListener('click', () => loadSession(s.id));
-            sessionsList.appendChild(el);
-        });
+                el.addEventListener('click', () => loadSession(s.id));
+                sessionsList.appendChild(el);
+            });
         }
 
-        sessionDropdown.addEventListener('change', function() {
-        if (this.value) loadSession(this.value);
+        sessionDropdown.addEventListener('change', function () {
+            if (this.value) loadSession(this.value);
         });
         newSessionBtn.addEventListener('click', createNewSession);
 
@@ -693,33 +713,33 @@
 
             const enriched = await Promise.all(ids.map(async (thread_id) => {
                 try {
-                const r = await fetch(`/api/sessions/${thread_id}/messages?id=${encodeURIComponent(window.USER_ID)}`);
-                const { messages = [] } = await r.json();
+                    const r = await fetch(`/api/sessions/${thread_id}/messages?id=${encodeURIComponent(window.USER_ID)}`);
+                    const { messages = [] } = await r.json();
 
-                const last = messages.slice().sort((a, b) => {
-                    const ta = (a.metadata?.timestamp ?? 0), tb = (b.metadata?.timestamp ?? 0);
-                    if (tb !== ta) return tb - ta;
-                    const ia = (a.metadata?.index ?? 0), ib = (b.metadata?.index ?? 0);
-                    return ib - ia;
-                })[0];
+                    const last = messages.slice().sort((a, b) => {
+                        const ta = (a.metadata?.timestamp ?? 0), tb = (b.metadata?.timestamp ?? 0);
+                        if (tb !== ta) return tb - ta;
+                        const ia = (a.metadata?.index ?? 0), ib = (b.metadata?.index ?? 0);
+                        return ib - ia;
+                    })[0];
 
-                const iso = last?.metadata?.timestamp
-                    ? new Date(last.metadata.timestamp * 1000).toISOString()
-                    : new Date().toISOString();
+                    const iso = last?.metadata?.timestamp
+                        ? new Date(last.metadata.timestamp * 1000).toISOString()
+                        : new Date().toISOString();
 
-                return {
-                    id: thread_id,
-                    createdAt: iso,
-                    updatedAt: iso,
-                    preview: last?.document || 'No messages'
-                };
+                    return {
+                        id: thread_id,
+                        createdAt: iso,
+                        updatedAt: iso,
+                        preview: last?.document || 'No messages'
+                    };
                 } catch {
-                return {
-                    id: thread_id,
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
-                    preview: 'No messages'
-                };
+                    return {
+                        id: thread_id,
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                        preview: 'No messages'
+                    };
                 }
             }));
 
@@ -728,11 +748,11 @@
         }
 
 
-        
+
         async function createNewSession() {
             const res = await fetch('/api/create_session', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     user_id: '{{current_user.id}}',
                 })
@@ -748,13 +768,13 @@
             };
 
 
-        sessions.unshift(newSession);
-        currentSession = newSession;
+            sessions.unshift(newSession);
+            currentSession = newSession;
 
-        updateSessionUI();
-        // Clear the chat area immediately (nice UX) then load from server (will be empty)
-        renderConversation([]);
-        await loadSession(newSession.id);
+            updateSessionUI();
+            // Clear the chat area immediately (nice UX) then load from server (will be empty)
+            renderConversation([]);
+            await loadSession(newSession.id);
         }
 
         let currentLoadToken = 0;
@@ -762,7 +782,7 @@
         async function loadSession(sessionId) {
             const session = sessions.find(s => s.id === sessionId);
             if (!session) return;
-            
+
             const myToken = ++currentLoadToken;       // capture token for this load
             currentSession = session;
             renderConversation([]);           // clear immediately for better UX    
@@ -772,7 +792,7 @@
             const data = await res.json();
 
             if (myToken !== currentLoadToken) return; // a newer load started, abort
-            
+
             const rows = data.messages || [];
 
             // sort ascending for display
@@ -786,11 +806,11 @@
             });
 
             currentSession.messages = rows.map(r => ({
-                role: (r.metadata?.message_type === 'llm') ? 'assistant' : 'user',
-                content: r.document || '',
-                timestamp: r.metadata?.timestamp
-                ? new Date(r.metadata.timestamp * 1000).toISOString()
-                : new Date().toISOString()
+                role: (r.role === 'llm' || r.role === 'assistant') ? 'assistant' : 'user',
+                content: r.content || '',
+                timestamp: r.timestamp
+                    ? new Date(r.timestamp).toISOString()
+                    : new Date().toISOString()
             }));
 
             renderConversation(currentSession.messages);
@@ -801,63 +821,63 @@
 
             //  rag result
             const lastUser = [...currentSession.messages].reverse().find(m => m.role === 'user');
-                if (lastUser?.content) {
+            if (lastUser?.content) {
                 await fetchRAGResults({ query: lastUser.content, threadId: currentSession.id, topK: 5 });
-                } else {
+            } else {
                 clearRAGResults();
-                }
+            }
         }
 
 
 
-        
+
         function renderConversation(messages) {
             conversationHistory.innerHTML = '';
-            
+
             if (messages.length === 0) {
                 emptyConversation.classList.remove('hidden');
                 return;
             }
-            
+
             emptyConversation.classList.add('hidden');
-            
+
             messages.forEach(message => {
                 addMessageToConversation(message.role, message.content, message.timestamp);
             });
-            
+
             // Scroll to bottom
             conversationHistory.scrollTop = conversationHistory.scrollHeight;
         }
-        
+
         function addMessageToConversation(role, content, timestamp = new Date()) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${role}`;
-            
+
             const timeString = typeof timestamp === 'string' ? timestamp : timestamp.toLocaleTimeString();
-            
+
             messageDiv.innerHTML = `
                 <div class="message-content">
                     <div>${content}</div>
                     <div class="message-time">${timeString}</div>
                 </div>
             `;
-            
+
             conversationHistory.appendChild(messageDiv);
             emptyConversation.classList.add('hidden');
-            
+
             // Scroll to bottom
             conversationHistory.scrollTop = conversationHistory.scrollHeight;
         }
-        
+
         async function fetchRAGResults({ query, threadId, topK = 5 }) {
             const res = await fetch('/api/rag', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                user_id: window.USER_ID,   // set in memory.html
-                thread_id: threadId,       // currentSession.id
-                query,
-                top_k: topK
+                    user_id: window.USER_ID,   // set in memory.html
+                    thread_id: threadId,       // currentSession.id
+                    query,
+                    top_k: topK
                 })
             });
             const data = await res.json();
@@ -877,12 +897,12 @@
             if (!lastUser) return;
             const res = await fetch('/api/rag', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                user_id: window.USER_ID,
-                thread_id: currentSession.id,
-                query: lastUser.content,
-                top_k: 5
+                    user_id: window.USER_ID,
+                    thread_id: currentSession.id,
+                    query: lastUser.content,
+                    top_k: 5
                 })
             });
             const data = await res.json();
@@ -894,17 +914,17 @@
             renderRAGResults();
         }
 
-        
+
         function renderRAGResults() {
             ragResultsContainer.innerHTML = '';
-            
+
             if (ragResults.length === 0) {
                 emptyRagResults.classList.remove('hidden');
                 return;
             }
-            
+
             emptyRagResults.classList.add('hidden');
-            
+
             ragResults.forEach(result => {
                 const resultDiv = document.createElement('div');
                 resultDiv.className = 'rag-result';
@@ -935,11 +955,11 @@
                 `;
                 ragResultsContainer.appendChild(resultDiv);
             });
-            
+
             // Re-initialize Lucide icons for new elements
             lucide.createIcons();
         }
-        
+
         function highlightMatches(text, matches) {
             let highlightedText = text;
             matches.forEach(match => {
@@ -948,41 +968,41 @@
             });
             return highlightedText;
         }
-        
+
         function clearRAGResults() {
             ragResults = [];
             ragResultsContainer.innerHTML = '';
             emptyRagResults.classList.remove('hidden');
         }
-        
+
         // Global functions for RAG interaction
-        window.toggleRAGResultSelection = function(resultId) {
+        window.toggleRAGResultSelection = function (resultId) {
             const result = ragResults.find(r => r.id === resultId);
             if (result) {
                 // In a real implementation, this would update the AI response
                 console.log('Selected RAG result:', result);
             }
         };
-        
-        window.rateRAGResult = async function(resultId, rating) {
+
+        window.rateRAGResult = async function (resultId, rating) {
             try {
                 await fetch('/api/rag/feedback', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    user_id: window.USER_ID,
-                    thread_id: currentSession?.id,
-                    result_id: resultId,
-                    rating
-                })
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: window.USER_ID,
+                        thread_id: currentSession?.id,
+                        result_id: resultId,
+                        rating
+                    })
                 });
-            } catch {}
+            } catch { }
             // existing visual feedback code can stay
         };
 
-        
+
         // Chat form submission
-        chatForm.addEventListener('submit', async function(e) {
+        chatForm.addEventListener('submit', async function (e) {
             e.preventDefault();
             const message = chatInput.value.trim();
             if (!message) return;
@@ -1007,12 +1027,12 @@
             // Ask server to generate + store both messages in Chroma
             const res = await fetch('/api/chat', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                thread_id: currentSession.id,   // UUID
-                user_id: window.USER_ID,      // from base.html
-                message,
-                history: currentSession.messages
+                    thread_id: currentSession.id,   // UUID
+                    user_id: window.USER_ID,      // from base.html
+                    message,
+                    history: currentSession.messages
                 })
             });
 
@@ -1032,38 +1052,38 @@
             // Refresh sessions list metadata from server (optional)
             await refreshSessionsFromServer();
             renderSessionsList();
-            
+
             // RAG panel: if backend sent rag_results, render them; else clear
             if (Array.isArray(data.rag_results)) {
-            ragResults = data.rag_results.map(r => ({
-                id: r.id,
-                score: r.score ?? 0,
-                text: r.text ?? '',
-                source: r.source ?? 'Unknown',
-                timestamp: r.timestamp ?? '',
-                matches: Array.isArray(r.matches) ? r.matches : []
-            }));
-            renderRAGResults();
+                ragResults = data.rag_results.map(r => ({
+                    id: r.id,
+                    score: r.score ?? 0,
+                    text: r.text ?? '',
+                    source: r.source ?? 'Unknown',
+                    timestamp: r.timestamp ?? '',
+                    matches: Array.isArray(r.matches) ? r.matches : []
+                }));
+                renderRAGResults();
             } else {
                 clearRAGResults();
             }
         });
 
-        
-        window.rateRAGResult = async function(resultId, rating) {
+
+        window.rateRAGResult = async function (resultId, rating) {
             const result = ragResults.find(r => r.id === resultId);
             if (!result) return;
 
             try {
                 await fetch('/api/rag/feedback', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    user_id: window.USER_ID,
-                    thread_id: currentSession?.id,
-                    result_id: resultId,
-                    rating
-                })
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: window.USER_ID,
+                        thread_id: currentSession?.id,
+                        result_id: resultId,
+                        rating
+                    })
                 });
             } catch (e) {
                 console.warn('RAG feedback failed', e);
@@ -1077,14 +1097,14 @@
             targetBtn.classList.add('active');
         };
 
-        
+
         // Export functionality
-        exportResultsBtn.addEventListener('click', function() {
+        exportResultsBtn.addEventListener('click', function () {
             if (ragResults.length === 0) {
                 alert('No results to export');
                 return;
             }
-            
+
             // Create CSV content
             const headers = ['Score', 'Source', 'Timestamp', 'Text'];
             const csvContent = [
@@ -1096,7 +1116,7 @@
                     `"${result.text.replace(/"/g, '""')}"`
                 ].join(','))
             ].join('\n');
-            
+
             // Create and download file
             const blob = new Blob([csvContent], { type: 'text/csv' });
             const url = URL.createObjectURL(blob);
@@ -1108,43 +1128,43 @@
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         });
-        
+
         // New session button
         newSessionBtn.addEventListener('click', createNewSession);
-        
+
         // Session dropdown change
-        sessionDropdown.addEventListener('change', function() {
+        sessionDropdown.addEventListener('change', function () {
             if (this.value) {
                 loadSession(parseInt(this.value));
             }
         });
-        
+
         // Navigation items
         navItems.forEach(item => {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
                 navItems.forEach(i => i.classList.remove('active'));
                 item.classList.add('active');
-                
+
                 // Handle section switching
                 const section = item.getAttribute('data-section');
                 // In a full implementation, this would load different content based on the section
                 console.log('Switching to section:', section);
             });
         });
-        
+
         // Modal functionality (existing code)
         function showModal() {
             modal.classList.remove('hidden');
             document.body.style.overflow = 'hidden';
         }
-        
+
         function hideModal() {
             modal.classList.add('hidden');
             document.body.style.overflow = '';
             // Do not reset file input here to preserve file selection when reopening modal
         }
-        
+
         function formatFileSize(bytes) {
             if (bytes === 0) return '0 Bytes';
             const k = 1024;
@@ -1152,12 +1172,12 @@
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
-        
+
         function validateFileSize(file) {
             const maxSize = 25 * 1024 * 1024;
             return file.size <= maxSize;
         }
-        
+
         // File selection state for modal
         let selectedFiles = [];
 
@@ -1205,27 +1225,27 @@
             filePreview.classList.add('hidden');
             fileError.classList.add('hidden');
         }
-        
+
         // Event listeners for modal
-        addBtn.addEventListener('click', function() {
+        addBtn.addEventListener('click', function () {
             showModal();
             // Only reset file input when opening modal for a new memory
             resetFileInput();
         });
-        closeBtn.addEventListener('click', function() {
+        closeBtn.addEventListener('click', function () {
             hideModal();
             resetFileInput();
         });
-        cancelBtn.addEventListener('click', function() {
+        cancelBtn.addEventListener('click', function () {
             hideModal();
             resetFileInput();
         });
-        modalBackdrop.addEventListener('click', function() {
+        modalBackdrop.addEventListener('click', function () {
             hideModal();
             resetFileInput();
         });
-        
-        fileInput.addEventListener('change', function() {
+
+        fileInput.addEventListener('change', function () {
             if (this.files && this.files.length > 0) {
                 for (let file of this.files) {
                     if (!validateFileSize(file)) {
@@ -1244,7 +1264,7 @@
             }
         });
 
-        filePreview.addEventListener('click', function(e) {
+        filePreview.addEventListener('click', function (e) {
             if (e.target.closest('.delete-file-btn')) {
                 const idx = parseInt(e.target.closest('.delete-file-btn').getAttribute('data-idx'));
                 selectedFiles.splice(idx, 1);
@@ -1263,33 +1283,33 @@
             fileInput.click();
         });
         dropZone.addEventListener('click', () => fileInput.click());
-        
+
         // Drag and drop functionality
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
             dropZone.addEventListener(eventName, preventDefaults, false);
         });
-        
+
         function preventDefaults(e) {
             e.preventDefault();
             e.stopPropagation();
         }
-        
+
         ['dragenter', 'dragover'].forEach(eventName => {
             dropZone.addEventListener(eventName, highlight, false);
         });
-        
+
         ['dragleave', 'drop'].forEach(eventName => {
             dropZone.addEventListener(eventName, unhighlight, false);
         });
-        
+
         function highlight() {
             dropZone.classList.add('border-primary');
         }
-        
+
         function unhighlight() {
             dropZone.classList.remove('border-primary');
         }
-        
+
         dropZone.addEventListener('drop', handleDrop, false);
         function handleDrop(e) {
             const dt = e.dataTransfer;
@@ -1311,7 +1331,7 @@
                 showFilePreview(selectedFiles);
             }
         }
-        
+
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
                 hideModal();
@@ -1319,7 +1339,7 @@
         });
     });
 
-   
+
 
 
 
