@@ -115,24 +115,24 @@ def get_messages(thread_id):
     print(messages)
     return jsonify({"messages": messages})
 
-@api.post("/api/messages")           # store ONE message
-def store_message():
-    data = request.get_json(force=True)
-    user_id    = data.get("user_id", "user123")
-    content    = data["content"]
-    role       = data["role"]            # "human" | "llm"
-    thread_id  = data["thread_id"]
-    reply_to   = data.get("is_reply_to") # optional int or message_id
+# @api.post("/api/messages")           # store ONE message
+# def store_message():
+#     data = request.get_json(force=True)
+#     user_id    = data.get("user_id", "user123")
+#     content    = data["content"]
+#     role       = data["role"]            # "human" | "llm"
+#     thread_id  = data["thread_id"]
+#     reply_to   = data.get("is_reply_to") # optional int or message_id
 
-    # write into Chroma
-    result = write_controller_chatH.send_data_to_rag_db(
-        user_ID=user_id,
-        content_data=content,
-        is_reply_to=reply_to,
-        message_type="llm" if role == "llm" else "human",
-        conversation_thread=thread_id,
-    )
-    return jsonify({"ok": True, "result": result})
+#     # write into Chroma
+#     result = write_controller_chatH.send_data_to_rag_db(
+#         user_ID=user_id,
+#         content_data=content,
+#         is_reply_to=reply_to,
+#         message_type="llm" if role == "llm" else "human",
+#         conversation_thread=thread_id,
+#     )
+#     return jsonify({"ok": True, "result": result})
 
 def split_text_into_chunks(text, max_sentences=4, overlap=1):
     import re
@@ -151,6 +151,7 @@ def split_text_into_chunks(text, max_sentences=4, overlap=1):
 
 @api.post("/api/chat")
 def chat_and_store():
+    print("On Clicking send button in chat UI...")
     import time, re
     data      = request.get_json(force=True)
     thread_id = data["thread_id"]
@@ -164,7 +165,7 @@ def chat_and_store():
         return re.sub(r"\s+", " ", (s or "").strip().lower())
 
     rewritten_user_msg = intelligent_query_rewriter(user_msg) 
-    print(f"Rewritten user msg: {rewritten_user_msg}")
+    # print(f"Rewritten user msg: {rewritten_user_msg}")
 
     # 1) RAG FIRST (so it can't see this very message)
     raw_rows = read_controller_chatH.fetch_related_to_query(
@@ -199,6 +200,10 @@ def chat_and_store():
     def store_messages_background():
         try:
             # Store user message chunks
+
+
+            
+
             for chunk in split_text_into_chunks(user_msg, max_sentences=4, overlap=1):
                 write_controller_chatH.send_data_to_rag_db(
                     user_ID=user_id,
