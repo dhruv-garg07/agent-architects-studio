@@ -25,7 +25,6 @@ grandparent_dir = os.path.abspath(os.path.join(current_dir, os.pardir, os.pardir
 sys.path.insert(0, grandparent_dir)
 
 from LLM_calls.together_get_response import stream_chat_response, extract_output_after_think
-from langchain.memory import ConversationBufferMemory
 
 system_prompt = (
     "You are Deepseek, a highly capable, thoughtful, and precise AI assistant. "
@@ -34,7 +33,7 @@ system_prompt = (
     "Reply in chat format, in a few sentences only, keep it short and precise."
 )
 
-def query_llm_with_history(message, history, rag_context, **kwargs):
+def query_llm_with_history(message, history, rag_context, chat_history, **kwargs):
     """
     Query Together AI LLM with the given message and history.
     Args:
@@ -45,23 +44,16 @@ def query_llm_with_history(message, history, rag_context, **kwargs):
     Returns:
         str: The full response from the LLM.
     """
-    # Use ConversationBufferMemory for storing conversation history
-    memory = ConversationBufferMemory(return_messages=True)
+    # USE SQL DB AS THE MEMORY BACKEND LATER
+    
 
     # print("Rag context:", rag_context)
 
     
-    if history:
-        for h in history:
-            if isinstance(h, dict):
-                role = h.get('role', 'user')
-                content = h.get('content', str(h))
-                memory.save_context({"input": content if role == 'user' else ""}, {"output": content if role != 'user' else ""})
-            else:
-                memory.save_context({"input": str(h)}, {"output": ""})
-        summary = memory.buffer
-    else:
-        summary = ""
+    summary = ""
+    if chat_history:
+        # Create a summary of the chat history
+        summary = "\n".join([f"User: {msg['user']}\nAI: {msg['ai']}" for msg in chat_history])
 
     # Build prompt from summary, rag_context, and message
     prompt = system_prompt + "\n\n"

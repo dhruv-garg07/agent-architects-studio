@@ -8,7 +8,7 @@ grandparent_dir = os.path.abspath(os.path.join(current_dir, os.pardir, os.pardir
 # Add to sys.path                   
 sys.path.insert(0, grandparent_dir)
 from LLM_calls.together_get_response import stream_chat_response, extract_output_after_think
-from langchain.memory import ConversationBufferMemory
+
 from dotenv import load_dotenv
 load_dotenv()
 system_prompt = (
@@ -26,8 +26,9 @@ def intelligent_query_rewriter(query: str):
     Returns:
         str: The rewritten query.
     """
-    memory = ConversationBufferMemory(return_messages=True)
-    memory.save_context({"input": query}, {"output": ""})
+    # memory = ConversationBufferMemory(return_messages=True)
+    
+    # memory.save_context({"input": query}, {"output": ""})
     prompt = (
         "You are an expert at rewriting user queries to be more specific and context-aware. "
         "Given the user's query, rewrite it to improve clarity and focus. "

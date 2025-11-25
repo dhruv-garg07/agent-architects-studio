@@ -44,12 +44,12 @@ class MessageType:
     LLM = "llm"
     NOTE = "note"
 
-def run_ai(message, history, session_id, rag_context=None):
+def run_ai(message, history, session_id, rag_context=None, chat_history=None):
     # your model / tool-calling / RAG pipeline
     # This function should call LLM responses from the Response controller.
     # If rag_context is provided, add it to the context for the LLM
 
-    return query_llm_with_history(message, history, rag_context)  # replace with real response
+    return query_llm_with_history(message, history, rag_context, chat_history)  # replace with real response
 
 # from LLM_calls use together_get_response functions for LLM calls.
 # Make a orchestration function that calls the LLM and tools as needed.
@@ -122,6 +122,8 @@ def get_messages(thread_id):
 
     print("Fetched messages::::::::: \n\n\n\n\n\n\n", messages)
     return jsonify({"messages": messages})
+
+
 
 # @api.post("/api/messages")           # store ONE message
 # def store_message():
@@ -201,8 +203,11 @@ def chat_and_store():
 
     # print("raw_rows:", raw_rows)
     
+    # Retrieve the old chat history from SQL DB for context
+    chat_history = get_chat_history_by_session(user_id=user_id, session_id=thread_id, top_k=20)
+    
     # 2) generate reply using RAG context
-    reply_text = run_ai(f"{rewritten_user_msg} query: {user_msg}", history, session_id=thread_id, rag_context=raw_rows)
+    reply_text = run_ai(f"{rewritten_user_msg} query: {user_msg}", history, session_id=thread_id, rag_context=raw_rows, chat_history=chat_history)
 
     # 3) Store messages in background using threads
     def store_messages_background():
