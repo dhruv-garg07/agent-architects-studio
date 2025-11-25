@@ -19,7 +19,7 @@ together  # Added for LLM_calls.together_get_response.py
 chromadb>=0.5.0
 
 # RAG Orchestration
-langchain>=0.2.0
+langchain>=0.3.27
 python-docx
 pdfplumber
 langchain_text_splitters
