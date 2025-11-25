@@ -51,9 +51,10 @@ def query_llm_with_history(message, history, rag_context, chat_history, **kwargs
 
     
     summary = ""
+    print(chat_history)
     if chat_history:
         # Create a summary of the chat history
-        summary = "\n".join([f"User: {msg['user']}\nAI: {msg['ai']}" for msg in chat_history])
+        summary = "\n".join([f"User: {msg['role']}\nAI: {msg['content']}" for msg in chat_history])
 
     # Build prompt from summary, rag_context, and message
     prompt = system_prompt + "\n\n"
