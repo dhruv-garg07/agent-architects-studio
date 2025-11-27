@@ -33,6 +33,8 @@ from Octave_mem.RAG_DB_CONTROLLER.read_data_RAG_all_DB import read_data_RAG
 from Octave_mem.SqlDB.sqlDbController import add_message, get_chat_history_by_session
 api = Blueprint("api", __name__)
 import asyncio
+import threading
+from collections import deque
 
 import os
 import sys
@@ -87,6 +89,61 @@ read_controller_file_data = read_data_RAG(
     database=os.getenv("CHROMA_DATABASE_FILE_DATA")  # Use the same DB for reading   
 )
 
+
+# In-memory cache for chat histories to reduce SQLDB calls and scale for many requests.
+# Structure: cache.store[user_id][session_id] -> deque of messages (maxlen=MAX_PER_SESSION)
+class ChatHistoryCache:
+    def __init__(self, max_per_session=30, max_sessions_per_user=200):
+        self.max_per_session = max_per_session
+        self.max_sessions_per_user = max_sessions_per_user
+        self.store = {}  # user_id -> { session_id: deque([...]) }
+        self.lock = threading.Lock()
+
+    def get_session_history(self, user_id, session_id):
+        with self.lock:
+            return list(self.store.get(user_id, {}).get(session_id, []))
+
+    def set_session_history(self, user_id, session_id, messages):
+        # messages: list, we store oldest->newest
+        with self.lock:
+            user_map = self.store.setdefault(user_id, {})
+            if len(user_map) >= self.max_sessions_per_user and session_id not in user_map:
+                # evict oldest session (arbitrary) to keep memory bounded
+                oldest = next(iter(user_map.keys()))
+                user_map.pop(oldest, None)
+            dq = deque(messages[-self.max_per_session:], maxlen=self.max_per_session)
+            user_map[session_id] = dq
+
+    def append_message(self, user_id, session_id, message):
+        # message: dict, should be appended as newest
+        with self.lock:
+            user_map = self.store.setdefault(user_id, {})
+            dq = user_map.get(session_id)
+            if dq is None:
+                dq = deque(maxlen=self.max_per_session)
+                user_map[session_id] = dq
+            dq.append(message)
+
+    def preload_user_sessions(self, user_id, session_ids, fetcher_fn):
+        # fetcher_fn(session_id, top_k) -> list(messages)
+        # preload in background thread to avoid blocking
+        def _preload():
+            for sid in session_ids:
+                try:
+                    msgs = fetcher_fn(session_id=sid, top_k=self.max_per_session)
+                    # store oldest->newest
+                    self.set_session_history(user_id, sid, msgs)
+                except Exception as e:
+                    # ignore per-session failures
+                    print(f"Preload error for {user_id}/{sid}: {e}")
+
+        t = threading.Thread(target=_preload, daemon=True)
+        t.start()
+
+
+# instantiate global cache
+chat_history_cache = ChatHistoryCache(max_per_session=30, max_sessions_per_user=400)
+
 def _thread_id():
     return f"thread_{int(time.time())}"
 
@@ -99,6 +156,21 @@ def list_sessions():
     print(f"Session IDs for {id}: {session_ids}")
     # TODO: implement real Chroma query that lists the user's threads
     # Return newest-first. Shape: [{"thread_id": "...", "createdAt": "...", "updatedAt": "...", "preview": "last msg"}]
+    # Kick off a background preload of the last N messages for each session so the UI can load immediately
+    try:
+        ids = [s if isinstance(s, str) else s.get('id') or s.get('thread_id') for s in session_ids]
+        # fall back to native shape if the controller already returned objects
+        ids = [i for i in ids if i]
+        # use SQL fetcher function wrapper
+        def _fetcher(session_id, top_k=30):
+            # Use existing SQL DB controller to fetch most recent messages (descending or as implemented)
+            return get_chat_history_by_session(user_id=id, session_id=session_id, top_k=top_k)
+
+        # Preload in background via cache
+        chat_history_cache.preload_user_sessions(user_id=id, session_ids=ids, fetcher_fn=_fetcher)
+    except Exception as e:
+        print(f"Preload scheduling failed: {e}")
+
     return session_ids
 
 @api.post("/api/create_session")
@@ -116,11 +188,23 @@ def create_session():
 def get_messages(thread_id):
     id = request.args.get("id")
     print(f"Loading messages for user {id} in thread {thread_id}")
-    # implement a real read from Chroma if you have it;
-    # otherwise return [] and keep local cache for now
+    # First try serving from cache to avoid SQLDB hits
+    try:
+        cached = chat_history_cache.get_session_history(user_id=id, session_id=thread_id)
+        if cached and len(cached) > 0:
+            return jsonify({"messages": cached})
+    except Exception as e:
+        print(f"Cache read error: {e}")
+
+    # fallback to SQL DB read
     messages = get_chat_history_by_session(user_id=id, session_id=thread_id, top_k=100)
 
-    print("Fetched messages::::::::: \n\n\n\n\n\n\n", messages)
+    # store into cache for future requests (truncate to cache size)
+    try:
+        chat_history_cache.set_session_history(user_id=id, session_id=thread_id, messages=messages)
+    except Exception as e:
+        print(f"Cache set error: {e}")
+
     return jsonify({"messages": messages})
 
 
@@ -203,8 +287,15 @@ def chat_and_store():
 
     # print("raw_rows:", raw_rows)
     
-    # Retrieve the old chat history from SQL DB for context
-    chat_history = get_chat_history_by_session(user_id=user_id, session_id=thread_id, top_k=20)
+    # Retrieve the old chat history from cache (fallback to SQL DB) for context
+    chat_history = chat_history_cache.get_session_history(user_id=user_id, session_id=thread_id)
+    if not chat_history:
+        # fallback to SQL DB and populate cache
+        chat_history = get_chat_history_by_session(user_id=user_id, session_id=thread_id, top_k=20)
+        try:
+            chat_history_cache.set_session_history(user_id=user_id, session_id=thread_id, messages=chat_history)
+        except Exception as e:
+            print(f"Cache set error during chat: {e}")
     
     # 2) generate reply using RAG context
     reply_text = run_ai(f"{rewritten_user_msg} query: {user_msg}", history, session_id=thread_id, rag_context=raw_rows, chat_history=chat_history)
@@ -214,6 +305,15 @@ def chat_and_store():
         try:
             # Store user message chunks
             add_message(user_id, MessageType.HUMAN, user_msg, session_id=thread_id)
+            # update cache with the optimistic user message (so UI will reflect immediately on reload)
+            try:
+                chat_history_cache.append_message(user_id=user_id, session_id=thread_id, message={
+                    "role": "user",
+                    "content": user_msg,
+                    "timestamp": int(time.time())
+                })
+            except Exception:
+                pass
             for chunk in split_text_into_chunks(user_msg, max_sentences=4, overlap=1):
                 write_controller_chatH.send_data_to_rag_db(
                     user_ID=user_id,
@@ -224,6 +324,15 @@ def chat_and_store():
                 )
             # Store reply chunks
             add_message(user_id, MessageType.LLM, reply_text, session_id=thread_id)
+            # update cache with AI reply
+            try:
+                chat_history_cache.append_message(user_id=user_id, session_id=thread_id, message={
+                    "role": "assistant",
+                    "content": reply_text,
+                    "timestamp": int(time.time())
+                })
+            except Exception:
+                pass
             for chunk in split_text_into_chunks(reply_text, max_sentences=4, overlap=1):
                 write_controller_chatH.send_data_to_rag_db(
                     user_ID=user_id,
