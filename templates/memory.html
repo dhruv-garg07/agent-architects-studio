@@ -8,11 +8,7 @@
     <!-- original header classes commented out: bg-card border-b border-border py-4 px-6 flex justify-between items-center shrink-0 -->
     <header>
         <!-- Ensure session selector exists for JS (kept hidden by default) -->
-        <div id="sessionSelector" class="hidden">
-            <select id="sessionDropdown" class="input bg-card border-border">
-                <option value="">Select Session</option>
-            </select>
-        </div>
+
         {#
             <!-- <div class="flex items-center space-x-3">
                 <i data-lucide="brain" class="h-7 w-7 text-primary"></i>
@@ -29,9 +25,7 @@
                     </button>
                     -->
                     <!-- <div id="sessionSelector" class="hidden"> -->
-                        <!-- <select id="sessionDropdown" class="input bg-card border-border">
-                            <option value="">Select Session</option>
-                        </select> -->
+
                     </div>
                 </div>
 
@@ -684,8 +678,6 @@
         const sessionsList = document.getElementById('sessionsList');
         const noSessionsMessage = document.getElementById('noSessionsMessage');
         const newSessionBtn = document.getElementById('newSessionBtn');
-        const sessionSelector = document.getElementById('sessionSelector');
-        const sessionDropdown = document.getElementById('sessionDropdown');
         const navItems = document.querySelectorAll('.nav-item');
         const exportResultsBtn = document.getElementById('exportResultsBtn');
 
@@ -706,24 +698,13 @@
 
         function updateSessionUI() {
             newSessionBtn.classList.remove('hidden');      // <-- always visible
-            sessionSelector.classList.toggle('hidden', sessions.length === 0);
             sessionsList.classList.toggle('hidden', sessions.length === 0);
             noSessionsMessage.classList.toggle('hidden', sessions.length !== 0);
-            updateSessionDropdown();
             renderSessionsList();
         }
 
 
-        function updateSessionDropdown() {
-            sessionDropdown.innerHTML = '<option value="">Select Session</option>';
-            sessions.forEach(s => {
-                const option = document.createElement('option');
-                option.value = s.id;
-                option.textContent = `Session ${s.id.slice(0, 8)}… — ${new Date(s.createdAt).toLocaleDateString()}`;
-                sessionDropdown.appendChild(option);
-            });
-            if (currentSession) sessionDropdown.value = currentSession.id;
-        }
+
 
         function renderSessionsList() {
             sessionsList.innerHTML = '';
@@ -742,9 +723,6 @@
             });
         }
 
-        sessionDropdown.addEventListener('change', function () {
-            if (this.value) loadSession(this.value);
-        });
         newSessionBtn.addEventListener('click', createNewSession);
 
 
@@ -1176,13 +1154,6 @@
         // New session button
         newSessionBtn.addEventListener('click', createNewSession);
 
-        // Session dropdown change
-        sessionDropdown.addEventListener('change', function () {
-            if (this.value) {
-                loadSession(parseInt(this.value));
-            }
-        });
-
         // Navigation items
         navItems.forEach(item => {
             item.addEventListener('click', (e) => {
@@ -1385,9 +1356,5 @@
             }
         });
     });
-
-
-
-
 </script>
 {% endblock %}
