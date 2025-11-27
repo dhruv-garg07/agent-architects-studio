@@ -1,41 +1,53 @@
 {% extends "base.html" %}
 
-{% block title %}Memory Dashboard | AI Agent Marketplace{% endblock %}
+<!-- {% block title %}Memory Dashboard | AI Agent Marketplace{% endblock %} -->
 
 {% block content %}
 <div class="memory-dashboard min-h-screen bg-background text-foreground flex flex-col">
     <!-- Top Navigation Bar -->
-    <header class="bg-card border-b border-border py-4 px-6 flex justify-between items-center shrink-0">
-        <div class="flex items-center space-x-3">
-            <i data-lucide="brain" class="h-7 w-7 text-primary"></i>
-            <h1 class="text-xl font-semibold">Memory Dashboard</h1>
+    <!-- original header classes commented out: bg-card border-b border-border py-4 px-6 flex justify-between items-center shrink-0 -->
+    <header>
+        <!-- Ensure session selector exists for JS (kept hidden by default) -->
+        <div id="sessionSelector" class="hidden">
+            <select id="sessionDropdown" class="input bg-card border-border">
+                <option value="">Select Session</option>
+            </select>
         </div>
-        <div class="flex items-center space-x-4">
-            <!-- Session Management -->
-            <div id="sessionControls" class="flex items-center space-x-3">
-                <button id="newSessionBtn" class="btn-primary flex items-center space-x-2 hidden">
-                    <i data-lucide="plus" class="h-4 w-4"></i>
-                    <span>New Session</span>
-                </button>
-                <div id="sessionSelector" class="hidden">
-                    <select id="sessionDropdown" class="input bg-card border-border">
-                        <option value="">Select Session</option>
-                    </select>
+        {#
+            <!-- <div class="flex items-center space-x-3">
+                <i data-lucide="brain" class="h-7 w-7 text-primary"></i>
+                <h1 class="text-xl font-semibold">Memory Dashboard</h1>
+            </div> -->
+            <div class="flex items-center space-x-4">
+                <!-- Session Management -->
+                <!-- <div id="sessionControls" class="flex items-center space-x-3"> -->
+                    <!-- newSessionBtn moved to the left nav -->
+                    <!--
+                    <button id="newSessionBtn" class="btn-primary flex items-center space-x-2 hidden">
+                        <i data-lucide="plus" class="h-4 w-4"></i>
+                        <span>New Session</span>
+                    </button>
+                    -->
+                    <!-- <div id="sessionSelector" class="hidden"> -->
+                        <!-- <select id="sessionDropdown" class="input bg-card border-border">
+                            <option value="">Select Session</option>
+                        </select> -->
+                    </div>
                 </div>
-            </div>
 
-            <!-- Add Data moved to chat input attach icon -->
+                <!-- Add Data moved to chat input attach icon -->
 
-            <div class="flex items-center space-x-3">
-                <button class="p-2 rounded-full hover:bg-secondary transition-colors">
-                    <i data-lucide="bell" class="h-5 w-5"></i>
-                </button>
-                <div
-                    class="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium shadow-md">
-                    U
-                </div>
+                <!-- <div class="flex items-center space-x-3">
+                    <button class="p-2 rounded-full hover:bg-secondary transition-colors">
+                        <i data-lucide="bell" class="h-5 w-5"></i>
+                    </button>
+                    <div
+                        class="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium shadow-md">
+                        U
+                    </div>
+                </div> -->
             </div>
-        </div>
+        #}
     </header>
 
     <!-- Main Dashboard Content -->
@@ -50,10 +62,10 @@
                         <i data-lucide="message-square" class="h-5 w-5"></i>
                         <span>Chat Sessions</span>
                     </a>
-                    <a href="#" class="nav-item flex items-center space-x-3 py-2 px-3 rounded-lg" data-section="manual">
-                        <i data-lucide="file-text" class="h-5 w-5"></i>
-                        <span>Manual Data</span>
-                    </a>
+                    <button id="newSessionBtn" class="btn-primary flex items-center space-x-2 hidden">
+                        <i data-lucide="plus" class="h-4 w-4"></i>
+                        <span>New Session</span>
+                    </button>
                     <a href="#" class="nav-item flex items-center space-x-3 py-2 px-3 rounded-lg"
                         data-section="integrations">
                         <i data-lucide="link" class="h-5 w-5"></i>
@@ -70,6 +82,7 @@
                     </p>
                 </div>
 
+                <!-- Sessions list (rendered by JS) -->
                 <div id="sessionsList" class="space-y-3 hidden">
                     <!-- Sessions will be dynamically populated here -->
                 </div>
@@ -181,11 +194,7 @@
         <div class="sticky top-0 bg-card border-b border-border p-6 rounded-t-xl flex justify-between items-center">
             <h2 class="text-xl font-semibold">Add New Memory</h2>
             <button id="closeModal"
-                class="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-full hover:bg-secondary">
-                <i data-lucide="x" class="h-6 w-6"></i>
-            </button>
-        </div>
-
+                class="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-full hover:bg-secondary"></button>
         <form method="POST" enctype="multipart/form-data" class="space-y-6 p-6">
             <div>
                 <label for="memory_text" class="block font-medium mb-2">Text Input</label>
@@ -1376,7 +1385,6 @@
             }
         });
     });
-
 
 
 
