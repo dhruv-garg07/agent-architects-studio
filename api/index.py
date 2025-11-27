@@ -1100,10 +1100,8 @@ app.register_blueprint(api)
 # Routes
 @app.route('/')
 def homepage():
-    """Homepage with hero section and featured agents."""
-    waitlist_count = update_waitlist_count()
-    return render_template('homepage.html', waitlist_count=waitlist_count)
-
+    """Redirect root to memory page."""
+    return redirect(url_for('memory'))
 
 # Update your homepage route to include waitlist count
 # @app.route('/')
