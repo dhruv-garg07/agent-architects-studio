@@ -24,10 +24,7 @@
                 </div>
             </div>
 
-            <button id="addDataBtn" class="btn-primary flex items-center space-x-2">
-                <i data-lucide="plus" class="h-4 w-4"></i>
-                <span>Add Data</span>
-            </button>
+            <!-- Add Data moved to chat input attach icon -->
 
             <div class="flex items-center space-x-3">
                 <button class="p-2 rounded-full hover:bg-secondary transition-colors">
@@ -139,12 +136,12 @@
             <div class="shrink-0 bg-card border-t border-border p-5 sticky-chat-input">
                 <form id="chatForm" class="flex items-center space-x-3">
                     <div class="flex-1 relative">
-                        <input type="text" id="chatInput" placeholder="Query your memory..." class="input w-full pr-12"
-                            autocomplete="off">
                         <button type="button" id="attachFileBtn"
-                            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
-                            <i data-lucide="paperclip" class="h-5 w-5"></i>
+                            class="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors text-2xl font-semibold">
+                            +
                         </button>
+                        <input type="text" id="chatInput" placeholder="Query your memory..." class="input w-full pl-10 pr-12"
+                            autocomplete="off">
                     </div>
                     <button type="submit" class="btn-primary p-3 rounded-lg">
                         <i data-lucide="send" class="h-5 w-5"></i>
@@ -302,6 +299,44 @@
         border-top: 1px solid hsl(var(--border));
         box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.1);
         z-index: 10;
+    }
+
+    /* Chat input plus button (left) - centered inside a circular control */
+    #attachFileBtn {
+        width: 40px;
+        height: 40px;
+        left: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        border-radius: 9999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        border: 1px solid transparent;
+        font-size: 30px;
+        line-height: 1;
+        color: hsl(var(--muted-foreground));
+        transition: background .15s ease, color .15s ease, border-color .15s ease;
+    }
+
+    #attachFileBtn:hover {
+        background: hsl(var(--secondary) / 0.12);
+        color: hsl(var(--foreground));
+    }
+
+    /* Larger rounded input with left space for the plus control */
+    #chatInput {
+        padding-left: 64px; /* leave room for the circular + */
+        padding-right: 48px; /* keep space for send button */
+        height: 56px;
+        font-size: 1.25rem;
+        border-radius: 12px;
+    }
+
+    /* Make the chat form align items center and ensure the input fills height */
+    .sticky-chat-input form {
+        align-items: center;
     }
 
     /* Existing Memory Dashboard Styles */
@@ -619,7 +654,6 @@
         // DOM Elements
         const modal = document.getElementById('addDataModal');
         const modalBackdrop = document.getElementById('modalBackdrop');
-        const addBtn = document.getElementById('addDataBtn');
         const closeBtn = document.getElementById('closeModal');
         const cancelBtn = document.getElementById('cancelModal');
         const fileUploadBtn = document.getElementById('fileUploadBtn');
@@ -632,6 +666,7 @@
         const fileError = document.getElementById('fileError');
         const chatForm = document.getElementById('chatForm');
         const chatInput = document.getElementById('chatInput');
+        const attachFileBtn = document.getElementById('attachFileBtn');
         const conversationHistory = document.getElementById('conversationHistory');
         const emptyConversation = document.getElementById('emptyConversation');
         const ragResultsContainer = document.getElementById('ragResults');
@@ -1227,11 +1262,14 @@
         }
 
         // Event listeners for modal
-        addBtn.addEventListener('click', function () {
-            showModal();
-            // Only reset file input when opening modal for a new memory
-            resetFileInput();
-        });
+        // Open modal from chat input attach icon
+        if (attachFileBtn) {
+            attachFileBtn.addEventListener('click', function (event) {
+                event.stopPropagation();
+                showModal();
+                resetFileInput();
+            });
+        }
         closeBtn.addEventListener('click', function () {
             hideModal();
             resetFileInput();
