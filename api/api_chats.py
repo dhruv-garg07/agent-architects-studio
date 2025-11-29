@@ -257,8 +257,16 @@ def chat_and_store():
 
     def _norm(s: str) -> str:
         return re.sub(r"\s+", " ", (s or "").strip().lower())
+    
 
-    rewritten_user_msg = intelligent_query_rewriter(user_msg) 
+    raw_rows = read_controller_chatH.fetch_related_to_query(
+        user_ID=user_id, query=f"query: {user_msg}", top_k=top_k
+    )
+    raw_rows_file_data = read_controller_file_data.fetch_related_to_query(
+        user_ID=user_id, query=f"query: {user_msg}", top_k=top_k
+    )
+    raw_rows.extend(raw_rows_file_data)
+    rewritten_user_msg = intelligent_query_rewriter(user_msg, raw_rows) 
     # print(f"Rewritten user msg: {rewritten_user_msg}")
 
     # 1) RAG FIRST (so it can't see this very message)
@@ -272,8 +280,8 @@ def chat_and_store():
     raw_rows_file_data = read_controller_file_data.fetch_related_to_query(
         user_ID=user_id, query=f"{rewritten_user_msg} query: {user_msg}", top_k=top_k
     )
-
-    # raw_rows.extend(raw_rows_file_data)
+    raw_rows.extend(raw_rows_file_data)
+    
 
 
 
