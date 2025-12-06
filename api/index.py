@@ -14,8 +14,6 @@ parent_dir = os.path.abspath(os.path.join(current_dir, os.pardir))
 # Add parent directory to sys.path
 sys.path.insert(0, parent_dir)
 print(parent_dir)
-import sys
-import os
 
 # Get the current file's directory
 current_dir = os.path.dirname(__file__)

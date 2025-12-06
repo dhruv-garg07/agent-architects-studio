@@ -31,6 +31,29 @@ def extract_output_after_think(response: str) -> str:
     except:
         return response  # fallback if tag not present
 
+def clean_response(response: str) -> str:
+    """
+    Aggressively cleans up the response by removing end-of-stream markers and extra whitespace.
+    
+    Args:
+        response (str): Raw response from LLM
+        
+    Returns:
+        str: Cleaned response with no markers
+    """
+    # FIRST: Stop at [END FINAL RESPONSE] marker (truncate everything after)
+    if "[END FINAL RESPONSE]" in response:
+        response = response.split("[END FINAL RESPONSE]")[0]
+    
+    # SECOND: Remove all <|end|> markers
+    response = response.replace("<|end|>", "")
+    
+    # THIRD: Clean up extra whitespace
+    response = " ".join(response.split())
+    response = response.strip()
+    
+    return response
+
 def stream_chat_response(
     prompt: str,
     model: str = "ServiceNow-AI/Apriel-1.5-15b-Thinker",
@@ -92,8 +115,28 @@ def stream_chat_response(
 
                 delta = chunk.choices[0].delta
                 if hasattr(delta, "content") and delta.content:
-                    if delta.content != "<|end|>":
-                        yield delta.content
+                    content = delta.content
+                    
+                    # AGGRESSIVE marker filtering - remove all marker tokens
+                    # Skip <|end|> tokens completely
+                    if content.strip() == "<|end|>":
+                        continue
+                    
+                    # Remove any stray <|end|> within content
+                    if "<|end|>" in content:
+                        content = content.replace("<|end|>", "")
+                    
+                    # STOP immediately if we detect [END FINAL RESPONSE]
+                    if "[END FINAL RESPONSE]" in content:
+                        before_marker = content.split("[END FINAL RESPONSE]")[0]
+                        if before_marker and before_marker.strip():
+                            yield before_marker
+                        print("[TOKEN_FILTER] Hit [END FINAL RESPONSE], stopping stream")
+                        break
+                    
+                    # Only yield if content is not empty after cleaning
+                    if content.strip():
+                        yield content
 
             end_time = time.time()
             if verbose:

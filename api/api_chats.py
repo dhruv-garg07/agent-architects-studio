@@ -25,9 +25,10 @@ sys.path.insert(0, grandparent_dir)
 # Can import anything from these directories.
 
 
-from flask import Blueprint, request, jsonify, abort
-from LLM_calls.context_manager import query_llm_with_history
+from flask import Blueprint, request, jsonify, abort, Response
+from LLM_calls.context_manager import query_llm_with_history, query_llm_with_history_stream
 from LLM_calls.intelligent_query_rewritten import intelligent_query_rewriter
+from LLM_calls.together_get_response import clean_response
 from Octave_mem.RAG_DB_CONTROLLER.write_data_RAG import RAG_DB_Controller_CHAT_HISTORY
 from Octave_mem.RAG_DB_CONTROLLER.read_data_RAG_all_DB import read_data_RAG
 from Octave_mem.SqlDB.sqlDbController import add_message, get_chat_history_by_session
@@ -35,6 +36,7 @@ api = Blueprint("api", __name__)
 import asyncio
 import threading
 from collections import deque
+import json
 
 import os
 import sys
@@ -51,7 +53,7 @@ def run_ai(message, history, session_id, rag_context=None, chat_history=None):
     # This function should call LLM responses from the Response controller.
     # If rag_context is provided, add it to the context for the LLM
 
-    return query_llm_with_history(message, history, rag_context, chat_history)  # replace with real response
+    return query_llm_with_history_stream(message, history, rag_context, chat_history)  # replace with real response
 
 # from LLM_calls use together_get_response functions for LLM calls.
 # Make a orchestration function that calls the LLM and tools as needed.
@@ -297,11 +299,12 @@ def chat_and_store():
         except Exception as e:
             print(f"Cache set error during chat: {e}")
     
-    # 2) generate reply using RAG context
-    reply_text = run_ai(f"{rewritten_user_msg} query: {user_msg}", history, session_id=thread_id, rag_context=raw_rows, chat_history=chat_history)
-
-    # 3) Store messages in background using threads
-    def store_messages_background():
+    # 2) generate reply generator using RAG context (streaming)
+    reply_generator = run_ai(f"{rewritten_user_msg} query: {user_msg}", history, session_id=thread_id, rag_context=raw_rows, chat_history=chat_history)
+    
+    # 3) Store messages in background using threads (will be called after streaming completes)
+    def store_messages_background(full_text):
+        """Store messages in background after streaming completes"""
         try:
             # Store user message chunks
             add_message(user_id, MessageType.HUMAN, user_msg, session_id=thread_id)
@@ -323,17 +326,17 @@ def chat_and_store():
                     conversation_thread=thread_id,
                 )
             # Store reply chunks
-            add_message(user_id, MessageType.LLM, reply_text, session_id=thread_id)
+            add_message(user_id, MessageType.LLM, full_text, session_id=thread_id)
             # update cache with AI reply
             try:
                 chat_history_cache.append_message(user_id=user_id, session_id=thread_id, message={
                     "role": "assistant",
-                    "content": reply_text,
+                    "content": full_text,
                     "timestamp": int(time.time())
                 })
             except Exception:
                 pass
-            for chunk in split_text_into_chunks(reply_text, max_sentences=4, overlap=1):
+            for chunk in split_text_into_chunks(full_text, max_sentences=4, overlap=1):
                 write_controller_chatH.send_data_to_rag_db(
                     user_ID=user_id,
                     content_data=chunk,
@@ -341,24 +344,65 @@ def chat_and_store():
                     message_type=MessageType.LLM,
                     conversation_thread=thread_id,
                 )
-            
-            # The chat histories should be send into a SQL database
-            # Then the facts from the chat history can be linked to the RAG DB entries as needed.
-            # Need for separate bins for long term and short term memory - Both are sliding windows but separate inertia and speed.
-            # KG - retrieval from knowledge graph can be added here as well.
-            # Temporal, spatial, emotional tag are added here as well.
-            # Based on these, CRUD operations can be performed on the RAG DB entries as well.
-            # Then provenance can be built for the LLM responses. 
         except Exception as e:
             print(f"Error in background storage: {str(e)}")
-
-    # Start storage in background thread
-    from threading import Thread
-    thread = Thread(target=store_messages_background)
-    thread.daemon = True  # Thread will exit when main thread exits
-    thread.start()
-
-    return jsonify({"reply": reply_text, "rag_results": rag_results})
+    
+    # Collect full response while streaming to frontend
+    full_reply_text = ""
+    
+    def generate_streaming_response():
+        """Generator function that yields SSE-formatted data with tokens and final metadata"""
+        nonlocal full_reply_text
+        
+        print(f"[STREAM] Starting to stream response for user {user_id} in session {thread_id}")
+        
+        try:
+            # Stream tokens from the LLM
+            token_count = 0
+            for token in reply_generator:
+                token_count += 1
+                full_reply_text += token
+                print(f"[STREAM] Token {token_count}: {repr(token)}", flush=True)
+                # Send token as Server-Sent Event (escape JSON properly)
+                yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
+            
+            print(f"[STREAM] All tokens received. Total: {token_count}. Full response length: {len(full_reply_text)}", flush=True)
+            print(f"[STREAM] Full text preview: {repr(full_reply_text[:300])}...", flush=True)
+            
+            # FINAL SAFETY CLEANUP - remove any markers that may have slipped through
+            cleaned_response = clean_response(full_reply_text)
+            print(f"[STREAM] Cleaned response length: {len(cleaned_response)}", flush=True)
+            
+            # Verification: ensure no markers remain
+            if "<|end|>" in cleaned_response or "[END FINAL RESPONSE]" in cleaned_response:
+                print(f"[STREAM] ⚠️  WARNING: Markers still present in cleaned response!", flush=True)
+                # Force cleanup one more time
+                cleaned_response = cleaned_response.replace("<|end|>", "").replace("[END FINAL RESPONSE]", "").strip()
+                print(f"[STREAM] Force-cleaned length: {len(cleaned_response)}", flush=True)
+            else:
+                print(f"[STREAM] ✓ Markers verified removed from response", flush=True)
+            
+            # After streaming completes, send RAG results and completion signal
+            yield f"data: {json.dumps({'type': 'rag_results', 'content': rag_results})}\n\n"
+            yield f"data: {json.dumps({'type': 'done', 'full_response': cleaned_response})}\n\n"
+            
+            print(f"[STREAM] Yielded RAG results and done signal")
+            
+            # Start background storage thread after streaming is complete (use cleaned response)
+            from threading import Thread
+            thread = Thread(target=store_messages_background, args=(cleaned_response,))
+            thread.daemon = True
+            thread.start()
+            print(f"[STREAM] Started background storage thread")
+            
+        except Exception as e:
+            print(f"[STREAM] Error during streaming: {str(e)}", flush=True)
+            import traceback
+            traceback.print_exc()
+            yield f"data: {json.dumps({'type': 'error', 'content': str(e)})}\n\n"
+    
+    # Return streaming response with SSE content type
+    return Response(generate_streaming_response(), mimetype='text/event-stream')
 
 @api.post("/api/notes")
 def store_note():

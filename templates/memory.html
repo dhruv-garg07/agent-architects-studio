@@ -68,21 +68,8 @@
                 </nav>
             </div>
 
-            <div id="sessionsPanel" class="flex-1 overflow-y-auto p-5 border-t border-border">
-                <div id="noSessionsMessage" class="text-center py-8">
-                    <i data-lucide="message-square" class="h-12 w-12 text-muted-foreground mx-auto mb-3"></i>
-                    <p class="text-muted-foreground">No chat sessions yet</p>
-                    <p class="text-sm text-muted-foreground mt-1">Start a new conversation to create your first session
-                    </p>
-                </div>
-
-                <!-- Sessions list (rendered by JS) -->
-                <div id="sessionsList" class="space-y-3 hidden">
-                    <!-- Sessions will be dynamically populated here -->
-                </div>
-            </div>
-
-            <div class="p-5 border-t border-border shrink-0">
+            <!-- Moved Memory Settings up so it's visible above the bottom fold -->
+            <div class="p-5 border-t border-border shrink-0" id="memorySettingsTop">
                 <h2 class="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Memory Settings</h2>
                 <div class="space-y-3">
                     <div class="flex items-center justify-between">
@@ -101,6 +88,22 @@
                     </div>
                 </div>
             </div>
+
+            <div id="sessionsPanel" class="flex-1 overflow-y-auto p-5 border-t border-border">
+                <div id="noSessionsMessage" class="text-center py-8">
+                    <i data-lucide="message-square" class="h-12 w-12 text-muted-foreground mx-auto mb-3"></i>
+                    <p class="text-muted-foreground">No chat sessions yet</p>
+                    <p class="text-sm text-muted-foreground mt-1">Start a new conversation to create your first session
+                    </p>
+                </div>
+
+                <!-- Sessions list (rendered by JS) -->
+                <div id="sessionsList" class="space-y-3 hidden">
+                    <!-- Sessions will be dynamically populated here -->
+                </div>
+            </div>
+
+            <!-- bottom memory settings removed (moved up) -->
         </div>
 
         <!-- Center Panel - FIXED CHAT LAYOUT -->
@@ -268,7 +271,9 @@
 
     /* Conversation History Scroll Area */
     #conversationHistory {
-        padding-bottom: 1rem;
+        /* bottom padding adjusted so the lifted/sticky input doesn't cover messages
+           Reduced to lift the overall layout up a bit */
+        padding-bottom: 6.5rem;
         box-sizing: border-box;
     }
 
@@ -296,36 +301,46 @@
         background-color: hsl(var(--muted-foreground));
     }
 
-    /* Sticky Chat Input */
+    /* Sticky Chat Input (stick to bottom of center panel so it's always visible) */
     .sticky-chat-input {
+        position: sticky;
+        /* raise the chat box a bit higher so the whole control sits up */
+        bottom: 28px;
+        margin-left: 18px;
+        margin-right: 18px;
         background: hsl(var(--card));
-        border-top: 1px solid hsl(var(--border));
-        box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.1);
-        z-index: 10;
+        border: 1px solid hsl(var(--border));
+        border-radius: 12px;
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+        z-index: 60;
+        transform: translateY(0);
+        transition: transform 120ms ease, box-shadow 120ms ease;
+        padding: 0.75rem;
     }
 
-    /* Chat input plus button (left) - centered inside a circular control */
+    /* Chat input plus button (filled circular control) */
     #attachFileBtn {
-        width: 40px;
-        height: 40px;
-        left: 8px;
+        width: 44px;
+        height: 44px;
+        left: 12px;
         top: 50%;
         transform: translateY(-50%);
-        border-radius: 9999px;
+        border-radius: 10px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        background: transparent;
-        border: 1px solid transparent;
-        font-size: 30px;
+        background: hsl(var(--primary));
+        border: 1px solid hsl(var(--primary));
+        font-size: 20px;
         line-height: 1;
-        color: hsl(var(--muted-foreground));
-        transition: background .15s ease, color .15s ease, border-color .15s ease;
+        color: hsl(var(--primary-foreground));
+        transition: background .12s ease, transform .12s ease;
+        box-shadow: 0 6px 14px rgba(0,0,0,0.12);
     }
 
     #attachFileBtn:hover {
-        background: hsl(var(--secondary) / 0.12);
-        color: hsl(var(--foreground));
+        transform: translateY(-50%) scale(1.03);
+        background: color-mix(in srgb, hsl(var(--primary)) 85%, black 15%);
     }
 
     /* Larger rounded input with left space for the plus control */
@@ -463,6 +478,161 @@
     .message.assistant .message-content {
         background: hsl(var(--secondary));
         border-bottom-left-radius: 4px;
+        padding: 1.25rem;
+    }
+
+    /* Formatting for assistant messages - Enhanced */
+    .message.assistant .message-content strong {
+        color: #ffffff;
+        font-weight: 900;
+        background: linear-gradient(135deg, rgba(135, 206, 235, 0.3), rgba(135, 206, 235, 0.15));
+        padding: 0.3rem 0.6rem;
+        border-radius: 4px;
+        display: inline-block;
+        border: 1px solid rgba(135, 206, 235, 0.4);
+        box-shadow: 0 0 8px rgba(135, 206, 235, 0.3);
+        letter-spacing: 0.5px;
+    }
+
+    .message.assistant .message-content em {
+        color: #a8e6cf;
+        font-style: italic;
+        font-weight: 600;
+        background: rgba(168, 230, 207, 0.08);
+        padding: 0.1rem 0.3rem;
+        border-radius: 3px;
+        display: inline-block;
+    }
+
+    .message.assistant .message-content u,
+    .underline-text {
+        color: #ffd3b6;
+        text-decoration: underline;
+        text-decoration-thickness: 2px;
+        text-underline-offset: 3px;
+        text-decoration-color: #ffd3b6;
+        font-weight: 600;
+        background: rgba(255, 211, 182, 0.08);
+        padding: 0.1rem 0.3rem;
+        border-radius: 3px;
+        display: inline-block;
+    }
+
+    .message.assistant .message-content code {
+        background: rgba(59, 130, 246, 0.2);
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.95em;
+        color: #74b9ff;
+        border: 1px solid rgba(116, 185, 255, 0.3);
+    }
+
+    .message.assistant .message-content pre {
+        background: rgba(0, 0, 0, 0.4);
+        padding: 1.25rem;
+        border-radius: 8px;
+        overflow-x: auto;
+        margin: 1rem 0;
+        border-left: 4px solid rgba(59, 130, 246, 0.7);
+    }
+
+    .message.assistant .message-content pre code {
+        background: transparent;
+        padding: 0;
+        border-radius: 0;
+        border: none;
+        color: #a0e7e5;
+        font-family: 'Courier New', monospace;
+        font-size: 0.95em;
+    }
+
+    .message.assistant .message-content p {
+        margin: 0.75rem 0;
+        line-height: 1.7;
+        font-size: 1rem;
+    }
+
+    .message.assistant .message-content p:first-child {
+        margin-top: 0;
+    }
+
+    .message.assistant .message-content p:last-child {
+        margin-bottom: 0;
+    }
+
+    /* Formatted definition blocks */
+    .definition-block {
+        background: rgba(59, 130, 246, 0.08);
+        border-left: 4px solid rgba(135, 206, 235, 0.6);
+        padding: 1rem;
+        border-radius: 6px;
+        margin: 1rem 0;
+    }
+
+    .definition-term {
+        color: #87ceeb;
+        font-weight: 700;
+        font-size: 1.1em;
+        margin-bottom: 0.5rem;
+    }
+
+    .definition-meaning {
+        color: #e0e0e0;
+        line-height: 1.7;
+        margin: 0.5rem 0;
+    }
+
+    .definition-example {
+        background: rgba(168, 230, 207, 0.1);
+        border-left: 3px solid rgba(168, 230, 207, 0.5);
+        padding: 0.75rem;
+        margin: 0.75rem 0;
+        border-radius: 4px;
+        font-style: italic;
+        color: #b0e0e6;
+    }
+
+    .definition-example::before {
+        content: "📝 ";
+        margin-right: 0.5rem;
+    }
+
+    .synonym-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin: 0.75rem 0;
+    }
+
+    .synonym-badge {
+        background: rgba(168, 230, 207, 0.2);
+        color: #a8e6cf;
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.95em;
+        border: 1px solid rgba(168, 230, 207, 0.4);
+    }
+
+    .etymology-section {
+        background: rgba(160, 231, 229, 0.08);
+        border-left: 4px solid rgba(160, 231, 229, 0.5);
+        padding: 0.75rem;
+        margin: 0.75rem 0;
+        border-radius: 4px;
+        font-size: 0.95em;
+    }
+
+    .etymology-label {
+        color: #a0e7e5;
+        font-weight: 600;
+        display: inline;
+        margin-right: 0.5rem;
+    }
+
+    .section-divider {
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        margin: 1.25rem 0;
     }
 
     .message-time {
@@ -871,15 +1041,146 @@
             conversationHistory.scrollTop = conversationHistory.scrollHeight;
         }
 
+        // Formatting functions for response display
+        
+        /**
+         * Format bold text: **text** → <strong>text</strong>
+         * Applies cyan gradient background with shadow effect and white text
+         */
+        function formatBold(text) {
+            return text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        }
+
+        /**
+         * Format italic text: *text* → <em>text</em>
+         * Applies mint green color with subtle background
+         */
+        function formatItalic(text) {
+            return text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+        }
+
+        /**
+         * Format underline text: __text__ or <u>text</u> → <u>text</u>
+         * Applies peach color with underline decoration and subtle background
+         */
+        function formatUnderline(text) {
+            let formatted = text;
+            // Handle __text__ syntax (double underscore)
+            formatted = formatted.replace(/__([^_]+)__/g, '<u class="underline-text">$1</u>');
+            // Ensure existing <u> tags get the class for styling
+            formatted = formatted.replace(/<u>([^<]+)<\/u>/g, '<u class="underline-text">$1</u>');
+            return formatted;
+        }
+
+        function formatResponseForDisplay(text) {
+            let formatted = text;
+            
+            // Apply markdown formatting in order: bold, italic, underline
+            formatted = formatBold(formatted);
+            formatted = formatItalic(formatted);
+            formatted = formatUnderline(formatted);
+            
+            // Convert inline code `text` to code blocks
+            formatted = formatted.replace(/`([^`]+)`/g, '<code>$1</code>');
+            
+            // Format definition blocks: "**Term** – description"
+            formatted = formatted.replace(/<strong>([^<]+)<\/strong>\s*–\s*([^<][^.!?\n]*[.!?])/g,
+                '<div class="definition-block">' +
+                '<div class="definition-term">$1</div>' +
+                '<div class="definition-meaning">$2</div>' +
+                '</div>');
+            
+            // Format multiple meanings with (e.g., example) pattern
+            formatted = formatted.replace(/\(e\.g\.,\s*([^)]+)\)/g, 
+                '<span style="color:#ffd3b6; font-style:italic;">(e.g., $1)</span>');
+            
+            // Format "Example:" lines with special styling
+            formatted = formatted.replace(/Example:\s*"([^"]+)"/g, 
+                '<div class="definition-example">"$1"</div>');
+            
+            // Format "Synonyms:" with badge styling
+            formatted = formatted.replace(/Synonyms?:\s*([^\n.]+)/g, function(match, syns) {
+                const synonyms = syns.split(',').map(s => s.trim());
+                const badges = synonyms.map(s => 
+                    `<span class="synonym-badge">${s}</span>`
+                ).join('');
+                return `<div style="margin: 0.75rem 0;"><strong style="color:#87ceeb;">Synonyms:</strong><div class="synonym-list">${badges}</div></div>`;
+            });
+            
+            // Format Etymology with special styling
+            formatted = formatted.replace(/Etymology:\s*from\s+([^(]+)\s*\(([^)]+)\)\s*([^.]*)\./g,
+                '<div class="etymology-section">' +
+                '<span class="etymology-label">Etymology:</span>' +
+                'from <em>$1</em> ($2) $3.' +
+                '</div>');
+            
+            // Format code blocks (```text ... ```)
+            formatted = formatted.replace(/```text\n([\s\S]*?)\n```/g, 
+                '<pre><code>$1</code></pre>');
+            
+            // Convert multiple newlines to paragraph breaks
+            formatted = formatted.replace(/\n\n+/g, '</p><p>');
+            formatted = '<p>' + formatted + '</p>';
+            
+            return formatted;
+        }
+
+        function highlightSemanticCategories(text) {
+            // Add color hints for different semantic categories
+            const replacements = {
+                // Origin/Etymology (cyan)
+                '\\b(Latin|Greek|Old French|Germanic|Sanskrit|Hebrew|Arabic)\\b': '<span style="color:#a0e7e5;">$1</span>',
+                // Usage context (peach)
+                '\\b(formal|informal|technical|slang|archaic|modern)\\b': '<span style="color:#ffd3b6;">$1</span>',
+                // Word types (coral)
+                '\\b(noun|verb|adjective|adverb|preposition|article|adjective|noun phrase)\\b': '<span style="color:#ffaaa5;">$1</span>',
+                // Markers to remove (but keep before removal)
+                '\\[END FINAL RESPONSE\\]\\s*<\\|end\\|>': '',
+                '<\\|end\\|>': '',
+                '\\[END FINAL RESPONSE\\]': ''
+            };
+            
+            let formatted = text;
+            for (const [pattern, replacement] of Object.entries(replacements)) {
+                const regex = new RegExp(pattern, 'gi');
+                formatted = formatted.replace(regex, replacement);
+            }
+            
+            return formatted;
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
         function addMessageToConversation(role, content, timestamp = new Date()) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${role}`;
 
             const timeString = typeof timestamp === 'string' ? timestamp : timestamp.toLocaleTimeString();
 
+            // Format assistant messages for display with markdown & semantics
+            let displayContent = content;
+            if (role === 'assistant') {
+                // First format the response structure
+                displayContent = formatResponseForDisplay(content);
+                // Then highlight semantic categories
+                displayContent = highlightSemanticCategories(displayContent);
+            } else {
+                // Escape user messages for safety
+                displayContent = escapeHtml(content);
+            }
+
             messageDiv.innerHTML = `
-                <div class="message-content">
-                    <div>${content}</div>
+                <div class="message-content" style="word-break:break-word;">
+                    ${displayContent}
                     <div class="message-time">${timeString}</div>
                 </div>
             `;
@@ -1046,7 +1347,16 @@
             addMessageToConversation('user', message);
             currentSession.updatedAt = new Date().toISOString();
 
-            // Ask server to generate + store both messages in Chroma
+            // Create a placeholder for the assistant message that will be streamed
+            let aiMessageElement = null;
+            let fullAIResponse = '';
+
+            // Hide empty conversation message immediately
+            if (emptyConversation) {
+                emptyConversation.classList.add('hidden');
+            }
+
+            // Ask server to generate + store both messages in Chroma using streaming (SSE)
             const res = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1058,36 +1368,140 @@
                 })
             });
 
-            const data = await res.json();
-
-            // If user switched session during await, do not append to the new session
+            // Check if user switched session during request preparation
             if (myToken !== currentSendToken || !currentSession || currentSession.id !== thisSessionId) {
-                // Optionally: silently ignore, or refresh that session in background
                 return;
             }
 
-            // Show assistant reply
-            const aiMessage = { role: 'assistant', content: data.reply, timestamp: new Date().toISOString() };
-            currentSession.messages.push(aiMessage);
-            addMessageToConversation('assistant', data.reply);
+            // Handle streaming response
+            if (!res.ok) {
+                console.error('Chat request failed:', res.status);
+                return;
+            }
 
-            // Refresh sessions list metadata from server (optional)
-            await refreshSessionsFromServer();
-            renderSessionsList();
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
 
-            // RAG panel: if backend sent rag_results, render them; else clear
-            if (Array.isArray(data.rag_results)) {
-                ragResults = data.rag_results.map(r => ({
-                    id: r.id,
-                    score: r.score ?? 0,
-                    text: r.text ?? '',
-                    source: r.source ?? 'Unknown',
-                    timestamp: r.timestamp ?? '',
-                    matches: Array.isArray(r.matches) ? r.matches : []
-                }));
-                renderRAGResults();
-            } else {
-                clearRAGResults();
+            try {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    // Decode the chunk and add to buffer
+                    buffer += decoder.decode(value, { stream: true });
+
+                    // Process complete SSE messages
+                    const lines = buffer.split('\n');
+                    buffer = lines[lines.length - 1]; // Keep incomplete line in buffer
+
+                    for (let i = 0; i < lines.length - 1; i++) {
+                        const line = lines[i].trim();
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6)); // Remove "data: " prefix
+
+                                if (myToken !== currentSendToken) {
+                                    // User switched sessions, stop processing
+                                    reader.cancel();
+                                    return;
+                                }
+
+                                if (data.type === 'token') {
+                                    // Stream token received
+                                    fullAIResponse += data.content;
+
+                                    // Create message element if it doesn't exist yet
+                                    if (!aiMessageElement) {
+                                        aiMessageElement = document.createElement('div');
+                                        aiMessageElement.className = 'message assistant';
+                                        conversationHistory.appendChild(aiMessageElement);
+                                    }
+
+                                    // Update the message content with streamed tokens (use textContent for safety, then set HTML carefully)
+                                    const escapedContent = document.createElement('div');
+                                    escapedContent.textContent = fullAIResponse;
+                                    
+                                    aiMessageElement.innerHTML = `
+                                        <div class="message-content">
+                                            <div>${escapedContent.innerHTML}</div>
+                                            <div class="message-time">${new Date().toLocaleTimeString()}</div>
+                                        </div>
+                                    `;
+
+                                    // Auto-scroll to bottom as tokens stream in
+                                    conversationHistory.scrollTop = conversationHistory.scrollHeight;
+
+                                } else if (data.type === 'rag_results') {
+                                    // RAG results received
+                                    console.log('RAG results received:', data.content);
+                                    if (Array.isArray(data.content)) {
+                                        ragResults = data.content.map(r => ({
+                                            id: r.id,
+                                            score: r.score ?? 0,
+                                            text: r.text ?? '',
+                                            source: r.source ?? 'Unknown',
+                                            timestamp: r.timestamp ?? '',
+                                            matches: Array.isArray(r.matches) ? r.matches : []
+                                        }));
+                                        renderRAGResults();
+                                    }
+
+                                } else if (data.type === 'done') {
+                                    // Streaming complete
+                                    console.log('Streaming complete. Full response:', fullAIResponse);
+                                    
+                                    // Update the session with complete AI message
+                                    const aiMessage = {
+                                        role: 'assistant',
+                                        content: fullAIResponse,
+                                        timestamp: new Date().toISOString()
+                                    };
+                                    currentSession.messages.push(aiMessage);
+
+                                    // Refresh sessions list metadata from server
+                                    await refreshSessionsFromServer();
+                                    renderSessionsList();
+
+                                } else if (data.type === 'error') {
+                                    console.error('Stream error:', data.content);
+                                    if (!aiMessageElement) {
+                                        aiMessageElement = document.createElement('div');
+                                        aiMessageElement.className = 'message assistant';
+                                        conversationHistory.appendChild(aiMessageElement);
+                                    }
+                                    aiMessageElement.innerHTML = `
+                                        <div class="message-content">
+                                            <div style="color: red;">Error: ${document.createElement('div').textContent = data.content}</div>
+                                        </div>
+                                    `;
+                                }
+                            } catch (e) {
+                                console.warn('Failed to parse SSE message:', line, e);
+                            }
+                        }
+                    }
+                }
+
+                // Process any remaining buffer content
+                if (buffer.trim().startsWith('data: ')) {
+                    try {
+                        const data = JSON.parse(buffer.slice(6));
+                        console.log('Processing final buffer data:', data);
+                    } catch (e) {
+                        console.warn('Failed to parse final SSE message:', buffer, e);
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error reading stream:', error);
+                if (aiMessageElement) {
+                    aiMessageElement.innerHTML = `
+                        <div class="message-content">
+                            <div style="color: red;">Connection error: ${error.message}</div>
+                        </div>
+                    `;
+                }
             }
         });
 
