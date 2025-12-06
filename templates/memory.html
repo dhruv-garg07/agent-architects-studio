@@ -1418,13 +1418,13 @@
                                         conversationHistory.appendChild(aiMessageElement);
                                     }
 
-                                    // Update the message content with streamed tokens (use textContent for safety, then set HTML carefully)
-                                    const escapedContent = document.createElement('div');
-                                    escapedContent.textContent = fullAIResponse;
+                                    // Format the response on-the-fly as tokens stream in
+                                    let formattedContent = formatResponseForDisplay(fullAIResponse);
+                                    formattedContent = highlightSemanticCategories(formattedContent);
                                     
                                     aiMessageElement.innerHTML = `
-                                        <div class="message-content">
-                                            <div>${escapedContent.innerHTML}</div>
+                                        <div class="message-content" style="word-break:break-word;">
+                                            ${formattedContent}
                                             <div class="message-time">${new Date().toLocaleTimeString()}</div>
                                         </div>
                                     `;
