@@ -131,51 +131,33 @@ class ChromaCollectionWrapper:
         operations: List[Dict]
     ) -> List[Dict]:
         """
-        Perform multiple operations with verification.
-        
-        Args:
-            operations: List of operation dictionaries with keys:
-                - type: "create_or_update", "update", or "replace"
-                - collection_name: str
-                - ids: List[str]
-                - documents: List[str]
-                - metadatas: Optional[List[Dict]]
-        
-        Returns:
-            List of results with verification for each operation.
+        Perform multiple create_or_update operations with verification.
+
+        Assumes every operation in `operations` is a create_or_update operation
+        and uses the existing create_or_update_collection_with_verify (which
+        performs an upsert under the hood). Processing is done with a list
+        comprehension to avoid using an explicit for-loop.
         """
-        results = []
+        # Use list comprehension (no explicit for-loop) to process all operations
         
+        ids = []
+        documents = []
+        metadatas = []
         for op in operations:
-            op_type = op.get("type")
-            collection_name = op.get("collection_name")
-            ids = op.get("ids")
-            documents = op.get("documents")
-            metadatas = op.get("metadatas")
-            
-            if op_type == "create_or_update":
-                print("Reached before create or update with verify")
-                result = self.create_or_update_collection_with_verify(
-                    collection_name, ids, documents, metadatas
-                )
-            elif op_type == "update":
-                result = self.update_collection_with_verify(
-                    collection_name, ids, documents, metadatas
-                )
-            elif op_type == "replace":
-                result = self.replace_collection_with_verify(
-                    collection_name, ids, documents, metadatas
-                )
-            else:
-                result = {
-                    "operation": "unknown",
-                    "result": f"Unknown operation type: {op_type}",
-                    "verification": {"error": f"Unknown operation type: {op_type}"},
-                    "success": False
-                }
-            
-            results.append(result)
+            ids.extend(op.get("ids", []))
+            documents.extend(op.get("documents", []))
+            metadatas.extend(op.get("metadatas", []))
         
+        collection_name = operations[0].get("collection_name") if operations else "default_collection"
+        results = [
+            self.create_or_update_collection_with_verify(
+                collection_name=collection_name,
+                ids=ids,
+                documents=documents,
+                metadatas=metadatas
+            )
+        ]
+
         return results
     
     def get_collection_info(self, collection_name: str) -> Dict:

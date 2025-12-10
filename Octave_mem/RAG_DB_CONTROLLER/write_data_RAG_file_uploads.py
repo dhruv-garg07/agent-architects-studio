@@ -81,6 +81,7 @@ SAMPLE_OPERATION = [{
 
 
 import time
+import uuid
 class RAG_DB_Controller_FILE_DATA:
     def __init__(self, database: str = None):
         """Initialize the controller with ChromaCollectionWrapper."""
@@ -147,32 +148,47 @@ class RAG_DB_Controller_FILE_DATA:
         ids = []
         documents = []
         metadatas = []
-        for chunk in chunks:
+
+        operations_create_or_update = []
+
+        # Get current document count once to compute stable indexes for this batch
+        try:
+            current_count = int(self.wrapper.get_collection_info(f"{user_ID}").get("document_count", 0))
+        except Exception:
+            current_count = 0
+
+        for i,chunk in enumerate(chunks):
             if not isinstance(chunk, str) or len(chunk.strip()) == 0:
                 print(f"Invalid chunk: {chunk}")
                 return {"error": f"Invalid chunk: {chunk}"}
             
-            next_id = self.id_manager(user_ID)
+            # Use a UUID for the stored id to avoid clashes/overwrites when multiple uploads happen concurrently
+            unique_id = f"id_{uuid.uuid4().hex}"
+
+            # Compute a stable index number for metadata (base on collection size at the time of this call)
+            next_index = current_count + i + 1
             metadata_response =  fast_tag_extractor(chunk, top_n=3)
 
             # CALCULATE IMPORTANCE SCORE
             importance_score = self.calculate_importance_score(chunk)
+            
             operation = {
                 "type": "create_or_update",
                 "collection_name": user_ID,
-                "ids": [f"id_{next_id}"],
+                "ids": [unique_id],
                 "documents": [chunk],
                 "metadatas": [{
                     "source": f"{file_name}",
-                    "index": next_id,
+                    "index": next_index,
                     "message_type": message_type,
                     "timestamp": time.time(),
                     "tags": metadata_response,
                     # "Importance_Score": importance_score,
                 }]
             }
+            operations_create_or_update.append(operation)
             
-            verification_result = self.wrapper.bulk_operations_with_verification([operation])
+        verification_result = self.wrapper.bulk_operations_with_verification(operations_create_or_update)
         return verification_result
     
     def update_file_data_to_db(self, user_ID: str, file_path: str, message_type: str = "user", file_name: Optional[str] = None):

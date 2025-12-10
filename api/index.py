@@ -29,6 +29,7 @@ import asyncio
 import smtplib
 import shutil
 import tempfile
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, abort
@@ -1034,37 +1035,114 @@ def memory():
         ]
 
         controller = RAG_DB_Controller_FILE_DATA()
-        # Handle multiple files
-        for file in files:
-            if file and file.filename:
-                filename = file.filename
+
+        # Capture the current user's id for use inside worker threads (request context isn't available in threads)
+        try:
+            user_id = str(current_user.id)
+        except Exception:
+            user_id = None
+
+        # Worker to process a single file. Designed to be safe to run in a thread.
+        def process_file(file_obj):
+            result = {'filename': None, 'status': 'skipped', 'error': None}
+            try:
+                if not file_obj or not getattr(file_obj, 'filename', None):
+                    result['status'] = 'skipped'
+                    return result
+
+                filename = file_obj.filename
+                result['filename'] = filename
                 ext = os.path.splitext(filename)[1].lower()
                 if ext not in allowed_extensions:
-                    flash(f'Unsupported file type: {filename}', 'error')
-                    continue
+                    result['status'] = 'unsupported'
+                    return result
+
+                # Save to a temporary file and call controller
                 with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
-                    file.save(tmp.name)
+                    # Save the uploaded file content to disk
+                    file_obj.save(tmp.name)
                     file_path = tmp.name
-                controller.update_file_data_to_db(
-                    user_ID=str(current_user.id),
-                    file_path=file_path,
-                    message_type="user",
-                    file_name=filename
-                )
+
                 try:
-                    os.remove(file_path)
+                    # Instantiate a controller per thread to avoid sharing state and to avoid relying on request-local objects
+                    local_controller = RAG_DB_Controller_FILE_DATA()
+                    if user_id is None:
+                        raise RuntimeError('No authenticated user available')
+
+                    local_controller.update_file_data_to_db(
+                        user_ID=user_id,
+                        file_path=file_path,
+                        message_type="user",
+                        file_name=filename
+                    )
+                    result['status'] = 'ok'
                 except Exception as e:
-                    print(f"Error deleting temp file: {e}")
+                    result['status'] = 'error'
+                    result['error'] = str(e)
+                finally:
+                    try:
+                        if os.path.exists(file_path):
+                            os.remove(file_path)
+                    except Exception as e:
+                        # Log deletion error but do not fail the whole upload
+                        print(f"Error deleting temp file: {e}")
 
-        # Handle plain text (no file case) → send directly to DB
-        if text:
-            controller.send_data_to_rag_db(
-                user_ID=str(current_user.id),
-                chunks=[text],
-                message_type="user"
-            )
+                return result
 
-        flash('Memory saved', 'success')
+            except Exception as e:
+                result['status'] = 'error'
+                result['error'] = str(e)
+                return result
+
+        # Submit file processing to a thread pool for parallel uploads
+        upload_results = []
+        try:
+            # Filter out empty file inputs early
+            valid_files = [f for f in files if f and getattr(f, 'filename', None)]
+            max_workers = min(6, max(1, len(valid_files)))
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                futures = {executor.submit(process_file, f): f.filename for f in valid_files}
+                for fut in as_completed(futures):
+                    try:
+                        upload_results.append(fut.result())
+                    except Exception as e:
+                        upload_results.append({'filename': futures.get(fut), 'status': 'error', 'error': str(e)})
+        except Exception as e:
+            print(f"Error running parallel uploads: {e}")
+
+        # Build summary messages for the user
+        unsupported = [r['filename'] for r in upload_results if r.get('status') == 'unsupported']
+        errors = [r for r in upload_results if r.get('status') == 'error']
+        successes = [r['filename'] for r in upload_results if r.get('status') == 'ok']
+
+        if unsupported:
+            flash(f"Unsupported file types: {', '.join(unsupported)}", 'error')
+        if errors:
+            # Show up to 5 errors in flash to avoid overwhelming the UI
+            err_msgs = [f"{r.get('filename')}: {r.get('error')}" for r in errors][:5]
+            flash(f"Some files failed to upload: {', '.join(err_msgs)}", 'error')
+        if successes or text:
+            # Handle plain text (no file case) → send directly to DB
+            if text:
+                try:
+                    controller.send_data_to_rag_db(
+                        user_ID=str(current_user.id),
+                        chunks=[text],
+                        message_type="user"
+                    )
+                except Exception as e:
+                    flash(f"Failed to save text memory: {e}", 'error')
+
+            if successes:
+                flash('Memory saved for: ' + ', '.join(successes), 'success')
+            else:
+                # If no success but text saved, still inform user
+                if text and not successes:
+                    flash('Memory saved', 'success')
+        else:
+            # No files or text saved successfully
+            flash('No memory saved', 'error')
+
         return redirect(url_for('memory'))
 
     return render_template('memory.html', user=current_user)
