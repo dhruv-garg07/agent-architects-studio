@@ -1024,48 +1024,101 @@ def update_waitlist_count():
 @login_required
 def memory():
     if request.method == 'POST':
-        text = request.form.get('memory_text')
-        files = request.files.getlist('memory_file')  # Accept multiple files
+        try:
+            text = request.form.get('memory_text')
+            files = request.files.getlist('memory_file')  # Accept multiple files
 
-        allowed_extensions = [
-            '.pdf', '.ppt', '.pptx', '.doc', '.docx', '.txt',
-            '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg',
-            '.webp', '.heic', '.tiff', '.xls', '.xlsx', '.csv'
-        ]
+            allowed_extensions = [
+                '.pdf', '.ppt', '.pptx', '.doc', '.docx', '.txt',
+                '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg',
+                '.webp', '.heic', '.tiff', '.xls', '.xlsx', '.csv'
+            ]
 
-        controller = RAG_DB_Controller_FILE_DATA()
-        # Handle multiple files
-        for file in files:
-            if file and file.filename:
-                filename = file.filename
-                ext = os.path.splitext(filename)[1].lower()
-                if ext not in allowed_extensions:
-                    flash(f'Unsupported file type: {filename}', 'error')
-                    continue
-                with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
-                    file.save(tmp.name)
-                    file_path = tmp.name
-                controller.update_file_data_to_db(
-                    user_ID=str(current_user.id),
-                    file_path=file_path,
-                    message_type="user",
-                    file_name=filename
-                )
+            controller = RAG_DB_Controller_FILE_DATA()
+            file_count = 0
+            error_count = 0
+            
+            # Handle multiple files
+            for file in files:
+                if file and file.filename:
+                    filename = file.filename
+                    ext = os.path.splitext(filename)[1].lower()
+                    
+                    # Validate file extension
+                    if ext not in allowed_extensions:
+                        print(f"[FILE_UPLOAD] Unsupported file type: {filename}")
+                        flash(f'Unsupported file type: {filename}', 'error')
+                        error_count += 1
+                        continue
+                    
+                    try:
+                        # Create temp file and save
+                        with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
+                            file.save(tmp.name)
+                            file_path = tmp.name
+                        
+                        # Check if file was actually created
+                        if not os.path.exists(file_path):
+                            print(f"[FILE_UPLOAD] Failed to create temp file for: {filename}")
+                            flash(f'Failed to save file: {filename}', 'error')
+                            error_count += 1
+                            continue
+                        
+                        print(f"[FILE_UPLOAD] Processing file: {filename}, path: {file_path}")
+                        
+                        # Send to RAG database
+                        controller.update_file_data_to_db(
+                            user_ID=str(current_user.id),
+                            file_path=file_path,
+                            message_type="user",
+                            file_name=filename
+                        )
+                        
+                        print(f"[FILE_UPLOAD] Successfully processed: {filename}")
+                        file_count += 1
+                        
+                        # Clean up temp file
+                        try:
+                            os.remove(file_path)
+                            print(f"[FILE_UPLOAD] Cleaned up temp file: {file_path}")
+                        except Exception as e:
+                            print(f"[FILE_UPLOAD] Error deleting temp file {file_path}: {e}")
+                    
+                    except Exception as e:
+                        print(f"[FILE_UPLOAD] Error processing file {filename}: {str(e)}")
+                        flash(f'Error processing file: {filename}', 'error')
+                        error_count += 1
+                        continue
+
+            # Handle plain text (no file case) → send directly to DB
+            if text and text.strip():
                 try:
-                    os.remove(file_path)
+                    print(f"[TEXT_UPLOAD] Saving text memory from user: {current_user.id}")
+                    controller.send_data_to_rag_db(
+                        user_ID=str(current_user.id),
+                        chunks=[text],
+                        message_type="user"
+                    )
+                    print(f"[TEXT_UPLOAD] Successfully saved text memory")
                 except Exception as e:
-                    print(f"Error deleting temp file: {e}")
+                    print(f"[TEXT_UPLOAD] Error saving text: {str(e)}")
+                    flash(f'Error saving text: {str(e)}', 'error')
 
-        # Handle plain text (no file case) → send directly to DB
-        if text:
-            controller.send_data_to_rag_db(
-                user_ID=str(current_user.id),
-                chunks=[text],
-                message_type="user"
-            )
+            # Provide feedback to user
+            if file_count > 0:
+                flash(f'Successfully uploaded {file_count} file(s)', 'success')
+            if error_count > 0:
+                flash(f'{error_count} file(s) failed to upload', 'error')
+            if not text and not files:
+                flash('Please provide text or upload at least one file', 'warning')
 
-        flash('Memory saved', 'success')
-        return redirect(url_for('memory'))
+            print(f"[MEMORY_UPLOAD] Complete - Files: {file_count}, Errors: {error_count}")
+            return redirect(url_for('memory'))
+
+        except Exception as e:
+            print(f"[MEMORY_UPLOAD] Unexpected error: {str(e)}")
+            flash(f'An unexpected error occurred: {str(e)}', 'error')
+            return redirect(url_for('memory'))
 
     return render_template('memory.html', user=current_user)
 

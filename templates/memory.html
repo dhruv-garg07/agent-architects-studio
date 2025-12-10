@@ -73,6 +73,20 @@
                 <h2 class="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Memory Settings</h2>
                 <div class="space-y-3">
                     <div class="flex items-center justify-between">
+                        <span class="text-sm">Chat History</span>
+                        <label class="switch">
+                            <input type="checkbox" id="chatHistoryToggle" checked disabled>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm">File RAG</span>
+                        <label class="switch">
+                            <input type="checkbox" id="fileRagToggle">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <div class="flex items-center justify-between">
                         <span class="text-sm">Auto-sync</span>
                         <label class="switch">
                             <input type="checkbox" checked>
@@ -192,7 +206,7 @@
             <h2 class="text-xl font-semibold">Add New Memory</h2>
             <button id="closeModal"
                 class="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-full hover:bg-secondary"></button>
-        <form method="POST" enctype="multipart/form-data" class="space-y-6 p-6">
+        <form id="memoryForm" method="POST" action="/memory" enctype="multipart/form-data" class="space-y-6 p-6">
             <div>
                 <label for="memory_text" class="block font-medium mb-2">Text Input</label>
                 <textarea id="memory_text" name="memory_text" rows="4" class="input w-full"
@@ -850,6 +864,8 @@
         const newSessionBtn = document.getElementById('newSessionBtn');
         const navItems = document.querySelectorAll('.nav-item');
         const exportResultsBtn = document.getElementById('exportResultsBtn');
+        const fileRagToggle = document.getElementById('fileRagToggle');
+        const chatHistoryToggle = document.getElementById('chatHistoryToggle');
 
         // Initialize the dashboard
         initDashboard();
@@ -1364,7 +1380,8 @@
                     thread_id: currentSession.id,   // UUID
                     user_id: window.USER_ID,      // from base.html
                     message,
-                    history: currentSession.messages
+                    history: currentSession.messages,
+                    use_file_rag: fileRagToggle.checked  // Send RAG toggle state
                 })
             });
 

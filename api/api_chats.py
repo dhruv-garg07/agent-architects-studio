@@ -27,7 +27,7 @@ sys.path.insert(0, grandparent_dir)
 
 from flask import Blueprint, request, jsonify, abort, Response
 from LLM_calls.context_manager import query_llm_with_history, query_llm_with_history_stream
-from LLM_calls.intelligent_query_rewritten import intelligent_query_rewriter
+from LLM_calls.intelligent_query_rewritten import intelligent_query_rewriter, LLMEnhancedRewriter
 from LLM_calls.together_get_response import clean_response
 from Octave_mem.RAG_DB_CONTROLLER.write_data_RAG import RAG_DB_Controller_CHAT_HISTORY
 from Octave_mem.RAG_DB_CONTROLLER.read_data_RAG_all_DB import read_data_RAG
@@ -37,7 +37,7 @@ import asyncio
 import threading
 from collections import deque
 import json
-
+llm_enchanced_query_rewriter = LLMEnhancedRewriter()
 import os
 import sys
 # import sys, os
@@ -48,12 +48,19 @@ class MessageType:
     LLM = "llm"
     NOTE = "note"
 
-def run_ai(message, history, session_id, rag_context=None, chat_history=None):
+def run_ai(
+        message,
+        session_id,
+        rag_context,
+        chat_history,
+        system_prompt,
+        temperature=0.3
+    ):
     # your model / tool-calling / RAG pipeline
     # This function should call LLM responses from the Response controller.
     # If rag_context is provided, add it to the context for the LLM
 
-    return query_llm_with_history_stream(message, history, rag_context, chat_history)  # replace with real response
+    return query_llm_with_history_stream(message, rag_context, chat_history, system_prompt, temperature)  # replace with real response
 
 # from LLM_calls use together_get_response functions for LLM calls.
 # Make a orchestration function that calls the LLM and tools as needed.
@@ -245,71 +252,387 @@ def split_text_into_chunks(text, max_sentences=4, overlap=1):
         i += max_sentences - overlap
     return chunks
 
+import time, re
+from typing import List, Dict, Any
+from collections import defaultdict
+import hashlib
 @api.post("/api/chat")
 def chat_and_store():
-    print("On Clicking send button in chat UI...")
-    import time, re
-    data      = request.get_json(force=True)
+    print("🟢 Chat endpoint triggered...")
+    
+    
+    data = request.get_json(force=True)
     thread_id = data["thread_id"]
-    user_id   = data["user_id"]
-    user_msg  = data["message"]
-    history   = data.get("history", [])
-    top_k     = 20
-    t0        = time.time()
+    user_id = data["user_id"]
+    user_msg = data["message"].strip()
+    use_file_rag = data.get("use_file_rag", False)
+    conversation_mode = data.get("mode", "balanced")  # balanced, precise, creative
+    
+    # Adaptive top_k based on mode
+    top_k_config = {
+        "precise": {"chat": 5, "file": 3},
+        "balanced": {"chat": 8, "file": 7},
+        "creative": {"chat": 10, "file": 10}
+    }
+    
+    top_k = top_k_config.get(conversation_mode, top_k_config["balanced"])
+    t0 = time.time()
 
+    print(f"[RAG] File RAG: {use_file_rag} | Mode: {conversation_mode} | Top-K: {top_k}")
+
+    # ==================== UTILITY FUNCTIONS ====================
+    def _normalize_text(text: Any) -> str:
+        """Enhanced text normalization with semantic preservation"""
+        if not isinstance(text, str):
+            text = str(text) if text is not None else ""
+        
+        # Preserve important markers before normalization
+        preserved_markers = {
+            'Q:': ' __QUESTION__ ',
+            'A:': ' __ANSWER__ ',
+            '```': ' __CODE_BLOCK__ ',
+            '$$': ' __MATH__ ',
+            'http://': ' __URL__ ',
+            'https://': ' __URL__ '
+        }
+        
+        for marker, placeholder in preserved_markers.items():
+            text = text.replace(marker, placeholder)
+        
+        # Normalize
+        text = re.sub(r"\s+", " ", text.strip().lower())
+        
+        # Restore markers
+        for marker, placeholder in preserved_markers.items():
+            text = text.replace(placeholder, marker)
+        
+        return text
+    
+    def _calculate_relevance_score(query: str, document: str) -> float:
+        """Calculate semantic relevance score between query and document"""
+        query_terms = set(_normalize_text(query).split())
+        doc_terms = set(_normalize_text(document).split())
+        
+        if not query_terms or not doc_terms:
+            return 0.0
+        
+        # Jaccard similarity
+        intersection = query_terms.intersection(doc_terms)
+        union = query_terms.union(doc_terms)
+        
+        jaccard = len(intersection) / len(union) if union else 0.0
+        
+        # Boost for consecutive term matches
+        consecutive_boost = 0.0
+        query_lower = query.lower()
+        doc_lower = document.lower()
+        
+        # Check for multi-word phrase matches
+        for i in range(len(query_terms)):
+            terms_list = list(query_terms)
+            if i + 2 < len(terms_list):
+                phrase = ' '.join(terms_list[i:i+3])
+                if phrase in doc_lower:
+                    consecutive_boost += 0.3
+        
+        # Final score (Jaccard + boost, capped at 1.0)
+        return min(1.0, jaccard + consecutive_boost * 0.1)
+    
+    def _deduplicate_rag_results(results: List[Dict], threshold: float = 0.85) -> List[Dict]:
+        """Remove near-duplicate RAG results based on content similarity"""
+        unique_results = []
+        seen_hashes = set()
+        
+        for result in results:
+            content = result.get("document", "")
+            content_hash = hashlib.md5(_normalize_text(content).encode()).hexdigest()
+            
+            if content_hash not in seen_hashes:
+                seen_hashes.add(content_hash)
+                unique_results.append(result)
+            else:
+                # Check if this is a better version (more metadata, higher score)
+                for idx, existing in enumerate(unique_results):
+                    existing_hash = hashlib.md5(_normalize_text(existing.get("document", "")).encode()).hexdigest()
+                    if content_hash == existing_hash:
+                        if result.get("score", 0) > existing.get("score", 0):
+                            unique_results[idx] = result
+                        break
+        
+        return unique_results
+    
+    # ==================== STAGE 1: INITIAL RAG RETRIEVAL ====================
+    print("#1️⃣ Initial RAG Retrieval")
+    
+    # Fetch from chat history
+    print(f"  ↳ Fetching chat history (top_k={top_k['chat']})...")
+    chat_rows = read_controller_chatH.fetch_related_to_query(
+        user_ID=user_id,
+        query=user_msg,
+        top_k=top_k['chat']
+    )
+    
+    # Fetch from file data if enabled
+    file_rows = []
+    if use_file_rag:
+        print(f"  ↳ Fetching file data (top_k={top_k['file']})...")
+        file_rows = read_controller_file_data.fetch_related_to_query(
+            user_ID=user_id,
+            query=user_msg,
+            top_k=top_k['file']
+        )
+    
+    all_rows = chat_rows + file_rows
+    
+    # Score and sort initial results
+    for row in all_rows:
+        row["relevance_score"] = _calculate_relevance_score(user_msg, row.get("document", ""))
+    
+    all_rows.sort(key=lambda x: x.get("relevance_score", 0), reverse=True)
+    
+    print(f"  ↳ Found {len(chat_rows)} chat results, {len(file_rows)} file results")
+    print(f"  ↳ Top relevance scores: {[r.get('relevance_score', 0) for r in all_rows[:3]]}")
+    
+    # ==================== STAGE 2: QUERY REWRITING ====================
+    print("#2️⃣ Query Rewriting")
+    
+    # Extract key concepts from top results for better query expansion
+    key_concepts = []
+    for row in all_rows[:5]:  # Use top 5 results
+        doc = row.get("document", "")
+        # Extract potential key phrases (capitalized terms, technical terms)
+        terms = re.findall(r'\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b', doc)
+        key_concepts.extend(terms[:3])  # Take first 3 terms
+    
+    # Remove duplicates and limit
+    key_concepts = list(dict.fromkeys(key_concepts))[:5]
+    
+    # Intelligent query rewriting with context
+    context_for_rewriter = "\n".join([r.get("document", "")[:200] for r in all_rows[:3]])
+    print(f"  ↳ Context for rewriter: '{context_for_rewriter[:100]}...'")
+    print(f"  ↳ Key concepts identified: {key_concepts}")
+    
+    # rewritten = intelligent_query_rewriter(
+    #     original_query="How does it work?",
+    #     context=context_for_rewriter,
+    #     # key_concepts=["backpropagation", "gradient descent", "activation functions"],
+    #     mode="precise",
+    #     rag_context=file_rows,
+    #     chat_history=chat_rows
+    # )
+    
+    rewritten = llm_enchanced_query_rewriter.rewrite_with_llm(query=user_msg,context=all_rows,mode=conversation_mode)
+    rewritten_user_msg = rewritten
+    
+    print(f"  ↳ Rewritten query: '{rewritten_user_msg}'")
+    
+    # ==================== STAGE 3: ENHANCED RAG RETRIEVAL ====================
+    print("#3️⃣ Enhanced RAG Retrieval")
+    
+    # Create hybrid query (original + rewritten + key concepts)
+    hybrid_query = f"{user_msg} {rewritten_user_msg} {' '.join(key_concepts)}"
+    hybrid_query = ' '.join(dict.fromkeys(hybrid_query.split()))  # Remove duplicate words
+    
+    print(f"  ↳ Hybrid query: '{hybrid_query[:100]}...'")
+    
+    # Fetch with hybrid query
+    enhanced_chat_rows = read_controller_chatH.fetch_related_to_query(
+        user_ID=user_id,
+        query=hybrid_query,
+        top_k=top_k['chat'] // 2  # More focused retrieval
+    )
+    
+    enhanced_file_rows = []
+    if use_file_rag:
+        enhanced_file_rows = read_controller_file_data.fetch_related_to_query(
+            user_ID=user_id,
+            query=hybrid_query,
+            top_k=top_k['file'] // 2
+        )
+    
+    enhanced_rows = enhanced_chat_rows + enhanced_file_rows
+    
+    # Score enhanced results
+    for row in enhanced_rows:
+        row["relevance_score"] = _calculate_relevance_score(hybrid_query, row.get("document", ""))
+        row["source"] = "enhanced"
+    
+    # Mark original rows
+    for row in all_rows:
+        row["source"] = "initial"
+    
+    # Combine and deduplicate
+    combined_rows = enhanced_rows + all_rows
+    combined_rows = _deduplicate_rag_results(combined_rows)
+    
+    # Re-score all combined results with the hybrid query
+    for row in combined_rows:
+        row["final_score"] = _calculate_relevance_score(hybrid_query, row.get("document", "")) * 0.7 + \
+                            row.get("relevance_score", 0) * 0.3
+    
+    # Sort by final score
+    combined_rows.sort(key=lambda x: x.get("final_score", 0), reverse=True)
+    
+    # Select top results based on conversation mode
+    if conversation_mode == "precise":
+        final_rows = combined_rows[:8]
+    elif conversation_mode == "creative":
+        final_rows = combined_rows[:15]
+    else:  # balanced
+        final_rows = combined_rows[:12]
+    
+    print(f"  ↳ Selected {len(final_rows)} final results for context")
+    
+    # ==================== STAGE 4: QUERY-DOCUMENT FILTERING ====================
+    print("#4️⃣ Query-Document Filtering")
+    
+    # Remove results too similar to the query (avoid circular reference)
+    qn = _normalize_text(rewritten_user_msg)
+    filtered_rows = []
+    
+    for row in final_rows:
+        doc_norm = _normalize_text(row.get("document", ""))
+        
+        # Calculate similarity to query
+        query_terms = set(qn.split())
+        doc_terms = set(doc_norm.split())
+        intersection = query_terms.intersection(doc_terms)
+        
+        # Only filter if document is VERY similar to query (>90% overlap)
+        if len(intersection) / len(query_terms) < 0.9 and doc_norm != qn:
+            filtered_rows.append(row)
+        else:
+            print(f"  ↳ Filtered out near-identical document: {doc_norm[:50]}...")
+    
+    final_rows = filtered_rows
+    
+    # ==================== STAGE 5: CHAT HISTORY RETRIEVAL ====================
+    print("#5️⃣ Chat History Context")
+    
+    # Get recent chat history with smart windowing
+    chat_history = chat_history_cache.get_session_history(
+        user_id=user_id, 
+        session_id=thread_id
+    )
+    
+    if not chat_history:
+        # Adaptive history retrieval based on query complexity
+        query_length = len(user_msg.split())
+        history_top_k = min(20, max(10, query_length * 2))
+        
+        chat_history = get_chat_history_by_session(
+            user_id=user_id,
+            session_id=thread_id,
+            top_k=history_top_k
+        )
+        
+        # Cache for future use
+        try:
+            chat_history_cache.set_session_history(
+                user_id=user_id,
+                session_id=thread_id,
+                messages=chat_history
+            )
+        except Exception as e:
+            print(f"  ↳ Cache error: {e}")
+    
+    # Filter chat history to most relevant exchanges
+    if len(chat_history) > 10:
+        # Keep last 5 exchanges + any that mention key concepts
+        recent_history = chat_history[-10:]  # Last 5 exchanges (10 messages)
+        
+        # Find history mentioning key concepts
+        concept_history = []
+        for i in range(0, len(chat_history) - 1, 2):  # Process as Q-A pairs
+            if i + 1 < len(chat_history):
+                q = chat_history[i].get("content", "")
+                a = chat_history[i + 1].get("content", "")
+                
+                # Check if contains key concepts
+                for concept in key_concepts:
+                    if concept.lower() in q.lower() or concept.lower() in a.lower():
+                        concept_history.extend([chat_history[i], chat_history[i + 1]])
+                        break
+        
+        # Combine, deduplicate, and limit
+        combined_history = recent_history + concept_history
+        seen = set()
+        unique_history = []
+        
+        for msg in combined_history:
+            msg_hash = hashlib.md5(msg.get("content", "").encode()).hexdigest()
+            if msg_hash not in seen:
+                seen.add(msg_hash)
+                unique_history.append(msg)
+        
+        chat_history = unique_history[-20:]  # Max 20 messages
+    
+    print(f"  ↳ Retrieved {len(chat_history)} chat history messages")
+    
+    # ==================== STAGE 6: CONTEXT ASSEMBLY ====================
+    print("#6️⃣ Context Assembly")
+    
+    # Prepare RAG context with metadata
+    rag_context = []
+    for i, row in enumerate(final_rows[:8]):  # Use top 8 for context
+        context_item = {
+            "id": row.get("id", f"ctx_{i}"),
+            "content": row.get("document", ""),
+            "score": row.get("final_score", 0),
+            "source": row.get("source", "unknown"),
+            "metadata": row.get("metadata", {})
+        }
+        rag_context.append(context_item)
+    
+    # Prepare system prompt based on mode and RAG availability
+    if use_file_rag and rag_context:
+        if conversation_mode == "precise":
+            system_prompt = "You are a precise assistant. Use the provided documents to give accurate, factual answers. Cite specific information when possible."
+        elif conversation_mode == "creative":
+            system_prompt = "You are a creative assistant. Synthesize information from the provided documents to generate insightful, expansive answers."
+        else:
+            system_prompt = "You are a helpful assistant. Use the provided context to answer questions accurately and comprehensively."
+    else:
+        system_prompt = "You are a helpful assistant. Answer based on your knowledge and the conversation history."
+    
+                # After streaming completes, send RAG results and completion signal
     def _norm(s: str) -> str:
         return re.sub(r"\s+", " ", (s or "").strip().lower())
     
-
-    raw_rows = read_controller_chatH.fetch_related_to_query(
-        user_ID=user_id, query=f"query: {user_msg}", top_k=top_k
-    )
-    raw_rows_file_data = read_controller_file_data.fetch_related_to_query(
-        user_ID=user_id, query=f"query: {user_msg}", top_k=top_k
-    )
-    raw_rows.extend(raw_rows_file_data)
-    rewritten_user_msg = intelligent_query_rewriter(user_msg, raw_rows) 
-    # print(f"Rewritten user msg: {rewritten_user_msg}")
-
-    # 1) RAG FIRST (so it can't see this very message)
-    raw_rows = read_controller_chatH.fetch_related_to_query(
-        user_ID=user_id, query=f"{rewritten_user_msg} query: {user_msg}", top_k=top_k
-    )
-    
-    # Based on the query it should tell whether to fetch from file_data DB or not:
-    
-    # Also fetch from file_data DB
-    raw_rows_file_data = read_controller_file_data.fetch_related_to_query(
-        user_ID=user_id, query=f"{rewritten_user_msg} query: {user_msg}", top_k=top_k
-    )
-    raw_rows.extend(raw_rows_file_data)
-    
-
-
-
-    # drop anything that is basically the same text as the query (belt & suspenders)
     qn = _norm(rewritten_user_msg)
-    raw_rows = [r for r in raw_rows if _norm(r.get("document") or "") != qn]
+    all_rows = [r for r in all_rows if _norm(r.get("document") or "") != qn]
 
     # normalize -> UI shape
     q_terms = [t.lower() for t in rewritten_user_msg.split() if len(t) > 2]
-    rag_results = _normalize_rag_rows(raw_rows, q_terms)  # uses _to_score & _epoch_to_human as before
-
-    # print("raw_rows:", raw_rows)
+    rag_results = _normalize_rag_rows(all_rows, q_terms)  # uses _to_score & _epoch_to_human as before
     
-    # Retrieve the old chat history from cache (fallback to SQL DB) for context
-    chat_history = chat_history_cache.get_session_history(user_id=user_id, session_id=thread_id)
-    if not chat_history:
-        # fallback to SQL DB and populate cache
-        chat_history = get_chat_history_by_session(user_id=user_id, session_id=thread_id, top_k=20)
-        try:
-            chat_history_cache.set_session_history(user_id=user_id, session_id=thread_id, messages=chat_history)
-        except Exception as e:
-            print(f"Cache set error during chat: {e}")
+    # ==================== STAGE 7: LLM GENERATION ====================
+    print("#7️⃣ LLM Generation")
     
-    # 2) generate reply generator using RAG context (streaming)
-    reply_generator = run_ai(f"{rewritten_user_msg} query: {user_msg}", history, session_id=thread_id, rag_context=raw_rows, chat_history=chat_history)
+    # Prepare final query with context indicators
+    final_query = f"Query: {user_msg}"
+    if rewritten_user_msg != user_msg:
+        final_query += f" (interpreted as: {rewritten_user_msg})"
     
+    # Include key concepts in query if they add value
+    if key_concepts:
+        final_query += f" [Key concepts: {', '.join(key_concepts[:3])}]"
+    
+    print(f"  ↳ Final query to LLM: '{final_query[:100]}...'")
+    print(f"  ↳ Context: {len(rag_context)} RAG items, {len(chat_history)} history messages")
+    print(f"  ↳ Total processing time: {time.time() - t0:.2f}s")
+    
+    # Generate response
+    reply_generator = run_ai(
+        message=final_query,
+        session_id=thread_id,
+        rag_context=rag_context,
+        chat_history=chat_history,
+        system_prompt=system_prompt,
+        temperature=0.7 if conversation_mode == "creative" else 0.3
+    )
+    
+    # return Response(reply_generator, mimetype="text/event-stream")
     # 3) Store messages in background using threads (will be called after streaming completes)
     def store_messages_background(full_text):
         """Store messages in background after streaming completes"""
@@ -370,7 +693,7 @@ def chat_and_store():
             for token in reply_generator:
                 token_count += 1
                 full_reply_text += token
-                print(f"[STREAM] Token {token_count}: {repr(token)}", flush=True)
+                # print(f"[STREAM] Token {token_count}: {repr(token)}", flush=True)
                 # Send token as Server-Sent Event (escape JSON properly)
                 yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
             
@@ -503,10 +826,15 @@ def _normalize_rag_rows(rows, query_terms):
     results = []
     for i, r in enumerate(rows or []):
         meta = r.get("metadata", {})
+        doc_text = r.get("document")
+        # Ensure document is a string, handle boolean and None values
+        if not isinstance(doc_text, str):
+            doc_text = str(doc_text) if doc_text is not None else ""
+        
         results.append({
             "id": r.get("id") or f"res_{i+1}",
             "score": _to_score(r.get("distance")),
-            "text": r.get("document") or "",
+            "text": doc_text or "",
             "source": meta.get("source") or "chat_session",
             "timestamp": _epoch_to_human(meta.get("timestamp")),
             "matches": query_terms,

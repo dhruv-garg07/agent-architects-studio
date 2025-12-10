@@ -75,7 +75,7 @@ def query_llm_with_history(message, history, rag_context, chat_history, **kwargs
     return response
 
 
-def query_llm_with_history_stream(message, history, rag_context, chat_history, **kwargs):
+def query_llm_with_history_stream(message, rag_context, chat_history, system_prompt, temperature, **kwargs):
     """
     Query Together AI LLM with the given message and history.
     Args:
@@ -93,7 +93,7 @@ def query_llm_with_history_stream(message, history, rag_context, chat_history, *
 
     
     summary = ""
-    print(chat_history)
+    # print(chat_history)
     if chat_history:
         # Create a summary of the chat history
         summary = "\n".join([f"User: {msg['role']}\nAI: {msg['content']}" for msg in chat_history])
