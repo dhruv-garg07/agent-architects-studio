@@ -564,11 +564,11 @@ def chat_and_store():
     
     # Select final rows based on mode
     if conversation_mode == ConversationMode.PRECISE:
-        final_rows = combined_rows[:6]
+        final_rows = combined_rows[:16]
     elif conversation_mode == ConversationMode.CREATIVE:
-        final_rows = combined_rows[:10]
+        final_rows = combined_rows[:20]
     else:
-        final_rows = combined_rows[:8]
+        final_rows = combined_rows[:18]
     
     # Filter out near-identical documents
     qn_norm = normalize_text(rewritten_user_msg)
@@ -586,7 +586,7 @@ def chat_and_store():
     chat_history = chat_history_cache.get_session_history(user_id, thread_id)
     if not chat_history:
         query_length = len(user_msg.split())
-        history_top_k = min(15, max(8, query_length * 2))
+        history_top_k = min(30, max(8, query_length * 2))
         
         chat_history = get_chat_history_by_session(
             user_id=user_id,
@@ -601,10 +601,10 @@ def chat_and_store():
     # Phase 5: Prepare context
     print(f"[CHAT] Phase 5: Context preparation")
     rag_context = []
-    for i, row in enumerate(filtered_rows[:6]):
+    for i, row in enumerate(filtered_rows):
         rag_context.append({
             "id": row.get("id", f"ctx_{i}"),
-            "content": row.get("document", "")[:500],
+            "content": row.get("document", ""),
             "score": row.get("final_score", 0),
             "source": row.get("source", "unknown"),
             "metadata": row.get("metadata", {})
@@ -692,7 +692,7 @@ def chat_and_store():
                 message=final_query,
                 session_id=thread_id,
                 rag_context=rag_context,
-                chat_history=chat_history[-10:],
+                chat_history=chat_history,
                 system_prompt=system_prompt,
                 temperature=0.7 if conversation_mode == ConversationMode.CREATIVE else 0.3
             )
