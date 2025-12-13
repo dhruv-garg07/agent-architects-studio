@@ -529,7 +529,7 @@ def chat_and_store():
         enhanced_chat = get_read_controller_chatH().fetch_related_to_query(
             user_ID=user_id,
             query=hybrid_query,
-            top_k=max(3, top_k['chat'] // 2)
+            top_k=max(20, top_k['chat'] // 2)
         )
         
         enhanced_file = []
@@ -537,7 +537,7 @@ def chat_and_store():
             enhanced_file = get_read_controller_file_data().fetch_related_to_query(
                 user_ID=user_id,
                 query=hybrid_query,
-                top_k=max(3, top_k['file'] // 2)
+                top_k=max(20, top_k['file'] // 2)
             )
         
         enhanced_rows = enhanced_chat + enhanced_file
@@ -564,11 +564,11 @@ def chat_and_store():
     
     # Select final rows based on mode
     if conversation_mode == ConversationMode.PRECISE:
-        final_rows = combined_rows[:16]
+        final_rows = combined_rows[:20]
     elif conversation_mode == ConversationMode.CREATIVE:
         final_rows = combined_rows[:20]
     else:
-        final_rows = combined_rows[:18]
+        final_rows = combined_rows[:20]
     
     # Filter out near-identical documents
     qn_norm = normalize_text(rewritten_user_msg)
@@ -586,7 +586,7 @@ def chat_and_store():
     chat_history = chat_history_cache.get_session_history(user_id, thread_id)
     if not chat_history:
         query_length = len(user_msg.split())
-        history_top_k = min(30, max(8, query_length * 2))
+        history_top_k = min(30, max(18, query_length * 2))
         
         chat_history = get_chat_history_by_session(
             user_id=user_id,
