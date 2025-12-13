@@ -45,8 +45,8 @@ class ConversationMode:
     CREATIVE = "creative"
 
 TOP_K_CONFIG = {
-    ConversationMode.PRECISE: {"chat": 10, "file": 3},
-    ConversationMode.BALANCED: {"chat": 16, "file": 7},
+    ConversationMode.PRECISE: {"chat": 20, "file": 3},
+    ConversationMode.BALANCED: {"chat": 20, "file": 7},
     ConversationMode.CREATIVE: {"chat": 20, "file": 10}
 }
 
