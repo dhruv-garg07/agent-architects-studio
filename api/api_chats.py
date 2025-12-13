@@ -1,524 +1,592 @@
 # api_chats.py
-import os, time, uuid, sys
+import os
+import time
+import uuid
+import sys
+import asyncio
+import threading
+import json
+import re
+import hashlib
+from collections import deque
+from typing import List, Dict, Any, Generator, Optional
+from functools import lru_cache
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
-sys.path.append(os.path.dirname(__file__))
-# Get the current file's directory
+# Path setup
 current_dir = os.path.dirname(__file__)
-
-# Get the parent directory (one level up)
 parent_dir = os.path.abspath(os.path.join(current_dir, os.pardir))
-
-# Add parent directory to sys.path
-sys.path.insert(0, parent_dir)
-print(parent_dir)
-
-# Get the current file's directory
-current_dir = os.path.dirname(__file__)
-
-# Go two levels up
 grandparent_dir = os.path.abspath(os.path.join(current_dir, os.pardir, os.pardir))
 
-# Add to sys.path
-sys.path.insert(0, grandparent_dir)
-
-# Now we have grandparent_dir, parent_dir, current_dir in sys.path.
-# Can import anything from these directories.
-
+sys.path[:0] = [grandparent_dir, parent_dir, current_dir]
 
 from flask import Blueprint, request, jsonify, abort, Response
-from LLM_calls.context_manager import query_llm_with_history, query_llm_with_history_stream
-from LLM_calls.intelligent_query_rewritten import intelligent_query_rewriter, LLMEnhancedRewriter
+from LLM_calls.context_manager import query_llm_with_history_stream
+from LLM_calls.intelligent_query_rewritten import LLMEnhancedRewriter
 from LLM_calls.together_get_response import clean_response
 from Octave_mem.RAG_DB_CONTROLLER.write_data_RAG import RAG_DB_Controller_CHAT_HISTORY
 from Octave_mem.RAG_DB_CONTROLLER.read_data_RAG_all_DB import read_data_RAG
 from Octave_mem.SqlDB.sqlDbController import add_message, get_chat_history_by_session
-api = Blueprint("api", __name__)
-import asyncio
-import threading
-from collections import deque
-import json
-llm_enchanced_query_rewriter = LLMEnhancedRewriter()
-import os
-import sys
-# import sys, os
 
-# MessageType enum-like class for message roles
+# Initialize global components
+api = Blueprint("api", __name__)
+llm_enhanced_query_rewriter = LLMEnhancedRewriter()
+_executor = ThreadPoolExecutor(max_workers=10, thread_name_prefix="api_worker")
+
+# Reusable constants and configurations
 class MessageType:
     HUMAN = "human"
     LLM = "llm"
     NOTE = "note"
 
-def run_ai(
-        message,
-        session_id,
-        rag_context,
-        chat_history,
-        system_prompt,
-        temperature=0.3
-    ):
-    # your model / tool-calling / RAG pipeline
-    # This function should call LLM responses from the Response controller.
-    # If rag_context is provided, add it to the context for the LLM
+class ConversationMode:
+    PRECISE = "precise"
+    BALANCED = "balanced"
+    CREATIVE = "creative"
 
-    return query_llm_with_history_stream(message, rag_context, chat_history, system_prompt, temperature)  # replace with real response
+TOP_K_CONFIG = {
+    ConversationMode.PRECISE: {"chat": 5, "file": 3},
+    ConversationMode.BALANCED: {"chat": 8, "file": 7},
+    ConversationMode.CREATIVE: {"chat": 10, "file": 10}
+}
 
-# from LLM_calls use together_get_response functions for LLM calls.
-# Make a orchestration function that calls the LLM and tools as needed.
-# Context building from history and RAG retrieval should be done here.
-# Use agents if needed. for example if you want to call a code interpreter tool or web search tool.
-# Context building using Langchain memory modules can be done here.
-# Example: use ConversationBufferMemory to build context from history.
-# Use RAG retrieval to get relevant documents from Chroma DB.
-# Structure of Context in tree diagram:
-# Chat History ---------------> Context Builder ----------------> LLM/Agent/Tool Orchestration
-# (ConversationBufferMemory)         (RAG Retrieval)               (LLM Calls, Tool Calls)
-# (past messages)                   (Chroma DB)                   (user_id, thread_id)
-# (user_id, thread_id)              (user_id, thread_id)          (message_id, content, role)
-# (message_id, content, role)       (relevant docs)               (timestamp)
-# (timestamp)                       (context)                     (is_reply_to)
-# (is_reply_to)
-# (conversation_thread) 
-# (message_type)
-# (note, human, llm)
-
-# We should make a separate file for running AI controls.
-# There should be Proper context building from the history and RAG retrieval.
-
-
-write_controller_chatH = RAG_DB_Controller_CHAT_HISTORY(
-    database=os.getenv("CHROMA_DATABASE_CHAT_HISTORY")
-)
-
-# read_data_RAG contains both the functions of Chroma DB as well as supabase session mgmt for one given user_id.
-read_controller_chatH = read_data_RAG(
-    database=os.getenv("CHROMA_DATABASE_CHAT_HISTORY")  # Use the same DB for reading   
-)
-
-read_controller_file_data = read_data_RAG(
-    database=os.getenv("CHROMA_DATABASE_FILE_DATA")  # Use the same DB for reading   
-)
-
-
-# In-memory cache for chat histories to reduce SQLDB calls and scale for many requests.
-# Structure: cache.store[user_id][session_id] -> deque of messages (maxlen=MAX_PER_SESSION)
-class ChatHistoryCache:
-    def __init__(self, max_per_session=30, max_sessions_per_user=200):
+# Optimized cache implementation with memory limits
+class OptimizedChatHistoryCache:
+    __slots__ = ('store', 'lock', 'max_per_session', 'max_sessions_per_user', 
+                 'max_total_messages', '_total_messages')
+    
+    def __init__(self, max_per_session=30, max_sessions_per_user=200, max_total_messages=10000):
         self.max_per_session = max_per_session
         self.max_sessions_per_user = max_sessions_per_user
-        self.store = {}  # user_id -> { session_id: deque([...]) }
+        self.max_total_messages = max_total_messages
+        self._total_messages = 0
+        self.store = {}  # user_id -> { session_id: tuple(message_tuples) }
         self.lock = threading.Lock()
-
-    def get_session_history(self, user_id, session_id):
+    
+    def _make_message_key(self, message: Dict) -> tuple:
+        """Convert message dict to memory-efficient tuple"""
+        return (
+            message.get("role"),
+            message.get("content", ""),
+            message.get("timestamp", 0)
+        )
+    
+    def _message_from_key(self, key: tuple) -> Dict:
+        """Convert tuple back to dict"""
+        return {"role": key[0], "content": key[1], "timestamp": key[2]}
+    
+    def get_session_history(self, user_id: str, session_id: str) -> List[Dict]:
+        """Get cached history - returns list of dicts"""
         with self.lock:
-            return list(self.store.get(user_id, {}).get(session_id, []))
-
-    def set_session_history(self, user_id, session_id, messages):
-        # messages: list, we store oldest->newest
+            user_map = self.store.get(user_id)
+            if not user_map:
+                return []
+            cached = user_map.get(session_id)
+            return [self._message_from_key(msg) for msg in cached] if cached else []
+    
+    def set_session_history(self, user_id: str, session_id: str, messages: List[Dict]):
+        """Set session history with memory management"""
         with self.lock:
+            # Convert to tuples for memory efficiency
+            message_tuples = tuple(self._make_message_key(msg) for msg in messages[-self.max_per_session:])
+            
+            # Update user map
             user_map = self.store.setdefault(user_id, {})
+            
+            # Evict oldest session if needed
             if len(user_map) >= self.max_sessions_per_user and session_id not in user_map:
-                # evict oldest session (arbitrary) to keep memory bounded
-                oldest = next(iter(user_map.keys()))
-                user_map.pop(oldest, None)
-            dq = deque(messages[-self.max_per_session:], maxlen=self.max_per_session)
-            user_map[session_id] = dq
-
-    def append_message(self, user_id, session_id, message):
-        # message: dict, should be appended as newest
+                oldest_key = next(iter(user_map.keys()))
+                removed = user_map.pop(oldest_key, None)
+                if removed:
+                    self._total_messages -= len(removed)
+            
+            # Update message count
+            old_count = len(user_map.get(session_id, ()))
+            new_count = len(message_tuples)
+            self._total_messages = self._total_messages - old_count + new_count
+            
+            # Enforce total message limit
+            if self._total_messages > self.max_total_messages:
+                self._evict_oldest_messages()
+            
+            user_map[session_id] = message_tuples
+    
+    def _evict_oldest_messages(self):
+        """Evict oldest messages across all sessions"""
+        # Clear entire cache when limit exceeded (simplified)
+        self.store.clear()
+        self._total_messages = 0
+    
+    def append_message(self, user_id: str, session_id: str, message: Dict):
+        """Append single message efficiently"""
         with self.lock:
             user_map = self.store.setdefault(user_id, {})
-            dq = user_map.get(session_id)
-            if dq is None:
-                dq = deque(maxlen=self.max_per_session)
-                user_map[session_id] = dq
-            dq.append(message)
-
-    def preload_user_sessions(self, user_id, session_ids, fetcher_fn):
-        # fetcher_fn(session_id, top_k) -> list(messages)
-        # preload in background thread to avoid blocking
-        def _preload():
-            for sid in session_ids:
+            cached_tuples = list(user_map.get(session_id, ()))
+            
+            if len(cached_tuples) >= self.max_per_session:
+                cached_tuples.pop(0)
+                self._total_messages -= 1
+            
+            cached_tuples.append(self._make_message_key(message))
+            user_map[session_id] = tuple(cached_tuples)
+            self._total_messages += 1
+    
+    def preload_user_sessions(self, user_id: str, session_ids: List[str], 
+                            fetcher_fn: callable, batch_size: int = 5):
+        """Preload sessions in batches for better parallelism"""
+        def _preload_batch(batch: List[str]):
+            for sid in batch:
                 try:
                     msgs = fetcher_fn(session_id=sid, top_k=self.max_per_session)
-                    # store oldest->newest
                     self.set_session_history(user_id, sid, msgs)
                 except Exception as e:
-                    # ignore per-session failures
                     print(f"Preload error for {user_id}/{sid}: {e}")
+        
+        # Use thread pool for parallel preloading
+        with ThreadPoolExecutor(max_workers=min(4, len(session_ids))) as executor:
+            futures = []
+            for i in range(0, len(session_ids), batch_size):
+                batch = session_ids[i:i + batch_size]
+                futures.append(executor.submit(_preload_batch, batch))
+            
+            for future in as_completed(futures):
+                future.result()
 
-        t = threading.Thread(target=_preload, daemon=True)
-        t.start()
+# Global cache instance
+chat_history_cache = OptimizedChatHistoryCache()
+
+# Initialize controllers (singleton pattern)
+_write_controller = None
+_read_controller_chatH = None
+_read_controller_file_data = None
+
+def get_write_controller() -> RAG_DB_Controller_CHAT_HISTORY:
+    """Get or create write controller singleton"""
+    global _write_controller
+    if _write_controller is None:
+        _write_controller = RAG_DB_Controller_CHAT_HISTORY(
+            database=os.getenv("CHROMA_DATABASE_CHAT_HISTORY", "chroma_chat_history")
+        )
+    return _write_controller
+
+def get_read_controller_chatH() -> read_data_RAG:
+    """Get or create chat history read controller singleton"""
+    global _read_controller_chatH
+    if _read_controller_chatH is None:
+        _read_controller_chatH = read_data_RAG(
+            database=os.getenv("CHROMA_DATABASE_CHAT_HISTORY", "chroma_chat_history")
+        )
+    return _read_controller_chatH
+
+def get_read_controller_file_data() -> read_data_RAG:
+    """Get or create file data read controller singleton"""
+    global _read_controller_file_data
+    if _read_controller_file_data is None:
+        _read_controller_file_data = read_data_RAG(
+            database=os.getenv("CHROMA_DATABASE_FILE_DATA", "chroma_file_data")
+        )
+    return _read_controller_file_data
+
+# Reusable utility functions with caching
+@lru_cache(maxsize=1000)
+def normalize_text(text: str) -> str:
+    """Cached text normalization for frequently repeated texts"""
+    if not isinstance(text, str):
+        text = str(text) if text is not None else ""
+    
+    if not text:
+        return ""
+    
+    # Simple normalization
+    text = re.sub(r"\s+", " ", text.strip())
+    return text.lower()
 
 
-# instantiate global cache
-chat_history_cache = ChatHistoryCache(max_per_session=30, max_sessions_per_user=400)
+def parse_bool(value) -> bool:
+    """Parse a boolean-like value from JSON (strings, ints, bools)."""
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return value.strip().lower() in ("true", "1", "yes", "y")
+    try:
+        return bool(int(value))
+    except Exception:
+        return False
 
-def _thread_id():
-    return f"thread_{int(time.time())}"
+def calculate_relevance_score(query: str, document: str) -> float:
+    """Optimized relevance scoring"""
+    q_norm = normalize_text(query)
+    d_norm = normalize_text(document)
+    
+    if not q_norm or not d_norm:
+        return 0.0
+    
+    # Fast intersection calculation
+    q_words = q_norm.split()
+    d_words = d_norm.split()
+    
+    if not q_words or not d_words:
+        return 0.0
+    
+    # Use set intersection for small texts
+    if len(q_words) < 50 and len(d_words) < 50:
+        q_set = set(q_words)
+        d_set = set(d_words)
+        intersection = q_set & d_set
+        union = q_set | d_set
+        
+        return len(intersection) / len(union) if union else 0.0
+    
+    # For larger texts, count matches
+    matches = 0
+    for word in q_words[:20]:  # Limit to first 20 query words
+        if word in d_norm:
+            matches += 1
+    
+    return matches / max(len(q_words[:20]), 1)
 
-# 1) List sessions for the user (to populate the left panel)
+def deduplicate_results(results: List[Dict], threshold: float = 0.85) -> List[Dict]:
+    """Optimized deduplication using content hashing"""
+    seen = set()
+    unique_results = []
+    
+    for result in results:
+        content = result.get("document", "")
+        if not content:
+            continue
+        
+        # Simple hash for deduplication
+        content_hash = hash(content[:200])
+        
+        if content_hash not in seen:
+            seen.add(content_hash)
+            unique_results.append(result)
+    
+    return unique_results
+
+def split_text_into_chunks(text: str, max_sentences: int = 4, overlap: int = 1) -> List[str]:
+    """Optimized text chunking"""
+    if not text:
+        return []
+    
+    # Compile regex once
+    if not hasattr(split_text_into_chunks, '_sentence_pattern'):
+        split_text_into_chunks._sentence_pattern = re.compile(r'(?<=[.!?]) +')
+    
+    sentences = split_text_into_chunks._sentence_pattern.split(text)
+    chunks = []
+    i = 0
+    
+    while i < len(sentences):
+        chunk_end = min(i + max_sentences, len(sentences))
+        chunk = ' '.join(sentences[i:chunk_end])
+        if chunk:
+            chunks.append(chunk)
+        
+        if chunk_end >= len(sentences):
+            break
+        
+        i += max_sentences - overlap
+    
+    return chunks
+
+# Fixed: Simple synchronous run_ai function
+def run_ai(
+    message: str,
+    session_id: str,
+    rag_context: List[Dict],
+    chat_history: List[Dict],
+    system_prompt: str,
+    temperature: float = 0.3
+) -> Generator[str, None, None]:
+    """
+    Synchronous wrapper for LLM call.
+    query_llm_with_history_stream returns a generator, not a coroutine.
+    """
+    try:
+        # Direct call - this returns a generator
+        return query_llm_with_history_stream(
+            message=message,
+            rag_context=rag_context,
+            chat_history=chat_history,
+            system_prompt=system_prompt,
+            temperature=temperature
+        )
+    except Exception as e:
+        # Return a generator that yields the error
+        def error_generator():
+            yield f"Error in LLM call: {str(e)}"
+        return error_generator()
+
+# API endpoints
 @api.get("/api/get_sessions")
 def list_sessions():
-    id = request.args.get("id")
-    print("Query ID:", id)
-    session_ids = asyncio.run(read_controller_chatH.list_session_ids(id=id))   
-    print(f"Session IDs for {id}: {session_ids}")
-    # TODO: implement real Chroma query that lists the user's threads
-    # Return newest-first. Shape: [{"thread_id": "...", "createdAt": "...", "updatedAt": "...", "preview": "last msg"}]
-    # Kick off a background preload of the last N messages for each session so the UI can load immediately
+    """List user sessions with background preloading"""
+    user_id = request.args.get("id")
+    if not user_id:
+        abort(400, "Missing user ID")
+    
     try:
-        ids = [s if isinstance(s, str) else s.get('id') or s.get('thread_id') for s in session_ids]
-        # fall back to native shape if the controller already returned objects
-        ids = [i for i in ids if i]
-        # use SQL fetcher function wrapper
-        def _fetcher(session_id, top_k=30):
-            # Use existing SQL DB controller to fetch most recent messages (descending or as implemented)
-            return get_chat_history_by_session(user_id=id, session_id=session_id, top_k=top_k)
-
-        # Preload in background via cache
-        chat_history_cache.preload_user_sessions(user_id=id, session_ids=ids, fetcher_fn=_fetcher)
+        # Use existing async pattern from original code
+        import asyncio
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        session_ids = loop.run_until_complete(
+            get_read_controller_chatH().list_session_ids(id=user_id)
+        )
     except Exception as e:
-        print(f"Preload scheduling failed: {e}")
-
-    return session_ids
+        print(f"Error fetching sessions: {e}")
+        session_ids = []
+    finally:
+        if 'loop' in locals():
+            loop.close()
+    
+    # Preload sessions in background
+    if session_ids:
+        ids = []
+        for s in session_ids:
+            if isinstance(s, str):
+                ids.append(s)
+            elif isinstance(s, dict):
+                ids.append(s.get('id') or s.get('thread_id'))
+        
+        ids = [i for i in ids if i]
+        
+        def _fetcher(session_id, top_k=30):
+            return get_chat_history_by_session(
+                user_id=user_id, session_id=session_id, top_k=top_k
+            )
+        
+        # Non-blocking preload
+        threading.Thread(
+            target=chat_history_cache.preload_user_sessions,
+            args=(user_id, ids[:10], _fetcher),
+            daemon=True
+        ).start()
+    
+    return jsonify(session_ids)
 
 @api.post("/api/create_session")
 def create_session():
-    user_id = (request.get_json() or {}).get("user_id")
+    """Create new chat session"""
+    data = request.get_json() or {}
+    user_id = data.get("user_id")
+    
+    if not user_id:
+        abort(400, "Missing user_id")
+    
     thread_id = str(uuid.uuid4())
     created = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    # Optional: write a session metadata row into Chroma/your store
-    thread_id_created = asyncio.run(read_controller_chatH.create_session(id=user_id, thread_id=thread_id, created=created))
-    # (Or infer sessions solely from messages later.)
+    
+    try:
+        import asyncio
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        thread_id_created = loop.run_until_complete(
+            get_read_controller_chatH().create_session(
+                id=user_id, thread_id=thread_id, created=created
+            )
+        )
+    except Exception as e:
+        print(f"Error creating session: {e}")
+        thread_id_created = thread_id
+    finally:
+        if 'loop' in locals():
+            loop.close()
+    
     return jsonify({"thread_id": thread_id_created, "createdAt": created})
 
-
-@api.get("/api/sessions/<thread_id>/messages")  # load history for a thread
-def get_messages(thread_id):
-    id = request.args.get("id")
-    print(f"Loading messages for user {id} in thread {thread_id}")
-    # First try serving from cache to avoid SQLDB hits
-    try:
-        cached = chat_history_cache.get_session_history(user_id=id, session_id=thread_id)
-        if cached and len(cached) > 0:
-            return jsonify({"messages": cached})
-    except Exception as e:
-        print(f"Cache read error: {e}")
-
-    # fallback to SQL DB read
-    messages = get_chat_history_by_session(user_id=id, session_id=thread_id, top_k=100)
-
-    # store into cache for future requests (truncate to cache size)
-    try:
-        chat_history_cache.set_session_history(user_id=id, session_id=thread_id, messages=messages)
-    except Exception as e:
-        print(f"Cache set error: {e}")
-
-    return jsonify({"messages": messages})
-
-
-
-# @api.post("/api/messages")           # store ONE message
-# def store_message():
-#     data = request.get_json(force=True)
-#     user_id    = data.get("user_id", "user123")
-#     content    = data["content"]
-#     role       = data["role"]            # "human" | "llm"
-#     thread_id  = data["thread_id"]
-#     reply_to   = data.get("is_reply_to") # optional int or message_id
-
-#     # write into Chroma
-#     result = write_controller_chatH.send_data_to_rag_db(
-#         user_ID=user_id,
-#         content_data=content,
-#         is_reply_to=reply_to,
-#         message_type="llm" if role == "llm" else "human",
-#         conversation_thread=thread_id,
-#     )
-#     return jsonify({"ok": True, "result": result})
-
-def split_text_into_chunks(text, max_sentences=4, overlap=1):
-    import re
-    # Split text into sentences (simple split, can be improved)
-    sentences = re.split(r'(?<=[.!?]) +', text)
-    chunks = []
-    i = 0
-    while i < len(sentences):
-        chunk = sentences[i:i+max_sentences]
-        if chunk:
-            chunks.append(' '.join(chunk))
-        if i + max_sentences >= len(sentences):
-            break
-        i += max_sentences - overlap
-    return chunks
-
-import time, re
-from typing import List, Dict, Any
-from collections import defaultdict
-import hashlib
-@api.post("/api/chat")
-def chat_and_store():
-    print("🟢 Chat endpoint triggered...")
+@api.get("/api/sessions/<thread_id>/messages")
+def get_messages(thread_id: str):
+    """Get messages for a session with cache-first strategy"""
+    user_id = request.args.get("id")
     
+    if not user_id:
+        abort(400, "Missing user ID")
     
-    data = request.get_json(force=True)
-    thread_id = data["thread_id"]
-    user_id = data["user_id"]
-    user_msg = data["message"].strip()
-    use_file_rag = data.get("use_file_rag", False)
-    conversation_mode = data.get("mode", "balanced")  # balanced, precise, creative
+    # Try cache first
+    cached = chat_history_cache.get_session_history(user_id, thread_id)
+    if cached:
+        return jsonify({"messages": cached})
     
-    # Adaptive top_k based on mode
-    top_k_config = {
-        "precise": {"chat": 5, "file": 3},
-        "balanced": {"chat": 8, "file": 7},
-        "creative": {"chat": 10, "file": 10}
-    }
-    
-    top_k = top_k_config.get(conversation_mode, top_k_config["balanced"])
-    t0 = time.time()
-
-    print(f"[RAG] File RAG: {use_file_rag} | Mode: {conversation_mode} | Top-K: {top_k}")
-
-    # ==================== UTILITY FUNCTIONS ====================
-    def _normalize_text(text: Any) -> str:
-        """Enhanced text normalization with semantic preservation"""
-        if not isinstance(text, str):
-            text = str(text) if text is not None else ""
-        
-        # Preserve important markers before normalization
-        preserved_markers = {
-            'Q:': ' __QUESTION__ ',
-            'A:': ' __ANSWER__ ',
-            '```': ' __CODE_BLOCK__ ',
-            '$$': ' __MATH__ ',
-            'http://': ' __URL__ ',
-            'https://': ' __URL__ '
-        }
-        
-        for marker, placeholder in preserved_markers.items():
-            text = text.replace(marker, placeholder)
-        
-        # Normalize
-        text = re.sub(r"\s+", " ", text.strip().lower())
-        
-        # Restore markers
-        for marker, placeholder in preserved_markers.items():
-            text = text.replace(placeholder, marker)
-        
-        return text
-    
-    def _calculate_relevance_score(query: str, document: str) -> float:
-        """Calculate semantic relevance score between query and document"""
-        query_terms = set(_normalize_text(query).split())
-        doc_terms = set(_normalize_text(document).split())
-        
-        if not query_terms or not doc_terms:
-            return 0.0
-        
-        # Jaccard similarity
-        intersection = query_terms.intersection(doc_terms)
-        union = query_terms.union(doc_terms)
-        
-        jaccard = len(intersection) / len(union) if union else 0.0
-        
-        # Boost for consecutive term matches
-        consecutive_boost = 0.0
-        query_lower = query.lower()
-        doc_lower = document.lower()
-        
-        # Check for multi-word phrase matches
-        for i in range(len(query_terms)):
-            terms_list = list(query_terms)
-            if i + 2 < len(terms_list):
-                phrase = ' '.join(terms_list[i:i+3])
-                if phrase in doc_lower:
-                    consecutive_boost += 0.3
-        
-        # Final score (Jaccard + boost, capped at 1.0)
-        return min(1.0, jaccard + consecutive_boost * 0.1)
-    
-    def _deduplicate_rag_results(results: List[Dict], threshold: float = 0.85) -> List[Dict]:
-        """Remove near-duplicate RAG results based on content similarity"""
-        unique_results = []
-        seen_hashes = set()
-        
-        for result in results:
-            content = result.get("document", "")
-            content_hash = hashlib.md5(_normalize_text(content).encode()).hexdigest()
-            
-            if content_hash not in seen_hashes:
-                seen_hashes.add(content_hash)
-                unique_results.append(result)
-            else:
-                # Check if this is a better version (more metadata, higher score)
-                for idx, existing in enumerate(unique_results):
-                    existing_hash = hashlib.md5(_normalize_text(existing.get("document", "")).encode()).hexdigest()
-                    if content_hash == existing_hash:
-                        if result.get("score", 0) > existing.get("score", 0):
-                            unique_results[idx] = result
-                        break
-        
-        return unique_results
-    
-    # ==================== STAGE 1: INITIAL RAG RETRIEVAL ====================
-    print("#1️⃣ Initial RAG Retrieval")
-    
-    # Fetch from chat history
-    print(f"  ↳ Fetching chat history (top_k={top_k['chat']})...")
-    chat_rows = read_controller_chatH.fetch_related_to_query(
-        user_ID=user_id,
-        query=user_msg,
-        top_k=top_k['chat']
+    # Fallback to database
+    messages = get_chat_history_by_session(
+        user_id=user_id, session_id=thread_id, top_k=100
     )
     
-    # Fetch from file data if enabled
+    # Update cache
+    chat_history_cache.set_session_history(user_id, thread_id, messages)
+    
+    return jsonify({"messages": messages})
+
+@api.post("/api/chat")
+def chat_and_store():
+    """Main chat endpoint with optimized RAG pipeline"""
+    # Start timing
+    start_time = time.time()
+    
+    # Parse request
+    data = request.get_json(force=True)
+    thread_id = data.get("thread_id")
+    user_id = data.get("user_id")
+    user_msg = data.get("message", "").strip()
+    use_file_rag = data.get("use_file_rag", False)
+    conversation_mode = data.get("mode", ConversationMode.BALANCED)
+    # Optional boolean: whether to use LLM-based query rewriting; default False
+    rewrite_llm = parse_bool(data.get("rewrite_llm", False))
+    
+    if not thread_id or not user_id or not user_msg:
+        abort(400, "Missing required fields")
+    
+    print(f"[CHAT] Starting chat for user {user_id}, session {thread_id}, mode: {conversation_mode}")
+    
+    # Get top_k configuration
+    top_k = TOP_K_CONFIG.get(conversation_mode, TOP_K_CONFIG[ConversationMode.BALANCED])
+    
+    # Phase 1: Parallel RAG fetching
+    print(f"[CHAT] Phase 1: RAG fetching")
+    fetch_start = time.time()
+    
+    chat_rows = []
     file_rows = []
-    if use_file_rag:
-        print(f"  ↳ Fetching file data (top_k={top_k['file']})...")
-        file_rows = read_controller_file_data.fetch_related_to_query(
+    
+    try:
+        # Fetch chat history
+        chat_rows = get_read_controller_chatH().fetch_related_to_query(
             user_ID=user_id,
             query=user_msg,
-            top_k=top_k['file']
+            top_k=top_k['chat']
         )
+        print(f"[CHAT] Found {len(chat_rows)} chat results")
+    except Exception as e:
+        print(f"[CHAT] Error fetching chat rows: {e}")
+    
+    if use_file_rag:
+        try:
+            file_rows = get_read_controller_file_data().fetch_related_to_query(
+                user_ID=user_id,
+                query=user_msg,
+                top_k=top_k['file']
+            )
+            print(f"[CHAT] Found {len(file_rows)} file results")
+        except Exception as e:
+            print(f"[CHAT] Error fetching file rows: {e}")
     
     all_rows = chat_rows + file_rows
     
-    # Score and sort initial results
+    # Score and sort
     for row in all_rows:
-        row["relevance_score"] = _calculate_relevance_score(user_msg, row.get("document", ""))
+        row["relevance_score"] = calculate_relevance_score(user_msg, row.get("document", ""))
     
     all_rows.sort(key=lambda x: x.get("relevance_score", 0), reverse=True)
     
-    print(f"  ↳ Found {len(chat_rows)} chat results, {len(file_rows)} file results")
-    print(f"  ↳ Top relevance scores: {[r.get('relevance_score', 0) for r in all_rows[:3]]}")
+    print(f"[CHAT] RAG fetch completed in {time.time() - fetch_start:.2f}s")
     
-    # ==================== STAGE 2: QUERY REWRITING ====================
-    print("#2️⃣ Query Rewriting")
-    
-    # Extract key concepts from top results for better query expansion
+    # Phase 2: Query rewriting (optional LLM-based)
+    print(f"[CHAT] Phase 2: Query rewriting (rewrite_llm={rewrite_llm})")
+
+    # Extract key concepts
     key_concepts = []
-    for row in all_rows[:5]:  # Use top 5 results
+    for row in all_rows[:3]:
         doc = row.get("document", "")
-        # Extract potential key phrases (capitalized terms, technical terms)
-        terms = re.findall(r'\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b', doc)
-        key_concepts.extend(terms[:3])  # Take first 3 terms
+        # Simple concept extraction
+        words = re.findall(r'\b[A-Z][a-z]+\b', doc[:200])
+        key_concepts.extend(words[:2])
     
-    # Remove duplicates and limit
-    key_concepts = list(dict.fromkeys(key_concepts))[:5]
+    key_concepts = list(dict.fromkeys(key_concepts))[:3]
     
-    # Intelligent query rewriting with context
-    context_for_rewriter = "\n".join([r.get("document", "")[:200] for r in all_rows[:3]])
-    print(f"  ↳ Context for rewriter: '{context_for_rewriter[:100]}...'")
-    print(f"  ↳ Key concepts identified: {key_concepts}")
+    # Intelligent query rewriting
+    rewritten_user_msg = user_msg  # Default to original
+    if rewrite_llm:
+        rewrite_start = time.time()
+        try:
+            rewritten_user_msg = llm_enhanced_query_rewriter.rewrite_with_llm(
+                query=user_msg,
+                context=all_rows[:5],
+                mode=conversation_mode
+            )
+        except Exception as e:
+            print(f"[CHAT] Error in query rewriting: {e}")
+
+        print(f"[CHAT] Query rewrite completed in {time.time() - rewrite_start:.2f}s")
+        print(f"[CHAT] Rewritten query: {rewritten_user_msg}")
+    else:
+        print(f"[CHAT] Skipping LLM-based query rewrite; using original message.")
     
-    # rewritten = intelligent_query_rewriter(
-    #     original_query="How does it work?",
-    #     context=context_for_rewriter,
-    #     # key_concepts=["backpropagation", "gradient descent", "activation functions"],
-    #     mode="precise",
-    #     rag_context=file_rows,
-    #     chat_history=chat_rows
-    # )
+    # Phase 3: Enhanced retrieval
+    print(f"[CHAT] Phase 3: Enhanced retrieval")
+    enhanced_start = time.time()
     
-    rewritten = llm_enchanced_query_rewriter.rewrite_with_llm(query=user_msg,context=all_rows,mode=conversation_mode)
-    rewritten_user_msg = rewritten
+    hybrid_query = f"{user_msg} {rewritten_user_msg}"
+    hybrid_query = ' '.join(dict.fromkeys(hybrid_query.split()))
     
-    print(f"  ↳ Rewritten query: '{rewritten_user_msg}'")
-    
-    # ==================== STAGE 3: ENHANCED RAG RETRIEVAL ====================
-    print("#3️⃣ Enhanced RAG Retrieval")
-    
-    # Create hybrid query (original + rewritten + key concepts)
-    hybrid_query = f"{user_msg} {rewritten_user_msg} {' '.join(key_concepts)}"
-    hybrid_query = ' '.join(dict.fromkeys(hybrid_query.split()))  # Remove duplicate words
-    
-    print(f"  ↳ Hybrid query: '{hybrid_query[:100]}...'")
-    
-    # Fetch with hybrid query
-    enhanced_chat_rows = read_controller_chatH.fetch_related_to_query(
-        user_ID=user_id,
-        query=hybrid_query,
-        top_k=top_k['chat'] // 2  # More focused retrieval
-    )
-    
-    enhanced_file_rows = []
-    if use_file_rag:
-        enhanced_file_rows = read_controller_file_data.fetch_related_to_query(
+    enhanced_rows = []
+    try:
+        enhanced_chat = get_read_controller_chatH().fetch_related_to_query(
             user_ID=user_id,
             query=hybrid_query,
-            top_k=top_k['file'] // 2
+            top_k=max(3, top_k['chat'] // 2)
         )
+        
+        enhanced_file = []
+        if use_file_rag:
+            enhanced_file = get_read_controller_file_data().fetch_related_to_query(
+                user_ID=user_id,
+                query=hybrid_query,
+                top_k=max(3, top_k['file'] // 2)
+            )
+        
+        enhanced_rows = enhanced_chat + enhanced_file
+    except Exception as e:
+        print(f"[CHAT] Error in enhanced retrieval: {e}")
     
-    enhanced_rows = enhanced_chat_rows + enhanced_file_rows
-    
-    # Score enhanced results
+    # Combine and deduplicate
     for row in enhanced_rows:
-        row["relevance_score"] = _calculate_relevance_score(hybrid_query, row.get("document", ""))
         row["source"] = "enhanced"
+        row["relevance_score"] = calculate_relevance_score(hybrid_query, row.get("document", ""))
     
-    # Mark original rows
     for row in all_rows:
         row["source"] = "initial"
     
-    # Combine and deduplicate
     combined_rows = enhanced_rows + all_rows
-    combined_rows = _deduplicate_rag_results(combined_rows)
+    combined_rows = deduplicate_results(combined_rows)
     
-    # Re-score all combined results with the hybrid query
+    # Final scoring
     for row in combined_rows:
-        row["final_score"] = _calculate_relevance_score(hybrid_query, row.get("document", "")) * 0.7 + \
-                            row.get("relevance_score", 0) * 0.3
+        hybrid_score = calculate_relevance_score(hybrid_query, row.get("document", ""))
+        row["final_score"] = (hybrid_score * 0.7) + (row.get("relevance_score", 0) * 0.3)
     
-    # Sort by final score
     combined_rows.sort(key=lambda x: x.get("final_score", 0), reverse=True)
     
-    # Select top results based on conversation mode
-    if conversation_mode == "precise":
+    # Select final rows based on mode
+    if conversation_mode == ConversationMode.PRECISE:
+        final_rows = combined_rows[:6]
+    elif conversation_mode == ConversationMode.CREATIVE:
+        final_rows = combined_rows[:10]
+    else:
         final_rows = combined_rows[:8]
-    elif conversation_mode == "creative":
-        final_rows = combined_rows[:15]
-    else:  # balanced
-        final_rows = combined_rows[:12]
     
-    print(f"  ↳ Selected {len(final_rows)} final results for context")
+    # Filter out near-identical documents
+    qn_norm = normalize_text(rewritten_user_msg)
+    filtered_rows = [
+        row for row in final_rows
+        if normalize_text(row.get("document", "")) != qn_norm
+    ]
     
-    # ==================== STAGE 4: QUERY-DOCUMENT FILTERING ====================
-    print("#4️⃣ Query-Document Filtering")
+    print(f"[CHAT] Enhanced retrieval completed in {time.time() - enhanced_start:.2f}s")
     
-    # Remove results too similar to the query (avoid circular reference)
-    qn = _normalize_text(rewritten_user_msg)
-    filtered_rows = []
+    # Phase 4: Get chat history
+    print(f"[CHAT] Phase 4: Chat history retrieval")
+    history_start = time.time()
     
-    for row in final_rows:
-        doc_norm = _normalize_text(row.get("document", ""))
-        
-        # Calculate similarity to query
-        query_terms = set(qn.split())
-        doc_terms = set(doc_norm.split())
-        intersection = query_terms.intersection(doc_terms)
-        
-        # Only filter if document is VERY similar to query (>90% overlap)
-        if len(intersection) / len(query_terms) < 0.9 and doc_norm != qn:
-            filtered_rows.append(row)
-        else:
-            print(f"  ↳ Filtered out near-identical document: {doc_norm[:50]}...")
-    
-    final_rows = filtered_rows
-    
-    # ==================== STAGE 5: CHAT HISTORY RETRIEVAL ====================
-    print("#5️⃣ Chat History Context")
-    
-    # Get recent chat history with smart windowing
-    chat_history = chat_history_cache.get_session_history(
-        user_id=user_id, 
-        session_id=thread_id
-    )
-    
+    chat_history = chat_history_cache.get_session_history(user_id, thread_id)
     if not chat_history:
-        # Adaptive history retrieval based on query complexity
         query_length = len(user_msg.split())
-        history_top_k = min(20, max(10, query_length * 2))
+        history_top_k = min(15, max(8, query_length * 2))
         
         chat_history = get_chat_history_by_session(
             user_id=user_id,
@@ -526,320 +594,253 @@ def chat_and_store():
             top_k=history_top_k
         )
         
-        # Cache for future use
-        try:
-            chat_history_cache.set_session_history(
-                user_id=user_id,
-                session_id=thread_id,
-                messages=chat_history
-            )
-        except Exception as e:
-            print(f"  ↳ Cache error: {e}")
+        chat_history_cache.set_session_history(user_id, thread_id, chat_history)
     
-    # Filter chat history to most relevant exchanges
-    if len(chat_history) > 10:
-        # Keep last 5 exchanges + any that mention key concepts
-        recent_history = chat_history[-10:]  # Last 5 exchanges (10 messages)
-        
-        # Find history mentioning key concepts
-        concept_history = []
-        for i in range(0, len(chat_history) - 1, 2):  # Process as Q-A pairs
-            if i + 1 < len(chat_history):
-                q = chat_history[i].get("content", "")
-                a = chat_history[i + 1].get("content", "")
-                
-                # Check if contains key concepts
-                for concept in key_concepts:
-                    if concept.lower() in q.lower() or concept.lower() in a.lower():
-                        concept_history.extend([chat_history[i], chat_history[i + 1]])
-                        break
-        
-        # Combine, deduplicate, and limit
-        combined_history = recent_history + concept_history
-        seen = set()
-        unique_history = []
-        
-        for msg in combined_history:
-            msg_hash = hashlib.md5(msg.get("content", "").encode()).hexdigest()
-            if msg_hash not in seen:
-                seen.add(msg_hash)
-                unique_history.append(msg)
-        
-        chat_history = unique_history[-20:]  # Max 20 messages
+    print(f"[CHAT] Retrieved {len(chat_history)} history messages in {time.time() - history_start:.2f}s")
     
-    print(f"  ↳ Retrieved {len(chat_history)} chat history messages")
-    
-    # ==================== STAGE 6: CONTEXT ASSEMBLY ====================
-    print("#6️⃣ Context Assembly")
-    
-    # Prepare RAG context with metadata
+    # Phase 5: Prepare context
+    print(f"[CHAT] Phase 5: Context preparation")
     rag_context = []
-    for i, row in enumerate(final_rows[:8]):  # Use top 8 for context
-        context_item = {
+    for i, row in enumerate(filtered_rows[:6]):
+        rag_context.append({
             "id": row.get("id", f"ctx_{i}"),
-            "content": row.get("document", ""),
+            "content": row.get("document", "")[:500],
             "score": row.get("final_score", 0),
             "source": row.get("source", "unknown"),
             "metadata": row.get("metadata", {})
-        }
-        rag_context.append(context_item)
+        })
     
-    # Prepare system prompt based on mode and RAG availability
+    # System prompt
     if use_file_rag and rag_context:
-        if conversation_mode == "precise":
-            system_prompt = "You are a precise assistant. Use the provided documents to give accurate, factual answers. Cite specific information when possible."
-        elif conversation_mode == "creative":
-            system_prompt = "You are a creative assistant. Synthesize information from the provided documents to generate insightful, expansive answers."
+        if conversation_mode == ConversationMode.PRECISE:
+            system_prompt = "Provide precise, factual answers based on context."
+        elif conversation_mode == ConversationMode.CREATIVE:
+            system_prompt = "Provide creative, synthesized answers based on context."
         else:
-            system_prompt = "You are a helpful assistant. Use the provided context to answer questions accurately and comprehensively."
+            system_prompt = "Provide helpful answers based on context."
     else:
-        system_prompt = "You are a helpful assistant. Answer based on your knowledge and the conversation history."
+        system_prompt = "Provide helpful answers based on your knowledge."
     
-                # After streaming completes, send RAG results and completion signal
-    def _norm(s: str) -> str:
-        return re.sub(r"\s+", " ", (s or "").strip().lower())
-    
-    qn = _norm(rewritten_user_msg)
-    all_rows = [r for r in all_rows if _norm(r.get("document") or "") != qn]
-
-    # normalize -> UI shape
-    q_terms = [t.lower() for t in rewritten_user_msg.split() if len(t) > 2]
-    rag_results = _normalize_rag_rows(all_rows, q_terms)  # uses _to_score & _epoch_to_human as before
-    
-    # ==================== STAGE 7: LLM GENERATION ====================
-    print("#7️⃣ LLM Generation")
-    
-    # Prepare final query with context indicators
-    final_query = f"Query: {user_msg}"
+    # Prepare final query
+    final_query = user_msg
     if rewritten_user_msg != user_msg:
-        final_query += f" (interpreted as: {rewritten_user_msg})"
+        final_query = f"{user_msg} (interpreted as: {rewritten_user_msg})"
     
-    # Include key concepts in query if they add value
     if key_concepts:
-        final_query += f" [Key concepts: {', '.join(key_concepts[:3])}]"
+        final_query += f" [Concepts: {', '.join(key_concepts[:2])}]"
     
-    print(f"  ↳ Final query to LLM: '{final_query[:100]}...'")
-    print(f"  ↳ Context: {len(rag_context)} RAG items, {len(chat_history)} history messages")
-    print(f"  ↳ Total processing time: {time.time() - t0:.2f}s")
+    print(f"[CHAT] Total pre-LLM processing time: {time.time() - start_time:.2f}s")
     
-    # Generate response
-    reply_generator = run_ai(
-        message=final_query,
-        session_id=thread_id,
-        rag_context=rag_context,
-        chat_history=chat_history,
-        system_prompt=system_prompt,
-        temperature=0.7 if conversation_mode == "creative" else 0.3
-    )
-    
-    # return Response(reply_generator, mimetype="text/event-stream")
-    # 3) Store messages in background using threads (will be called after streaming completes)
-    def store_messages_background(full_text):
-        """Store messages in background after streaming completes"""
+    # Background storage function
+    def store_messages_background(full_text: str):
+        """Store messages in background thread"""
         try:
-            # Store user message chunks
+            # Store user message
             add_message(user_id, MessageType.HUMAN, user_msg, session_id=thread_id)
-            # update cache with the optimistic user message (so UI will reflect immediately on reload)
-            try:
-                chat_history_cache.append_message(user_id=user_id, session_id=thread_id, message={
-                    "role": "user",
-                    "content": user_msg,
-                    "timestamp": int(time.time())
-                })
-            except Exception:
-                pass
-            for chunk in split_text_into_chunks(user_msg, max_sentences=4, overlap=1):
-                write_controller_chatH.send_data_to_rag_db(
+            
+            # Cache user message
+            chat_history_cache.append_message(user_id, thread_id, {
+                "role": "user",
+                "content": user_msg,
+                "timestamp": int(time.time())
+            })
+            
+            # Store in RAG DB
+            for chunk in split_text_into_chunks(user_msg, 4, 1):
+                get_write_controller().send_data_to_rag_db(
                     user_ID=user_id,
                     content_data=chunk,
                     is_reply_to=None,
                     message_type=MessageType.HUMAN,
                     conversation_thread=thread_id,
                 )
-            # Store reply chunks
+            
+            # Store AI response
             add_message(user_id, MessageType.LLM, full_text, session_id=thread_id)
-            # update cache with AI reply
-            try:
-                chat_history_cache.append_message(user_id=user_id, session_id=thread_id, message={
-                    "role": "assistant",
-                    "content": full_text,
-                    "timestamp": int(time.time())
-                })
-            except Exception:
-                pass
-            for chunk in split_text_into_chunks(full_text, max_sentences=4, overlap=1):
-                write_controller_chatH.send_data_to_rag_db(
+            
+            # Cache AI message
+            chat_history_cache.append_message(user_id, thread_id, {
+                "role": "assistant",
+                "content": full_text,
+                "timestamp": int(time.time())
+            })
+            
+            # Store in RAG DB
+            for chunk in split_text_into_chunks(full_text, 4, 1):
+                get_write_controller().send_data_to_rag_db(
                     user_ID=user_id,
                     content_data=chunk,
                     is_reply_to=None,
                     message_type=MessageType.LLM,
                     conversation_thread=thread_id,
                 )
+                
         except Exception as e:
-            print(f"Error in background storage: {str(e)}")
+            print(f"[BACKGROUND] Storage error: {e}")
     
-    # Collect full response while streaming to frontend
-    full_reply_text = ""
-    
+    # Streaming response generator
     def generate_streaming_response():
-        """Generator function that yields SSE-formatted data with tokens and final metadata"""
-        nonlocal full_reply_text
-        
-        print(f"[STREAM] Starting to stream response for user {user_id} in session {thread_id}")
+        """Generator for streaming SSE response"""
+        full_reply_text = ""
         
         try:
-            # Stream tokens from the LLM
+            print(f"[STREAM] Starting LLM generation for query: {final_query[:100]}...")
+            llm_start = time.time()
+            
+            # Call LLM - this is synchronous and returns a generator
+            reply_generator = run_ai(
+                message=final_query,
+                session_id=thread_id,
+                rag_context=rag_context,
+                chat_history=chat_history[-10:],
+                system_prompt=system_prompt,
+                temperature=0.7 if conversation_mode == ConversationMode.CREATIVE else 0.3
+            )
+            
+            # Stream tokens
             token_count = 0
             for token in reply_generator:
                 token_count += 1
                 full_reply_text += token
-                # print(f"[STREAM] Token {token_count}: {repr(token)}", flush=True)
-                # Send token as Server-Sent Event (escape JSON properly)
+                
+                # Send token as SSE
                 yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
             
-            print(f"[STREAM] All tokens received. Total: {token_count}. Full response length: {len(full_reply_text)}", flush=True)
-            print(f"[STREAM] Full text preview: {repr(full_reply_text[:300])}...", flush=True)
+            llm_time = time.time() - llm_start
+            print(f"[STREAM] LLM generation completed in {llm_time:.2f}s, {token_count} tokens")
             
-            # FINAL SAFETY CLEANUP - remove any markers that may have slipped through
+            # Clean response
             cleaned_response = clean_response(full_reply_text)
-            print(f"[STREAM] Cleaned response length: {len(cleaned_response)}", flush=True)
             
-            # Verification: ensure no markers remain
-            if "<|end|>" in cleaned_response or "[END FINAL RESPONSE]" in cleaned_response:
-                print(f"[STREAM] ⚠️  WARNING: Markers still present in cleaned response!", flush=True)
-                # Force cleanup one more time
-                cleaned_response = cleaned_response.replace("<|end|>", "").replace("[END FINAL RESPONSE]", "").strip()
-                print(f"[STREAM] Force-cleaned length: {len(cleaned_response)}", flush=True)
-            else:
-                print(f"[STREAM] ✓ Markers verified removed from response", flush=True)
+            # Remove any remaining markers
+            for marker in ["<|end|>", "[END FINAL RESPONSE]"]:
+                cleaned_response = cleaned_response.replace(marker, "")
             
-            # After streaming completes, send RAG results and completion signal
+            # Prepare RAG results for UI
+            q_terms = [t.lower() for t in rewritten_user_msg.split() if len(t) > 2]
+            rag_results = normalize_rag_rows(all_rows, q_terms)
+            
+            # Send RAG results
             yield f"data: {json.dumps({'type': 'rag_results', 'content': rag_results})}\n\n"
-            yield f"data: {json.dumps({'type': 'done', 'full_response': cleaned_response})}\n\n"
             
-            print(f"[STREAM] Yielded RAG results and done signal")
+            # Send completion signal
+            yield f"data: {json.dumps({'type': 'done', 'full_response': cleaned_response.strip()})}\n\n"
             
-            # Start background storage thread after streaming is complete (use cleaned response)
-            from threading import Thread
-            thread = Thread(target=store_messages_background, args=(cleaned_response,))
-            thread.daemon = True
-            thread.start()
-            print(f"[STREAM] Started background storage thread")
+            print(f"[STREAM] Streaming completed, total time: {time.time() - start_time:.2f}s")
+            
+            # Start background storage
+            threading.Thread(
+                target=store_messages_background,
+                args=(cleaned_response,),
+                daemon=True
+            ).start()
             
         except Exception as e:
-            print(f"[STREAM] Error during streaming: {str(e)}", flush=True)
+            error_msg = f"Error in streaming response: {str(e)}"
+            print(f"[STREAM] {error_msg}")
             import traceback
             traceback.print_exc()
-            yield f"data: {json.dumps({'type': 'error', 'content': str(e)})}\n\n"
+            yield f"data: {json.dumps({'type': 'error', 'content': error_msg})}\n\n"
     
-    # Return streaming response with SSE content type
     return Response(generate_streaming_response(), mimetype='text/event-stream')
 
 @api.post("/api/notes")
 def store_note():
-    d = request.get_json(force=True)
-    return jsonify(write_controller_chatH.send_data_to_rag_db(
-        user_ID=d.get("user_id","user123"),
-        content_data=d["text"],
+    """Store a note"""
+    data = request.get_json(force=True) or {}
+    
+    result = get_write_controller().send_data_to_rag_db(
+        user_ID=data.get("user_id", "user123"),
+        content_data=data.get("text", ""),
         is_reply_to=None,
         message_type=MessageType.NOTE,
-        conversation_thread=d["thread_id"]
-    ))
-
-# Create HTML for new session
-# Update the function here to get the messages from the RAG DB
-def _epoch_to_human(ts):
-    try:
-        return time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(float(ts)))
-    except Exception:
-        return time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
+        conversation_thread=data.get("thread_id", "")
+    )
+    
+    return jsonify(result)
 
 @api.post("/api/rag")
 def rag_search():
+    """RAG search endpoint"""
     data = request.get_json(force=True) or {}
-    user_id   = data.get("user_id")
-    query     = (data.get("query") or "").strip()
-    thread_id = data.get("thread_id")  # optional
-    top_k     = int(data.get("top_k", 5))
-
+    user_id = data.get("user_id")
+    query = (data.get("query") or "").strip()
+    thread_id = data.get("thread_id")
+    top_k = int(data.get("top_k", 5))
+    
     if not user_id or not query:
         abort(400, "Missing user_id or query")
-
-    rows = read_controller_chatH.fetch_related_to_query(
+    
+    rows = get_read_controller_chatH().fetch_related_to_query(
         user_ID=user_id,
         query=query,
         top_k=top_k
     )
-
-    # Optional filter to current thread
+    
     if thread_id:
-        rows = [r for r in rows if (r.get("metadata") or {}).get("conversation_thread") == thread_id]
-
-    # distance -> score (monotonic): lower distance => higher score
-    def to_score(d):
-        try:
-            return 1.0 / (1.0 + float(d))
-        except Exception:
-            return 0.0
-
-    # build UI results
+        rows = [
+            r for r in rows
+            if (r.get("metadata") or {}).get("conversation_thread") == thread_id
+        ]
+    
+    # Convert to UI format
     q_terms = [t.lower() for t in query.split() if len(t) > 2]
-    results = []
-    for i, r in enumerate(rows):
-        meta = r.get("metadata", {})
-        results.append({
-            "id": r.get("id") or f"res_{i+1}",
-            "score": to_score(r.get("distance")),
-            "text": r.get("document") or "",
-            "source": meta.get("source") or "chat_session",
-            "timestamp": _epoch_to_human(meta.get("timestamp")),
-            "matches": q_terms,  # your frontend will highlight these
-        })
-
-    # sort by score desc
-    results.sort(key=lambda x: x["score"], reverse=True)
-
+    results = normalize_rag_rows(rows, q_terms)
+    
     return jsonify({"results": results})
 
 @api.post("/api/rag/feedback")
 def rag_feedback():
-    d = request.get_json(force=True)
-    # d: {user_id, thread_id, result_id, rating}
-    # persist feedback somewhere (e.g., a table or Chroma metadata)
+    """Handle RAG feedback"""
+    data = request.get_json(force=True) or {}
+    # Implement feedback storage here
     return jsonify({"ok": True})
 
-# api.py
-def _epoch_to_human(ts):
-    import time
+# Helper functions for RAG result normalization
+def epoch_to_human(ts):
+    """Convert epoch to human readable format"""
     try:
         return time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(float(ts)))
     except Exception:
         return time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime())
 
-def _to_score(distance):
+def distance_to_score(distance):
+    """Convert distance to score"""
     try:
-        return 1.0 / (1.0 + float(distance))  # lower distance => higher score
+        return 1.0 / (1.0 + float(distance))
     except Exception:
         return 0.0
 
-def _normalize_rag_rows(rows, query_terms):
+def normalize_rag_rows(rows, query_terms):
+    """Normalize RAG rows for UI display"""
     results = []
-    for i, r in enumerate(rows or []):
-        meta = r.get("metadata", {})
-        doc_text = r.get("document")
-        # Ensure document is a string, handle boolean and None values
+    
+    for i, row in enumerate(rows or []):
+        meta = row.get("metadata", {})
+        doc_text = row.get("document", "")
+        
         if not isinstance(doc_text, str):
             doc_text = str(doc_text) if doc_text is not None else ""
         
         results.append({
-            "id": r.get("id") or f"res_{i+1}",
-            "score": _to_score(r.get("distance")),
-            "text": doc_text or "",
+            "id": row.get("id") or f"res_{i+1}",
+            "score": distance_to_score(row.get("distance")),
+            "text": doc_text[:500],
             "source": meta.get("source") or "chat_session",
-            "timestamp": _epoch_to_human(meta.get("timestamp")),
-            "matches": query_terms,
+            "timestamp": epoch_to_human(meta.get("timestamp")),
+            "matches": query_terms[:5]
         })
+    
     results.sort(key=lambda x: x["score"], reverse=True)
     return results
 
+# Cleanup
+def cleanup():
+    """Cleanup resources"""
+    _executor.shutdown(wait=False)
+    
+    if hasattr(split_text_into_chunks, '_sentence_pattern'):
+        delattr(split_text_into_chunks, '_sentence_pattern')
 
+import atexit
+atexit.register(cleanup)
