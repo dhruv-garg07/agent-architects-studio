@@ -45,9 +45,9 @@ class ConversationMode:
     CREATIVE = "creative"
 
 TOP_K_CONFIG = {
-    ConversationMode.PRECISE: {"chat": 5, "file": 3},
-    ConversationMode.BALANCED: {"chat": 8, "file": 7},
-    ConversationMode.CREATIVE: {"chat": 10, "file": 10}
+    ConversationMode.PRECISE: {"chat": 10, "file": 3},
+    ConversationMode.BALANCED: {"chat": 16, "file": 7},
+    ConversationMode.CREATIVE: {"chat": 20, "file": 10}
 }
 
 # Optimized cache implementation with memory limits
@@ -684,7 +684,7 @@ def chat_and_store():
         full_reply_text = ""
         
         try:
-            print(f"[STREAM] Starting LLM generation for query: {final_query[:100]}...")
+            print(f"[STREAM] Starting LLM generation for query: {final_query}...")
             llm_start = time.time()
             
             # Call LLM - this is synchronous and returns a generator
