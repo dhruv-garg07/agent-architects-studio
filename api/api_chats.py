@@ -529,7 +529,7 @@ def chat_and_store():
         enhanced_chat = get_read_controller_chatH().fetch_related_to_query(
             user_ID=user_id,
             query=hybrid_query,
-            top_k=max(20, top_k['chat'] // 2)
+            top_k=max(20, top_k['chat'])
         )
         
         enhanced_file = []
@@ -537,7 +537,7 @@ def chat_and_store():
             enhanced_file = get_read_controller_file_data().fetch_related_to_query(
                 user_ID=user_id,
                 query=hybrid_query,
-                top_k=max(20, top_k['file'] // 2)
+                top_k=max(20, top_k['file'])
             )
         
         enhanced_rows = enhanced_chat + enhanced_file
