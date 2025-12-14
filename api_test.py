@@ -5,7 +5,7 @@ import time
 # Simple validation tests for the running server at the provided base URL.
 # These are pytest-compatible functions but can also be executed directly via `python api_test.py`.
 
-BASE_URL = "https://agent-architects-studio-ezb8.onrender.com"
+BASE_URL = "https://themanhattanproject.ai"
 
 
 def test_memory_get():
