@@ -301,6 +301,9 @@ def run_ai(
     system_prompt: str,
     temperature: float = 0.3
 ) -> Generator[str, None, None]:
+    
+    print("Rag Context in run_ai:", rag_context,"\n\n")
+    
     """
     Synchronous wrapper for LLM call.
     query_llm_with_history_stream returns a generator, not a coroutine.
@@ -564,12 +567,16 @@ def chat_and_store():
     
     # Select final rows based on mode
     if conversation_mode == ConversationMode.PRECISE:
-        final_rows = combined_rows[:20]
+        final_rows = combined_rows
     elif conversation_mode == ConversationMode.CREATIVE:
-        final_rows = combined_rows[:20]
+        final_rows = combined_rows
     else:
-        final_rows = combined_rows[:20]
+        final_rows = combined_rows
     
+
+    print(f"[CHAT] Combined and scored {len(final_rows)} final rows\n\n")
+    print("Final Rows:", final_rows,"\n\n")
+
     # Filter out near-identical documents
     qn_norm = normalize_text(rewritten_user_msg)
     filtered_rows = [
@@ -577,6 +584,9 @@ def chat_and_store():
         if normalize_text(row.get("document", "")) != qn_norm
     ]
     
+    print("Filtered Rows:", len(filtered_rows),"\n\n")
+    print("Filtered Rows Sample", filtered_rows,"\n\n")
+
     print(f"[CHAT] Enhanced retrieval completed in {time.time() - enhanced_start:.2f}s")
     
     # Phase 4: Get chat history
@@ -604,12 +614,14 @@ def chat_and_store():
     for i, row in enumerate(filtered_rows):
         rag_context.append({
             "id": row.get("id", f"ctx_{i}"),
-            "content": row.get("document", ""),
+            "document": row.get("document", ""),
             "score": row.get("final_score", 0),
             "source": row.get("source", "unknown"),
             "metadata": row.get("metadata", {})
         })
     
+    print(f"[CHAT] Prepared {len(rag_context)} context entries\n\n\n")
+    print(f"Rag Context Sample:", rag_context,"\n\n")
     # System prompt
     if use_file_rag and rag_context:
         if conversation_mode == ConversationMode.PRECISE:
