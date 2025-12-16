@@ -914,14 +914,14 @@
 
         // New function
         async function refreshSessionsFromServer() {
-            const res = await fetch(`/api/get_sessions?id={{ current_user.id }}`);
+            const res = await fetch(`/web/get_sessions?id={{ current_user.id }}`);
             const ids = await res.json();  // ["uuid1","uuid2",...]
 
             if (!Array.isArray(ids)) { sessions = []; return; }
 
             const enriched = await Promise.all(ids.map(async (thread_id) => {
                 try {
-                    const r = await fetch(`/api/sessions/${thread_id}/messages?id=${encodeURIComponent(window.USER_ID)}`);
+                    const r = await fetch(`/web/sessions/${thread_id}/messages?id=${encodeURIComponent(window.USER_ID)}`);
                     const { messages = [] } = await r.json();
 
                     const last = messages.slice().sort((a, b) => {
@@ -958,7 +958,7 @@
 
 
         async function createNewSession() {
-            const res = await fetch('/api/create_session', {
+            const res = await fetch('/web/create_session', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -996,7 +996,7 @@
             renderConversation([]);           // clear immediately for better UX    
             clearRAGResults();
 
-            const res = await fetch(`/api/sessions/${currentSession.id}/messages?id={{ current_user.id }}`);
+            const res = await fetch(`/web/sessions/${currentSession.id}/messages?id={{ current_user.id }}`);
             const data = await res.json();
 
             if (myToken !== currentLoadToken) return; // a newer load started, abort
@@ -1209,7 +1209,7 @@
         }
 
         async function fetchRAGResults({ query, threadId, topK = 5 }) {
-            const res = await fetch('/api/rag', {
+            const res = await fetch('/web/rag', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -1234,7 +1234,7 @@
         async function refreshRAGForLastUserMessage() {
             const lastUser = [...(currentSession?.messages || [])].reverse().find(m => m.role === 'user');
             if (!lastUser) return;
-            const res = await fetch('/api/rag', {
+            const res = await fetch('/web/rag', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -1325,7 +1325,7 @@
 
         window.rateRAGResult = async function (resultId, rating) {
             try {
-                await fetch('/api/rag/feedback', {
+                await fetch('/web/rag/feedback', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1373,7 +1373,7 @@
             }
 
             // Ask server to generate + store both messages in Chroma using streaming (SSE)
-            const res = await fetch('/api/chat', {
+            const res = await fetch('/web/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -1528,7 +1528,7 @@
             if (!result) return;
 
             try {
-                await fetch('/api/rag/feedback', {
+                await fetch('/web/rag/feedback', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

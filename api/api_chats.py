@@ -324,7 +324,7 @@ def run_ai(
         return error_generator()
 
 # API endpoints
-@api.get("/api/get_sessions")
+@api.get("/web/get_sessions")
 def list_sessions():
     """List user sessions with background preloading"""
     user_id = request.args.get("id")
@@ -372,7 +372,7 @@ def list_sessions():
     
     return jsonify(session_ids)
 
-@api.post("/api/create_session")
+@api.post("/web/create_session")
 def create_session():
     """Create new chat session"""
     data = request.get_json() or {}
@@ -403,7 +403,7 @@ def create_session():
     
     return jsonify({"thread_id": thread_id_created, "createdAt": created})
 
-@api.get("/api/sessions/<thread_id>/messages")
+@api.get("/web/sessions/<thread_id>/messages")
 def get_messages(thread_id: str):
     """Get messages for a session with cache-first strategy"""
     user_id = request.args.get("id")
@@ -426,7 +426,7 @@ def get_messages(thread_id: str):
     
     return jsonify({"messages": messages})
 
-@api.post("/api/chat")
+@api.post("/web/chat")
 def chat_and_store():
     """Main chat endpoint with optimized RAG pipeline"""
     # Start timing
@@ -758,7 +758,7 @@ def chat_and_store():
     
     return Response(generate_streaming_response(), mimetype='text/event-stream')
 
-@api.post("/api/notes")
+@api.post("/web/notes")
 def store_note():
     """Store a note"""
     data = request.get_json(force=True) or {}
@@ -773,7 +773,7 @@ def store_note():
     
     return jsonify(result)
 
-@api.post("/api/rag")
+@api.post("/web/rag")
 def rag_search():
     """RAG search endpoint"""
     data = request.get_json(force=True) or {}
@@ -803,7 +803,7 @@ def rag_search():
     
     return jsonify({"results": results})
 
-@api.post("/api/rag/feedback")
+@api.post("/web/rag/feedback")
 def rag_feedback():
     """Handle RAG feedback"""
     data = request.get_json(force=True) or {}

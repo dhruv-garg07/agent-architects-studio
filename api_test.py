@@ -21,7 +21,7 @@ def test_get_sessions_api():
     """Call GET /api/get_sessions?id=... and expect a JSON response (list or dict).
     If your API requires authentication, this may return 401/403.
     """
-    r = requests.get(f"{BASE_URL}/api/get_sessions", params={"id": "51ebe8c7-201b-4275-9bc5-44d7222f3509"}, timeout=15)
+    r = requests.get(f"{BASE_URL}/web/get_sessions", params={"id": "51ebe8c7-201b-4275-9bc5-44d7222f3509"}, timeout=15)
     assert r.status_code == 200, f"GET /api/get_sessions returned {r.status_code}: {r.text[:300]}"
     try:
         data = r.json()
@@ -34,7 +34,7 @@ def test_rag_search_api():
     """POST /api/rag with a minimal payload and expect a JSON response containing 'results'.
     """
     payload = {"user_id": "51ebe8c7-201b-4275-9bc5-44d7222f3509", "query": "test query", "top_k": 3}
-    r = requests.post(f"{BASE_URL}/api/rag", json=payload, timeout=15)
+    r = requests.post(f"{BASE_URL}/web/rag", json=payload, timeout=15)
     assert r.status_code == 200, f"POST /api/rag returned {r.status_code}: {r.text[:300]}"
     try:
         data = r.json()
@@ -49,7 +49,7 @@ def create_session(user_id: str) -> str:
     Falls back to a generated UUID-like value if the API call fails.
     """
     try:
-        r = requests.post(f"{BASE_URL}/api/create_session", json={"user_id": user_id}, timeout=10)
+        r = requests.post(f"{BASE_URL}/web/create_session", json={"user_id": user_id}, timeout=10)
         r.raise_for_status()
         data = r.json()
         return data.get("thread_id") or data.get("thread_id_created") or data.get("thread_id_created")
@@ -92,7 +92,7 @@ def interactive_chat():
 
         print("Sending message, streaming response...\n")
         try:
-            with requests.post(f"{BASE_URL}/api/chat", json=payload, stream=True, timeout=120) as resp:
+            with requests.post(f"{BASE_URL}/web/chat", json=payload, stream=True, timeout=120) as resp:
                 resp.raise_for_status()
 
                 full_reply = ""
