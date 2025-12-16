@@ -426,7 +426,6 @@
                 <div class="flex items-center space-x-4">
                     {% if current_user.is_authenticated %}
                     <!-- {# Commented out temporary - Memory, Dashboard and Submit Agent links not needed for now #} -->
-                    <!--
                     <a href="{{ url_for('memory') }}" class="btn-primary">
                        Memory
                    </a>
@@ -456,10 +455,10 @@
                            box-shadow: 0 4px 16px -4px rgba(99, 102, 241, 0.18);
                        }
                    </style>
-                   <a href="{{ url_for('creator_studio') }}" class="btn-primary">
+                   <!-- <a href="{{ url_for('creator_studio') }}" class="btn-primary">
                        Submit Agent
-                   </a>
-                   -->
+                   </a> -->
+
                     <!-- User Dropdown -->
                     <div class="relative inline-block text-left">
                         <button id="user-menu-button" type="button"

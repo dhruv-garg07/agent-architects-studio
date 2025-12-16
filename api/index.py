@@ -29,13 +29,12 @@ import asyncio
 import smtplib
 import shutil
 import tempfile
-
+from datetime import datetime, timedelta
 
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, abort
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 
 from werkzeug.utils import secure_filename
-from datetime import datetime
 # Fix import for Octave_mem when running from api/
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from Octave_mem.RAG_DB_CONTROLLER.write_data_RAG_file_uploads import RAG_DB_Controller_FILE_DATA
@@ -868,6 +867,70 @@ def api_creators():
         return jsonify([creator.dict() for creator in filtered_creators])
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/keys', methods=['POST'])
+@login_required
+def create_api_key():
+    """
+    Create and persist an API key for the logged-in user into Supabase table 'api_keys'.
+    Expects JSON body: { name, expiration, key }
+    """
+    # Debug: surface useful info to server logs to diagnose failures
+    print("[create_api_key] called. SUPABASE_URL set:", bool(SUPABASE_URL), "SERVICE_ROLE_KEY set:", bool(SUPABASE_SERVICE_ROLE_KEY))
+
+    data = request.get_json(silent=True)
+    print("[create_api_key] incoming data:", data)
+    print("[create_api_key] current_user id:", getattr(current_user, 'id', None))
+
+    if not data:
+        return jsonify({"error": "Missing JSON body"}), 400
+
+    name = data.get('name', 'Untitled Key')
+    expiration = data.get('expiration', 'Never')
+    key_val = data.get('key')
+
+    if not key_val:
+        return jsonify({"error": "Missing key value"}), 400
+
+    # Compute expires_at if expiration is specified as e.g. '30 Days'
+    expires_at = None
+    if expiration and expiration != 'Never':
+        try:
+            days = int(str(expiration).split()[0])
+            expires_at = (datetime.utcnow() + timedelta(days=days)).isoformat()
+        except Exception:
+            expires_at = None
+
+    record = {
+        'id': str(uuid.uuid4()),
+        'user_id': current_user.id,
+        'name': name,
+        'key': key_val,
+        'masked_key': (key_val[:8] + '...' + key_val[-4:]) if len(key_val) > 12 else key_val,
+        'expiration': expiration,
+        'expires_at': expires_at,
+        'created_at': datetime.utcnow().isoformat(),
+        'updated_at': datetime.utcnow().isoformat(),
+    }
+
+    try:
+        resp = supabase_backend.table('api_keys').insert(record).execute()
+        print('[create_api_key] supabase insert response:', getattr(resp, '__dict__', resp))
+        # If Supabase returns an error in the response object, include it in the returned payload
+        try:
+            if hasattr(resp, 'status_code') and resp.status_code >= 400:
+                print('[create_api_key] supabase returned error status:', resp)
+                return jsonify({'error': 'Supabase returned error', 'details': str(resp)}), 500
+        except Exception:
+            pass
+
+        return jsonify({'ok': True, 'id': record['id']}), 201
+    except Exception as e:
+        import traceback
+        print('Error saving API key:', e)
+        traceback.print_exc()
+        # Return error details for debugging (remove details in production)
+        return jsonify({'error': 'Failed to save API key', 'details': str(e)}), 500
 
 @app.errorhandler(404)
 def not_found(error):
