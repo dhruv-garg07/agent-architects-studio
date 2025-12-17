@@ -81,15 +81,7 @@
                             </tr>
                         </thead>
                         <tbody id="api-keys-table-body" class="divide-y divide-border bg-card">
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap font-medium text-foreground">Default Project</td>
-                                <td class="px-6 py-4 whitespace-nowrap font-mono text-sm text-muted-foreground">sk-or...c52</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">No Limit</td>
-                                <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">$0.45</span></td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button class="text-destructive hover:text-destructive/80 delete-btn">Revoke</button>
-                                </td>
-                            </tr>
+                            <!-- Keys will be populated dynamically from Supabase via /api/keys -->
                         </tbody>
                     </table>
                     
@@ -217,6 +209,7 @@
         const closeSuccessBtn = document.getElementById('close-success-modal');
         const copyBtn = document.getElementById('copy-key-btn');
         const tableBody = document.getElementById('api-keys-table-body');
+        const emptyState = document.getElementById('empty-state');
         
         // Input fields
         const nameInput = document.getElementById('key-name');
@@ -227,6 +220,63 @@
         function toggleModal(modal, show) {
             if (show) modal.classList.remove('hidden');
             else modal.classList.add('hidden');
+        }
+
+        // Utility: mask full key for table display
+        function maskKey(fullKey) {
+            if (!fullKey || fullKey.length < 12) return fullKey || '••••';
+            return fullKey.substring(0, 8) + '...' + fullKey.substring(fullKey.length - 4);
+        }
+
+        // Render a table row for a key record. Expects an object with at least { id, name, expiration, key, masked_key, masked }
+        function renderKeyRow(record) {
+            const id = record.id || '';
+            const name = record.name || 'Untitled Key';
+            const expiration = record.expiration || 'Never';
+            // Prefer server-provided masked_key, fall back to other fields or mask the full key
+            const masked = record.masked_key || record.masked || maskKey(record.key);
+
+            const row = document.createElement('tr');
+            row.setAttribute('data-key-id', id);
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap font-medium text-foreground">${name}</td>
+                <td class="px-6 py-4 whitespace-nowrap font-mono text-sm text-muted-foreground">${masked}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">${expiration}</td>
+                <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300">$0.00</span></td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button class="text-destructive hover:text-destructive/80 delete-btn">Revoke</button>
+                </td>
+            `;
+            return row;
+        }
+
+        // Load existing keys from backend and populate table
+        async function loadApiKeys() {
+            try {
+                const res = await fetch('/api/keys', { credentials: 'same-origin' });
+                if (!res.ok) throw new Error('Failed to fetch API keys');
+                const data = await res.json();
+
+                // Expecting an array of key records
+                tableBody.innerHTML = '';
+                if (!Array.isArray(data) || data.length === 0) {
+                    emptyState.classList.remove('hidden');
+                    return;
+                }
+
+                emptyState.classList.add('hidden');
+                data.forEach(rec => {
+                    const row = renderKeyRow(rec);
+                    tableBody.appendChild(row);
+                });
+
+                attachDeleteListeners();
+            } catch (err) {
+                console.error('Error loading API keys:', err);
+                // show empty state on error as fallback
+                tableBody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+            }
         }
 
         // 1. Open Create Modal
@@ -240,55 +290,51 @@
         cancelBtn.addEventListener('click', () => toggleModal(createModal, false));
 
         // 3. Confirm Create -> Generate Key -> Show Success
-        confirmBtn.addEventListener('click', () => {
+        confirmBtn.addEventListener('click', async () => {
             const name = nameInput.value || 'Untitled Key';
             const expiration = expirationInput.value;
-            
-            // Simulate Key Generation
-            const newKey = 'sk-or-v1-' + Math.random().toString(36).substr(2, 16) + Math.random().toString(36).substr(2, 16);
-            
-            // Persist key to backend (Supabase)
-            fetch('/api/keys', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'same-origin',
-                body: JSON.stringify({ name, expiration, key: newKey })
-            }).then(async (res) => {
+
+            try {
+                // Ask server to create key (server will generate secret and return it once)
+                const res = await fetch('/api/keys', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ name, expiration })
+                });
+
                 if (!res.ok) {
-                    const err = await res.text();
-                    throw new Error(err || 'Failed to save API key');
+                    const errText = await res.text();
+                    throw new Error(errText || 'Failed to save API key');
                 }
-                return res.json();
-            }).then(data => {
-                // Populate Success Modal
-                generatedKeyInput.value = newKey;
-                
-                // Add to Table (Visual Update)
-                const maskedKey = newKey.substring(0, 8) + '...' + newKey.substring(newKey.length - 4);
-                
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap font-medium text-foreground">${name}</td>
-                    <td class="px-6 py-4 whitespace-nowrap font-mono text-sm text-muted-foreground">${maskedKey}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">${expiration}</td>
-                    <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300">$0.00</span></td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button class="text-destructive hover:text-destructive/80 delete-btn">Revoke</button>
-                    </td>
-                `;
-                
-                tableBody.prepend(row); // Add new key to top
+
+                const created = await res.json();
+
+                // Full secret returned once by the server
+                const fullKey = created.key || (created.data && created.data[0] && created.data[0].key) || '';
+                const maskedFromServer = created.masked_key || (created.data && created.data[0] && created.data[0].masked_key) || (fullKey ? maskKey(fullKey) : '••••');
+                const returnedId = created.id || (created.data && created.data[0] && created.data[0].id) || '';
+
+                // Populate Success Modal with the full key (if provided)
+                generatedKeyInput.value = fullKey || maskedFromServer;
+
+                // Build a record suitable for the table (prefer server-provided masked_key)
+                const record = { id: returnedId, name, expiration, masked_key: maskedFromServer };
+                const row = renderKeyRow(record);
+                tableBody.prepend(row);
+                emptyState.classList.add('hidden');
+
                 attachDeleteListeners(); // Re-attach listeners for new buttons
-                
+
                 // Switch Modals
                 toggleModal(createModal, false);
                 toggleModal(successModal, true);
-            }).catch(err => {
+            } catch (err) {
                 console.error('Error creating API key:', err);
                 alert('Failed to create API key. Please try again.');
-            });
+            }
         });
 
         // 4. Copy to Clipboard
@@ -310,19 +356,47 @@
         // 5. Close Success Modal
         closeSuccessBtn.addEventListener('click', () => toggleModal(successModal, false));
 
-        // 6. Handle Delete/Revoke
+        // 6. Handle Delete/Revoke - sends delete request to backend, then removes row on success
         function attachDeleteListeners() {
             document.querySelectorAll('.delete-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    if(confirm('Are you sure you want to revoke this API key? This action cannot be undone.')) {
-                        this.closest('tr').remove();
+                // remove existing to avoid double-binding
+                btn.replaceWith(btn.cloneNode(true));
+            });
+
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', async function() {
+                    const tr = this.closest('tr');
+                    const keyId = tr ? tr.getAttribute('data-key-id') : null;
+
+                    if (!confirm('Are you sure you want to revoke this API key? This action cannot be undone.')) return;
+
+                    try {
+                        if (keyId) {
+                            // Try API delete by id
+                            const delRes = await fetch(`/api/keys/${encodeURIComponent(keyId)}`, {
+                                method: 'DELETE',
+                                credentials: 'same-origin'
+                            });
+                            if (!delRes.ok) {
+                                const txt = await delRes.text();
+                                throw new Error(txt || 'Failed to delete API key');
+                            }
+                        }
+                        // Remove from DOM
+                        tr.remove();
+
+                        // If no rows left show empty state
+                        if (tableBody.children.length === 0) emptyState.classList.remove('hidden');
+                    } catch (err) {
+                        console.error('Error deleting API key:', err);
+                        alert('Failed to revoke API key. Please try again.');
                     }
                 });
             });
         }
         
-        // Initial attach
-        attachDeleteListeners();
+        // Initial load
+        loadApiKeys();
     });
 </script>
 

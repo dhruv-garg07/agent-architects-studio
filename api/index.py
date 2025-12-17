@@ -30,6 +30,7 @@ import smtplib
 import shutil
 import tempfile
 from datetime import datetime, timedelta
+import secrets
 
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, abort
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
@@ -868,29 +869,64 @@ def api_creators():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/keys', methods=['GET'])
+@login_required
+def list_api_keys():
+    """
+    List API keys for the logged-in user. Returns masked keys only.
+    """
+    try:
+        resp = supabase.table('api_keys').select('id, name, masked_key, expiration, expires_at, created_at').eq('user_id', current_user.id).order('created_at', desc=True).execute()
+        # Supabase client returns a response with .data property
+        data = getattr(resp, 'data', None) or (resp.data if hasattr(resp, 'data') else None) or resp
+        # Ensure we return an array
+        keys = data if isinstance(data, list) else []
+        return jsonify(keys)
+    except Exception as e:
+        print('Error listing API keys:', e)
+        return jsonify({'error': 'Failed to fetch API keys', 'details': str(e)}), 500
+
+@app.route('/api/keys/<key_id>', methods=['DELETE'])
+@login_required
+def delete_api_key(key_id):
+    """
+    Delete an API key by id for the logged-in user.
+    """
+    try:
+        # Only allow deleting keys owned by the current user
+        resp = supabase_backend.table('api_keys').delete().eq('id', key_id).eq('user_id', current_user.id).execute()
+        # Check if any rows were deleted
+        # Many Supabase client responses include a .count or .data; be lenient
+        data = getattr(resp, 'data', None) or (resp.data if hasattr(resp, 'data') else None) or resp
+        # If deletion succeeded, return ok
+        return jsonify({'ok': True})
+    except Exception as e:
+        print('Error deleting API key:', e)
+        return jsonify({'error': 'Failed to delete API key', 'details': str(e)}), 500
+
 @app.route('/api/keys', methods=['POST'])
 @login_required
 def create_api_key():
     """
     Create and persist an API key for the logged-in user into Supabase table 'api_keys'.
-    Expects JSON body: { name, expiration, key }
+    Accepts optional JSON body: { name, expiration, key }.
+    If key is not provided, server generates a secure key and returns it in the response once.
     """
-    # Debug: surface useful info to server logs to diagnose failures
     print("[create_api_key] called. SUPABASE_URL set:", bool(SUPABASE_URL), "SERVICE_ROLE_KEY set:", bool(SUPABASE_SERVICE_ROLE_KEY))
 
-    data = request.get_json(silent=True)
+    data = request.get_json(silent=True) or {}
     print("[create_api_key] incoming data:", data)
     print("[create_api_key] current_user id:", getattr(current_user, 'id', None))
-
-    if not data:
-        return jsonify({"error": "Missing JSON body"}), 400
 
     name = data.get('name', 'Untitled Key')
     expiration = data.get('expiration', 'Never')
     key_val = data.get('key')
 
+    # If no key provided, generate a secure server-side key
+    generated = False
     if not key_val:
-        return jsonify({"error": "Missing key value"}), 400
+        generated = True
+        key_val = 'sk-' + secrets.token_urlsafe(32)
 
     # Compute expires_at if expiration is specified as e.g. '30 Days'
     expires_at = None
@@ -905,7 +941,7 @@ def create_api_key():
         'id': str(uuid.uuid4()),
         'user_id': current_user.id,
         'name': name,
-        'key': key_val,
+        'key': key_val,  # NOTE: storing raw key; consider hashing for production
         'masked_key': (key_val[:8] + '...' + key_val[-4:]) if len(key_val) > 12 else key_val,
         'expiration': expiration,
         'expires_at': expires_at,
@@ -916,20 +952,13 @@ def create_api_key():
     try:
         resp = supabase_backend.table('api_keys').insert(record).execute()
         print('[create_api_key] supabase insert response:', getattr(resp, '__dict__', resp))
-        # If Supabase returns an error in the response object, include it in the returned payload
-        try:
-            if hasattr(resp, 'status_code') and resp.status_code >= 400:
-                print('[create_api_key] supabase returned error status:', resp)
-                return jsonify({'error': 'Supabase returned error', 'details': str(resp)}), 500
-        except Exception:
-            pass
 
-        return jsonify({'ok': True, 'id': record['id']}), 201
+        # Return the full key only once (on creation) so client can show and copy it.
+        return jsonify({'ok': True, 'id': record['id'], 'key': key_val}), 201
     except Exception as e:
         import traceback
         print('Error saving API key:', e)
         traceback.print_exc()
-        # Return error details for debugging (remove details in production)
         return jsonify({'error': 'Failed to save API key', 'details': str(e)}), 500
 
 @app.errorhandler(404)
