@@ -30,5 +30,62 @@ Features:
 
 This is intentionally lightweight and stores key metadata in a local JSON file; for
 production use replace the storage layer with a secure database and rotate keys.
+
+
+- Agents
+  - /agents
+  - /agents/{id}
+- Documents
+  - /agents/{id}/documents
+  - /agents/{id}/documents/{docId}
+  - /agents/{id}/search
+  - /agents/{id}/query
+- LLM
+  - /agents/{id}/llm/complete
+  - /agents/{id}/llm/chat
+  - /agents/{id}/llm/summarize
+  - /agents/{id}/llm/extract
+- Memory
+  - /agents/{id}/memory
+  - /agents/{id}/memory/{memId}
+  - /agents/{id}/memory/query
+- Utilities
+  - /agents/{id}/embeddings
+  - /agents/{id}/stats
+  - /auth/login
+  - /auth/logout
+  
 """
+
+from flask import Blueprint, jsonify
+from datetime import datetime
+
+
+# Lightweight Manhattan API blueprint (used for simple health / ping checks)
+manhattan_api = Blueprint("manhattan_api", __name__)
+
+
+@manhattan_api.route("/ping", methods=["GET"])
+def ping():
+  """Basic ping endpoint used by the website to check backend availability.
+
+  Returns JSON with a timestamp so the frontend can validate clock skew if needed.
+  """
+  return jsonify({
+    "ok": True,
+    "service": "manhattan",
+    "timestamp": datetime.utcnow().isoformat()
+  }), 200
+
+
+@manhattan_api.route("/health", methods=["GET"])
+def health():
+  """Simple health endpoint; kept separate from /ping for clarity.
+
+  This can be expanded later to include checks (DB, RAG store, external APIs).
+  """
+  return jsonify({"ok": True, "status": "healthy", "checked_at": datetime.utcnow().isoformat()}), 200
+
+
+
 

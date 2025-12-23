@@ -153,22 +153,34 @@ def text_preview(s: str, length: int = 300) -> str:
     except Exception:
         return "<unavailable>"
 
-
+def ping_server():
+    """Simple ping to the server root to check if it's up."""
+    try:
+        r = requests.get(f"{BASE_URL}/", timeout=10)
+        if r.status_code == 200:
+            print(f"Server is up. Root response (first 200 chars):\n{r.text[:200]}")
+        else:
+            print(f"Server responded with status {r.status_code} to root request.")
+    except Exception as e:
+        print(f"Could not reach server: {e}")
+        
 if __name__ == "__main__":
     # If user wants interactive chat, run it; otherwise run the basic tests
-    mode = input("Run interactive chat or tests? (chat/tests) [chat]: ").strip().lower() or "chat"
-    if mode.startswith("chat"):
-        interactive_chat()
-    else:
-        # Run tests manually and print brief success/failure
-        tests = [test_memory_get, test_get_sessions_api, test_rag_search_api]
-        for t in tests:
-            try:
-                print(f"Running {t.__name__}()...")
-                t()
-                print(f"{t.__name__}: OK\n")
-            except AssertionError as ae:
-                print(f"{t.__name__}: FAILED - {ae}\n")
+    # mode = input("Run interactive chat or tests? (chat/tests) [chat]: ").strip().lower() or "chat"
+    # if mode.startswith("chat"):
+    #     interactive_chat()
+    # else:
+    #     # Run tests manually and print brief success/failure
+    #     tests = [test_memory_get, test_get_sessions_api, test_rag_search_api]
+    #     for t in tests:
+    #         try:
+    #             print(f"Running {t.__name__}()...")
+    #             t()
+    #             print(f"{t.__name__}: OK\n")
+    #         except AssertionError as ae:
+    #             print(f"{t.__name__}: FAILED - {ae}\n")
                 
-            except Exception as e:
-                print(f"{t.__name__}: ERROR - {e}\n")
+    #         except Exception as e:
+    #             print(f"{t.__name__}: ERROR - {e}\n")
+    
+    ping_server()

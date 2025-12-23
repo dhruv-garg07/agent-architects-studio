@@ -8,6 +8,7 @@ import threading
 import json
 import re
 import hashlib
+from datetime import datetime
 from collections import deque
 from typing import List, Dict, Any, Generator, Optional
 from functools import lru_cache
@@ -38,6 +39,21 @@ class MessageType:
     HUMAN = "human"
     LLM = "llm"
     NOTE = "note"
+
+# Local imports for API key validation / rate limiting & billing (no redis)
+import os
+from supabase import create_client
+from key_utils import hash_key, parse_json_field
+from local_rate_limiter import rate_limiter
+
+# create a service-role supabase client for server-side writes
+SUPABASE_URL = os.environ.get('SUPABASE_URL')
+SUPABASE_SERVICE_ROLE_KEY = os.environ.get('SUPABASE_SERVICE_ROLE_KEY')
+supabase_backend_local = None
+try:
+    supabase_backend_local = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+except Exception:
+    supabase_backend_local = None
 
 class ConversationMode:
     PRECISE = "precise"
@@ -444,19 +460,60 @@ def chat_and_store():
     
     if not thread_id or not user_id or not user_msg:
         abort(400, "Missing required fields")
+
+    # --- API Key validation and rate limiting (if provided) ---
+    auth_header = request.headers.get('Authorization') or request.headers.get('authorization')
+    api_key_plain = None
+    if auth_header and auth_header.lower().startswith('bearer '):
+        api_key_plain = auth_header.split(None, 1)[1].strip()
+    elif request.headers.get('X-API-Key'):
+        api_key_plain = request.headers.get('X-API-Key')
+
+    key_record = None
+    key_limits = None
+    estimated_tokens = data.get('estimated_tokens') or max(1, len(user_msg.split()) // 3)
+
+    if api_key_plain:
+        try:
+            hashed = hash_key(api_key_plain)
+            if supabase_backend_local is None:
+                abort(500, 'Server misconfiguration: supabase client unavailable')
+
+            # Prefer the new 'hashed_key' column when present
+            resp = supabase_backend_local.table('api_keys').select('*').eq('hashed_key', hashed).eq('status', 'active').limit(1).execute()
+            data_rows = getattr(resp, 'data', None) or (resp.data if hasattr(resp, 'data') else None) or resp
+            if not data_rows:
+                # Fallback: some installations used a legacy 'key' column to store values; look there for the hash
+                resp2 = supabase_backend_local.table('api_keys').select('*').eq('key', hashed).eq('status', 'active').limit(1).execute()
+                data_rows = getattr(resp2, 'data', None) or (resp2.data if hasattr(resp2, 'data') else None) or resp2
+                if not data_rows:
+                    abort(401, 'Invalid API key')
+
+            key_record = data_rows[0]
+
+            perms = parse_json_field(key_record.get('permissions'))
+            if not perms.get('chat', True):
+                abort(403, 'API key does not have chat permission')
+
+            key_limits = parse_json_field(key_record.get('limits'))
+
+            # Try to reserve capacity
+            allowed = rate_limiter.allow_request(key_record.get('id'), key_limits, estimated_tokens)
+            if not allowed:
+                return jsonify({'error': 'rate_limited', 'message': 'Rate limit exceeded'}), 429
+
+        except Exception as e:
+            print('[API KEY] validation error:', e)
+            abort(401, 'Invalid API key')
+
+    else:
+        # Not using API key; proceed without rate limiting here (web UI flows still apply)
+        key_record = None
     
-    print(f"[CHAT] Starting chat for user {user_id}, session {thread_id}, mode: {conversation_mode}")
-    
-    # Get top_k configuration
+    # Get top_k configuration for retrieval sizes and start fetch timer
     top_k = TOP_K_CONFIG.get(conversation_mode, TOP_K_CONFIG[ConversationMode.BALANCED])
-    
-    # Phase 1: Parallel RAG fetching
-    print(f"[CHAT] Phase 1: RAG fetching")
     fetch_start = time.time()
-    
-    chat_rows = []
-    file_rows = []
-    
+
     try:
         # Fetch chat history
         chat_rows = get_read_controller_chatH().fetch_related_to_query(
@@ -696,7 +753,7 @@ def chat_and_store():
     def generate_streaming_response():
         """Generator for streaming SSE response"""
         full_reply_text = ""
-        
+        token_count = 0
         try:
             print(f"[STREAM] Starting LLM generation for query: {final_query}...")
             llm_start = time.time()
@@ -712,7 +769,6 @@ def chat_and_store():
             )
             
             # Stream tokens
-            token_count = 0
             for token in reply_generator:
                 token_count += 1
                 full_reply_text += token
@@ -755,7 +811,35 @@ def chat_and_store():
             import traceback
             traceback.print_exc()
             yield f"data: {json.dumps({'type': 'error', 'content': error_msg})}\n\n"
-    
+        finally:
+            # Record usage and release concurrency if an API key was used
+            try:
+                if key_record and 'id' in key_record:
+                    # Update usage table with token counts
+                    if supabase_backend_local:
+                        try:
+                            usage = {
+                                'key_id': key_record.get('id'),
+                                'tokens_used': int(token_count),
+                                'model': data.get('model') or 'unknown',
+                                'prompt_tokens': int(estimated_tokens),
+                                'completion_tokens': int(token_count),
+                                'cost': None,
+                                'timestamp': datetime.utcnow().isoformat()
+                            }
+                            supabase_backend_local.table('api_usage').insert(usage).execute()
+                            # update last_used_at
+                            supabase_backend_local.table('api_keys').update({'last_used_at': datetime.utcnow().isoformat()}).eq('id', key_record.get('id')).execute()
+                        except Exception as e:
+                            print('[BILLING] failed to record usage:', e)
+
+                    # release concurrency
+                    try:
+                        rate_limiter.end_request(key_record.get('id'))
+                    except Exception as e:
+                        print('[RATE] error releasing concurrency:', e)
+            except Exception as e:
+                print('[STREAM-FINAL] unexpected error in finally block:', e)
     return Response(generate_streaming_response(), mimetype='text/event-stream')
 
 @api.post("/web/notes")

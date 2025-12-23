@@ -41,6 +41,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from Octave_mem.RAG_DB_CONTROLLER.write_data_RAG_file_uploads import RAG_DB_Controller_FILE_DATA
 
 from supabase import create_client, Client
+from postgrest.exceptions import APIError
 import json
 
 # Ensure backend_examples can be imported
@@ -51,6 +52,8 @@ from backend_examples.python.services.agents import agent_service
 from backend_examples.python.services.creators import creator_service
 
 from backend_examples.python.models import SearchFilters
+# API Key helpers
+from key_utils import hash_key, mask_key, generate_secret_key
 from dotenv import load_dotenv
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -869,6 +872,9 @@ def api_creators():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+# ===== API Key Management Endpoints =====
+import secrets
 @app.route('/api/keys', methods=['GET'])
 @login_required
 def list_api_keys():
@@ -893,16 +899,12 @@ def delete_api_key(key_id):
     Delete an API key by id for the logged-in user.
     """
     try:
-        # Only allow deleting keys owned by the current user
-        resp = supabase_backend.table('api_keys').delete().eq('id', key_id).eq('user_id', current_user.id).execute()
-        # Check if any rows were deleted
-        # Many Supabase client responses include a .count or .data; be lenient
-        data = getattr(resp, 'data', None) or (resp.data if hasattr(resp, 'data') else None) or resp
-        # If deletion succeeded, return ok
+        # Revoke the API key instead of deleting so auditing is preserved
+        resp = supabase_backend.table('api_keys').update({'status': 'revoked', 'updated_at': datetime.utcnow().isoformat()}).eq('id', key_id).eq('user_id', current_user.id).execute()
         return jsonify({'ok': True})
     except Exception as e:
-        print('Error deleting API key:', e)
-        return jsonify({'error': 'Failed to delete API key', 'details': str(e)}), 500
+        print('Error revoking API key:', e)
+        return jsonify({'error': 'Failed to revoke API key', 'details': str(e)}), 500
 
 @app.route('/api/keys', methods=['POST'])
 @login_required
@@ -915,7 +917,11 @@ def create_api_key():
     print("[create_api_key] called. SUPABASE_URL set:", bool(SUPABASE_URL), "SERVICE_ROLE_KEY set:", bool(SUPABASE_SERVICE_ROLE_KEY))
 
     data = request.get_json(silent=True) or {}
-    print("[create_api_key] incoming data:", data)
+    # Avoid logging plaintext API keys; if provided, redact before printing
+    redacted = dict(data) if isinstance(data, dict) else {}
+    if 'key' in redacted:
+        redacted['key'] = '[REDACTED]'
+    print("[create_api_key] incoming data:", redacted)
     print("[create_api_key] current_user id:", getattr(current_user, 'id', None))
 
     name = data.get('name', 'Untitled Key')
@@ -926,7 +932,7 @@ def create_api_key():
     generated = False
     if not key_val:
         generated = True
-        key_val = 'sk-' + secrets.token_urlsafe(32)
+        key_val = generate_secret_key()
 
     # Compute expires_at if expiration is specified as e.g. '30 Days'
     expires_at = None
@@ -937,12 +943,22 @@ def create_api_key():
         except Exception:
             expires_at = None
 
+    # Permissions and limits can be supplied by client; fall back to sensible defaults
+    permissions = data.get('permissions') or {'chat': True, 'embeddings': True, 'tools': False}
+    limits = data.get('limits') or {'rpm': 60, 'tpm': 100000, 'concurrency': 5}
+
+    # Hash the API key before storing; do NOT store plaintext key
+    hashed = hash_key(key_val)
+
     record = {
         'id': str(uuid.uuid4()),
         'user_id': current_user.id,
         'name': name,
-        'key': key_val,  # NOTE: storing raw key; consider hashing for production
-        'masked_key': (key_val[:8] + '...' + key_val[-4:]) if len(key_val) > 12 else key_val,
+        'hashed_key': hashed,
+        'masked_key': mask_key(key_val),
+        'status': 'active',
+        'permissions': permissions,
+        'limits': limits,
         'expiration': expiration,
         'expires_at': expires_at,
         'created_at': datetime.utcnow().isoformat(),
@@ -954,7 +970,29 @@ def create_api_key():
         print('[create_api_key] supabase insert response:', getattr(resp, '__dict__', resp))
 
         # Return the full key only once (on creation) so client can show and copy it.
-        return jsonify({'ok': True, 'id': record['id'], 'key': key_val}), 201
+        return jsonify({'ok': True, 'id': record['id'], 'key': key_val, 'masked_key': record['masked_key']}), 201
+    except APIError as e:
+        # Handle missing column gracefully: older schemas may not have 'hashed_key'
+        msg = getattr(e, 'args', [str(e)])[0]
+        print('[create_api_key] APIError inserting key:', msg)
+        if "Could not find the 'hashed_key'" in msg or 'PGRST204' in msg:
+            try:
+                # Fallback: store hashed value in legacy 'key' column (do NOT store plaintext)
+                legacy_record = record.copy()
+                legacy_record.pop('hashed_key', None)
+                legacy_record['key'] = hashed
+                resp2 = supabase_backend.table('api_keys').insert(legacy_record).execute()
+                print('[create_api_key] fallback insert response (stored hash in key column):', getattr(resp2, '__dict__', resp2))
+                return jsonify({'ok': True, 'id': legacy_record['id'], 'key': key_val, 'masked_key': legacy_record['masked_key'], 'note': 'stored-hash-in-legacy-key-column'}), 201
+            except Exception as e2:
+                import traceback
+                print('[create_api_key] fallback insert failed:', e2)
+                traceback.print_exc()
+                return jsonify({'error': 'Failed to save API key (fallback)', 'details': str(e2)}), 500
+        else:
+            import traceback
+            traceback.print_exc()
+            return jsonify({'error': 'Failed to save API key', 'details': str(e)}), 500
     except Exception as e:
         import traceback
         print('Error saving API key:', e)
@@ -1239,6 +1277,13 @@ def memory():
 
 from api_chats import api
 app.register_blueprint(api)
+
+# Register Manhattan API blueprint (simple ping/health endpoints)
+try:
+    from api_manhattan import manhattan_api
+    app.register_blueprint(manhattan_api, url_prefix='/manhattan')
+except Exception as e:
+    print('[STARTUP] Could not register manhattan_api blueprint:', e)
 
 # Routes
 @app.route('/')
