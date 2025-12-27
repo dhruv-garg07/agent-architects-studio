@@ -955,6 +955,41 @@
             sessions = enriched;
         }
 
+        // Refresh a single session's metadata and preview (avoids reloading every session)
+        async function refreshSingleSession(thread_id) {
+            try {
+                const r = await fetch(`/web/sessions/${thread_id}/messages?id=${encodeURIComponent(window.USER_ID)}`);
+                if (!r.ok) return null;
+                const { messages = [] } = await r.json();
+
+                const last = messages.slice().sort((a, b) => {
+                    const ta = (a.metadata?.timestamp ?? 0), tb = (b.metadata?.timestamp ?? 0);
+                    if (tb !== ta) return tb - ta;
+                    const ia = (a.metadata?.index ?? 0), ib = (b.metadata?.index ?? 0);
+                    return ib - ia;
+                })[0];
+
+                const iso = last?.metadata?.timestamp
+                    ? new Date(last.metadata.timestamp * 1000).toISOString()
+                    : new Date().toISOString();
+
+                // Update sessions array in place if present
+                const idx = sessions.findIndex(s => s.id === thread_id);
+                const preview = last?.document || 'No messages';
+                const updated = { id: thread_id, createdAt: iso, updatedAt: iso, preview };
+                if (idx >= 0) {
+                    sessions[idx] = { ...sessions[idx], ...updated };
+                } else {
+                    sessions.unshift(updated);
+                }
+
+                return updated;
+            } catch (e) {
+                console.warn('refreshSingleSession failed for', thread_id, e);
+                return null;
+            }
+        }
+
 
 
         async function createNewSession() {
@@ -1476,8 +1511,11 @@
                                     };
                                     currentSession.messages.push(aiMessage);
 
-                                    // Refresh sessions list metadata from server
-                                    await refreshSessionsFromServer();
+                                    // Update the current session preview/updatedAt locally, then refresh only that session from server
+                                    currentSession.preview = fullAIResponse.slice(0, 200);
+                                    currentSession.updatedAt = new Date().toISOString();
+
+                                    await refreshSingleSession(currentSession.id);
                                     renderSessionsList();
 
                                 } else if (data.type === 'error') {
