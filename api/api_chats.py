@@ -536,6 +536,7 @@ def chat_and_store():
             all_rows = chat_rows + file_rows
         except Exception as e:
             print(f"[CHAT] Error fetching file rows: {e}")
+            all_rows = chat_rows
     
     
     # Score and sort
