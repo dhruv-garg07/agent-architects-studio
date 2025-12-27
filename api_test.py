@@ -156,9 +156,9 @@ def text_preview(s: str, length: int = 300) -> str:
 def ping_server():
     """Simple ping to the server root to check if it's up."""
     try:
-        r = requests.get(f"{BASE_URL}/", timeout=10)
+        r = requests.get(f"{BASE_URL}/ping", timeout=10)
         if r.status_code == 200:
-            print(f"Server is up. Root response (first 200 chars):\n{r.text[:200]}")
+            print(f"Server is up. Root response (first 200 chars):\n{r.text}")
         else:
             print(f"Server responded with status {r.status_code} to root request.")
     except Exception as e:
