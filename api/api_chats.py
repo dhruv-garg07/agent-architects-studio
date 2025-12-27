@@ -514,6 +514,8 @@ def chat_and_store():
     top_k = TOP_K_CONFIG.get(conversation_mode, TOP_K_CONFIG[ConversationMode.BALANCED])
     fetch_start = time.time()
 
+    all_rows = []
+    
     try:
         # Fetch chat history
         chat_rows = get_read_controller_chatH().fetch_related_to_query(
@@ -522,8 +524,10 @@ def chat_and_store():
             top_k=top_k['chat']
         )
         print(f"[CHAT] Found {len(chat_rows)} chat results")
+        all_rows = chat_rows
     except Exception as e:
         print(f"[CHAT] Error fetching chat rows: {e}")
+    
     
     if use_file_rag:
         try:
@@ -536,7 +540,7 @@ def chat_and_store():
             all_rows = chat_rows + file_rows
         except Exception as e:
             print(f"[CHAT] Error fetching file rows: {e}")
-            all_rows = chat_rows
+            # all_rows = chat_rows
     
     
     # Score and sort
