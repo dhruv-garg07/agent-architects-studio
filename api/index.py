@@ -1281,7 +1281,7 @@ app.register_blueprint(api)
 # Register Manhattan API blueprint (simple ping/health endpoints)
 try:
     from api_manhattan import manhattan_api
-    app.register_blueprint(manhattan_api, url_prefix='/manhattan')
+    app.register_blueprint(manhattan_api)
 except Exception as e:
     print('[STARTUP] Could not register manhattan_api blueprint:', e)
 
