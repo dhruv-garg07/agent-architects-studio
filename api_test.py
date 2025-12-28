@@ -71,7 +71,7 @@ def test_validate_key_invalid():
 
 def test_validate_key_env():
     """Optional: if TEST_API_KEY env var is set, assert server accepts it and returns valid True."""
-    key = "sk-5VagoCihzX6rWtT0u2L-ZLIfNWDqLV3HhAhdDZ0avW4"
+    key = os.environ.get('TEST_API_KEY')
     if not key:
         print("Skipping test_validate_key_env because TEST_API_KEY not set")
         return
@@ -83,6 +83,49 @@ def test_validate_key_env():
     except Exception as e:
         raise AssertionError(f"/validate_key test key did not return valid JSON: {e}\n{text_preview(r.text)}")
     assert data.get('valid', False), f"Expected valid True for TEST_API_KEY, got {data}"
+
+
+def test_create_agent():
+    """Create a sample agent using TEST_API_KEY. Skips if TEST_API_KEY is not set."""
+    key = "sk-5VagoCihzX6rWtT0u2L-ZLIfNWDqLV3HhAhdDZ0avW4"
+    if not key:
+        print("Skipping test_create_agent because TEST_API_KEY not set")
+        return
+
+    headers = {"Authorization": f"Bearer {key}"}
+    ts = int(time.time())
+    payload = {
+        "agent_name": f"test-agent-{ts}",
+        "agent_slug": f"test-agent-{ts}",
+        "permissions": {"run": True},
+        "limits": {"rpm": 10},
+        "description": "Created by api_test",
+        "metadata": {"created_by": "api_test"}
+    }
+
+    r = requests.post(f"{BASE_URL}/create_agent", json=payload, headers=headers, timeout=15)
+    assert r.status_code in (200, 201), f"Create agent failed: {r.status_code}: {r.text[:300]}"
+    try:
+        data = r.json()
+    except Exception as e:
+        raise AssertionError(f"/create_agent did not return valid JSON: {e}\n{text_preview(r.text)}")
+
+    assert isinstance(data, dict), f"Unexpected response shape from /create_agent: {type(data)}"
+    # Ensure the response contains the agent name or slug we sent
+    names = [data.get('agent_name'), data.get('name'), data.get('agent_slug'), data.get('slug')]
+    assert any(payload['agent_name'] == n for n in names if n), f"Created agent missing expected name/slug: {data}"
+
+
+def test_create_agent_invalid_json():
+    """Send invalid JSON to /create_agent and expect a 400 invalid_json response."""
+    key = os.environ.get('TEST_API_KEY')
+    if not key:
+        print("Skipping test_create_agent_invalid_json because TEST_API_KEY not set")
+        return
+
+    headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
+    r = requests.post(f"{BASE_URL}/create_agent", data='{"agent_name": "unterminated', headers=headers, timeout=10)
+    assert r.status_code == 400, f"Expected 400 for invalid JSON, got {r.status_code}: {r.text[:300]}"
 
 
 def create_session(user_id: str) -> str:
@@ -227,3 +270,4 @@ if __name__ == "__main__":
     ping_server()
     test_validate_key_env()
     test_validate_key_invalid()
+    test_create_agent()
