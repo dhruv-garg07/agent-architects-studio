@@ -59,7 +59,8 @@ def test_validate_key_missing():
 
 def test_validate_key_invalid():
     """POST /validate_key with an invalid key should return 401 and valid: False."""
-    r = requests.post(f"{BASE_URL}/validate_key", json={"api_key": "sk-5VagoCihzX6rWtT0u2L-ZLIfNWDqLV3HhAhdDZ0avW4s"}, timeout=10)
+    r = requests.post(f"{BASE_URL}/validate_key", json={"api_key": "sk-5VagoCihizX6rWtT02L-ZLIfNWDqLV3HhAhdDZ0avW4"}, timeout=10)
+    print(r.status_code, r.text)
     assert r.status_code == 401, f"Expected 401 for invalid key, got {r.status_code}: {r.text[:300]}"
     try:
         data = r.json()
@@ -75,6 +76,7 @@ def test_validate_key_env():
         print("Skipping test_validate_key_env because TEST_API_KEY not set")
         return
     r = requests.post(f"{BASE_URL}/validate_key", json={"api_key": key}, timeout=10)
+    print(r.status_code, r.text)
     assert r.status_code == 200, f"Valid test key failed: {r.status_code}: {r.text[:300]}"
     try:
         data = r.json()
@@ -224,3 +226,4 @@ if __name__ == "__main__":
     
     ping_server()
     test_validate_key_env()
+    test_validate_key_invalid()

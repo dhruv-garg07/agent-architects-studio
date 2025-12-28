@@ -57,8 +57,25 @@ production use replace the storage layer with a secure database and rotate keys.
   
 """
 
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request, g
 from datetime import datetime
+import uuid
+# API authentication helpers and endpoints
+import os
+import json
+from supabase import create_client
+from key_utils import hash_key, parse_json_field
+from functools import wraps
+from flask import request, g
+
+# Create a server-side supabase client (service role) for validation and lookups
+_SUPABASE_URL = os.environ.get('SUPABASE_URL')
+_SUPABASE_SERVICE_ROLE_KEY = os.environ.get('SUPABASE_SERVICE_ROLE_KEY')
+try:
+    _supabase_backend = create_client(_SUPABASE_URL, _SUPABASE_SERVICE_ROLE_KEY)
+except Exception:
+    _supabase_backend = None
+
 
 
 # Lightweight Manhattan API blueprint (used for simple health / ping checks)
@@ -86,23 +103,9 @@ def health():
   """
   return jsonify({"ok": True, "status": "healthy", "checked_at": datetime.utcnow().isoformat()}), 200
 
-# API authentication helpers and endpoints
-import os
-import json
-from supabase import create_client
-from key_utils import hash_key, parse_json_field
-from functools import wraps
-from flask import request, g
-
-# Create a server-side supabase client (service role) for validation and lookups
-_SUPABASE_URL = os.environ.get('SUPABASE_URL')
-_SUPABASE_SERVICE_ROLE_KEY = os.environ.get('SUPABASE_SERVICE_ROLE_KEY')
-try:
-    _supabase_backend = create_client(_SUPABASE_URL, _SUPABASE_SERVICE_ROLE_KEY)
-except Exception:
-    _supabase_backend = None
 
 
+# API Key validation and management
 def validate_api_key_value(api_key_plain: str, permission: str | None = None):
     """Validate an API key string against the `api_keys` table.
 
@@ -192,3 +195,63 @@ def validate_key():
     # Return selected fields only
     record = info
     return jsonify({'valid': True, 'key_id': record.get('id'), 'permissions': parse_json_field(record.get('permissions'))}), 200
+
+# API functions for agent creation.
+"""
+First validate the api key using the above functions.
+Then create an agent for the user.
+One session ID will act as one agent.
+Chroma DB is used to store data for one agent and will act as its vector DB.
+The session_ids will be stored in a supabase table with user association in the field 
+"""
+from backend_examples.python.services.api_agents import ApiAgentsService
+
+service = ApiAgentsService()
+
+@manhattan_api.route("/create_agent", methods=["POST"])
+@require_api_key(permission="agent_create")
+def create_agent():
+    """Create a new agent for the authenticated user.
+
+    Expects JSON body with:
+    - agent_name: str
+    - agent_slug: str
+    - permissions: dict
+    - limits: dict
+    - description: str (optional)
+    - metadata: dict (optional)
+
+    Returns the created agent record.
+    """
+    # Read raw request body and parse JSON explicitly (use get_data instead of get_json)
+    raw = request.get_data(as_text=True) or ''
+    try:
+        data = json.loads(raw) if raw else {}
+    except Exception:
+        return jsonify({'error': 'invalid_json'}), 400
+
+    user_id = getattr(g, 'api_key_record', {}) and g.api_key_record.get('user_id')
+
+    agent_name = data.get('agent_name')
+    agent_slug = data.get('agent_slug')
+    permissions = data.get('permissions', {})
+    limits = data.get('limits', {})
+    description = data.get('description')
+    metadata = data.get('metadata', {})
+
+    if not agent_name or not agent_slug:
+        return jsonify({'error': 'agent_name and agent_slug are required'}), 400
+
+    try:
+        agent = service.create_agent(
+            user_id=user_id,
+            agent_name=agent_name,
+            agent_slug=agent_slug,
+            permissions=permissions,
+            limits=limits,
+            description=description,
+            metadata=metadata
+        )
+        return jsonify(agent), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
