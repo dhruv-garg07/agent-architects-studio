@@ -227,7 +227,7 @@ def create_agent():
     """
     # Parse JSON using request.get_json (raise on invalid JSON so we can return 400)
     try:
-        data = request.get_json(silent=False) or {}
+        data = request.get_json(silent=True) or {}
     except BadRequest:
         return jsonify({'error': 'invalid_json'}), 400
 
