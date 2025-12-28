@@ -67,6 +67,7 @@ from supabase import create_client
 from key_utils import hash_key, parse_json_field
 from functools import wraps
 from flask import request, g
+from werkzeug.exceptions import BadRequest
 
 # Create a server-side supabase client (service role) for validation and lookups
 _SUPABASE_URL = os.environ.get('SUPABASE_URL')
@@ -224,11 +225,10 @@ def create_agent():
     - Validates API key if provided via Authorization/X-API-Key/query param/raw payload.
     - If Supabase is unavailable or creation fails, returns a local stubbed agent record to aid testing.
     """
-    # Read raw request body and parse JSON explicitly (use get_data instead of get_json)
-    raw = request.get_data(as_text=True) or ''
+    # Parse JSON using request.get_json (raise on invalid JSON so we can return 400)
     try:
-        data = json.loads(raw) if raw else {}
-    except Exception:
+        data = request.get_json(silent=False) or {}
+    except BadRequest:
         return jsonify({'error': 'invalid_json'}), 400
 
     # Extract API key from common places
