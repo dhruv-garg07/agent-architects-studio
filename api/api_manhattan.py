@@ -233,6 +233,9 @@ def create_agent():
 
     # Extract API key from ANY possible source with maximum flexibility
     api_key = None
+    
+    if(data is None):
+        return jsonify({'error': 'invalid_json'}), 400
 
     # Check all possible sources
     possible_sources = [
@@ -246,6 +249,8 @@ def create_agent():
         data.get('access_token')
     ]
 
+    print("Possible Sources:", possible_sources)
+    
     for source in possible_sources:
         if source:
             # Clean up the value
