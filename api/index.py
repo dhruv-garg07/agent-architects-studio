@@ -1009,10 +1009,6 @@ def internal_error(error):
     """500 error handler."""
     return render_template('500.html'), 500
 
-
-# Agent stats update endpoints
-from flask import request, jsonify
-
 @app.route('/agent/<agent_id>/upvote', methods=['POST'])
 def agent_upvote(agent_id):
     agent = asyncio.run(agent_service.get_agent_by_id(agent_id))
