@@ -264,6 +264,8 @@ def create_agent():
     if api_key and api_key.lower().startswith('bearer '):
         api_key = api_key.split(None, 1)[1]
 
+    print(f"API Key received: {api_key}")
+
     # Validation logic (same as before)
     user_id = None
     if api_key:
