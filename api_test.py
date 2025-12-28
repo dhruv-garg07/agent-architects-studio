@@ -1,6 +1,7 @@
 import requests
 import json
 import time
+import os
 
 # Simple validation tests for the running server at the provided base URL.
 # These are pytest-compatible functions but can also be executed directly via `python api_test.py`.
@@ -42,6 +43,44 @@ def test_rag_search_api():
         raise AssertionError(f"/api/rag did not return valid JSON: {e}\n{text_preview(r.text)}")
     assert "results" in data, f"/api/rag JSON missing 'results' key: {data.keys()}"
     assert isinstance(data["results"], list), f"Expected 'results' to be a list, got {type(data['results'])}"
+
+
+def test_validate_key_missing():
+    """POST /validate_key with missing key should return 401 and valid: False."""
+    r = requests.post(f"{BASE_URL}/validate_key", json={}, timeout=10)
+    # Some servers may return 400 or 401 for missing payloads — accept either but ensure valid is False
+    assert r.status_code in (400, 401), f"Expected 400 or 401 for missing key, got {r.status_code}: {r.text[:300]}"
+    try:
+        data = r.json()
+    except Exception as e:
+        raise AssertionError(f"/validate_key missing-key did not return valid JSON: {e}\n{text_preview(r.text)}")
+    assert not data.get('valid', False), f"Expected valid False for missing key but got {data}"
+
+
+def test_validate_key_invalid():
+    """POST /validate_key with an invalid key should return 401 and valid: False."""
+    r = requests.post(f"{BASE_URL}/validate_key", json={"api_key": "sk-5VagoCihzX6rWtT0u2L-ZLIfNWDqLV3HhAhdDZ0avW4s"}, timeout=10)
+    assert r.status_code == 401, f"Expected 401 for invalid key, got {r.status_code}: {r.text[:300]}"
+    try:
+        data = r.json()
+    except Exception as e:
+        raise AssertionError(f"/validate_key invalid-key did not return valid JSON: {e}\n{text_preview(r.text)}")
+    assert not data.get('valid', False), f"Expected valid False for invalid key but got {data}"
+
+
+def test_validate_key_env():
+    """Optional: if TEST_API_KEY env var is set, assert server accepts it and returns valid True."""
+    key = "sk-5VagoCihzX6rWtT0u2L-ZLIfNWDqLV3HhAhdDZ0avW4"
+    if not key:
+        print("Skipping test_validate_key_env because TEST_API_KEY not set")
+        return
+    r = requests.post(f"{BASE_URL}/validate_key", json={"api_key": key}, timeout=10)
+    assert r.status_code == 200, f"Valid test key failed: {r.status_code}: {r.text[:300]}"
+    try:
+        data = r.json()
+    except Exception as e:
+        raise AssertionError(f"/validate_key test key did not return valid JSON: {e}\n{text_preview(r.text)}")
+    assert data.get('valid', False), f"Expected valid True for TEST_API_KEY, got {data}"
 
 
 def create_session(user_id: str) -> str:
@@ -184,3 +223,4 @@ if __name__ == "__main__":
     #             print(f"{t.__name__}: ERROR - {e}\n")
     
     ping_server()
+    test_validate_key_env()

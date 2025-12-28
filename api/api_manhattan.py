@@ -86,6 +86,109 @@ def health():
   """
   return jsonify({"ok": True, "status": "healthy", "checked_at": datetime.utcnow().isoformat()}), 200
 
+# API authentication helpers and endpoints
+import os
+import json
+from supabase import create_client
+from key_utils import hash_key, parse_json_field
+from functools import wraps
+from flask import request, g
+
+# Create a server-side supabase client (service role) for validation and lookups
+_SUPABASE_URL = os.environ.get('SUPABASE_URL')
+_SUPABASE_SERVICE_ROLE_KEY = os.environ.get('SUPABASE_SERVICE_ROLE_KEY')
+try:
+    _supabase_backend = create_client(_SUPABASE_URL, _SUPABASE_SERVICE_ROLE_KEY)
+except Exception:
+    _supabase_backend = None
 
 
+def validate_api_key_value(api_key_plain: str, permission: str | None = None):
+    """Validate an API key string against the `api_keys` table.
 
+    Returns (True, record) on success or (False, error_message) on failure.
+    """
+    if not api_key_plain:
+        return False, 'missing_api_key'
+
+    hashed = hash_key(api_key_plain)
+
+    if _supabase_backend is None:
+        return False, 'supabase_unavailable'
+
+    try:
+        # Try new hashed_key column first
+        resp = _supabase_backend.table('api_keys').select('*').eq('hashed_key', hashed).eq('status', 'active').limit(1).execute()
+        rows = getattr(resp, 'data', None) or (resp.data if hasattr(resp, 'data') else None) or resp
+        if not rows:
+            # Fallback to legacy 'key' column where we may have stored the hash earlier
+            resp2 = _supabase_backend.table('api_keys').select('*').eq('key', hashed).eq('status', 'active').limit(1).execute()
+            rows = getattr(resp2, 'data', None) or (resp2.data if hasattr(resp2, 'data') else None) or resp2
+            if not rows:
+                return False, 'invalid_api_key'
+
+        record = rows[0]
+
+        # Normalize permissions
+        perms = record.get('permissions') or {}
+        if isinstance(perms, str):
+            try:
+                perms = json.loads(perms)
+            except Exception:
+                perms = {}
+
+        if permission:
+            if not perms.get(permission, False):
+                return False, 'permission_denied'
+
+        return True, record
+    except Exception as e:
+        return False, str(e)
+
+
+def require_api_key(permission: str | None = None):
+    """Decorator for routes that require a valid API key header or query param.
+
+    Looks for `Authorization: Bearer <key>` or `X-API-Key` header or `api_key` query param.
+    On success attaches the key record to `flask.g.api_key_record`.
+    """
+    def decorator(fn):
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            auth_header = request.headers.get('Authorization') or request.headers.get('authorization')
+            api_key = None
+            if auth_header and auth_header.lower().startswith('bearer '):
+                api_key = auth_header.split(None, 1)[1].strip()
+            elif request.headers.get('X-API-Key'):
+                api_key = request.headers.get('X-API-Key')
+            elif request.args.get('api_key'):
+                api_key = request.args.get('api_key')
+
+            ok, info = validate_api_key_value(api_key, permission)
+            if not ok:
+                return jsonify({'valid': False, 'error': info}), 401
+
+            # attach record
+            g.api_key_record = info
+            return fn(*args, **kwargs)
+        return wrapper
+    return decorator
+
+
+@manhattan_api.route("/validate_key", methods=["POST"])
+def validate_key():
+    """Validate an API key sent in JSON { "api_key": "sk-...", "permission": "chat" }.
+
+    Returns `{'valid': True, 'key_id': '...'}` on success.
+    """
+    data = request.get_json(silent=True) or {}
+    api_key = data.get('api_key') or request.headers.get('X-API-Key')
+    permission = data.get('permission')
+
+    ok, info = validate_api_key_value(api_key, permission)
+    if not ok:
+        return jsonify({'valid': False, 'error': info}), 401
+
+    # Return selected fields only
+    record = info
+    return jsonify({'valid': True, 'key_id': record.get('id'), 'permissions': parse_json_field(record.get('permissions'))}), 200
