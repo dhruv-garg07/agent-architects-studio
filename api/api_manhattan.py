@@ -231,19 +231,40 @@ def create_agent():
     except BadRequest:
         return jsonify({'error': 'invalid_json'}), 400
 
-    # Extract API key from common places
-    auth_header = request.headers.get('Authorization') or request.headers.get('authorization')
+    # Extract API key from ANY possible source with maximum flexibility
     api_key = None
-    if auth_header and auth_header.lower().startswith('bearer '):
-        api_key = auth_header.split(None, 1)[1].strip()
-    elif request.headers.get('X-API-Key'):
-        api_key = request.headers.get('X-API-Key')
-    elif request.args.get('api_key'):
-        api_key = request.args.get('api_key')
-    elif data.get('api_key'):
-        api_key = data.get('api_key')
 
-    # Try to validate API key (if present)
+    # Check all possible sources
+    possible_sources = [
+        request.headers.get('Authorization'),
+        request.headers.get('authorization'),
+        request.headers.get('X-API-Key'),
+        request.headers.get('x-api-key'),
+        request.args.get('api_key'),
+        data.get('api_key'),
+        data.get('token'),
+        data.get('access_token')
+    ]
+
+    for source in possible_sources:
+        if source:
+            # Clean up the value
+            source = str(source).strip()
+            
+            # If it's a Bearer token, extract the token part
+            if source.lower().startswith('bearer '):
+                api_key = source.split(None, 1)[1]
+                break
+            # If it's just a token/API key, use it directly
+            elif source and len(source) > 10:  # Basic check that it's not empty/short
+                api_key = source
+                break
+
+    # If we have an API key, clean it (remove any remaining "Bearer " prefix)
+    if api_key and api_key.lower().startswith('bearer '):
+        api_key = api_key.split(None, 1)[1]
+
+    # Validation logic (same as before)
     user_id = None
     if api_key:
         ok, info = validate_api_key_value(api_key, 'agent_create')
@@ -251,15 +272,13 @@ def create_agent():
             user_id = info.get('user_id')
             g.api_key_record = info
         else:
-            # Fallback for local testing: accept any Bearer-style key if Supabase create is not available
+            # Fallback for local testing
             if api_key.startswith('sk-'):
-                # Treat as test key: set a placeholder user id
                 user_id = os.environ.get('TEST_USER_ID', 'test-user')
                 g.api_key_record = {'id': 'test-key', 'user_id': user_id, 'permissions': {'agent_create': True}}
             else:
                 return jsonify({'error': info, 'valid': False}), 401
     else:
-        # No API key provided — deny
         return jsonify({'error': 'missing_api_key', 'valid': False}), 401
 
     agent_name = data.get('agent_name')

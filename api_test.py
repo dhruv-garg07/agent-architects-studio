@@ -92,7 +92,7 @@ def test_create_agent():
         print("Skipping test_create_agent because TEST_API_KEY not set")
         return
 
-    headers = {"Authorization": f"Bearer {key}"}
+    headers = {"Authorization": f"bearer {key}"}
     ts = int(time.time())
     payload = {
         "agent_name": f"test-agent-{ts}",
