@@ -135,6 +135,8 @@ def validate_api_key_value(api_key_plain: str, permission: str | None = None):
 
         # Normalize permissions
         perms = record.get('permissions') or {}
+        
+        print( "Permissions from record:", perms)
         if isinstance(perms, str):
             try:
                 perms = json.loads(perms)
@@ -276,10 +278,11 @@ def create_agent():
     # Validation logic (same as before)
     user_id = None
     if api_key:
-        ok, info = validate_api_key_value(api_key, 'agent_create')
+        permission = data.get('permission')
+        ok, info = validate_api_key_value(api_key, permission)
 
         print(f"API Key validation result: {ok}, info: {info}")
-        
+
         if ok:
             user_id = info.get('user_id')
             g.api_key_record = info
