@@ -236,7 +236,9 @@ def create_agent():
     
     if(data is None):
         return jsonify({'error': 'invalid_json'}), 400
-
+    
+    print("Request Data:", data)
+    print("Request Headers:", request.headers)
     # Check all possible sources
     possible_sources = [
         request.headers.get('Authorization'),

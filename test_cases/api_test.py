@@ -104,6 +104,9 @@ def test_create_agent():
     }
 
     r = requests.post(f"{BASE_URL}/create_agent", json=payload, headers=headers, timeout=15)
+
+    print(r.text)
+
     assert r.status_code in (200, 201), f"Create agent failed: {r.status_code}: {r.text[:300]}"
     try:
         data = r.json()
@@ -267,7 +270,7 @@ if __name__ == "__main__":
     #         except Exception as e:
     #             print(f"{t.__name__}: ERROR - {e}\n")
     
-    ping_server()
-    test_validate_key_env()
-    test_validate_key_invalid()
+    # ping_server()
+    # test_validate_key_env()
+    # test_validate_key_invalid()
     test_create_agent()
