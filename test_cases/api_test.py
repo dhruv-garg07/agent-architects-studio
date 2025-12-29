@@ -71,7 +71,7 @@ def test_validate_key_invalid():
 
 def test_validate_key_env():
     """Optional: if TEST_API_KEY env var is set, assert server accepts it and returns valid True."""
-    key = os.environ.get('TEST_API_KEY')
+    key = "sk-5VagoCihzX6rWtT0u2L-ZLIfNWDqLV3HhAhdDZ0avW4"
     if not key:
         print("Skipping test_validate_key_env because TEST_API_KEY not set")
         return
@@ -92,7 +92,7 @@ def test_create_agent():
         print("Skipping test_create_agent because TEST_API_KEY not set")
         return
 
-    headers = {'Authorization': key}
+    headers = {'Authorization': f"{key}"}
     ts = int(time.time())
     payload = {
         "agent_name": f"test-agent-{ts}",
