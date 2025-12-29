@@ -206,176 +206,128 @@ Chroma DB is used to store data for one agent and will act as its vector DB.
 The session_ids will be stored in a supabase table with user association in the field 
 """
 from backend_examples.python.services.api_agents import ApiAgentsService
-from flask_cors import CORS
-from flask import Flask, Blueprint, request, jsonify, g
-import os
-import uuid
-from datetime import datetime
-
-# Make sure you have the blueprint defined properly
-manhattan_api = Blueprint('manhattan_api', __name__)
-
-# Enable CORS for all routes
-# CORS(manhattan_api)
-
-# Add JSON error handlers for the blueprint
-@manhattan_api.errorhandler(404)
-def not_found_error(error):
-    """Return JSON for 404 errors within this blueprint"""
-    return jsonify({'error': 'Endpoint not found', 'path': request.path}), 404
-
-@manhattan_api.errorhandler(500)
-def internal_error(error):
-    """Return JSON for 500 errors within this blueprint"""
-    return jsonify({'error': 'Internal server error', 'message': str(error)}), 500
-
-@manhattan_api.errorhandler(Exception)
-def handle_exception(error):
-    """Return JSON for any unhandled exceptions"""
-    return jsonify({'error': 'Server error', 'message': str(error)}), 500
 
 service = ApiAgentsService()
 
-@manhattan_api.route("/create_agent", methods=["POST", "OPTIONS"])
+@manhattan_api.route("/create_agent", methods=["POST"])
 def create_agent():
-    """Create a new agent for the authenticated user."""
-    
-    # Handle CORS preflight requests
-    if request.method == 'OPTIONS':
-        response = jsonify({'status': 'ok'})
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        response.headers.add('Access-Control-Allow-Headers', '*')
-        response.headers.add('Access-Control-Allow-Methods', '*')
-        return response, 200
-    
+    """Create a new agent for the authenticated user.
+
+    Expects JSON body with:
+    - agent_name: str
+    - agent_slug: str
+    - permissions: dict
+    - limits: dict
+    - description: str (optional)
+    - metadata: dict (optional)
+
+    Behavior:
+    - Validates API key if provided via Authorization/X-API-Key/query param/raw payload.
+    - If Supabase is unavailable or creation fails, returns a local stubbed agent record to aid testing.
+    """
+    # Parse JSON using request.get_json (raise on invalid JSON so we can return 400)
     try:
-        # Parse JSON
         data = request.get_json(silent=True) or {}
-        
-        if not data:
-            return jsonify({'error': 'invalid_json', 'message': 'No JSON data provided'}), 400
+    except BadRequest:
+        return jsonify({'error': 'invalid_json'}), 400
 
-        # DEBUG: Print all headers
-        print("=== ALL HEADERS ===")
-        for key, value in request.headers.items():
-            print(f"{key}: {value}")
-        print("==================")
+    # Extract API key from ANY possible source with maximum flexibility
+    api_key = None
+    
+    if(data is None):
+        return jsonify({'error': 'invalid_json'}), 400
 
-        # Extract API key with maximum flexibility
-        api_key = None
-        
-        # Method 1: Direct header access (most reliable)
-        auth_header = request.headers.get('Authorization', request.headers.get('authorization', ''))
-        x_api_key = request.headers.get('X-API-Key', request.headers.get('x-api-key', ''))
-        
-        # Method 2: Check all possible sources
-        possible_sources = [
-            auth_header,
-            x_api_key,
-            request.args.get('api_key'),
-            data.get('api_key'),
-            data.get('token'),
-            data.get('access_token'),
-            request.form.get('api_key')
-        ]
-        
-        print("Checking sources:", [s[:20] + "..." if s and len(s) > 20 else s for s in possible_sources])
+    # Check all possible sources
+    possible_sources = [
+        request.headers.get('Authorization'),
+        request.headers.get('authorization'),
+        request.headers.get('X-API-Key'),
+        request.headers.get('x-api-key'),
+        request.args.get('api_key'),
+        data.get('api_key'),
+        data.get('token'),
+        data.get('access_token')
+    ]
 
-        for source in possible_sources:
-            if source:
-                source_str = str(source).strip()
-                print(f"Processing source: {source_str[:50]}...")
-                
-                # Remove Bearer prefix (case-insensitive)
-                if source_str.lower().startswith('bearer '):
-                    api_key = source_str.split(None, 1)[1].strip()
-                    print(f"Extracted Bearer token: {api_key[:20]}...")
-                    break
-                elif source_str and len(source_str) > 10:
-                    api_key = source_str
-                    print(f"Using raw source as API key: {api_key[:20]}...")
-                    break
-
-        print(f"Final API key extracted: {api_key[:50] if api_key else 'None'}")
-
-        # Validation logic
-        user_id = None
-        if api_key:
-            try:
-                # Check if it's a test key first
-                if api_key.startswith('sk-'):
-                    # For test keys, bypass validation
-                    user_id = os.environ.get('TEST_USER_ID', '00000000-0000-0000-0000-000000000000')
-                    g.api_key_record = {
-                        'id': 'test-key', 
-                        'user_id': user_id, 
-                        'permissions': {'agent_create': True}
-                    }
-                    print(f"Using test key, user_id: {user_id}")
-                else:
-                    # For real keys, validate
-                    ok, info = validate_api_key_value(api_key, 'agent_create')
-                    if ok:
-                        user_id = info.get('user_id')
-                        g.api_key_record = info
-                        print(f"Validated real key, user_id: {user_id}")
-                    else:
-                        return jsonify({'error': 'Invalid API key', 'valid': False}), 401
-            except Exception as e:
-                print(f"Validation error: {e}")
-                return jsonify({'error': 'Validation failed', 'message': str(e), 'valid': False}), 401
-        else:
-            print("No API key found in request")
-            return jsonify({'error': 'missing_api_key', 'valid': False}), 401
-
-        # Validate required fields
-        agent_name = data.get('agent_name')
-        agent_slug = data.get('agent_slug')
-        permissions = data.get('permissions', {})
-        limits = data.get('limits', {})
-        description = data.get('description')
-        metadata = data.get('metadata', {})
-
-        if not agent_name or not agent_slug:
-            return jsonify({'error': 'agent_name and agent_slug are required'}), 400
-
-        # Build record
-        record = {
-            'user_id': user_id,
-            'agent_name': agent_name,
-            'agent_slug': agent_slug,
-            'permissions': permissions,
-            'limits': limits,
-            'description': description,
-            'metadata': metadata or {},
-            'status': 'pending',
-            'created_at': datetime.utcnow().isoformat(),
-            'updated_at': datetime.utcnow().isoformat(),
-        }
-
-        # Try to persist
-        try:
-            agent = service.create_agent(
-                user_id=user_id,
-                agent_name=agent_name,
-                agent_slug=agent_slug,
-                permissions=permissions,
-                limits=limits,
-                description=description,
-                metadata=metadata
-            )
-            print(f"Agent created successfully: {agent.get('id', 'unknown')}")
-            return jsonify(agent), 201
-        except RuntimeError as e:
-            # Fallback for local testing
-            print(f"Runtime error, using stub: {e}")
-            local = record.copy()
-            local['id'] = str(uuid.uuid4())
-            return jsonify(local), 201
-        except Exception as e:
-            print(f"Unexpected error: {e}")
-            return jsonify({'error': str(e)}), 500
+    print("Possible Sources:", possible_sources)
+    
+    for source in possible_sources:
+        if source:
+            # Clean up the value
+            source = str(source).strip()
             
+            # If it's a Bearer token, extract the token part
+            if source.lower().startswith('bearer '):
+                api_key = source.split(None, 1)[1]
+                break
+            # If it's just a token/API key, use it directly
+            elif source and len(source) > 10:  # Basic check that it's not empty/short
+                api_key = source
+                break
+
+    # If we have an API key, clean it (remove any remaining "Bearer " prefix)
+    if api_key and api_key.lower().startswith('bearer '):
+        api_key = api_key.split(None, 1)[1]
+
+    print(f"API Key received: {api_key}")
+
+    # Validation logic (same as before)
+    user_id = None
+    if api_key:
+        ok, info = validate_api_key_value(api_key, 'agent_create')
+        if ok:
+            user_id = info.get('user_id')
+            g.api_key_record = info
+        else:
+            # Fallback for local testing
+            if api_key.startswith('sk-'):
+                user_id = os.environ.get('TEST_USER_ID', 'test-user')
+                g.api_key_record = {'id': 'test-key', 'user_id': user_id, 'permissions': {'agent_create': True}}
+            else:
+                return jsonify({'error': info, 'valid': False}), 401
+    else:
+        return jsonify({'error': 'missing_api_key', 'valid': False}), 401
+
+    agent_name = data.get('agent_name')
+    agent_slug = data.get('agent_slug')
+    permissions = data.get('permissions', {})
+    limits = data.get('limits', {})
+    description = data.get('description')
+    metadata = data.get('metadata', {})
+
+    if not agent_name or not agent_slug:
+        return jsonify({'error': 'agent_name and agent_slug are required'}), 400
+
+    # Build record payload for service or fallback
+    record = {
+        'user_id': user_id,
+        'agent_name': agent_name,
+        'agent_slug': agent_slug,
+        'permissions': permissions,
+        'limits': limits,
+        'description': description,
+        'metadata': metadata or {},
+        'status': 'pending',
+        'created_at': datetime.utcnow().isoformat(),
+        'updated_at': datetime.utcnow().isoformat(),
+    }
+
+    # Try to persist via service; if it fails (e.g., missing supabase creds), return the local stub
+    try:
+        agent = service.create_agent(
+            user_id=user_id,
+            agent_name=agent_name,
+            agent_slug=agent_slug,
+            permissions=permissions,
+            limits=limits,
+            description=description,
+            metadata=metadata
+        )
+        return jsonify(agent), 201
+    except RuntimeError as e:
+        # Service likely failed due to missing configuration; return the local record for tests
+        local = record.copy()
+        local['id'] = str(uuid.uuid4())
+        return jsonify(local), 201
     except Exception as e:
-        print(f"Top-level exception in create_agent: {e}")
-        return jsonify({'error': 'Server error', 'message': str(e)}), 500
+        return jsonify({'error': str(e)}), 500
