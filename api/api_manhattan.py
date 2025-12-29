@@ -216,7 +216,7 @@ from datetime import datetime
 manhattan_api = Blueprint('manhattan_api', __name__)
 
 # Enable CORS for all routes
-CORS(manhattan_api)
+# CORS(manhattan_api)
 
 # Add JSON error handlers for the blueprint
 @manhattan_api.errorhandler(404)
