@@ -6,7 +6,7 @@ import os
 # Simple validation tests for the running server at the provided base URL.
 # These are pytest-compatible functions but can also be executed directly via `python api_test.py`.
 
-BASE_URL = "https://themanhattanproject.ai"
+BASE_URL = "https://www.themanhattanproject.ai"
 # BASE_URL = "http://192.168.0.4:5000"
 
 def test_memory_get():
