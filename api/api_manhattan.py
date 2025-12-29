@@ -277,6 +277,9 @@ def create_agent():
     user_id = None
     if api_key:
         ok, info = validate_api_key_value(api_key, 'agent_create')
+
+        print(f"API Key validation result: {ok}, info: {info}")
+        
         if ok:
             user_id = info.get('user_id')
             g.api_key_record = info
