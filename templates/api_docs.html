@@ -4,235 +4,1334 @@
 
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-  <h1 class="text-3xl font-bold mb-6">API Documentation</h1>
+  <!-- Header with Search -->
+  <div class="mb-8">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+      <div>
+        <h1 class="text-4xl font-bold mb-2 bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">
+          API Documentation
+        </h1>
+        <p class="text-lg text-muted-foreground">Interactive documentation with live examples</p>
+      </div>
+      <div class="relative w-full sm:w-auto">
+        <input 
+          type="text" 
+          id="global-search"
+          placeholder="Search endpoints, methods, descriptions..."
+          class="w-full sm:w-80 px-4 py-2 pl-10 bg-surface border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+        >
+        <svg class="absolute left-3 top-2.5 w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+      </div>
+    </div>
 
-  <style>
-    /* Seamless three-panel layout overrides for api docs */
-    .api-docs-panels { display: grid; grid-template-columns: 320px 1fr 420px; gap: 0; height: 70vh; }
-    .api-docs-panels .card { border: none; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); box-shadow: 0 8px 30px rgba(2,6,23,0.55); border-radius: 12px; overflow: hidden; }
-    .api-docs-panels .panel { padding: 1rem 1.25rem; height: 100%; box-sizing: border-box; }
-    .nav-panel { border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
-    .code-panel { border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
-    .middle-panel { border-left: 1px solid rgba(255,255,255,0.03); border-right: 1px solid rgba(255,255,255,0.03); }
-    /* subtle inner separators to visually group content without harsh boxes */
-    .api-docs-panels .panel > h2, .api-docs-panels .panel > h3 { margin-top: 0; }
-    .endpoint-list li + li { margin-top: 0.25rem; }
-    .endpoint-path { font-size: 0.95rem; }
-    /* make code sample area more prominent */
-    #code-block, #details-request, #details-response { background: rgba(0,0,0,0.18); border-radius: 8px; padding: 0.9rem; }
-  </style>
+    <!-- Quick Filter Chips -->
+    <div class="flex flex-wrap gap-2 mb-6">
+      <button class="filter-chip active" data-filter="all">All</button>
+      <button class="filter-chip" data-filter="GET">GET</button>
+      <button class="filter-chip" data-filter="POST">POST</button>
+      <button class="filter-chip" data-filter="PUT">PUT</button>
+      <button class="filter-chip" data-filter="DELETE">DELETE</button>
+      <button class="filter-chip" data-filter="Agents">Agents</button>
+      <button class="filter-chip" data-filter="Documents">Documents</button>
+      <button class="filter-chip" data-filter="LLM">LLM</button>
+    </div>
+  </div>
 
   <div class="api-docs-panels">
-    <!-- Left: Navigation -->
+    <!-- Left: Navigation Panel -->
     <aside id="api-nav" class="panel nav-panel card">
-      <div style="padding-top:0.25rem;">
-        <h2 class="font-semibold text-lg mb-3">Categories</h2>
-        <div id="categories-list" class="endpoint-list space-y-2" style="padding-bottom:1rem;">
-          <!-- Filled by JS -->
+      <div class="nav-header">
+        <h2 class="font-semibold text-lg mb-3 flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+          </svg>
+          Endpoints
+        </h2>
+        <div class="relative">
+          <input 
+            type="text" 
+            id="nav-search"
+            placeholder="Filter endpoints..."
+            class="w-full px-3 py-1.5 text-sm bg-surface-light border border-border rounded-md focus:ring-1 focus:ring-primary"
+          >
         </div>
+      </div>
+      
+      <div id="categories-list" class="flex-1 overflow-y-auto p-4 space-y-6">
+        <!-- Categories will be populated by JS -->
+      </div>
+      
+      <!-- Active Filters Display -->
+      <div id="active-filters" class="p-4 border-t border-border hidden">
+        <div class="flex flex-wrap gap-2 mb-2">
+          <span class="text-xs text-muted-foreground">Active filters:</span>
+        </div>
+        <button id="clear-filters" class="text-xs text-primary hover:text-primary-dark">Clear all</button>
       </div>
     </aside>
 
-    <!-- Middle: Details -->
+    <!-- Middle: Details Panel -->
     <section id="api-details" class="panel middle-panel card">
-      <div>
-        <h2 id="details-title" class="text-xl font-semibold mb-2">Select an endpoint</h2>
-        <p id="details-summary" class="text-sm text-muted-foreground mb-4">Choose a category and endpoint from the left to see details and code examples.</p>
-
-        <div id="details-meta" class="mb-4">
-          <div class="flex items-center space-x-3 mb-2">
-            <span id="details-method" class="badge badge-primary"></span>
-            <code id="details-path" class="text-sm font-mono"></code>
+      <div class="p-6">
+        <!-- Endpoint Header -->
+        <div class="mb-6">
+          <div class="flex items-center gap-3 mb-3">
+            <span id="details-method" class="method-badge"></span>
+            <code id="details-path" class="text-lg font-mono font-semibold text-text"></code>
           </div>
-
-          <div id="details-description" class="prose prose-sm text-muted-foreground"></div>
+          <h2 id="details-title" class="text-2xl font-bold mb-3">Select an endpoint</h2>
+          <p id="details-summary" class="text-muted-foreground mb-4">Choose a category and endpoint from the left to see details and code examples.</p>
+          
+          <!-- Quick Actions -->
+          <div class="flex flex-wrap gap-2 mb-6 hidden" id="quick-actions">
+            <button class="quick-action-btn" data-action="test">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 10v4a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              Test in Postman
+            </button>
+            <button class="quick-action-btn" data-action="copy">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+              </svg>
+              Copy Endpoint
+            </button>
+          </div>
         </div>
 
-        <div id="details-request-response">
-          <h3 class="font-semibold mt-4">Request</h3>
-          <pre id="details-request" class="bg-input p-3 rounded text-sm overflow-auto"><code>// Request JSON will appear here</code></pre>
+        <!-- Tabs for Request/Response/Parameters -->
+        <div class="mb-6">
+          <div class="border-b border-border">
+            <nav class="flex space-x-1" id="details-tabs">
+              <button class="tab-btn active" data-tab="description">Description</button>
+              <button class="tab-btn" data-tab="parameters">Parameters</button>
+              <button class="tab-btn" data-tab="request">Request</button>
+              <button class="tab-btn" data-tab="response">Response</button>
+              <button class="tab-btn" data-tab="errors">Errors</button>
+            </nav>
+          </div>
+          
+          <div id="tab-content" class="pt-4">
+            <!-- Content will be dynamically loaded -->
+          </div>
+        </div>
 
-          <h3 class="font-semibold mt-4">Response</h3>
-          <pre id="details-response" class="bg-input p-3 rounded text-sm overflow-auto"><code>// Response JSON will appear here</code></pre>
+        <!-- Request/Response Sections -->
+        <div id="details-request-response" class="space-y-6">
+          <!-- Request Section -->
+          <div class="request-section">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-semibold text-lg flex items-center gap-2">
+                <svg class="w-5 h-5 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                </svg>
+                Request
+              </h3>
+              <button class="copy-btn" data-target="request-code">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+                Copy
+              </button>
+            </div>
+            <div class="bg-surface-light rounded-lg overflow-hidden">
+              <div class="px-4 py-2 bg-surface border-b border-border">
+                <span class="text-sm font-mono text-muted-foreground">Body</span>
+              </div>
+              <pre id="details-request" class="p-4 overflow-auto max-h-96"><code class="language-json">// Request JSON will appear here</code></pre>
+            </div>
+          </div>
+
+          <!-- Response Section -->
+          <div class="response-section">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-semibold text-lg flex items-center gap-2">
+                <svg class="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Response
+              </h3>
+              <button class="copy-btn" data-target="response-code">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+                Copy
+              </button>
+            </div>
+            <div class="bg-surface-light rounded-lg overflow-hidden">
+              <div class="px-4 py-2 bg-surface border-b border-border">
+                <span class="text-sm font-mono text-muted-foreground">200 OK</span>
+              </div>
+              <pre id="details-response" class="p-4 overflow-auto max-h-96"><code class="language-json">// Response JSON will appear here</code></pre>
+            </div>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- Right: Code examples -->
+    <!-- Right: Code Examples Panel -->
     <aside id="api-code" class="panel code-panel card">
-      <div>
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="font-semibold">Code Samples</h3>
-          <div class="flex space-x-2">
-            <button id="copy-code" class="btn-secondary text-xs">Copy</button>
+      <div class="p-6 h-full flex flex-col">
+        <!-- Panel Header -->
+        <div class="mb-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-semibold text-lg flex items-center gap-2">
+              <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+              </svg>
+              Code Samples
+            </h3>
+            <div class="flex items-center gap-2">
+              <button id="toggle-line-numbers" class="text-xs px-2 py-1 rounded bg-surface-light hover:bg-surface" title="Toggle line numbers">
+                #️⃣
+              </button>
+              <button id="toggle-wrap" class="text-xs px-2 py-1 rounded bg-surface-light hover:bg-surface" title="Toggle word wrap">
+                ↪️
+              </button>
+              <button id="copy-all-code" class="text-xs px-2 py-1 rounded bg-primary hover:bg-primary-dark text-white">
+                Copy All
+              </button>
+            </div>
+          </div>
+
+          <!-- Language Selector -->
+          <div class="mb-4">
+            <label for="code-lang" class="block text-sm font-medium text-muted-foreground mb-2">
+              Select Language
+            </label>
+            <div class="flex flex-wrap gap-2">
+              <button class="lang-btn active" data-lang="curl">cURL</button>
+              <button class="lang-btn" data-lang="python">Python</button>
+              <button class="lang-btn" data-lang="javascript">JavaScript</button>
+              <button class="lang-btn" data-lang="node">Node.js</button>
+              <button class="lang-btn" data-lang="go">Go</button>
+            </div>
           </div>
         </div>
 
-        <div class="mb-3">
-          <label for="code-lang" class="text-sm text-muted-foreground">Language</label>
-          <select id="code-lang" class="input w-full mt-1">
-            <option value="curl">curl</option>
-            <option value="python">Python</option>
-            <option value="js">JavaScript</option>
-          </select>
+        <!-- Code Block Container -->
+        <div class="flex-1 min-h-0">
+          <div class="bg-black rounded-lg overflow-hidden border border-border h-full flex flex-col">
+            <div class="px-4 py-3 bg-surface border-b border-border flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <div class="flex gap-1.5">
+                  <div class="w-3 h-3 rounded-full bg-danger"></div>
+                  <div class="w-3 h-3 rounded-full bg-warning"></div>
+                  <div class="w-3 h-3 rounded-full bg-success"></div>
+                </div>
+                <span class="text-sm font-mono text-muted-foreground" id="current-lang">curl</span>
+              </div>
+              <button id="copy-active-code" class="text-xs px-3 py-1 rounded bg-surface-light hover:bg-surface flex items-center gap-1">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+                Copy
+              </button>
+            </div>
+            <pre id="code-block" class="flex-1 p-4 overflow-auto font-mono text-sm"><code class="language-bash"># Code sample will appear here</code></pre>
+          </div>
         </div>
 
-        <pre id="code-block" class="bg-input p-3 rounded text-sm overflow-auto"><code>// Code sample will appear here</code></pre>
+        <!-- Code Explanation -->
+        <div id="code-explanation" class="mt-4 p-4 bg-surface-light rounded-lg text-sm hidden">
+          <h4 class="font-semibold mb-2">Code Explanation</h4>
+          <p class="text-muted-foreground" id="explanation-text"></p>
+        </div>
+
+        <!-- Try It Section -->
+        <div class="mt-6 p-4 bg-gradient-to-r from-primary/10 to-cyan-500/10 rounded-lg border border-primary/20">
+          <h4 class="font-semibold mb-2 flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+            Try It Live
+          </h4>
+          <p class="text-sm text-muted-foreground mb-3">Test this endpoint directly from your browser</p>
+          <button id="try-it-btn" class="w-full py-2 bg-primary hover:bg-primary-dark text-white rounded-lg font-medium transition-colors">
+            Open API Playground
+          </button>
+        </div>
       </div>
     </aside>
   </div>
+
+  <!-- Mobile Navigation Toggle -->
+  <button id="mobile-nav-toggle" class="fixed bottom-6 right-6 z-50 p-3 bg-primary text-white rounded-full shadow-lg lg:hidden">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+    </svg>
+  </button>
 </div>
 
+<style>
+
+/* Enhanced API Documentation Styles */
+:root {
+  --primary: #6366f1;
+  --primary-dark: #4f46e5;
+  --secondary: #64748b;
+  --success: #10b981;
+  --info: #3b82f6;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --background: #0f172a;
+  --surface: #1e293b;
+  --surface-light: #334155;
+  --text: #f8fafc;
+  --text-muted: #94a3b8;
+  --border: #475569;
+  --radius-lg: 12px;
+  --radius-md: 8px;
+  --radius-sm: 6px;
+}
+
+.api-docs-panels {
+  display: grid;
+  grid-template-columns: 300px 1fr 500px;
+  gap: 0;
+  height: calc(100vh - 200px);
+  min-height: 600px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.api-docs-panels .card {
+  border: none;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+}
+
+/* Left Navigation Panel */
+.nav-panel {
+  border-top-left-radius: var(--radius-lg);
+  border-bottom-left-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(30, 41, 59, 0.8);
+}
+
+/* Middle Content Panel */
+.middle-panel {
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+}
+
+/* Right Code Panel */
+.code-panel {
+  border-top-right-radius: var(--radius-lg);
+  border-bottom-right-radius: var(--radius-lg);
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--surface-light);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Typography Enhancements */
+h1, h2, h3, h4 {
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: var(--text);
+}
+
+h1 { font-size: 2.5rem; }
+h2 { font-size: 1.5rem; }
+h3 { font-size: 1.125rem; }
+h4 { font-size: 1rem; }
+
+body {
+  background: var(--background);
+  color: var(--text);
+  line-height: 1.6;
+}
+  /* Component Styles */
+.method-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 60px;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 1px solid transparent;
+}
+
+.method-get { background: rgba(16, 185, 129, 0.15); color: #10b981; border-color: rgba(16, 185, 129, 0.3); }
+.method-post { background: rgba(59, 130, 246, 0.15); color: #3b82f6; border-color: rgba(59, 130, 246, 0.3); }
+.method-put { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border-color: rgba(245, 158, 11, 0.3); }
+.method-delete { background: rgba(239, 68, 68, 0.15); color: #ef4444; border-color: rgba(239, 68, 68, 0.3); }
+.method-patch { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; border-color: rgba(139, 92, 246, 0.3); }
+
+/* Filter Chips */
+.filter-chip {
+  padding: 0.375rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 500;
+  background: var(--surface-light);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-chip:hover {
+  background: var(--surface);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.filter-chip.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
+/* Language Buttons */
+.lang-btn {
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 500;
+  background: var(--surface-light);
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.lang-btn:hover {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.lang-btn.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+/* Tabs */
+.tab-btn {
+  padding: 0.75rem 1.25rem;
+  border-bottom: 2px solid transparent;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab-btn:hover {
+  color: var(--text);
+}
+
+.tab-btn.active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+/* Quick Action Buttons */
+.quick-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 500;
+  background: var(--surface-light);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.quick-action-btn:hover {
+  background: var(--surface);
+  color: var(--text);
+}
+
+/* Type Badges */
+.type-badge {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.type-string { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+.type-integer { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+.type-boolean { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; }
+.type-array { background: rgba(236, 72, 153, 0.1); color: #ec4899; }
+
+/* Error Badges */
+.error-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.error-client { background: rgba(245, 158, 11, 0.1); color: #f59e0b; border-color: rgba(245, 158, 11, 0.2); }
+.error-server { background: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: rgba(239, 68, 68, 0.2); }
+
+/* Copy Button */
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: var(--surface-light);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.copy-btn:hover {
+  background: var(--surface);
+  color: var(--text);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.api-docs-panels > .card {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .api-docs-panels {
+    grid-template-columns: 280px 1fr;
+  }
+  
+  #api-code {
+    grid-column: 1 / -1;
+    margin-top: 1rem;
+    height: 400px;
+  }
+}
+
+@media (max-width: 768px) {
+  .api-docs-panels {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  
+  #api-nav, #api-details, #api-code {
+    margin-bottom: 1rem;
+    height: auto;
+  }
+  
+  .nav-panel, .middle-panel, .code-panel {
+    border-radius: var(--radius-lg);
+  }
+  
+  #api-nav.fixed {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    margin: 0;
+  }
+}
+</style>
+
+
+<!-- Prism.js for Syntax Highlighting -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-go.min.js"></script>
+
 <script>
-// Basic client-side renderer for the API docs page.
-(async function () {
-  const navEl = document.getElementById('categories-list');
-  const detailsTitle = document.getElementById('details-title');
-  const detailsSummary = document.getElementById('details-summary');
-  const detailsMethod = document.getElementById('details-method');
-  const detailsPath = document.getElementById('details-path');
-  const detailsDescription = document.getElementById('details-description');
-  const detailsRequest = document.getElementById('details-request').querySelector('code');
-  const detailsResponse = document.getElementById('details-response').querySelector('code');
-  const codeBlock = document.getElementById('code-block').querySelector('code');
-  const codeLang = document.getElementById('code-lang');
-  const copyBtn = document.getElementById('copy-code');
+// Enhanced API Documentation Functionality
+(async function() {
+  // Configuration
+  const config = {
+    showLineNumbers: true,
+    wordWrap: false,
+    defaultLanguage: 'curl',
+    copyTimeout: 1500
+  };
 
-  async function fetchData() {
-    // Use absolute static URLs to avoid template quoting issues
-    const origin = window.location.origin.replace(/\/$/, '');
-    const candidates = [
-      `${origin}/static/Api_References/index.json`,
-      `${origin}/static/index.json`
-    ];
+  // DOM Elements
+  const elements = {
+    nav: document.getElementById('api-nav'),
+    categories: document.getElementById('categories-list'),
+    detailsTitle: document.getElementById('details-title'),
+    detailsSummary: document.getElementById('details-summary'),
+    detailsMethod: document.getElementById('details-method'),
+    detailsPath: document.getElementById('details-path'),
+    detailsDescription: document.getElementById('details-description'),
+    detailsRequest: document.getElementById('details-request').querySelector('code'),
+    detailsResponse: document.getElementById('details-response').querySelector('code'),
+    codeBlock: document.getElementById('code-block').querySelector('code'),
+    tabContent: document.getElementById('tab-content'),
+    activeFilters: document.getElementById('active-filters'),
+    quickActions: document.getElementById('quick-actions'),
+    explanation: document.getElementById('explanation-text'),
+    codeExplanation: document.getElementById('code-explanation'),
+    currentLang: document.getElementById('current-lang')
+  };
 
-    for (const url of candidates) {
-      try {
-        const res = await fetch(url);
-        if (!res.ok) continue;
-        const data = await res.json();
-        // Replace any placeholder base tokens in all code samples
-        try {
-          const asString = JSON.stringify(data);
-          const replaced = asString.replace(/__BASE__|\{\{BASE\}\}/g, window.location.origin);
-          return JSON.parse(replaced);
-        } catch (e) {
-          return data; // if replacement fails, return raw
-        }
-      } catch (e) {
-        console.warn('Failed to fetch', url, e);
-        // try next candidate
-        continue;
-      }
-    }
+  // State
+  let state = {
+    docs: null,
+    currentEndpoint: null,
+    currentCategory: null,
+    activeFilters: new Set(),
+    searchQuery: '',
+    selectedLanguage: config.defaultLanguage
+  };
 
-    console.warn('All fetch attempts failed, using minimal fallback');
-    return { categories: [] };
+  // Initialize
+  async function init() {
+    await loadDocs();
+    setupEventListeners();
+    setupSyntaxHighlighting();
+    renderNavigation();
+    setupMobileNavigation();
   }
 
-  const docs = await fetchData();
+  async function loadDocs() {
+    try {
+      const response = await fetch('/static/index.json');
+      const data = await response.json();
+      state.docs = enhanceDocsData(data);
+    } catch (error) {
+      console.error('Failed to load documentation:', error);
+      state.docs = { categories: [] };
+    }
+  }
 
-  /* Small styles for API nav method pills */
-  const styleEl = document.createElement('style');
-  styleEl.textContent = `
-    .method-pill { display: inline-flex; align-items: center; justify-content: center; min-width: 48px; padding: 0.18rem 0.5rem; border-radius: 0.375rem; font-weight: 700; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.6px; }
-    .method-get { background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16,185,129,0.18); }
-    .method-post { background: rgba(59,130,246,0.10); color: #3b82f6; border: 1px solid rgba(59,130,246,0.16); }
-    .method-other { background: rgba(107,114,128,0.08); color: #6b7280; border: 1px solid rgba(107,114,128,0.12); }
-  `;
-  document.head.appendChild(styleEl);
-
-  function renderNav(data) {
-    navEl.innerHTML = '';
-    data.categories.forEach((cat, ci) => {
-      const catEl = document.createElement('div');
-      const title = document.createElement('div');
-      title.className = 'font-semibold mb-1';
-      title.textContent = cat.name;
-      catEl.appendChild(title);
-
-      const list = document.createElement('ul');
-      list.className = 'space-y-1 ml-2';
-
-      cat.endpoints.forEach((ep, ei) => {
-        const li = document.createElement('li');
-        const btn = document.createElement('button');
-        btn.className = 'w-full text-left text-sm py-2 px-2 rounded hover:bg-secondary hover:text-primary flex items-center gap-3';
-
-        // Method pill
-        const methodSpan = document.createElement('span');
-        const method = (ep.method || '').toUpperCase();
-        methodSpan.textContent = method;
-        methodSpan.className = 'method-pill';
-        if (method === 'GET') methodSpan.classList.add('method-get');
-        else if (method === 'POST') methodSpan.classList.add('method-post');
-        else methodSpan.classList.add('method-other');
-
-        // Path text
-        const pathSpan = document.createElement('span');
-        pathSpan.className = 'endpoint-path';
-        pathSpan.textContent = `${ep.path}`;
-
-        btn.appendChild(methodSpan);
-        btn.appendChild(pathSpan);
-
-        btn.onclick = () => selectEndpoint(cat, ep);
-        li.appendChild(btn);
-        list.appendChild(li);
+  function enhanceDocsData(data) {
+    // Add mock parameters for demonstration
+    data.categories.forEach(category => {
+      category.endpoints.forEach(endpoint => {
+        if (!endpoint.parameters) {
+          endpoint.parameters = generateMockParameters(endpoint);
+        }
+        if (!endpoint.errors) {
+          endpoint.errors = generateMockErrors();
+        }
       });
+    });
+    return data;
+  }
 
-      catEl.appendChild(list);
-      navEl.appendChild(catEl);
+  function generateMockParameters(endpoint) {
+    const params = [];
+    if (endpoint.path.includes('{id}')) {
+      params.push({
+        name: 'id',
+        in: 'path',
+        required: true,
+        type: 'string',
+        description: 'Unique identifier of the agent'
+      });
+    }
+    if (endpoint.method === 'GET') {
+      params.push({
+        name: 'limit',
+        in: 'query',
+        required: false,
+        type: 'integer',
+        description: 'Number of items to return'
+      });
+      params.push({
+        name: 'offset',
+        in: 'query',
+        required: false,
+        type: 'integer',
+        description: 'Number of items to skip'
+      });
+    }
+    return params;
+  }
+
+  function generateMockErrors() {
+    return [
+      { code: 400, message: 'Bad Request' },
+      { code: 401, message: 'Unauthorized' },
+      { code: 404, message: 'Not Found' },
+      { code: 429, message: 'Too Many Requests' },
+      { code: 500, message: 'Internal Server Error' }
+    ];
+  }
+
+  function setupEventListeners() {
+    // Search
+    document.getElementById('global-search').addEventListener('input', debounce(handleGlobalSearch, 300));
+    document.getElementById('nav-search').addEventListener('input', debounce(handleNavSearch, 300));
+    
+    // Filter chips
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+      chip.addEventListener('click', handleFilterClick);
+    });
+    
+    // Language buttons
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+      btn.addEventListener('click', handleLanguageChange);
+    });
+    
+    // Tab buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', handleTabChange);
+    });
+    
+    // Copy buttons
+    document.getElementById('copy-active-code').addEventListener('click', copyActiveCode);
+    document.getElementById('copy-all-code').addEventListener('click', copyAllCode);
+    document.querySelectorAll('.copy-btn').forEach(btn => {
+      btn.addEventListener('click', handleCopy);
+    });
+    
+    // Try it button
+    document.getElementById('try-it-btn').addEventListener('click', openApiPlayground);
+    
+    // Code block features
+    document.getElementById('toggle-line-numbers').addEventListener('click', toggleLineNumbers);
+    document.getElementById('toggle-wrap').addEventListener('click', toggleWordWrap);
+    
+    // Clear filters
+    document.getElementById('clear-filters').addEventListener('click', clearFilters);
+  }
+
+  function setupSyntaxHighlighting() {
+    // Initialize Prism
+    Prism.highlightAll();
+  }
+
+  function renderNavigation() {
+    if (!state.docs) return;
+    
+    elements.categories.innerHTML = '';
+    
+    state.docs.categories.forEach(category => {
+      // Skip if category doesn't match active filters
+      if (state.activeFilters.size > 0 && !state.activeFilters.has('all')) {
+        if (!state.activeFilters.has(category.name)) {
+          return;
+        }
+      }
+      
+      const categoryEl = createCategoryElement(category);
+      elements.categories.appendChild(categoryEl);
     });
   }
 
-  function prettyJSON(v) {
-    try { return JSON.stringify(v, null, 2); } catch (e) { return String(v); }
+  function createCategoryElement(category) {
+    const categoryEl = document.createElement('div');
+    categoryEl.className = 'category-group';
+    
+    // Category header
+    const header = document.createElement('div');
+    header.className = 'flex items-center justify-between mb-2 cursor-pointer';
+    header.innerHTML = `
+      <h3 class="font-semibold text-base flex items-center gap-2">
+        <svg class="w-4 h-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+        ${category.name}
+        <span class="text-xs text-muted-foreground font-normal">(${category.endpoints.length})</span>
+      </h3>
+    `;
+    
+    // Endpoints list
+    const list = document.createElement('ul');
+    list.className = 'space-y-1 ml-6 hidden';
+    
+    category.endpoints.forEach(endpoint => {
+      // Skip if endpoint doesn't match search or filters
+      if (!filterEndpoint(endpoint, category.name)) return;
+      
+      const listItem = createEndpointListItem(endpoint, category);
+      list.appendChild(listItem);
+    });
+    
+    // Toggle visibility
+    header.addEventListener('click', () => {
+      const icon = header.querySelector('svg');
+      const isHidden = list.classList.contains('hidden');
+      list.classList.toggle('hidden');
+      icon.classList.toggle('rotate-180');
+    });
+    
+    categoryEl.appendChild(header);
+    categoryEl.appendChild(list);
+    
+    return categoryEl;
   }
 
-  function selectEndpoint(category, ep) {
-    detailsTitle.textContent = ep.summary || ep.path;
-    detailsSummary.textContent = category.name + ' — ' + (ep.summary || '');
-    detailsMethod.textContent = ep.method;
-    detailsPath.textContent = ep.path;
-    detailsDescription.textContent = ep.description || '';
-    detailsRequest.textContent = ep.request ? prettyJSON(ep.request) : '// No request body for this endpoint';
-    detailsResponse.textContent = ep.response ? prettyJSON(ep.response) : '// No response example provided';
-
-    // Update code block based on selected language
-    const lang = codeLang.value || 'curl';
-    const code = (ep.code && ep.code[lang]) ? ep.code[lang] : (ep.code && ep.code.curl) || '// No code sample';
-    codeBlock.textContent = code.replace(/\{\{BASE\}\}/g, window.location.origin);
+  function createEndpointListItem(endpoint, category) {
+    const li = document.createElement('li');
+    const button = document.createElement('button');
+    
+    button.className = `
+      w-full text-left px-3 py-2 rounded-lg transition-all duration-200
+      hover:bg-surface-light hover:text-text
+      flex items-center gap-3 group
+      ${state.currentEndpoint?.path === endpoint.path ? 'bg-primary/10 text-primary border-l-4 border-primary' : ''}
+    `;
+    
+    button.innerHTML = `
+      <span class="method-badge method-${endpoint.method.toLowerCase()}">${endpoint.method}</span>
+      <span class="flex-1 text-sm truncate">${endpoint.summary || endpoint.path}</span>
+      <svg class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+      </svg>
+    `;
+    
+    button.addEventListener('click', () => selectEndpoint(category, endpoint));
+    
+    // Add tooltip
+    button.title = `${endpoint.method} ${endpoint.path}`;
+    
+    li.appendChild(button);
+    return li;
   }
 
-  codeLang.addEventListener('change', () => {
-    // If an endpoint is selected, update code sample language
-    const selectedPath = detailsPath.textContent;
-    if (!selectedPath) return;
-    // Find endpoint in docs
-    let found;
-    docs.categories.some(cat => cat.endpoints.some(ep => { if (ep.path === selectedPath) { found = ep; return true; } }));
-    if (found) {
-      const code = (found.code && found.code[codeLang.value]) ? found.code[codeLang.value] : (found.code && found.code.curl) || '// No code sample';
-      codeBlock.textContent = code.replace(/\{\{BASE\}\}/g, window.location.origin);
+  function selectEndpoint(category, endpoint) {
+    state.currentEndpoint = endpoint;
+    state.currentCategory = category;
+    
+    // Update UI
+    updateEndpointDetails();
+    updateCodeSample();
+    updateQuickActions();
+    updateTabs();
+    
+    // Highlight active item
+    document.querySelectorAll('#categories-list button').forEach(btn => {
+      btn.classList.remove('bg-primary/10', 'text-primary', 'border-l-4', 'border-primary');
+    });
+    
+    const activeButton = document.querySelector(`[data-path="${endpoint.path}"]`);
+    if (activeButton) {
+      activeButton.classList.add('bg-primary/10', 'text-primary', 'border-l-4', 'border-primary');
     }
-  });
+    
+    // Show code explanation
+    showCodeExplanation();
+    
+    // Scroll to top of details panel
+    document.getElementById('api-details').scrollTop = 0;
+    
+    // Update URL without page reload
+    history.pushState({}, '', `?endpoint=${encodeURIComponent(endpoint.path)}`);
+  }
 
-  copyBtn.addEventListener('click', async () => {
+  function updateEndpointDetails() {
+    const { endpoint } = state;
+    
+    elements.detailsTitle.textContent = endpoint.summary || endpoint.path;
+    elements.detailsSummary.textContent = `${state.currentCategory.name} — ${endpoint.description || ''}`;
+    elements.detailsMethod.textContent = endpoint.method;
+    elements.detailsMethod.className = `method-badge method-${endpoint.method.toLowerCase()}`;
+    elements.detailsPath.textContent = endpoint.path;
+    elements.detailsDescription.textContent = endpoint.description || '';
+    
+    // Update request/response
+    elements.detailsRequest.textContent = endpoint.request 
+      ? JSON.stringify(endpoint.request, null, 2)
+      : '// No request body for this endpoint';
+    
+    elements.detailsResponse.textContent = endpoint.response 
+      ? JSON.stringify(endpoint.response, null, 2)
+      : '// No response example provided';
+    
+    // Re-highlight syntax
+    Prism.highlightAllUnder(elements.detailsRequest.parentElement);
+    Prism.highlightAllUnder(elements.detailsResponse.parentElement);
+  }
+
+  function updateCodeSample() {
+    const { endpoint, selectedLanguage } = state;
+    
+    if (!endpoint.code) {
+      elements.codeBlock.textContent = '// No code sample available';
+      elements.currentLang.textContent = selectedLanguage;
+      return;
+    }
+    
+    let code = endpoint.code[selectedLanguage] || endpoint.code.curl || '// No code sample available';
+    code = code.replace(/__BASE__|\{\{BASE\}\}/g, window.location.origin);
+    
+    elements.codeBlock.textContent = code;
+    elements.currentLang.textContent = selectedLanguage;
+    
+    // Set language class for syntax highlighting
+    elements.codeBlock.className = `language-${getLanguageClass(selectedLanguage)}`;
+    Prism.highlightElement(elements.codeBlock);
+    
+    // Update active language button
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.lang === selectedLanguage);
+    });
+  }
+
+  function updateQuickActions() {
+    elements.quickActions.classList.remove('hidden');
+  }
+
+  function updateTabs() {
+    const { endpoint } = state;
+    
+    // Clear existing content
+    elements.tabContent.innerHTML = '';
+    
+    // Get active tab
+    const activeTab = document.querySelector('.tab-btn.active')?.dataset.tab || 'description';
+    
+    switch (activeTab) {
+      case 'description':
+        renderDescriptionTab();
+        break;
+      case 'parameters':
+        renderParametersTab();
+        break;
+      case 'errors':
+        renderErrorsTab();
+        break;
+    }
+  }
+
+  function renderDescriptionTab() {
+    const { endpoint } = state;
+    
+    const content = document.createElement('div');
+    content.className = 'prose prose-invert max-w-none';
+    content.innerHTML = `
+      <div class="space-y-4">
+        <p class="text-text">${endpoint.description || 'No description provided.'}</p>
+        
+        ${endpoint.notes ? `
+          <div class="p-4 bg-warning/10 border border-warning/20 rounded-lg">
+            <h4 class="font-semibold text-warning mb-2">Note</h4>
+            <p class="text-warning/80">${endpoint.notes}</p>
+          </div>
+        ` : ''}
+        
+        ${endpoint.rateLimit ? `
+          <div class="mt-6">
+            <h4 class="font-semibold mb-2">Rate Limits</h4>
+            <div class="bg-surface-light rounded-lg p-4">
+              <p class="text-sm text-muted-foreground">${endpoint.rateLimit}</p>
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    `;
+    
+    elements.tabContent.appendChild(content);
+  }
+
+  function renderParametersTab() {
+    const { endpoint } = state;
+    
+    const content = document.createElement('div');
+    
+    if (!endpoint.parameters || endpoint.parameters.length === 0) {
+      content.innerHTML = `
+        <div class="text-center py-8 text-muted-foreground">
+          <svg class="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          <p>No parameters for this endpoint.</p>
+        </div>
+      `;
+    } else {
+      content.innerHTML = `
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-border">
+                <th class="text-left py-3 px-4 font-medium">Name</th>
+                <th class="text-left py-3 px-4 font-medium">Type</th>
+                <th class="text-left py-3 px-4 font-medium">Location</th>
+                <th class="text-left py-3 px-4 font-medium">Required</th>
+                <th class="text-left py-3 px-4 font-medium">Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${endpoint.parameters.map(param => `
+                <tr class="border-b border-border hover:bg-surface-light">
+                  <td class="py-3 px-4 font-mono">${param.name}</td>
+                  <td class="py-3 px-4"><span class="type-badge type-${param.type}">${param.type}</span></td>
+                  <td class="py-3 px-4"><span class="location-badge location-${param.in}">${param.in}</span></td>
+                  <td class="py-3 px-4">${param.required ? '✓' : ''}</td>
+                  <td class="py-3 px-4 text-muted-foreground">${param.description}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+    
+    elements.tabContent.appendChild(content);
+  }
+
+  function renderErrorsTab() {
+    const { endpoint } = state;
+    
+    const content = document.createElement('div');
+    
+    if (!endpoint.errors || endpoint.errors.length === 0) {
+      content.innerHTML = `
+        <div class="text-center py-8 text-muted-foreground">
+          <svg class="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <p>No error information available.</p>
+        </div>
+      `;
+    } else {
+      content.innerHTML = `
+        <div class="space-y-4">
+          ${endpoint.errors.map(error => `
+            <div class="bg-surface-light rounded-lg p-4 border border-border">
+              <div class="flex items-center gap-3 mb-2">
+                <span class="error-badge error-${getErrorType(error.code)}">${error.code}</span>
+                <span class="font-medium">${error.message}</span>
+              </div>
+              ${error.description ? `<p class="text-sm text-muted-foreground">${error.description}</p>` : ''}
+              ${error.solution ? `
+                <div class="mt-3 p-3 bg-surface rounded-lg">
+                  <p class="text-sm font-medium mb-1">Solution:</p>
+                  <p class="text-sm text-muted-foreground">${error.solution}</p>
+                </div>
+              ` : ''}
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+    
+    elements.tabContent.appendChild(content);
+  }
+
+  function showCodeExplanation() {
+    const { endpoint, selectedLanguage } = state;
+    
+    if (!endpoint.code || !endpoint.code[selectedLanguage]) {
+      elements.codeExplanation.classList.add('hidden');
+      return;
+    }
+    
+    const explanations = {
+      curl: 'This cURL command shows how to make the API request from the command line.',
+      python: 'Python example using the requests library to call the API.',
+      javascript: 'JavaScript example using fetch API in a browser environment.',
+      node: 'Node.js example using the built-in https module.',
+      go: 'Go example using the net/http package.'
+    };
+    
+    elements.explanation.textContent = explanations[selectedLanguage] || 'Code sample for this endpoint.';
+    elements.codeExplanation.classList.remove('hidden');
+  }
+
+  // Event Handlers
+  function handleGlobalSearch(e) {
+    state.searchQuery = e.target.value.toLowerCase();
+    renderNavigation();
+  }
+
+  function handleNavSearch(e) {
+    const query = e.target.value.toLowerCase();
+    const items = elements.categories.querySelectorAll('li');
+    
+    items.forEach(item => {
+      const text = item.textContent.toLowerCase();
+      item.style.display = text.includes(query) ? '' : 'none';
+    });
+  }
+
+  function handleFilterClick(e) {
+    const filter = e.target.dataset.filter;
+    
+    if (filter === 'all') {
+      state.activeFilters.clear();
+      state.activeFilters.add('all');
+    } else {
+      state.activeFilters.delete('all');
+      if (state.activeFilters.has(filter)) {
+        state.activeFilters.delete(filter);
+      } else {
+        state.activeFilters.add(filter);
+      }
+    }
+    
+    // Update UI
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+      chip.classList.toggle('active', state.activeFilters.has(chip.dataset.filter));
+    });
+    
+    // Show/hide active filters panel
+    if (state.activeFilters.size > 0 && !state.activeFilters.has('all')) {
+      elements.activeFilters.classList.remove('hidden');
+    } else {
+      elements.activeFilters.classList.add('hidden');
+    }
+    
+    renderNavigation();
+  }
+
+  function handleLanguageChange(e) {
+    const lang = e.target.dataset.lang;
+    state.selectedLanguage = lang;
+    updateCodeSample();
+    showCodeExplanation();
+  }
+
+  function handleTabChange(e) {
+    const tab = e.target.dataset.tab;
+    
+    // Update active tab
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === tab);
+    });
+    
+    // Update content
+    updateTabs();
+  }
+
+  async function copyActiveCode() {
+    const code = elements.codeBlock.textContent;
+    await copyToClipboard(code);
+    
+    const button = document.getElementById('copy-active-code');
+    const originalText = button.innerHTML;
+    button.innerHTML = `
+      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+      </svg>
+      Copied!
+    `;
+    
+    setTimeout(() => {
+      button.innerHTML = originalText;
+    }, config.copyTimeout);
+  }
+
+  async function copyAllCode() {
+    const languages = ['curl', 'python', 'javascript', 'node', 'go'];
+    let allCode = '';
+    
+    languages.forEach(lang => {
+      if (state.currentEndpoint.code && state.currentEndpoint.code[lang]) {
+        allCode += `// ${lang.toUpperCase()}\n${state.currentEndpoint.code[lang]}\n\n`;
+      }
+    });
+    
+    await copyToClipboard(allCode);
+    
+    const button = document.getElementById('copy-all-code');
+    const originalText = button.textContent;
+    button.textContent = 'Copied All!';
+    
+    setTimeout(() => {
+      button.textContent = originalText;
+    }, config.copyTimeout);
+  }
+
+  function handleCopy(e) {
+    const target = e.target.dataset.target;
+    const code = target === 'request-code' 
+      ? elements.detailsRequest.textContent
+      : elements.detailsResponse.textContent;
+    
+    copyToClipboard(code);
+    
+    // Visual feedback
+    const button = e.target.closest('button');
+    const originalHTML = button.innerHTML;
+    button.innerHTML = `
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+      </svg>
+      Copied
+    `;
+    
+    setTimeout(() => {
+      button.innerHTML = originalHTML;
+    }, config.copyTimeout);
+  }
+
+  function toggleLineNumbers() {
+    config.showLineNumbers = !config.showLineNumbers;
+    elements.codeBlock.parentElement.classList.toggle('line-numbers', config.showLineNumbers);
+    
+    const button = document.getElementById('toggle-line-numbers');
+    button.classList.toggle('bg-primary', config.showLineNumbers);
+    button.classList.toggle('text-white', config.showLineNumbers);
+  }
+
+  function toggleWordWrap() {
+    config.wordWrap = !config.wordWrap;
+    elements.codeBlock.style.whiteSpace = config.wordWrap ? 'pre-wrap' : 'pre';
+    
+    const button = document.getElementById('toggle-wrap');
+    button.classList.toggle('bg-primary', config.wordWrap);
+    button.classList.toggle('text-white', config.wordWrap);
+  }
+
+  function openApiPlayground() {
+    alert('Opening API Playground... In a real implementation, this would launch an interactive API testing environment.');
+  }
+
+  function clearFilters() {
+    state.activeFilters.clear();
+    state.activeFilters.add('all');
+    
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+      chip.classList.toggle('active', chip.dataset.filter === 'all');
+    });
+    
+    elements.activeFilters.classList.add('hidden');
+    renderNavigation();
+  }
+
+  function filterEndpoint(endpoint, categoryName) {
+    // Search filter
+    if (state.searchQuery) {
+      const searchableText = `${endpoint.method} ${endpoint.path} ${endpoint.summary} ${endpoint.description}`.toLowerCase();
+      if (!searchableText.includes(state.searchQuery)) {
+        return false;
+      }
+    }
+    
+    // Method filter
+    if (state.activeFilters.has(endpoint.method)) {
+      return true;
+    }
+    
+    // Category filter
+    if (state.activeFilters.has(categoryName)) {
+      return true;
+    }
+    
+    // If only 'all' is active or no filters
+    return state.activeFilters.size === 0 || state.activeFilters.has('all');
+  }
+
+  // Utility Functions
+  async function copyToClipboard(text) {
     try {
-      await navigator.clipboard.writeText(codeBlock.textContent);
-      copyBtn.textContent = 'Copied';
-      setTimeout(() => (copyBtn.textContent = 'Copy'), 1500);
-    } catch (e) {
-      console.warn('Copy failed', e);
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (err) {
+      console.error('Failed to copy:', err);
+      return false;
     }
-  });
-
-  renderNav(docs);
-  // Auto-select first endpoint if present
-  if (docs.categories && docs.categories.length && docs.categories[0].endpoints && docs.categories[0].endpoints[0]) {
-    selectEndpoint(docs.categories[0], docs.categories[0].endpoints[0]);
   }
+
+  function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }
+
+  function getLanguageClass(lang) {
+    const map = {
+      curl: 'bash',
+      python: 'python',
+      javascript: 'javascript',
+      node: 'javascript',
+      go: 'go'
+    };
+    return map[lang] || 'bash';
+  }
+
+  function getErrorType(code) {
+    if (code >= 400 && code < 500) {
+      return 'client';
+    } else if (code >= 500) {
+      return 'server';
+    }
+    return 'other';
+  }
+
+  function setupMobileNavigation() {
+    const toggleBtn = document.getElementById('mobile-nav-toggle');
+    const navPanel = document.getElementById('api-nav');
+    
+    toggleBtn.addEventListener('click', () => {
+      navPanel.classList.toggle('hidden');
+      navPanel.classList.toggle('fixed');
+      navPanel.classList.toggle('inset-0');
+      navPanel.classList.toggle('z-40');
+    });
+    
+    // Close nav when clicking outside on mobile
+    document.addEventListener('click', (e) => {
+      if (window.innerWidth < 1024) {
+        if (!navPanel.contains(e.target) && !toggleBtn.contains(e.target) && !navPanel.classList.contains('hidden')) {
+          navPanel.classList.add('hidden');
+        }
+      }
+    });
+  }
+
+  // Initialize
+  init();
 })();
 </script>
 
