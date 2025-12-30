@@ -250,7 +250,14 @@ def ping_server():
             print(f"Server responded with status {r.status_code} to root request.")
     except Exception as e:
         print(f"Could not reach server: {e}")
-        
+
+# List agents for that given API key
+def list_agents(api_key: str):
+    headers = {'Authorization': f"{api_key}"}
+    r = requests.get(f"{BASE_URL}/list_agents", headers=headers, timeout=15)
+    print(r.status_code, r.text)
+    
+
 if __name__ == "__main__":
     # If user wants interactive chat, run it; otherwise run the basic tests
     # mode = input("Run interactive chat or tests? (chat/tests) [chat]: ").strip().lower() or "chat"
@@ -269,8 +276,9 @@ if __name__ == "__main__":
                 
     #         except Exception as e:
     #             print(f"{t.__name__}: ERROR - {e}\n")
-    
+    api_key  = "sk-5VagoCihzX6rWtT0u2L-ZLIfNWDqLV3HhAhdDZ0avW4"
     # ping_server()
     # test_validate_key_env()
     # test_validate_key_invalid()
     test_create_agent()
+    list_agents(api_key)
