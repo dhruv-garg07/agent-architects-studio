@@ -60,7 +60,11 @@ from email.mime.multipart import MIMEMultipart
 
 load_dotenv()
 
-app = Flask(__name__, template_folder=os.path.abspath(os.path.join(os.path.dirname(__file__), '../templates')))
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+STATIC_DIR = os.path.join(PROJECT_ROOT, 'static')
+TEMPLATES_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../templates'))
+app = Flask(__name__, static_folder=STATIC_DIR, template_folder=TEMPLATES_DIR)
+
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY")
@@ -1287,12 +1291,10 @@ def homepage():
     """Redirect root to memory page."""
     return redirect(url_for('memory'))
 
-# Update your homepage route to include waitlist count
-# @app.route('/')
-# def homepage():
-#     """Homepage with waitlist count"""
-#     waitlist_count = update_waitlist_count() 
-#     return render_template('homepage.html', waitlist_count=waitlist_count)
+@app.route('/api/docs')
+def api_docs():
+    """Render the API documentation placeholder page."""
+    return render_template('api_docs.html')
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
