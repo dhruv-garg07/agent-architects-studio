@@ -148,6 +148,17 @@ class ApiAgentsService:
             user_id=user_id,
             updates={"status": "disabled"},
         )
+        
+    def enable_agent(
+        self,
+        agent_id: str,
+        user_id: str,
+    ) -> Dict[str, Any]:
+        return self.update_agent(
+            agent_id=agent_id,
+            user_id=user_id,
+            updates={"status": "active"},
+        )
 
     # =====================================================
     # HARD DELETE (dangerous)

@@ -104,8 +104,6 @@ def health():
   """
   return jsonify({"ok": True, "status": "healthy", "checked_at": datetime.utcnow().isoformat()}), 200
 
-
-
 # API Key validation and management
 def validate_api_key_value(api_key_plain: str, permission: str | None = None):
     """Validate an API key string against the `api_keys` table.
@@ -406,4 +404,324 @@ def list_agents():
         return jsonify(agents), 200 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# Get the agent by id
+@manhattan_api.route("/get_agent", methods=["GET"])
+def get_agent():
+    """Get an agent by ID for the authenticated user.
+
+    Expects API key via Authorization/X-API-Key/query param/raw payload.
+    Expects query param `agent_id`.
+    """
+    agent_id = request.get_json().get('agent_id')
+    if not agent_id:
+        return jsonify({'error': 'agent_id is required'}), 400
+
+    # Extract API key from ANY possible source with maximum flexibility
+    api_key = None
+    data = request.get_json(silent=True) or {}
+    possible_sources = [
+        request.headers.get('Authorization'),
+        request.headers.get('X-API-Key'),
+        request.args.get('api_key'),
+        data.get('api_key'),
+        data.get('token'),
+        data.get('access_token')
+    ]
+
+    print("Possible Sources:", possible_sources)
+
+    for source in possible_sources:
+        if source:
+            # Clean up the value
+            source = str(source).strip()
+
+            # If it's a Bearer token, extract the token part
+            if source.lower().startswith('bearer '):
+                api_key = source.split(None, 1)[1]
+                break
+            # If it's just a token/API key, use it directly
+            elif source and len(source) > 10:  # Basic check that it's not empty/short
+                api_key = source
+                break
+
+    # If we have an API key, clean it (remove any remaining "Bearer " prefix)
+    if api_key and api_key.lower().startswith('bearer '):
+        api_key = api_key.split(None, 1)[1]
+
+    print(f"API Key received: {api_key}")
+
+    # Validation logic (same as before)
+    user_id = None
+    if api_key:
+        permission = data.get('permission')
+        ok, info = validate_api_key_value(api_key, permission)
+
+        print(f"API Key validation result: {ok}, info: {info}")
+
+        if ok:
+            user_id = info.get('user_id')
+            g.api_key_record = info
+        else:
+            # Fallback for local testing
+            if api_key.startswith('sk-'):
+                user_id = os.environ.get('TEST_USER_ID', 'test-user')
+                g.api_key_record = {'id': 'test-key', 'user_id': user_id, 'permissions': {'agent_create': True}}
+            else:
+                return jsonify({'error': info, 'valid': False}), 401
+            
+    try:
+        agent = service.get_agent_by_id(agent_id=agent_id, user_id=user_id)
+        if not agent:
+            return jsonify({'error': 'agent_not_found'}), 404
+        return jsonify(agent), 200  
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+# Update agent by id
+@manhattan_api.route("/update_agent", methods=["POST"])
+def update_agent():
+    """Update an agent by ID for the authenticated user.
+
+    Expects API key via Authorization/X-API-Key/query param/raw payload.
+    Expects JSON body with:
+    - agent_id: str
+    - fields to update (agent_name, agent_slug, status, description, metadata)
+    - any other fields are not updatable. They do not have write permission on this one.
+    - Throw back an error if user tries to update non-updatable fields.
+    """
+    data = request.get_json(silent=True) or {}
+    agent_id = data.get('agent_id')
+    if not agent_id:
+        return jsonify({'error': 'agent_id is required'}), 400
+
+    # Extract API key from ANY possible source with maximum flexibility
+    api_key = None
+    possible_sources = [
+        request.headers.get('Authorization'),
+        request.headers.get('X-API-Key'),
+        request.args.get('api_key'),
+        data.get('api_key'),
+        data.get('token'),
+        data.get('access_token')
+    ]
+
+    print("Possible Sources:", possible_sources)
+
+    for source in possible_sources:
+        if source:
+            # Clean up the value
+            source = str(source).strip()
+
+            # If it's a Bearer token, extract the token part
+            if source.lower().startswith('bearer '):
+                api_key = source.split(None, 1)[1]
+                break
+            # If it's just a token/API key, use it directly
+            elif source and len(source) > 10:  # Basic check that it's not empty/short
+                api_key = source
+                break
+
+    # If we have an API key, clean it (remove any remaining "Bearer " prefix)
+    if api_key and api_key.lower().startswith('bearer '):
+        api_key = api_key.split(None, 1)[1]
+
+    print(f"API Key received: {api_key}")
+
+    # Validation logic (same as before)
+    user_id = None
+    if api_key:
+        permission = data.get('permission')
+        ok, info = validate_api_key_value(api_key, permission)
+
+        print(f"API Key validation result: {ok}, info: {info}")
+
+        if ok:
+            user_id = info.get('user_id')
+            g.api_key_record = info
+        else:
+            # Fallback for local testing
+            if api_key.startswith('sk-'):
+                user_id = os.environ.get('TEST_USER_ID', 'test-user')
+                g.api_key_record = {'id': 'test-key', 'user_id': user_id, 'permissions': {'agent_create': True}}
+            else:
+                return jsonify({'error': info, 'valid': False}), 401
+    try:
+        updatable_fields = ['agent_name', 'agent_slug', 'status', 'description', 'metadata']
+        provided_fields = data.get('updates')
         
+        print("Provided fields for update:", provided_fields)
+        print("Updatable fields:", updatable_fields)
+        
+        # Intersection set of updatable fields and provided fields
+        intersection = set(updatable_fields).intersection(set(provided_fields.keys()))
+        print("Fields to be updated after intersection:", intersection)
+        
+        update_data = {k: v for k, v in provided_fields.items() if k in intersection}
+
+        if not update_data:
+            return jsonify({'error': 'no_updatable_fields_provided'}), 400
+
+        agent = service.update_agent(
+            agent_id=agent_id,
+            user_id=user_id,
+            updates=update_data
+        )
+        if not agent:
+            return jsonify({'error': 'agent_not_found'}), 404
+        return jsonify(agent), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Soft delete agent by id
+@manhattan_api.route("/disable_agent", methods=["POST"])
+def disable_agent():
+    """Soft delete (disable) an agent by ID for the authenticated user.
+
+    Expects API key via Authorization/X-API-Key/query param/raw payload.
+    Expects JSON body with:
+    - agent_id: str
+    """
+    data = request.get_json(silent=True) or {}
+    agent_id = data.get('agent_id')
+    if not agent_id:
+        return jsonify({'error': 'agent_id is required'}), 400
+
+    # Extract API key from ANY possible source with maximum flexibility
+    api_key = None
+    possible_sources = [
+        request.headers.get('Authorization'),
+        request.headers.get('X-API-Key'),
+        request.args.get('api_key'),
+        data.get('api_key'),
+        data.get('token'),
+        data.get('access_token')
+    ]
+
+    print("Possible Sources:", possible_sources)
+
+    for source in possible_sources:
+        if source:
+            # Clean up the value
+            source = str(source).strip()
+
+            # If it's a Bearer token, extract the token part
+            if source.lower().startswith('bearer '):
+                api_key = source.split(None, 1)[1]
+                break
+            # If it's just a token/API key, use it directly
+            elif source and len(source) > 10:  # Basic check that it's not empty/short
+                api_key = source
+                break
+
+    # If we have an API key, clean it (remove any remaining "Bearer " prefix)
+    if api_key and api_key.lower().startswith('bearer '):
+        api_key = api_key.split(None, 1)[1]
+
+    print(f"API Key received: {api_key}")
+
+    # Validation logic (same as before)
+    user_id = None
+    if api_key:
+        permission = data.get('permission')
+        ok, info = validate_api_key_value(api_key, permission)
+
+        print(f"API Key validation result: {ok}, info: {info}")
+
+        if ok:
+            user_id = info.get('user_id')
+            g.api_key_record = info
+        else:
+            # Fallback for local testing
+            if api_key.startswith('sk-'):
+                user_id = os.environ.get('TEST_USER_ID', 'test-user')
+                g.api_key_record = {'id': 'test-key', 'user_id': user_id, 'permissions': {'agent_create': True}}
+            else:
+                return jsonify({'error': info, 'valid': False}), 401
+    try:
+        agent = service.disable_agent(
+            agent_id=agent_id,
+            user_id=user_id
+        )
+        if not agent:
+            return jsonify({'error': 'agent_not_found'}), 404
+        return jsonify({'ok': True, 'message': 'agent_disabled'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+# Enable agent by id
+@manhattan_api.route("/enable_agent", methods=["POST"])
+def enable_agent():
+    """Enable an agent by ID for the authenticated user.
+
+    Expects API key via Authorization/X-API-Key/query param/raw payload.
+    Expects JSON body with:
+    - agent_id: str
+    """
+    data = request.get_json(silent=True) or {}
+    agent_id = data.get('agent_id')
+    if not agent_id:
+        return jsonify({'error': 'agent_id is required'}), 400
+
+    # Extract API key from ANY possible source with maximum flexibility
+    api_key = None
+    possible_sources = [
+        request.headers.get('Authorization'),
+        request.headers.get('X-API-Key'),
+        request.args.get('api_key'),
+        data.get('api_key'),
+        data.get('token'),
+        data.get('access_token')
+    ]
+
+    print("Possible Sources:", possible_sources)
+
+    for source in possible_sources:
+        if source:
+            # Clean up the value
+            source = str(source).strip()
+
+            # If it's a Bearer token, extract the token part
+            if source.lower().startswith('bearer '):
+                api_key = source.split(None, 1)[1]
+                break
+            # If it's just a token/API key, use it directly
+            elif source and len(source) > 10:  # Basic check that it's not empty/short
+                api_key = source
+                break
+
+    # If we have an API key, clean it (remove any remaining "Bearer " prefix)
+    if api_key and api_key.lower().startswith('bearer '):
+        api_key = api_key.split(None, 1)[1]
+
+    print(f"API Key received: {api_key}")
+
+    # Validation logic (same as before)
+    user_id = None
+    if api_key:
+        permission = data.get('permission')
+        ok, info = validate_api_key_value(api_key, permission)
+
+        print(f"API Key validation result: {ok}, info: {info}")
+
+        if ok:
+            user_id = info.get('user_id')
+            g.api_key_record = info
+        else:
+            # Fallback for local testing
+            if api_key.startswith('sk-'):
+                user_id = os.environ.get('TEST_USER_ID', 'test-user')
+                g.api_key_record = {'id': 'test-key', 'user_id': user_id, 'permissions': {'agent_create': True}}
+            else:
+                return jsonify({'error': info, 'valid': False}), 401
+            
+    try:
+        agent = service.enable_agent(
+            agent_id=agent_id,
+            user_id=user_id
+        )
+        if not agent:
+            return jsonify({'error': 'agent_not_found'}), 404
+        return jsonify({'ok': True, 'message': 'agent_enabled'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

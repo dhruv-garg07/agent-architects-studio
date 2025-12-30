@@ -6,8 +6,8 @@ import os
 # Simple validation tests for the running server at the provided base URL.
 # These are pytest-compatible functions but can also be executed directly via `python api_test.py`.
 
-BASE_URL = "https://www.themanhattanproject.ai"
-# BASE_URL = "http://192.168.0.4:5000"
+# BASE_URL = "https://www.themanhattanproject.ai"
+BASE_URL = "http://192.168.0.9:5000"
 
 def test_memory_get():
     """GET /memory should return an OK page (200) or redirect to login (302).
@@ -256,7 +256,37 @@ def list_agents(api_key: str):
     headers = {'Authorization': f"{api_key}"}
     r = requests.get(f"{BASE_URL}/list_agents", headers=headers, timeout=15)
     print(r.status_code, r.text)
+    return json.loads(r.text)
     
+def get_agent_by_id(api_key: str, agent_id: str):
+    headers = {'Authorization': f"{api_key}"}
+    payload = {"agent_id": agent_id}
+    r = requests.get(f"{BASE_URL}/get_agent", headers=headers, json=payload, timeout=15)
+    print(r.status_code, r.text)
+    return json.loads(r.text)  
+
+# Update agent details by ids:
+def update_agent_details(api_key: str, agent_id: str, updates: dict):
+    headers = {'Authorization': f"{api_key}"}
+    payload = {"agent_id": agent_id, "updates": updates}
+    r = requests.post(f"{BASE_URL}/update_agent", headers=headers, json=payload, timeout=15)
+    print(r.status_code, r.text)
+    return json.loads(r.text)
+    
+def disable_agent(api_key: str, agent_id: str):
+    headers = {'Authorization': f"{api_key}"}
+    payload = {"agent_id": agent_id}
+    r = requests.post(f"{BASE_URL}/disable_agent", headers=headers, json=payload, timeout=15)
+    print(r.status_code, r.text)
+    return json.loads(r.text)
+
+# Enable agent by id
+def enable_agent(api_key: str, agent_id: str):
+    headers = {'Authorization': f"{api_key}"}
+    payload = {"agent_id": agent_id}    
+    r = requests.post(f"{BASE_URL}/enable_agent", headers=headers, json=payload, timeout=15)
+    print(r.status_code, r.text)
+    return json.loads(r.text)
 
 if __name__ == "__main__":
     # If user wants interactive chat, run it; otherwise run the basic tests
@@ -280,5 +310,37 @@ if __name__ == "__main__":
     # ping_server()
     # test_validate_key_env()
     # test_validate_key_invalid()
-    test_create_agent()
-    list_agents(api_key)
+    # test_create_agent()
+    # list_agents(api_key)
+    
+    # Get the id of the first agent from the list
+    agent_json = list_agents(api_key)
+    first_agent_id = agent_json[0]['agent_id']
+    print(f"First agent ID: {first_agent_id}")
+    get_agent_by_id(api_key, first_agent_id)
+    
+    # Update the UPDATABLE things for the first agent:
+    updates = {
+        "description": "Updated description via api_test.py",
+        "metadata": {"last_updated_by": "api_test.py"},
+        "agent_name": "Updated Agent Name via api_test.py"
+    }
+    update_agent_details(api_key, first_agent_id, updates)
+    
+    get_agent_by_id(api_key, first_agent_id)
+    
+    # Get new updates for non updatable and updatable fields mixed:
+    updates = {
+        "description": "Another description update via api_test.py",
+        "permissions": {"run": False}  # This is NOT updatable and should be ignored
+    }
+    update_agent_details(api_key, first_agent_id, updates)
+    get_agent_by_id(api_key, first_agent_id)
+    
+    # Disable agent by ID
+    disable_agent(api_key, first_agent_id)
+    get_agent_by_id(api_key, first_agent_id)
+    
+    # Enable agent by ID
+    enable_agent(api_key, first_agent_id)       
+    get_agent_by_id(api_key, first_agent_id)
