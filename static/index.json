@@ -1,0 +1,114 @@
+{
+  "categories": [
+    {
+      "name": "Agents",
+      "endpoints": [
+        {
+          "path": "/agents",
+          "method": "GET",
+          "summary": "List agents",
+          "description": "Retrieve a paginated list of agents. Supports filters: search, category, model, status.",
+          "request": null,
+          "response": { "agents": [] },
+          "code": {
+            "curl": "curl -X GET '__BASE__/api/agents' -H 'Authorization: Bearer <API_KEY>'",
+            "python": "requests.get('__BASE__/api/agents', headers={'Authorization': 'Bearer <API_KEY>'})"
+          }
+        },
+        {
+          "path": "/agents/{id}",
+          "method": "GET",
+          "summary": "Get agent",
+          "description": "Retrieve a single agent by ID.",
+          "request": null,
+          "response": { "id": "uuid", "name": "string" },
+          "code": {
+            "curl": "curl -X GET '__BASE__/api/agents/<id>' -H 'Authorization: Bearer <API_KEY>'"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Documents",
+      "endpoints": [
+        {
+          "path": "/agents/{id}/documents",
+          "method": "GET",
+          "summary": "List documents",
+          "description": "List documents uploaded for an agent.",
+          "request": null,
+          "response": { "documents": [] },
+          "code": { "curl": "curl -X GET '__BASE__/agents/<id>/documents' -H 'Authorization: Bearer <API_KEY>'" }
+        },
+        {
+          "path": "/agents/{id}/documents/{docId}",
+          "method": "GET",
+          "summary": "Get document",
+          "description": "Retrieve document metadata or download link.",
+          "request": null,
+          "response": { "id": "docId", "name": "string" },
+          "code": { "curl": "curl -X GET '__BASE__/agents/<id>/documents/<docId>' -H 'Authorization: Bearer <API_KEY>'" }
+        },
+        {
+          "path": "/agents/{id}/search",
+          "method": "POST",
+          "summary": "Document search",
+          "description": "Search documents for an agent using query and filters.",
+          "request": { "query": "string" },
+          "response": { "results": [] },
+          "code": { "curl": "curl -X POST '__BASE__/agents/<id>/search' -H 'Content-Type: application/json' -d '{\"query\":\"hello\"}'" }
+        },
+        {
+          "path": "/agents/{id}/query",
+          "method": "POST",
+          "summary": "Query documents",
+          "description": "Run a RAG-style query against agent documents and return relevant passages.",
+          "request": { "query": "string" },
+          "response": { "answers": [] },
+          "code": { "curl": "curl -X POST '__BASE__/agents/<id>/query' -H 'Content-Type: application/json' -d '{\"query\":\"summarize\"}'" }
+        }
+      ]
+    },
+    {
+      "name": "LLM",
+      "endpoints": [
+        {
+          "path": "/agents/{id}/llm/complete",
+          "method": "POST",
+          "summary": "Text completion",
+          "description": "Run a single-turn completion with model-specific params.",
+          "request": { "prompt": "string", "max_tokens": 256 },
+          "response": { "text": "string" },
+          "code": { "curl": "curl -X POST '__BASE__/agents/<id>/llm/complete' -H 'Content-Type: application/json' -d '{\"prompt\":\"Hello\"}'" }
+        },
+        {
+          "path": "/agents/{id}/llm/chat",
+          "method": "POST",
+          "summary": "Chat",
+          "description": "Multi-turn chat endpoint supporting messages and context.",
+          "request": { "messages": [] },
+          "response": { "reply": "string" },
+          "code": { "curl": "curl -X POST '__BASE__/agents/<id>/llm/chat' -H 'Content-Type: application/json' -d '{\"messages\":[{\"role\":\"user\",\"content\":\"Hi\"}]}'" }
+        },
+        {
+          "path": "/agents/{id}/llm/summarize",
+          "method": "POST",
+          "summary": "Summarize",
+          "description": "Summarize a provided text or a document.",
+          "request": { "text": "string" },
+          "response": { "summary": "string" },
+          "code": { "curl": "curl -X POST '__BASE__/agents/<id>/llm/summarize' -H 'Content-Type: application/json' -d '{\"text\":\"...\"}'" }
+        },
+        {
+          "path": "/agents/{id}/llm/extract",
+          "method": "POST",
+          "summary": "Extract",
+          "description": "Extract structured data from text.",
+          "request": { "text": "string" },
+          "response": { "extracted": {} },
+          "code": { "curl": "curl -X POST '__BASE__/agents/<id>/llm/extract' -H 'Content-Type: application/json' -d '{\"text\":\"...\"}'" }
+        }
+      ]
+    }
+  ]
+}

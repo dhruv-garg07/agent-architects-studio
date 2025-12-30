@@ -191,6 +191,27 @@
             transform: translateY(-1px);
         }
 
+        /* Dashboard / API Docs button styling (reinserted) */
+        .btn-dashboard {
+            background: linear-gradient(90deg, #6366f1 0%, #06b6d4 100%);
+            color: #fff !important;
+            padding: 0.5rem 1.2rem;
+            border-radius: var(--radius);
+            font-weight: 600;
+            border: none;
+            box-shadow: 0 2px 8px -2px rgba(99, 102, 241, 0.15);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+        }
+
+        .btn-dashboard:hover {
+            background: linear-gradient(90deg, #4f46e5 0%, #0ea5e9 100%);
+            color: #fff !important;
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 4px 16px -4px rgba(99, 102, 241, 0.18);
+        }
+
         .btn-primary:active::after {
             animation: ripple 1s ease-out;
         }
@@ -434,30 +455,11 @@
                        <i data-lucide="layout-dashboard" class="w-4 h-4 mr-2"></i>
                        Dashboard
                    </a>
-                   <style>
-                       .btn-dashboard {
-                           background: linear-gradient(90deg, #6366f1 0%, #06b6d4 100%);
-                           color: #fff !important;
-                           padding: 0.5rem 1.2rem;
-                           border-radius: var(--radius);
-                           font-weight: 600;
-                           border: none;
-                           box-shadow: 0 2px 8px -2px rgba(99, 102, 241, 0.15);
-                           transition: all 0.2s;
-                           display: flex;
-                           align-items: center;
-                       }
 
-                       .btn-dashboard:hover {
-                           background: linear-gradient(90deg, #4f46e5 0%, #0ea5e9 100%);
-                           color: #fff !important;
-                           transform: translateY(-2px) scale(1.03);
-                           box-shadow: 0 4px 16px -4px rgba(99, 102, 241, 0.18);
-                       }
-                   </style>
-                   <!-- <a href="{{ url_for('creator_studio') }}" class="btn-primary">
-                       Submit Agent
-                   </a> -->
+                   <a href="{{ url_for('api_docs') }}" class="btn-dashboard">
+                       <i data-lucide="book-open" class="w-4 h-4 mr-2"></i>
+                       API Docs
+                   </a>
 
                     <!-- User Dropdown -->
                     <div class="relative inline-block text-left">
