@@ -1,112 +1,176 @@
 {
   "categories": [
     {
-      "name": "Agents",
+      "name": "API Test Examples",
       "endpoints": [
         {
-          "path": "/agents",
+          "path": "/memory",
           "method": "GET",
-          "summary": "List agents",
-          "description": "Retrieve a paginated list of agents. Supports filters: search, category, model, status.",
+          "summary": "Memory page (UI)",
+          "description": "Returns the memory page (may redirect for unauthenticated users).",
+          "request": null,
+          "response": { "html": "string" },
+          "code": {
+            "curl": "curl -X GET '__BASE__/memory' -v",
+            "python": "import requests\n\ndef get_memory(base_url='http://localhost:5000'):\n    r = requests.get(f\"{base_url}/memory\", timeout=15)\n    r.raise_for_status()\n    return r.text\n\nif __name__ == '__main__':\n    print(get_memory())",
+            "javascript": "// Node 18+ or browser\nasync function getMemory(baseUrl = 'http://localhost:5000') {\n  const res = await fetch(`${baseUrl}/memory`);\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.text();\n}\n\ngetMemory().then(t => console.log(t)).catch(e => console.error(e));"
+          }
+        },
+        {
+          "path": "/web/get_sessions",
+          "method": "GET",
+          "summary": "Get sessions (API)",
+          "description": "GET sessions by id query parameter. Returns JSON list or object.",
+          "request": { "id": "uuid (query)" },
+          "response": { "sessions": [] },
+          "code": {
+            "curl": "curl -G '__BASE__/web/get_sessions' --data-urlencode 'id=51ebe8c7-201b-4275-9bc5-44d7222f3509'",
+            "python": "import requests\n\ndef get_sessions(base_url='http://localhost:5000', session_id='51ebe8c7-201b-4275-9bc5-44d7222f3509'):\n    r = requests.get(f\"{base_url}/web/get_sessions\", params={'id': session_id}, timeout=15)\n    r.raise_for_status()\n    return r.json()\n\nif __name__ == '__main__':\n    print(get_sessions())",
+            "javascript": "async function getSessions(baseUrl = 'http://localhost:5000', sessionId = '51ebe8c7-201b-4275-9bc5-44d7222f3509') {\n  const url = new URL(`${baseUrl}/web/get_sessions`);\n  url.searchParams.set('id', sessionId);\n  const res = await fetch(url.href);\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\ngetSessions().then(j => console.log(j)).catch(e => console.error(e));"
+          }
+        },
+        {
+          "path": "/web/rag",
+          "method": "POST",
+          "summary": "RAG search",
+          "description": "Run a RAG-style search (POST JSON).",
+          "request": { "user_id": "string", "query": "string", "top_k": 3 },
+          "response": { "results": [] },
+          "code": {
+            "curl": "curl -X POST '__BASE__/web/rag' -H 'Content-Type: application/json' -d '{\"user_id\":\"51ebe8c7-201b-4275-9bc5-44d7222f3509\",\"query\":\"test query\",\"top_k\":3}'",
+            "python": "import requests\n\ndef rag_search(base_url='http://localhost:5000', user_id='51ebe8c7-201b-4275-9bc5-44d7222f3509', query='test query', top_k=3):\n    payload = {'user_id': user_id, 'query': query, 'top_k': top_k}\n    r = requests.post(f\"{base_url}/web/rag\", json=payload, timeout=15)\n    r.raise_for_status()\n    return r.json()\n\nif __name__ == '__main__':\n    print(rag_search())",
+            "javascript": "async function ragSearch(baseUrl = 'http://localhost:5000', userId = '51ebe8c7-201b-4275-9bc5-44d7222f3509', query = 'test query', topK = 3) {\n  const res = await fetch(`${baseUrl}/web/rag`, {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify({ user_id: userId, query, top_k: topK })\n  });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\nragSearch().then(r => console.log(r)).catch(e => console.error(e));"
+          }
+        },
+        {
+          "path": "/validate_key",
+          "method": "POST",
+          "summary": "Validate API key",
+          "description": "Validate API key. POST JSON {api_key: string}. Returns {valid: bool}.",
+          "request": { "api_key": "string" },
+          "response": { "valid": true },
+          "code": {
+            "curl": "curl -X POST '__BASE__/validate_key' -H 'Content-Type: application/json' -d '{\"api_key\":\"sk-...\"}'",
+            "python": "import requests\n\ndef validate_key(base_url='http://localhost:5000', api_key=None):\n    payload = {} if api_key is None else {'api_key': api_key}\n    r = requests.post(f\"{base_url}/validate_key\", json=payload, timeout=10)\n    return r.status_code, r.json()\n\nif __name__ == '__main__':\n    print(validate_key(api_key='sk-test'))",
+            "javascript": "async function validateKey(baseUrl = 'http://localhost:5000', apiKey = null) {\n  const res = await fetch(`${baseUrl}/validate_key`, {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify(apiKey ? { api_key: apiKey } : {})\n  });\n  return { status: res.status, body: await res.json() };\n}\nvalidateKey(null).then(console.log).catch(console.error);"
+          }
+        },
+        {
+          "path": "/create_agent",
+          "method": "POST",
+          "summary": "Create agent",
+          "description": "Create a new agent. Authorization typically required in headers.",
+          "request": { "agent_name": "string", "agent_slug": "string", "permissions": {}, "limits": {}, "description": "string" },
+          "response": { "agent_id": "string" },
+          "code": {
+            "curl": "curl -X POST '__BASE__/create_agent' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_name\":\"test-agent\",\"agent_slug\":\"test-agent\"}'",
+            "python": "import requests\n\ndef create_agent(base_url='http://localhost:5000', api_key=None, payload=None):\n    headers = {} if api_key is None else {'Authorization': api_key}\n    payload = payload or {'agent_name': 'test-agent', 'agent_slug': 'test-agent', 'permissions': {'run': True}, 'limits': {'rpm': 10}, 'description': 'Created by script'}\n    r = requests.post(f\"{base_url}/create_agent\", json=payload, headers=headers, timeout=15)\n    r.raise_for_status()\n    return r.json()\n\nif __name__ == '__main__':\n    print(create_agent(api_key='sk-test'))",
+            "javascript": "async function createAgent(baseUrl = 'http://localhost:5000', apiKey = null, payload = null) {\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = apiKey;\n  const body = JSON.stringify(payload || { agent_name: 'test-agent', agent_slug: 'test-agent', permissions: { run: true }, limits: { rpm: 10 }, description: 'Created by script' });\n  const res = await fetch(`${baseUrl}/create_agent`, { method: 'POST', headers, body });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\ncreateAgent().then(console.log).catch(console.error);"
+          }
+        },
+        {
+          "path": "/web/create_session",
+          "method": "POST",
+          "summary": "Create chat session",
+          "description": "Create a new chat session. Returns thread_id.",
+          "request": { "user_id": "string" },
+          "response": { "thread_id": "string" },
+          "code": {
+            "curl": "curl -X POST '__BASE__/web/create_session' -H 'Content-Type: application/json' -d '{\"user_id\":\"51ebe8c7-201b-4275-9bc5-44d7222f3509\"}'",
+            "python": "import requests\n\ndef create_session(base_url='http://localhost:5000', user_id='51ebe8c7-201b-4275-9bc5-44d7222f3509'):\n    r = requests.post(f\"{base_url}/web/create_session\", json={'user_id': user_id}, timeout=10)\n    r.raise_for_status()\n    return r.json()\n\nif __name__ == '__main__':\n    print(create_session())",
+            "javascript": "async function createSession(baseUrl = 'http://localhost:5000', userId = '51ebe8c7-201b-4275-9bc5-44d7222f3509') {\n  const res = await fetch(`${baseUrl}/web/create_session`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: userId }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\ncreateSession().then(console.log).catch(console.error);"
+          }
+        },
+        {
+          "path": "/web/chat",
+          "method": "POST",
+          "summary": "Send chat message (streaming)",
+          "description": "Send a chat message to the streaming chat endpoint. Example shows a simple non-streaming POST consumer.",
+          "request": { "thread_id": "string", "user_id": "string", "message": "string", "history": [] },
+          "response": { "reply": "string / stream" },
+          "code": {
+            "curl": "curl -X POST '__BASE__/web/chat' -H 'Content-Type: application/json' -d '{\"thread_id\":\"local_thread_123\",\"user_id\":\"51ebe8c7-201b-4275-9bc5-44d7222f3509\",\"message\":\"Hello\",\"history\":[]}'",
+            "python": "import requests\n\ndef send_chat(base_url='http://localhost:5000', thread_id='local_thread_123', user_id='51ebe8c7-201b-4275-9bc5-44d7222f3509', message='Hello'):\n    payload = {'thread_id': thread_id, 'user_id': user_id, 'message': message, 'history': []}\n    r = requests.post(f\"{base_url}/web/chat\", json=payload, timeout=120)\n    r.raise_for_status()\n    # If server streams SSE, use stream=True and iterate; here we return full response body\n    return r.text\n\nif __name__ == '__main__':\n    print(send_chat())",
+            "javascript": "async function sendChat(baseUrl = 'http://localhost:5000', threadId = 'local_thread_123', userId = '51ebe8c7-201b-4275-9bc5-44d7222f3509', message = 'Hello') {\n  const res = await fetch(`${baseUrl}/web/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ thread_id: threadId, user_id: userId, message, history: [] }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.text();\n}\nsendChat().then(console.log).catch(console.error);"
+          }
+        },
+        {
+          "path": "/ping",
+          "method": "GET",
+          "summary": "Ping server",
+          "description": "Simple health check for the running server.",
+          "request": null,
+          "response": { "status": "string" },
+          "code": {
+            "curl": "curl -X GET '__BASE__/ping' -v",
+            "python": "import requests\n\ndef ping(base_url='http://localhost:5000'):\n    r = requests.get(f\"{base_url}/ping\", timeout=10)\n    return r.status_code, r.text\n\nif __name__ == '__main__':\n    print(ping())",
+            "javascript": "async function ping(baseUrl = 'http://localhost:5000') {\n  const res = await fetch(`${baseUrl}/ping`);\n  return { status: res.status, text: await res.text() };\n}\nping().then(console.log).catch(console.error);"
+          }
+        },
+        {
+          "path": "/list_agents",
+          "method": "GET",
+          "summary": "List agents (API key)",
+          "description": "List agents available to the provided API key (Authorization header).",
           "request": null,
           "response": { "agents": [] },
           "code": {
-            "curl": "curl -X GET '__BASE__/api/agents' -H 'Authorization: Bearer <API_KEY>'",
-            "python": "requests.get('__BASE__/api/agents', headers={'Authorization': 'Bearer <API_KEY>'})"
+            "curl": "curl -X GET '__BASE__/list_agents' -H 'Authorization: <API_KEY>'",
+            "python": "import requests\n\ndef list_agents(base_url='http://localhost:5000', api_key=None):\n    headers = {} if api_key is None else {'Authorization': api_key}\n    r = requests.get(f\"{base_url}/list_agents\", headers=headers, timeout=15)\n    r.raise_for_status()\n    return r.json()\n\nif __name__ == '__main__':\n    print(list_agents(api_key='sk-test'))",
+            "javascript": "async function listAgents(baseUrl = 'http://localhost:5000', apiKey = null) {\n  const headers = {} ;\n  if (apiKey) headers['Authorization'] = apiKey;\n  const res = await fetch(`${baseUrl}/list_agents`, { headers });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\nlistAgents().then(console.log).catch(console.error);"
           }
         },
         {
-          "path": "/agents/{id}",
+          "path": "/get_agent",
           "method": "GET",
-          "summary": "Get agent",
-          "description": "Retrieve a single agent by ID.",
-          "request": null,
-          "response": { "id": "uuid", "name": "string" },
+          "summary": "Get agent by id",
+          "description": "Retrieve a single agent by ID. Example shows a GET with JSON payload as used in tests (some servers accept JSON body on GET).",
+          "request": { "agent_id": "string" },
+          "response": { "agent": {} },
           "code": {
-            "curl": "curl -X GET '__BASE__/api/agents/<id>' -H 'Authorization: Bearer <API_KEY>'"
+            "curl": "curl -X GET '__BASE__/get_agent' -H 'Authorization: <API_KEY>' -G --data-urlencode 'agent_id=<AGENT_ID>'",
+            "python": "import requests\n\ndef get_agent(base_url='http://localhost:5000', api_key=None, agent_id=None):\n    headers = {} if api_key is None else {'Authorization': api_key}\n    params = {} if agent_id is None else {'agent_id': agent_id}\n    r = requests.get(f\"{base_url}/get_agent\", headers=headers, params=params, timeout=15)\n    r.raise_for_status()\n    return r.json()\n\nif __name__ == '__main__':\n    print(get_agent(api_key='sk-test', agent_id='agent-123'))",
+            "javascript": "async function getAgent(baseUrl = 'http://localhost:5000', apiKey = null, agentId = null) {\n  const url = new URL(`${baseUrl}/get_agent`);\n  if (agentId) url.searchParams.set('agent_id', agentId);\n  const headers = {} ;\n  if (apiKey) headers['Authorization'] = apiKey;\n  const res = await fetch(url.href, { headers });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\ngetAgent().then(console.log).catch(console.error);"
           }
-        }
-      ]
-    },
-    {
-      "name": "Documents",
-      "endpoints": [
-        {
-          "path": "/agents/{id}/documents",
-          "method": "GET",
-          "summary": "List documents",
-          "description": "List documents uploaded for an agent.",
-          "request": null,
-          "response": { "documents": [] },
-          "code": { "curl": "curl -X GET '__BASE__/agents/<id>/documents' -H 'Authorization: Bearer <API_KEY>'" }
         },
         {
-          "path": "/agents/{id}/documents/{docId}",
-          "method": "GET",
-          "summary": "Get document",
-          "description": "Retrieve document metadata or download link.",
-          "request": null,
-          "response": { "id": "docId", "name": "string" },
-          "code": { "curl": "curl -X GET '__BASE__/agents/<id>/documents/<docId>' -H 'Authorization: Bearer <API_KEY>'" }
+          "path": "/update_agent",
+          "method": "POST",
+          "summary": "Update agent details",
+          "description": "Update updatable fields for an agent. Authorization required.",
+          "request": { "agent_id": "string", "updates": {} },
+          "response": { "ok": true },
+          "code": {
+            "curl": "curl -X POST '__BASE__/update_agent' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\", \"updates\": {\"description\": \"updated\"}}'",
+            "python": "import requests\n\ndef update_agent(base_url='http://localhost:5000', api_key=None, agent_id=None, updates=None):\n    headers = {} if api_key is None else {'Authorization': api_key}\n    payload = {'agent_id': agent_id, 'updates': updates or {}}\n    r = requests.post(f\"{base_url}/update_agent\", headers=headers, json=payload, timeout=15)\n    r.raise_for_status()\n    return r.json()\n\nif __name__ == '__main__':\n    print(update_agent(api_key='sk-test', agent_id='agent-123', updates={'description':'updated'}))",
+            "javascript": "async function updateAgent(baseUrl = 'http://localhost:5000', apiKey = null, agentId = null, updates = {}) {\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = apiKey;\n  const res = await fetch(`${baseUrl}/update_agent`, { method: 'POST', headers, body: JSON.stringify({ agent_id: agentId, updates }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\nupdateAgent().then(console.log).catch(console.error);"
+          }
         },
         {
-          "path": "/agents/{id}/search",
+          "path": "/disable_agent",
           "method": "POST",
-          "summary": "Document search",
-          "description": "Search documents for an agent using query and filters.",
-          "request": { "query": "string" },
-          "response": { "results": [] },
-          "code": { "curl": "curl -X POST '__BASE__/agents/<id>/search' -H 'Content-Type: application/json' -d '{\"query\":\"hello\"}'" }
+          "summary": "Disable agent",
+          "description": "Disable an agent by id using Authorization header.",
+          "request": { "agent_id": "string" },
+          "response": { "ok": true },
+          "code": {
+            "curl": "curl -X POST '__BASE__/disable_agent' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\"}'",
+            "python": "import requests\n\ndef disable_agent(base_url='http://localhost:5000', api_key=None, agent_id=None):\n    headers = {} if api_key is None else {'Authorization': api_key}\n    r = requests.post(f\"{base_url}/disable_agent\", headers=headers, json={'agent_id': agent_id}, timeout=15)\n    r.raise_for_status()\n    return r.json()\n\nif __name__ == '__main__':\n    print(disable_agent(api_key='sk-test', agent_id='agent-123'))",
+            "javascript": "async function disableAgent(baseUrl = 'http://localhost:5000', apiKey = null, agentId = null) {\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = apiKey;\n  const res = await fetch(`${baseUrl}/disable_agent`, { method: 'POST', headers, body: JSON.stringify({ agent_id: agentId }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\ndisableAgent().then(console.log).catch(console.error);"
+          }
         },
         {
-          "path": "/agents/{id}/query",
+          "path": "/enable_agent",
           "method": "POST",
-          "summary": "Query documents",
-          "description": "Run a RAG-style query against agent documents and return relevant passages.",
-          "request": { "query": "string" },
-          "response": { "answers": [] },
-          "code": { "curl": "curl -X POST '__BASE__/agents/<id>/query' -H 'Content-Type: application/json' -d '{\"query\":\"summarize\"}'" }
-        }
-      ]
-    },
-    {
-      "name": "LLM",
-      "endpoints": [
-        {
-          "path": "/agents/{id}/llm/complete",
-          "method": "POST",
-          "summary": "Text completion",
-          "description": "Run a single-turn completion with model-specific params.",
-          "request": { "prompt": "string", "max_tokens": 256 },
-          "response": { "text": "string" },
-          "code": { "curl": "curl -X POST '__BASE__/agents/<id>/llm/complete' -H 'Content-Type: application/json' -d '{\"prompt\":\"Hello\"}'" }
-        },
-        {
-          "path": "/agents/{id}/llm/chat",
-          "method": "POST",
-          "summary": "Chat",
-          "description": "Multi-turn chat endpoint supporting messages and context.",
-          "request": { "messages": [] },
-          "response": { "reply": "string" },
-          "code": { "curl": "curl -X POST '__BASE__/agents/<id>/llm/chat' -H 'Content-Type: application/json' -d '{\"messages\":[{\"role\":\"user\",\"content\":\"Hi\"}]}'" }
-        },
-        {
-          "path": "/agents/{id}/llm/summarize",
-          "method": "POST",
-          "summary": "Summarize",
-          "description": "Summarize a provided text or a document.",
-          "request": { "text": "string" },
-          "response": { "summary": "string" },
-          "code": { "curl": "curl -X POST '__BASE__/agents/<id>/llm/summarize' -H 'Content-Type: application/json' -d '{\"text\":\"...\"}'" }
-        },
-        {
-          "path": "/agents/{id}/llm/extract",
-          "method": "POST",
-          "summary": "Extract",
-          "description": "Extract structured data from text.",
-          "request": { "text": "string" },
-          "response": { "extracted": {} },
-          "code": { "curl": "curl -X POST '__BASE__/agents/<id>/llm/extract' -H 'Content-Type: application/json' -d '{\"text\":\"...\"}'" }
+          "summary": "Enable agent",
+          "description": "Enable an agent by id using Authorization header.",
+          "request": { "agent_id": "string" },
+          "response": { "ok": true },
+          "code": {
+            "curl": "curl -X POST '__BASE__/enable_agent' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\"}'",
+            "python": "import requests\n\ndef enable_agent(base_url='http://localhost:5000', api_key=None, agent_id=None):\n    headers = {} if api_key is None else {'Authorization': api_key}\n    r = requests.post(f\"{base_url}/enable_agent\", headers=headers, json={'agent_id': agent_id}, timeout=15)\n    r.raise_for_status()\n    return r.json()\n\nif __name__ == '__main__':\n    print(enable_agent(api_key='sk-test', agent_id='agent-123'))",
+            "javascript": "async function enableAgent(baseUrl = 'http://localhost:5000', apiKey = null, agentId = null) {\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = apiKey;\n  const res = await fetch(`${baseUrl}/enable_agent`, { method: 'POST', headers, body: JSON.stringify({ agent_id: agentId }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\nenableAgent().then(console.log).catch(console.error);"
+          }
         }
       ]
     }
