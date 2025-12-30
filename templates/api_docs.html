@@ -371,11 +371,19 @@
   /* Enhanced API Documentation Styles */
 .api-docs-panels {
   display: grid;
-  grid-template-columns: 300px 1fr 450px;
-  gap: 0;
+  /* Narrower side columns and a larger center column for better content density */
+  grid-template-columns: 280px 1fr 420px;
+  /* add comfortable spacing between the three panels */
+  gap: 20px;
   height: 70vh;
   min-height: 600px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* Expand the panels to use more of the viewport while keeping them centered */
+  width: calc(100% - 2rem);
+  max-width: 1200px;
+  margin: 0 auto;
+  align-items: start;
 }
 
 .api-docs-panels .card {
@@ -395,7 +403,21 @@
 
 .nav-panel { border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
 .code-panel { border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
-.middle-panel { border-left: 1px solid rgba(255,255,255,0.03); border-right: 1px solid rgba(255,255,255,0.03); }
+.middle-panel {
+  border-left: 1px solid rgba(255,255,255,0.03);
+  border-right: 1px solid rgba(255,255,255,0.03);
+  /* Make the middle panel layout a column so its inner content can scroll independently */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ensure the inner content wrapper (the immediate child with padding) fills the panel and scrolls */
+.middle-panel > .p-6 {
+  /* flex: 1 lets the child take available height inside the panel */
+  flex: 1 1 auto;
+  overflow: auto;
+  box-sizing: border-box;
+}
 
 /* Enhanced Navigation */
 .category-group {
@@ -546,6 +568,17 @@
 .tab-btn.active {
   color: #3b82f6;
   border-bottom-color: #3b82f6;
+}
+
+/* Keep tab buttons on a single line and prevent wrapping; allow horizontal scroll when needed */
+#details-tabs {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tab-btn {
+  white-space: nowrap;
 }
 
 /* Language Buttons */
