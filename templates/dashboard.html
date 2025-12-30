@@ -254,8 +254,39 @@
         async function loadApiKeys() {
             try {
                 const res = await fetch('/api/keys', { credentials: 'same-origin' });
-                if (!res.ok) throw new Error('Failed to fetch API keys');
-                const data = await res.json();
+
+                // Try to parse JSON when possible, but handle non-OK responses and different shapes
+                let payload;
+                try {
+                    payload = await res.json();
+                } catch (e) {
+                    // If response isn't JSON, fallback to text for better error messaging
+                    const txt = await res.text();
+                    throw new Error(txt || 'Failed to fetch API keys');
+                }
+
+                if (!res.ok) {
+                    // If backend returned an error shape like { error: '...' }, surface that
+                    const errMsg = (payload && (payload.error || payload.message)) || 'Failed to fetch API keys';
+                    throw new Error(errMsg);
+                }
+
+                // Normalize payload to an array of records. Support:
+                // - an array (old style)
+                // - { data: [...] } (common supabase/client shape)
+                // - { keys: [...] } or { result: [...] }
+                let data = payload;
+                if (!Array.isArray(data)) {
+                    if (data && Array.isArray(data.data)) data = data.data;
+                    else if (data && Array.isArray(data.keys)) data = data.keys;
+                    else if (data && Array.isArray(data.result)) data = data.result;
+                    else {
+                        // Unknown shape or empty result
+                        tableBody.innerHTML = '';
+                        emptyState.classList.remove('hidden');
+                        return;
+                    }
+                }
 
                 // Expecting an array of key records
                 tableBody.innerHTML = '';
@@ -265,8 +296,19 @@
                 }
 
                 emptyState.classList.add('hidden');
-                data.forEach(rec => {
-                    const row = renderKeyRow(rec);
+
+                // Normalize each record so renderKeyRow can rely on consistent field names
+                data.forEach(raw => {
+                    const rec = raw || {};
+                    const normalized = {
+                        id: rec.id || rec.key_id || rec.uuid || '',
+                        name: rec.name || rec.label || 'Untitled Key',
+                        expiration: rec.expiration || rec.expires_at || rec.expiresAt || 'Never',
+                        // prefer server-provided masked_key, fall back to other fields or mask a plaintext key if present
+                        masked_key: rec.masked_key || rec.masked || rec.maskedKey || rec.maskedKey || rec.masked_key || (rec.key ? maskKey(rec.key) : undefined)
+                    };
+
+                    const row = renderKeyRow(normalized);
                     tableBody.appendChild(row);
                 });
 
