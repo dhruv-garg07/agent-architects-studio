@@ -703,14 +703,31 @@ code[class*="language-"] {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+{% if docs_json %}
+<script id="initial-docs" type="application/json">
+{{ docs_json|safe }}
+</script>
+{% endif %}
 
 <script>
 // Enhanced API Documentation Functionality
 (async function() {
+  // Read server-injected initial docs (if provided via a separate JSON script tag)
+  const INITIAL_DOCS_NODE = document.getElementById('initial-docs');
+  let INITIAL_DOCS = null;
+  if (INITIAL_DOCS_NODE) {
+    try {
+      INITIAL_DOCS = JSON.parse(INITIAL_DOCS_NODE.textContent || INITIAL_DOCS_NODE.innerText || 'null');
+    } catch (e) {
+      console.warn('Failed to parse initial docs JSON from DOM:', e);
+      INITIAL_DOCS = null;
+    }
+  }
+
   // Wait for DOM to be fully loaded
   document.addEventListener('DOMContentLoaded', async function() {
     console.log('DOM loaded, initializing API docs...');
-    
+
     // Configuration
     const config = {
       showLineNumbers: true,
@@ -732,68 +749,81 @@ code[class*="language-"] {
     // Initialize
     async function init() {
       console.log('Initializing API documentation...');
-      await loadDocs();
+
+      // If server injected docs are available, use them and skip client fetch
+      if (INITIAL_DOCS) {
+        try {
+          console.log('Using server-injected documentation data');
+          state.docs = processDocsData(INITIAL_DOCS);
+          renderNavigation();
+
+          if (state.docs.categories && state.docs.categories.length > 0) {
+            const firstCategory = state.docs.categories[0];
+            if (firstCategory.endpoints && firstCategory.endpoints.length > 0) {
+              setTimeout(() => {
+                selectEndpoint(firstCategory, firstCategory.endpoints[0]);
+              }, 100);
+            }
+          }
+        } catch (e) {
+          console.warn('Error processing INITIAL_DOCS, falling back to loadDocs()', e);
+          await loadDocs();
+        }
+      } else {
+        await loadDocs();
+      }
+
       setupEventListeners();
       setupSyntaxHighlighting();
-      renderNavigation();
       setupMobileNavigation();
     }
 
     async function loadDocs() {
       try {
         console.log('Loading documentation data from /static/index.json...');
-        
-        // Try to fetch from static files - multiple possible locations
-        const baseUrl = window.location.origin;
-        const candidates = [
-          `${baseUrl}/static/index.json`,
-          `${baseUrl}/static/Api_References/index.json`,
-          '/static/index.json',
-          './static/index.json'
-        ];
 
-        for (const url of candidates) {
-          try {
-            console.log(`Trying to fetch from: ${url}`);
-            const response = await fetch(url);
-            
-            if (!response.ok) {
-              console.warn(`Fetch failed for ${url}: ${response.status} ${response.statusText}`);
-              continue;
-            }
-            
-            const data = await response.json();
-            console.log(`Successfully loaded data from ${url}`, data);
-            
-            // Process the data
-            state.docs = processDocsData(data);
-            console.log('Processed docs:', state.docs);
-            
-            // Render navigation with loaded data
+        // Only attempt the single canonical candidate: the static index.json
+        const url = '/static/index.json';
+        try {
+          console.log(`Trying to fetch from: ${url}`);
+          const response = await fetch(url);
+
+          if (!response.ok) {
+            console.warn(`Fetch failed for ${url}: ${response.status} ${response.statusText}`);
+            // Use fallback if the single candidate is not available
+            state.docs = getFallbackData();
             renderNavigation();
-            
-            // Auto-select first endpoint if available
-            if (state.docs.categories && state.docs.categories.length > 0) {
-              const firstCategory = state.docs.categories[0];
-              if (firstCategory.endpoints && firstCategory.endpoints.length > 0) {
-                setTimeout(() => {
-                  selectEndpoint(firstCategory, firstCategory.endpoints[0]);
-                }, 100);
-              }
-            }
-            
             return;
-            
-          } catch (fetchError) {
-            console.warn(`Fetch error for ${url}:`, fetchError);
-            continue;
           }
-        }
 
-        // If all fetches fail, use fallback data
-        console.warn('All fetch attempts failed, using fallback data');
-        state.docs = getFallbackData();
-        renderNavigation();
+          const data = await response.json();
+          console.log(`Successfully loaded data from ${url}`, data);
+
+          // Process the data
+          state.docs = processDocsData(data);
+          console.log('Processed docs:', state.docs);
+
+          // Render navigation with loaded data
+          renderNavigation();
+
+          // Auto-select first endpoint if available
+          if (state.docs.categories && state.docs.categories.length > 0) {
+            const firstCategory = state.docs.categories[0];
+            if (firstCategory.endpoints && firstCategory.endpoints.length > 0) {
+              setTimeout(() => {
+                selectEndpoint(firstCategory, firstCategory.endpoints[0]);
+              }, 100);
+            }
+          }
+
+          return;
+
+        } catch (fetchError) {
+          console.warn(`Fetch error for ${url}:`, fetchError);
+          state.docs = getFallbackData();
+          renderNavigation();
+          return;
+        }
         
       } catch (error) {
         console.error('Critical error loading documentation:', error);
@@ -1289,7 +1319,7 @@ code[class*="language-"] {
     }
 
     function updateEndpointDetails() {
-      const { endpoint } = state;
+      const { currentEndpoint: endpoint } = state;
       
       console.log('Updating endpoint details for:', endpoint?.path);
       
@@ -1350,7 +1380,7 @@ code[class*="language-"] {
     }
 
     function updateCodeSample() {
-      const { endpoint, selectedLanguage } = state;
+      const { currentEndpoint: endpoint, selectedLanguage } = state;
       
       const codeBlock = document.getElementById('code-block')?.querySelector('code');
       const currentLang = document.getElementById('current-lang');
@@ -1387,7 +1417,7 @@ code[class*="language-"] {
     }
 
     function updateTabs() {
-      const { endpoint } = state;
+      const { currentEndpoint: endpoint } = state;
       
       // Clear existing content
       const tabContent = document.getElementById('tab-content');
@@ -1415,7 +1445,7 @@ code[class*="language-"] {
     }
 
     function renderOverviewTab() {
-      const { endpoint } = state;
+      const { currentEndpoint: endpoint } = state;
       const tabContent = document.getElementById('tab-content');
       if (!tabContent) return;
       
@@ -1477,7 +1507,7 @@ code[class*="language-"] {
     }
 
     function renderRequestTab() {
-      const { endpoint } = state;
+      const { currentEndpoint: endpoint } = state;
       const tabContent = document.getElementById('tab-content');
       if (!tabContent) return;
       
@@ -1544,7 +1574,7 @@ code[class*="language-"] {
     }
 
     function renderResponseTab() {
-      const { endpoint } = state;
+      const { currentEndpoint: endpoint } = state;
       const tabContent = document.getElementById('tab-content');
       if (!tabContent) return;
       
@@ -1663,7 +1693,7 @@ code[class*="language-"] {
     }
 
     function updateParametersTable() {
-      const { endpoint } = state;
+      const { currentEndpoint: endpoint } = state;
       const parametersBody = document.getElementById('parameters-body');
       const parametersSection = document.getElementById('parameters-section');
       
@@ -1695,7 +1725,7 @@ code[class*="language-"] {
     }
 
     function showCodeExplanation() {
-      const { endpoint, selectedLanguage } = state;
+      const { currentEndpoint: endpoint, selectedLanguage } = state;
       
       const codeExplanation = document.getElementById('code-explanation');
       const explanationText = document.getElementById('explanation-text');
@@ -1795,7 +1825,7 @@ code[class*="language-"] {
     }
 
     async function copyAllCode() {
-      const { endpoint } = state;
+      const { currentEndpoint: endpoint } = state;
       
       if (!endpoint || !endpoint.code) {
         console.warn('No endpoint selected or no code available');
@@ -1840,7 +1870,7 @@ code[class*="language-"] {
 
     function handleCopy(e) {
       const target = e.target.dataset.target;
-      const { endpoint } = state;
+      const { currentEndpoint: endpoint } = state;
       
       if (!endpoint) return;
       

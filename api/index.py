@@ -1294,7 +1294,17 @@ def homepage():
 @app.route('/api/docs')
 def api_docs():
     """Render the API documentation placeholder page."""
-    return render_template('api_docs.html')
+    # Attempt to load the static docs JSON and inject into the template to avoid client-side fetch issues
+    docs_path = os.path.join(STATIC_DIR, 'index.json')
+    docs_json = None
+    try:
+        with open(docs_path, 'r', encoding='utf-8') as f:
+            docs_json = json.load(f)
+    except Exception as e:
+        print('[STARTUP] Could not load static/index.json:', e)
+
+    # Pass serialized JSON (or null) to the template. The template will use this as INITIAL_DOCS.
+    return render_template('api_docs.html', docs_json=json.dumps(docs_json) if docs_json is not None else None)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
