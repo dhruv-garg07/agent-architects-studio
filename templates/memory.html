@@ -838,6 +838,28 @@
         let ragResults = [];
         let currentSendToken = 0;
 
+        // Timestamp helpers: normalize different timestamp formats to milliseconds / ISO
+        function tsToMs(v) {
+            if (v === null || v === undefined) return 0;
+            // numbers: either seconds (10-digit) or milliseconds
+            if (typeof v === 'number') {
+                return String(v).length <= 10 ? v * 1000 : v;
+            }
+            // numeric strings
+            if (/^\d+$/.test(String(v))) {
+                const n = Number(v);
+                return String(v).length <= 10 ? n * 1000 : n;
+            }
+            // try Date.parse on other strings (ISO etc)
+            const p = Date.parse(String(v));
+            return isNaN(p) ? 0 : p;
+        }
+
+        function toIso(v) {
+            const ms = tsToMs(v);
+            return new Date(ms).toISOString();
+        }
+
         // DOM Elements
         const modal = document.getElementById('addDataModal');
         const modalBackdrop = document.getElementById('modalBackdrop');
@@ -870,6 +892,27 @@
         // Initialize the dashboard
         initDashboard();
 
+        // Utility: escape HTML to avoid XSS when injecting session content
+        function escapeHtml(unsafe) {
+            if (!unsafe && unsafe !== 0) return '';
+            return String(unsafe)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // Client-side timestamp helpers for optimistic ordering
+        function getClientUpdatedMs(session) {
+            // prefer an explicit clientUpdatedMs (ms since epoch), fall back to server updatedAt
+            if (!session) return 0;
+            if (typeof session.clientUpdatedMs === 'number') return session.clientUpdatedMs;
+            if (session.updatedAt) return tsToMs(session.updatedAt);
+            if (session.createdAt) return tsToMs(session.createdAt);
+            return 0;
+        }
+
         async function initDashboard() {
             await refreshSessionsFromServer();
             updateSessionUI();
@@ -894,15 +937,18 @@
 
         function renderSessionsList() {
             sessionsList.innerHTML = '';
+            // ensure sessions are ordered by clientUpdatedMs (optimistic) descending (newest first)
+            // getClientUpdatedMs prefers clientUpdatedMs if set, otherwise falls back to server updatedAt
+            sessions.sort((a, b) => getClientUpdatedMs(b) - getClientUpdatedMs(a));
+            console.log('[memory] sessions before render:', sessions.map(s => ({ id: s.id, clientUpdatedMs: getClientUpdatedMs(s), updatedAt: s.updatedAt, name: s.name })));
             sessions.forEach(s => {
                 const el = document.createElement('div');
                 el.className = `session-item ${currentSession && currentSession.id === s.id ? 'active' : ''}`;
+                const displayName = s.name || (`Session ${s.id.slice(0, 8)}…`);
                 el.innerHTML = `
             <div class="flex-1 min-w-0">
-                <div class="font-medium">Session ${s.id.slice(0, 8)}…</div>
-                <div class="session-preview">${(s.preview || 'No messages').substring(0, 50)}...</div>
+                <div class="font-medium">${escapeHtml(displayName)}</div>
             </div>
-            <div class="text-xs text-muted-foreground">${new Date(s.updatedAt).toLocaleTimeString()}</div>
             `;
                 el.addEventListener('click', () => loadSession(s.id));
                 sessionsList.appendChild(el);
@@ -924,35 +970,74 @@
                     const r = await fetch(`/web/sessions/${thread_id}/messages?id=${encodeURIComponent(window.USER_ID)}`);
                     const { messages = [] } = await r.json();
 
+                    // sort descending to get the most recent as "last"
                     const last = messages.slice().sort((a, b) => {
-                        const ta = (a.metadata?.timestamp ?? 0), tb = (b.metadata?.timestamp ?? 0);
+                        const ta = tsToMs(a.metadata?.timestamp ?? a.timestamp ?? 0);
+                        const tb = tsToMs(b.metadata?.timestamp ?? b.timestamp ?? 0);
                         if (tb !== ta) return tb - ta;
-                        const ia = (a.metadata?.index ?? 0), ib = (b.metadata?.index ?? 0);
+                        const ia = (a.metadata?.index ?? a.index ?? 0), ib = (b.metadata?.index ?? b.index ?? 0);
                         return ib - ia;
                     })[0];
 
-                    const iso = last?.metadata?.timestamp
-                        ? new Date(last.metadata.timestamp * 1000).toISOString()
-                        : new Date().toISOString();
+                    // If there are no messages, treat the session as very old so it doesn't float to the top
+                    const iso = (last?.metadata?.timestamp ?? last?.timestamp ?? null)
+                        ? toIso(last.metadata?.timestamp ?? last.timestamp)
+                        : new Date(0).toISOString();
+
+                    // derive a human-friendly session name from the first user prompt (earliest user message)
+                    let name = null;
+                    try {
+                        const rowsAsc = messages.slice().sort((a, b) => {
+                            const ta = tsToMs(a.metadata?.timestamp ?? a.timestamp ?? 0);
+                            const tb = tsToMs(b.metadata?.timestamp ?? b.timestamp ?? 0);
+                            if (ta !== tb) return ta - tb;
+                            const ia = (a.metadata?.index ?? a.index ?? 0), ib = (b.metadata?.index ?? b.index ?? 0);
+                            return ia - ib;
+                        });
+                        const firstUser = rowsAsc.find(m => {
+                            const role = (m.role || '').toLowerCase();
+                            return role === 'user' || role === 'human' || role === '';
+                        });
+                        const firstContent = firstUser?.content || firstUser?.document || '';
+                        if (firstContent) {
+                            // use up to 48 chars for the session name
+                            name = firstContent.trim().replace(/\s+/g, ' ').slice(0, 48);
+                            if (firstContent.length > 48) name = name + '…';
+                        }
+                    } catch (e) {
+                        name = null;
+                    }
 
                     return {
                         id: thread_id,
                         createdAt: iso,
                         updatedAt: iso,
-                        preview: last?.document || 'No messages'
+                        preview: last?.document || last?.content || '',
+                        name: name || null
                     };
                 } catch {
+                    // If fetching messages failed, mark session as very old and empty so it doesn't bubble to top
                     return {
                         id: thread_id,
-                        createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString(),
-                        preview: 'No messages'
+                        createdAt: new Date(0).toISOString(),
+                        updatedAt: new Date(0).toISOString(),
+                        preview: '',
+                        name: null
                     };
                 }
             }));
 
-            enriched.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+            // Preserve any client-side optimistic timestamps so we don't lose recent local promotions.
+            enriched.forEach(item => {
+                const existing = sessions.find(s => s.id === item.id);
+                const serverMs = tsToMs(item.updatedAt);
+                item.clientUpdatedMs = Math.max(serverMs, existing && typeof existing.clientUpdatedMs === 'number' ? existing.clientUpdatedMs : 0);
+            });
+
+            // Sort using clientUpdatedMs (which incorporates optimistic local updates)
+            enriched.sort((a, b) => (b.clientUpdatedMs || 0) - (a.clientUpdatedMs || 0));
             sessions = enriched;
+            console.log('[memory] sessions after refresh:', sessions.map(s => ({ id: s.id, clientUpdatedMs: s.clientUpdatedMs, updatedAt: s.updatedAt, name: s.name })));
         }
 
         // Refresh a single session's metadata and preview (avoids reloading every session)
@@ -963,23 +1048,54 @@
                 const { messages = [] } = await r.json();
 
                 const last = messages.slice().sort((a, b) => {
-                    const ta = (a.metadata?.timestamp ?? 0), tb = (b.metadata?.timestamp ?? 0);
+                    const ta = tsToMs(a.metadata?.timestamp ?? a.timestamp ?? 0);
+                    const tb = tsToMs(b.metadata?.timestamp ?? b.timestamp ?? 0);
                     if (tb !== ta) return tb - ta;
-                    const ia = (a.metadata?.index ?? 0), ib = (b.metadata?.index ?? 0);
+                    const ia = (a.metadata?.index ?? a.index ?? 0), ib = (b.metadata?.index ?? b.index ?? 0);
                     return ib - ia;
                 })[0];
 
-                const iso = last?.metadata?.timestamp
-                    ? new Date(last.metadata.timestamp * 1000).toISOString()
-                    : new Date().toISOString();
 
-                // Update sessions array in place if present
+                const iso = (last?.metadata?.timestamp ?? last?.timestamp ?? null)
+                    ? toIso(last.metadata?.timestamp ?? last.timestamp)
+                    : new Date(0).toISOString();
+
+                // derive a friendly name from the first user prompt in this session
+                let name = null;
+                try {
+                    const rowsAsc = messages.slice().sort((a, b) => {
+                        const ta = (a.metadata?.timestamp ?? 0), tb = (b.metadata?.timestamp ?? 0);
+                        if (ta !== tb) return ta - tb;
+                        const ia = (a.metadata?.index ?? 0), ib = (b.metadata?.index ?? 0);
+                        return ia - ib;
+                    });
+                    const firstUser = rowsAsc.find(m => {
+                        const role = (m.role || '').toLowerCase();
+                        return role === 'user' || role === 'human' || role === '';
+                    });
+                    const firstContent = firstUser?.content || firstUser?.document || '';
+                    if (firstContent) {
+                        name = firstContent.trim().replace(/\s+/g, ' ').slice(0, 48);
+                        if (firstContent.length > 48) name = name + '…';
+                    }
+                } catch (e) {
+                    name = null;
+                }
+
+                // Update sessions array in place if present, and promote this session to the top
                 const idx = sessions.findIndex(s => s.id === thread_id);
-                const preview = last?.document || 'No messages';
-                const updated = { id: thread_id, createdAt: iso, updatedAt: iso, preview };
+                const preview = last?.document || last?.content || '';
+                const updated = { id: thread_id, createdAt: iso, updatedAt: iso, preview, name };
                 if (idx >= 0) {
-                    sessions[idx] = { ...sessions[idx], ...updated };
+                    // merge metadata, preserve clientUpdatedMs if present
+                    const existingClientMs = sessions[idx].clientUpdatedMs || 0;
+                    sessions[idx] = { ...sessions[idx], ...updated, clientUpdatedMs: Math.max(tsToMs(updated.updatedAt), existingClientMs) };
+                    // move the updated session to the front so it appears as most-recent
+                    const moved = sessions.splice(idx, 1)[0];
+                    sessions.unshift(moved);
                 } else {
+                    // new session, add to front and set clientUpdatedMs
+                    updated.clientUpdatedMs = tsToMs(updated.updatedAt) || Date.now();
                     sessions.unshift(updated);
                 }
 
@@ -1010,7 +1126,8 @@
                 messages: []
             };
 
-
+            // set a clientUpdatedMs so it sorts to the top immediately
+            newSession.clientUpdatedMs = Date.now();
             sessions.unshift(newSession);
             currentSession = newSession;
 
@@ -1055,7 +1172,18 @@
                     ? new Date(r.timestamp).toISOString()
                     : new Date().toISOString()
             }));
-
+            // Update session's updatedAt based on the latest message timestamp so ordering reflects recent activity
+            if (rows.length > 0) {
+                const lastRow = rows[rows.length - 1];
+                const lastTs = lastRow.metadata?.timestamp || lastRow.timestamp || null;
+                if (lastTs) {
+                    const lastIso = toIso(lastTs);
+                    currentSession.updatedAt = lastIso;
+                    // update sessions array entry
+                    const idx = sessions.findIndex(s => s.id === currentSession.id);
+                    if (idx >= 0) sessions[idx] = { ...sessions[idx], updatedAt: lastIso };
+                }
+            }
             renderConversation(currentSession.messages);
             updateSessionUI();
             // Just clear RAG results when loading a session
@@ -1398,6 +1526,22 @@
             addMessageToConversation('user', message);
             currentSession.updatedAt = new Date().toISOString();
 
+            // Immediately update the sessions array and promote this session to the top so the UI reflects recent activity
+            (function promoteCurrentSession() {
+                const idx = sessions.findIndex(s => s.id === currentSession.id);
+                const preview = message.slice(0, 200);
+                const updatedAt = currentSession.updatedAt;
+                const updated = { id: currentSession.id, createdAt: currentSession.createdAt || new Date().toISOString(), updatedAt, preview, name: currentSession.name, clientUpdatedMs: Date.now() };
+                if (idx >= 0) {
+                    sessions[idx] = { ...sessions[idx], ...updated };
+                    const moved = sessions.splice(idx, 1)[0];
+                    sessions.unshift(moved);
+                } else {
+                    sessions.unshift(updated);
+                }
+                renderSessionsList();
+            })();
+
             // Create a placeholder for the assistant message that will be streamed
             let aiMessageElement = null;
             let fullAIResponse = '';
@@ -1511,12 +1655,31 @@
                                     };
                                     currentSession.messages.push(aiMessage);
 
-                                    // Update the current session preview/updatedAt locally, then refresh only that session from server
+                                    // Update the current session preview/updatedAt locally so ordering reflects recent activity
                                     currentSession.preview = fullAIResponse.slice(0, 200);
                                     currentSession.updatedAt = new Date().toISOString();
 
+                                    // Immediately reflect this change in UI by updating/promoting the session locally
+                                    (function promoteCurrentSessionAfterAI() {
+                                        const idx2 = sessions.findIndex(s => s.id === currentSession.id);
+                                        const preview2 = currentSession.preview;
+                                        const updatedAt2 = currentSession.updatedAt;
+                                        const updated2 = { id: currentSession.id, createdAt: currentSession.createdAt || new Date().toISOString(), updatedAt: updatedAt2, preview: preview2, name: currentSession.name, clientUpdatedMs: Date.now() };
+                                        if (idx2 >= 0) {
+                                            // preserve any existing clientUpdatedMs if it's newer
+                                            const existingClientMs = sessions[idx2].clientUpdatedMs || 0;
+                                            updated2.clientUpdatedMs = Math.max(updated2.clientUpdatedMs, existingClientMs);
+                                            sessions[idx2] = { ...sessions[idx2], ...updated2 };
+                                            const moved2 = sessions.splice(idx2, 1)[0];
+                                            sessions.unshift(moved2);
+                                        } else {
+                                            sessions.unshift(updated2);
+                                        }
+                                        renderSessionsList();
+                                    })();
+
+                                    // Refresh from server in background to reconcile authoritative data
                                     await refreshSingleSession(currentSession.id);
-                                    renderSessionsList();
 
                                 } else if (data.type === 'error') {
                                     console.error('Stream error:', data.content);
