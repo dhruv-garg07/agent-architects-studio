@@ -371,19 +371,32 @@
   /* Enhanced API Documentation Styles */
 .api-docs-panels {
   display: grid;
-  /* Narrower side columns and a larger center column for better content density */
-  grid-template-columns: 280px 1fr 420px;
-  /* add comfortable spacing between the three panels */
-  gap: 20px;
-  height: 70vh;
-  min-height: 600px;
+  /* Use wider columns to fill the space */
+  grid-template-columns: 260px 1fr 480px;
+  gap: 16px;
+  height: 75vh;
+  min-height: 700px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
-  /* Expand the panels to use more of the viewport while keeping them centered */
-  width: calc(100% - 2rem);
-  max-width: 1200px;
+  /* Use nearly full width of the container */
+  width: 100%;
+  max-width: 1600px;
   margin: 0 auto;
   align-items: start;
+}
+
+/* Main container should also be wider */
+.max-w-7xl {
+  max-width: 100% !important;
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
+}
+
+/* Header container adjustments */
+.mx-auto.px-4.sm\:px-6.lg\:px-8.py-8 {
+  max-width: 100% !important;
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
 }
 
 .api-docs-panels .card {
@@ -401,27 +414,35 @@
   position: relative;
 }
 
-.nav-panel { border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
-.code-panel { border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
+.nav-panel { 
+  border-top-left-radius: 12px; 
+  border-bottom-left-radius: 12px;
+  /* Pull left panel slightly left */
+  margin-left: 0;
+}
+.code-panel { 
+  border-top-right-radius: 12px; 
+  border-bottom-right-radius: 12px;
+  /* Pull right panel slightly right */
+  margin-right: 0;
+}
 .middle-panel {
   border-left: 1px solid rgba(255,255,255,0.03);
   border-right: 1px solid rgba(255,255,255,0.03);
-  /* Make the middle panel layout a column so its inner content can scroll independently */
   display: flex;
   flex-direction: column;
 }
 
-/* Ensure the inner content wrapper (the immediate child with padding) fills the panel and scrolls */
+/* Make content in middle panel take full height */
 .middle-panel > .p-6 {
-  /* flex: 1 lets the child take available height inside the panel */
   flex: 1 1 auto;
   overflow: auto;
   box-sizing: border-box;
 }
 
-/* Enhanced Navigation */
+/* Enhanced Navigation - More compact */
 .category-group {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.2rem;
 }
 
 .category-header {
@@ -429,32 +450,25 @@
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  padding: 0.5rem 0;
+  padding: 0.4rem 0.8rem;
   color: #ffffff;
   font-weight: 600;
-}
-
-.category-header svg {
-  transition: transform 0.2s;
-}
-
-.category-header:hover {
-  color: #3b82f6;
+  font-size: 0.9rem;
 }
 
 .endpoints-container {
-  padding-left: 1rem;
-  margin-top: 0.5rem;
+  padding-left: 0.8rem;
+  margin-top: 0.3rem;
 }
 
 .endpoint-item {
   display: block;
   width: 100%;
   text-align: left;
-  padding: 0.5rem 0.75rem;
-  margin: 0.25rem 0;
-  border-radius: 6px;
-  font-size: 0.875rem;
+  padding: 0.35rem 0.6rem;
+  margin: 0.15rem 0;
+  border-radius: 5px;
+  font-size: 0.8rem;
   color: #94a3b8;
   background: transparent;
   border: none;
@@ -462,12 +476,7 @@
   transition: all 0.2s;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-}
-
-.endpoint-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #ffffff;
+  gap: 0.6rem;
 }
 
 .endpoint-item.active {
@@ -476,49 +485,48 @@
   border-left: 3px solid #3b82f6;
 }
 
-/* Method Badges */
+/* Make code panel content more prominent */
+.code-panel .p-6 {
+  padding: 1.25rem !important;
+}
+
+/* Increase code block size */
+pre[class*="language-"] {
+  margin: 0;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 1.5rem !important;
+  font-size: 0.9rem;
+}
+
+/* Make middle panel content more dense */
+.middle-panel .p-6 {
+  padding: 1.5rem !important;
+}
+
+/* Method Badges - Smaller */
 .method-pill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 48px;
-  padding: 0.18rem 0.5rem;
-  border-radius: 0.375rem;
+  min-width: 45px;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.3rem;
   font-weight: 700;
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-}
-
-.method-get { background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16,185,129,0.18); }
-.method-post { background: rgba(59,130,246,0.10); color: #3b82f6; border: 1px solid rgba(59,130,246,0.16); }
-.method-put { background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.16); }
-.method-delete { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.16); }
-
-.method-badge-large {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 70px;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  font-weight: 700;
-  font-size: 0.875rem;
+  font-size: 0.65rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  background: rgba(59,130,246,0.10);
-  color: #3b82f6;
-  border: 1px solid rgba(59,130,246,0.16);
 }
 
-/* Filter Chips */
+/* Filter Chips - More compact */
 .filter-chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  font-size: 0.875rem;
+  gap: 0.4rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 18px;
+  font-size: 0.8rem;
   font-weight: 500;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -527,67 +535,26 @@
   transition: all 0.2s;
 }
 
-.filter-chip:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-.filter-chip.active {
-  background: rgba(59, 130, 246, 0.2);
-  border-color: rgba(59, 130, 246, 0.3);
-  color: #3b82f6;
-}
-
-.method-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: inline-block;
-}
-
-.method-dot.get { background: #10b981; }
-.method-dot.post { background: #3b82f6; }
-
-/* Tab Buttons */
+/* Tab Buttons - More compact */
 .tab-btn {
   display: inline-flex;
   align-items: center;
-  padding: 0.75rem 1.25rem;
+  padding: 0.6rem 1rem;
   border-bottom: 2px solid transparent;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   font-weight: 500;
   color: #94a3b8;
   cursor: pointer;
   transition: all 0.2s;
 }
 
-.tab-btn:hover {
-  color: #ffffff;
-}
-
-.tab-btn.active {
-  color: #3b82f6;
-  border-bottom-color: #3b82f6;
-}
-
-/* Keep tab buttons on a single line and prevent wrapping; allow horizontal scroll when needed */
-#details-tabs {
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-.tab-btn {
-  white-space: nowrap;
-}
-
-/* Language Buttons */
+/* Language Buttons - More compact */
 .lang-btn {
   display: inline-flex;
   align-items: center;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  font-size: 0.875rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 5px;
+  font-size: 0.8rem;
   font-weight: 500;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -596,119 +563,38 @@
   transition: all 0.2s;
 }
 
-.lang-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
+/* Responsive adjustments */
+@media (max-width: 1600px) {
+  .api-docs-panels {
+    grid-template-columns: 240px 1fr 440px;
+    max-width: 1400px;
+  }
 }
 
-.lang-btn.active {
-  background: rgba(59, 130, 246, 0.2);
-  border-color: rgba(59, 130, 246, 0.3);
-  color: #3b82f6;
+@media (max-width: 1400px) {
+  .api-docs-panels {
+    grid-template-columns: 230px 1fr 420px;
+    max-width: 1300px;
+  }
 }
 
-/* Copy Buttons */
-.copy-btn {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #94a3b8;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.copy-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
-}
-
-.copy-btn-sm {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #94a3b8;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.copy-btn-sm:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
-}
-
-.code-action-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #94a3b8;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.code-action-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
-}
-
-/* Code Block Styling */
-pre[class*="language-"] {
-  margin: 0;
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-code[class*="language-"] {
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 0.875rem;
-  line-height: 1.5;
-}
-
-/* Scrollbar Styling */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-/* Responsive Design */
 @media (max-width: 1200px) {
   .api-docs-panels {
-    grid-template-columns: 280px 1fr;
+    grid-template-columns: 220px 1fr;
+    max-width: 100%;
+    gap: 12px;
   }
   
   #api-code {
     grid-column: 1 / -1;
     margin-top: 1rem;
-    height: 400px;
+    height: 450px;
+  }
+}
+
+@media (max-width: 992px) {
+  .api-docs-panels {
+    grid-template-columns: 200px 1fr;
   }
 }
 
@@ -716,6 +602,8 @@ code[class*="language-"] {
   .api-docs-panels {
     grid-template-columns: 1fr;
     height: auto;
+    min-height: auto;
+    gap: 10px;
   }
   
   #api-nav, #api-details, #api-code {
@@ -726,6 +614,394 @@ code[class*="language-"] {
   .nav-panel, .middle-panel, .code-panel {
     border-radius: 12px;
   }
+}
+
+/* Add this to make the search bar more prominent */
+#global-search {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* Make tables more compact */
+table.w-full.text-sm thead th {
+  padding: 0.5rem 1rem !important;
+  font-size: 0.8rem;
+}
+
+table.w-full.text-sm tbody td {
+  padding: 0.5rem 1rem !important;
+  font-size: 0.8rem;
+}
+/* Color System for API Documentation */
+
+/* Primary Color Variables */
+:root {
+  --api-blue: #3b82f6;
+  --api-green: #10b981;
+  --api-yellow: #f59e0b;
+  --api-red: #ef4444;
+  --api-purple: #8b5cf6;
+  --api-cyan: #06b6d4;
+  --api-pink: #ec4899;
+}
+
+/* Colorful Method Badges */
+.method-get { 
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.08));
+  color: #10b981; 
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.1);
+}
+
+.method-post { 
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.08));
+  color: #3b82f6; 
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+}
+
+.method-put { 
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.08));
+  color: #f59e0b; 
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.1);
+}
+
+.method-delete { 
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.08));
+  color: #ef4444; 
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.1);
+}
+
+.method-patch {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(139, 92, 246, 0.08));
+  color: #8b5cf6;
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  box-shadow: 0 2px 4px rgba(139, 92, 246, 0.1);
+}
+
+/* Method Dots with Glow */
+.method-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 6px currentColor;
+}
+
+.method-dot.get { 
+  background: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+}
+.method-dot.post { 
+  background: #3b82f6;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
+}
+.method-dot.put { 
+  background: #f59e0b;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+}
+.method-dot.delete { 
+  background: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+}
+.method-dot.patch { 
+  background: #8b5cf6;
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.6);
+}
+
+/* Colorful Endpoint Categories */
+.category-header {
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.1), transparent);
+  padding: 0.75rem 1rem;
+  margin: 0 -1rem;
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.category-header::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 3px;
+  background: linear-gradient(to bottom, #3b82f6, #8b5cf6);
+}
+
+/* Endpoint Items with Hover Colors */
+.endpoint-item {
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.endpoint-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 2px;
+  background: transparent;
+  transition: background 0.3s ease;
+}
+
+.endpoint-item:hover::before {
+  background: linear-gradient(to bottom, #3b82f6, #8b5cf6);
+}
+
+.endpoint-item.get:hover {
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.08), transparent);
+  border-left-color: #10b981;
+}
+
+.endpoint-item.post:hover {
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.08), transparent);
+  border-left-color: #3b82f6;
+}
+
+.endpoint-item.put:hover {
+  background: linear-gradient(90deg, rgba(245, 158, 11, 0.08), transparent);
+  border-left-color: #f59e0b;
+}
+
+.endpoint-item.delete:hover {
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.08), transparent);
+  border-left-color: #ef4444;
+}
+
+.endpoint-item.active {
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.15), transparent) !important;
+  border-left: 3px solid #3b82f6 !important;
+}
+
+/* Colorful Filter Chips */
+.filter-chip {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  transition: all 0.3s ease;
+}
+
+.filter-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.filter-chip.active {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.1));
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #3b82f6;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+}
+
+.filter-chip[data-filter="GET"].active {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1));
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #10b981;
+}
+
+.filter-chip[data-filter="POST"].active {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.1));
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #3b82f6;
+}
+
+/* Colorful Tab Buttons */
+.tab-btn {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.tab-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tab-btn.active {
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(to right, #3b82f6, #8b5cf6);
+  border-radius: 2px;
+}
+
+/* Colorful Language Buttons */
+.lang-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.lang-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.lang-btn.active {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.1));
+  border-color: rgba(59, 130, 246, 0.3);
+  color: #3b82f6;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+}
+
+/* Colorful Code Panel */
+.code-panel {
+  background: linear-gradient(180deg, 
+    rgba(2, 6, 23, 0.9) 0%,
+    rgba(2, 6, 23, 0.95) 100%
+  );
+  border: 1px solid rgba(59, 130, 246, 0.1);
+  box-shadow: 
+    0 8px 32px rgba(2, 6, 23, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.code-panel .bg-\[\#3b82f6\] {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+}
+
+/* Colorful Status Indicators */
+.bg-green-500 {
+  background: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+.bg-yellow-500 {
+  background: #f59e0b;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+}
+
+.bg-red-500 {
+  background: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+}
+
+/* Colorful Table Rows */
+table tbody tr {
+  transition: background 0.2s ease;
+}
+
+table tbody tr:hover {
+  background: rgba(59, 130, 246, 0.05);
+}
+
+table thead {
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+}
+
+/* Colorful Stats Cards */
+.bg-\[rgba\(0\,0\,0\,0\.18\)\] {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.3s ease;
+}
+
+.bg-\[rgba\(0\,0\,0\,0\.18\)\]:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Colorful Try It Section */
+.bg-gradient-to-br {
+  background: linear-gradient(135deg, 
+    rgba(59, 130, 246, 0.08) 0%,
+    rgba(139, 92, 246, 0.04) 50%,
+    transparent 100%
+  );
+  border: 1px solid rgba(59, 130, 246, 0.15);
+}
+
+.bg-gradient-to-br button {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+/* Colorful Copy Buttons */
+.copy-btn {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transition: all 0.3s ease;
+}
+
+.copy-btn:hover {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.1));
+  border-color: rgba(59, 130, 246, 0.3);
+  color: #3b82f6;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+/* Colorful Code Syntax */
+.token.keyword {
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+.token.string {
+  color: #10b981;
+}
+
+.token.function {
+  color: #8b5cf6;
+}
+
+.token.comment {
+  color: #64748b;
+}
+
+.token.number {
+  color: #f59e0b;
+}
+
+.token.operator {
+  color: #ec4899;
+}
+
+/* Colorful Scrollbar */
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #3b82f6, #8b5cf6);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #2563eb, #7c3aed);
+}
+
+/* Add subtle glow to active elements */
+.endpoint-item.active,
+.tab-btn.active,
+.lang-btn.active,
+.filter-chip.active {
+  position: relative;
+}
+
+.endpoint-item.active::after,
+.tab-btn.active::after,
+.lang-btn.active::after,
+.filter-chip.active::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6, #ec4899);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 </style>
 
