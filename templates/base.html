@@ -515,9 +515,9 @@ html {
     <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <div id="flash-messages" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         {% for category, message in messages %}
-        <div class="alert alert-{{ category }} p-4 mb-4 rounded-lg border
+        <div class="flash-alert alert alert-{{ category }} p-4 mb-4 rounded-lg border
                         {% if category == 'success' %}bg-green-50 border-green-200 text-green-800
                         {% elif category == 'error' %}bg-red-50 border-red-200 text-red-800
                         {% else %}bg-blue-50 border-blue-200 text-blue-800{% endif %}">
@@ -527,6 +527,53 @@ html {
     </div>
     {% endif %}
     {% endwith %}
+
+    <style>
+        /* Smooth fade + collapse for flash messages */
+        .flash-alert {
+            transition: opacity 350ms ease, max-height 400ms ease, margin 300ms;
+            overflow: hidden;
+        }
+        .flash-hidden {
+            opacity: 0 !important;
+            max-height: 0 !important;
+            margin: 0 !important;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+        }
+    </style>
+
+    <script>
+        // Auto-dismiss flash messages after a short delay.
+        // This uses plain JS so we avoid changing any .ts files.
+        (function () {
+            const AUTO_DISMISS_MS = 2000; // 2 seconds
+            function hideFlash(el) {
+                el.classList.add('flash-hidden');
+                // Remove from DOM after animation completes
+                setTimeout(() => el.remove(), 600);
+            }
+
+            // Wait for DOM to be ready
+            document.addEventListener('DOMContentLoaded', function () {
+                const container = document.getElementById('flash-messages');
+                if (!container) return;
+                const alerts = Array.from(container.querySelectorAll('.flash-alert'));
+                if (!alerts.length) return;
+
+                // Optionally show a countdown on success alerts (data attribute)
+                alerts.forEach((alert) => {
+                    // Allow manual dismissal on click
+                    alert.addEventListener('click', () => hideFlash(alert));
+                });
+
+                // Auto-hide after timeout
+                setTimeout(() => {
+                    alerts.forEach(hideFlash);
+                }, AUTO_DISMISS_MS);
+            });
+        })();
+    </script>
 
     <!-- Main Content -->
     <main>
