@@ -157,7 +157,7 @@
             </div>
 
             <!-- Fixed Chat Input -->
-            <div class="shrink-0 bg-card border-t border-border p-5 sticky-chat-input">
+            <div class="shrink-0 bg-card border-t border-border p-5 sticky-chat-input card-oval">
                 <form id="chatForm" class="flex items-center space-x-3">
                     <div class="flex-1 relative">
                         <button type="button" id="attachFileBtn"
@@ -167,7 +167,7 @@
                         <input type="text" id="chatInput" placeholder="Query your memory..." class="input w-full pl-10 pr-12"
                             autocomplete="off">
                     </div>
-                    <button type="submit" class="btn-primary p-3 rounded-lg">
+                    <button type="submit" class="btn-primary p-3 pill lift-on-hover">
                         <i data-lucide="send" class="h-5 w-5"></i>
                     </button>
                 </form>
@@ -201,7 +201,7 @@
 <div id="addDataModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
     <div class="fixed inset-0 bg-black/70 backdrop-blur-sm" id="modalBackdrop"></div>
     <div
-        class="relative bg-card rounded-xl border border-border shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+        class="relative card card-oval soft-shadow border border-border w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
         <div class="sticky top-0 bg-card border-b border-border p-6 rounded-t-xl flex justify-between items-center">
             <h2 class="text-xl font-semibold">Add New Memory</h2>
             <button id="closeModal"

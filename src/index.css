@@ -55,9 +55,10 @@
     --ring: 222 18% 18%;
 
     /* Design System Variables */
-    --radius: 0.65rem;
-    --shadow-soft: 0 6px 18px -8px hsl(222 20% 12% / 0.12);
-    --shadow-elevated: 0 18px 38px -14px hsl(222 20% 12% / 0.14);
+  /* slightly larger radius for smoother, more oval UI */
+  --radius: 0.9rem;
+  --shadow-soft: 0 8px 22px -10px hsl(222 20% 12% / 0.10);
+  --shadow-elevated: 0 20px 48px -18px hsl(222 20% 12% / 0.12);
     --transition-smooth: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-spring: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 
@@ -164,11 +165,34 @@
     box-shadow: var(--shadow-elevated);
     border: 1px solid hsl(var(--card-border));
     transition: var(--transition-smooth);
+    border-radius: calc(var(--radius) * 1.25);
+    background-clip: padding-box;
   }
 
   .card-elevated:hover {
     transform: translateY(-1px);
     box-shadow: 0 16px 32px -18px hsl(222 20% 12% / 0.16);
+  }
+
+  /* Oval / pill helper classes for a sleeker look */
+  .card-oval {
+    border-radius: 1.25rem;
+    box-shadow: var(--shadow-soft);
+    transition: var(--transition-smooth);
+    background: linear-gradient(180deg, hsl(var(--card)) 0%, color-mix(in srgb, hsl(var(--card)) 96%, white 4%) 100%);
+  }
+
+  .pill {
+    border-radius: 9999px;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+    transition: var(--transition-smooth);
+  }
+
+  /* subtle GPU-accelerated hover lift */
+  .lift-on-hover {
+    will-change: transform, box-shadow;
+    transform: translateZ(0);
   }
 
   /* Button variants for the design system */
