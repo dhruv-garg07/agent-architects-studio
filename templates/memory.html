@@ -916,8 +916,11 @@
 
         function updateSessionUI() {
             newSessionBtn.classList.remove('hidden');      // <-- always visible
-            sessionsList.classList.toggle('hidden', sessions.length === 0);
-            noSessionsMessage.classList.toggle('hidden', sessions.length !== 0);
+            // Only consider sessions that have a derived name for display.
+            // If no sessions have names yet, hide the list and show the empty message.
+            const visibleSessionsCount = sessions.filter(s => s && s.name && String(s.name).trim().length > 0).length;
+            sessionsList.classList.toggle('hidden', visibleSessionsCount === 0);
+            noSessionsMessage.classList.toggle('hidden', visibleSessionsCount !== 0);
             renderSessionsList();
         }
 
@@ -931,9 +934,13 @@
             sessions.sort((a, b) => getClientUpdatedMs(b) - getClientUpdatedMs(a));
             console.log('[memory] sessions before render:', sessions.map(s => ({ id: s.id, clientUpdatedMs: getClientUpdatedMs(s), updatedAt: s.updatedAt, name: s.name })));
             sessions.forEach(s => {
+                // Skip rendering sessions that do not yet have a derived name. We don't want
+                // to show an empty box or a session id placeholder for unnamed sessions.
+                if (!s || !s.name || String(s.name).trim().length === 0) return;
                 const el = document.createElement('div');
                 el.className = `session-item ${currentSession && currentSession.id === s.id ? 'active' : ''}`;
-                const displayName = s.name || (`Session ${s.id.slice(0, 8)}…`);
+                // displayName is guaranteed to exist because we skipped unnamed sessions above
+                const displayName = s.name;
                 el.innerHTML = `
             <div class="flex-1 min-w-0">
                 <div class="font-medium">${escapeHtml(displayName)}</div>
@@ -1503,6 +1510,14 @@
             // Ensure a server session exists
             if (!currentSession) {
                 await createNewSession();
+            }
+
+            // If this session does not yet have a derived name, use the first user prompt
+            // as the session name (truncated). This makes the name appear immediately
+            // after the user sends the first prompt without requiring a page reload.
+            if (currentSession && !currentSession.name) {
+                const truncated = message.trim().replace(/\s+/g, ' ').slice(0, 48);
+                currentSession.name = truncated + (message.length > 48 ? '…' : '');
             }
 
             // New logic here as well.
