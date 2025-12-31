@@ -12,7 +12,7 @@
           "response": { "html": "string" },
           "code": {
             "curl": "curl -X GET '__BASE__/memory' -v",
-            "python": "import os\nimport requests\n\ndef get_memory(base_url=None):\n    base_url = base_url or os.environ.get('BASE_URL')\n    if not base_url:\n        raise ValueError('base_url must be provided or set BASE_URL env var')\n    r = requests.get(f\"{base_url}/memory\", timeout=15)\n    r.raise_for_status()\n    return r.text\n\nif __name__ == '__main__':\n    print(get_memory())",
+            "python": "import requests\n\nurl = \"__BASE__/memory\"\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.get(url, headers=headers, timeout=15)\n\nprint(response.text)",
             "javascript": "// Node 18+ or browser\nasync function getMemory(baseUrl = null) {\n  baseUrl = baseUrl || (typeof process !== 'undefined' && process.env && process.env.BASE_URL);\n  if (!baseUrl) throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const res = await fetch(`${baseUrl}/memory`);\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.text();\n}\n\ngetMemory().then(t => console.log(t)).catch(e => console.error(e));"
           }
         },
@@ -25,7 +25,7 @@
           "response": { "sessions": [] },
           "code": {
             "curl": "curl -G '__BASE__/web/get_sessions' --data-urlencode 'id=51ebe8c7-201b-4275-9bc5-44d7222f3509'",
-            "python": "import os\nimport requests\n\ndef get_sessions(base_url=None, session_id='51ebe8c7-201b-4275-9bc5-44d7222f3509'):\n    base_url = base_url or os.environ.get('BASE_URL')\n    if not base_url:\n        raise ValueError('base_url must be provided or set BASE_URL env var')\n    r = requests.get(f\"{base_url}/web/get_sessions\", params={'id': session_id}, timeout=15)\n    r.raise_for_status()\n    return r.json()\n\nif __name__ == '__main__':\n    print(get_sessions())",
+            "python": "import requests\n\nurl = \"__BASE__/web/get_sessions\"\nparams = { 'id': '51ebe8c7-201b-4275-9bc5-44d7222f3509' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.get(url, params=params, headers=headers, timeout=15)\n\nprint(response.text)",
             "javascript": "async function getSessions(baseUrl = null, sessionId = '51ebe8c7-201b-4275-9bc5-44d7222f3509') {\n  baseUrl = baseUrl || (typeof process !== 'undefined' && process.env && process.env.BASE_URL);\n  if (!baseUrl) throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const url = new URL(`${baseUrl}/web/get_sessions`);\n  url.searchParams.set('id', sessionId);\n  const res = await fetch(url.href);\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\ngetSessions().then(j => console.log(j)).catch(e => console.error(e));"
           }
         },
@@ -38,7 +38,7 @@
           "response": { "results": [] },
           "code": {
             "curl": "curl -X POST '__BASE__/web/rag' -H 'Content-Type: application/json' -d '{\"user_id\":\"51ebe8c7-201b-4275-9bc5-44d7222f3509\",\"query\":\"test query\",\"top_k\":3}'",
-            "python": "import os\nimport requests\n\ndef rag_search(base_url=None, user_id='51ebe8c7-201b-4275-9bc5-44d7222f3509', query='test query', top_k=3):\n    base_url = base_url or os.environ.get('BASE_URL')\n    if not base_url:\n        raise ValueError('base_url must be provided or set BASE_URL env var')\n    payload = {'user_id': user_id, 'query': query, 'top_k': top_k}\n    r = requests.post(f\"{base_url}/web/rag\", json=payload, timeout=15)\n    r.raise_for_status()\n    return r.json()\n\nif __name__ == '__main__':\n    print(rag_search())",
+            "python": "import requests\n\nurl = \"__BASE__/web/rag\"\npayload = { 'user_id': '51ebe8c7-201b-4275-9bc5-44d7222f3509', 'query': 'test query', 'top_k': 3 }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=15)\n\nprint(response.text)",
             "javascript": "async function ragSearch(baseUrl = null, userId = '51ebe8c7-201b-4275-9bc5-44d7222f3509', query = 'test query', topK = 3) {\n  baseUrl = baseUrl || (typeof process !== 'undefined' && process.env && process.env.BASE_URL);\n  if (!baseUrl) throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const res = await fetch(`${baseUrl}/web/rag`, {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify({ user_id: userId, query, top_k: topK })\n  });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\nragSearch().then(r => console.log(r)).catch(e => console.error(e));"
           }
         },
@@ -51,7 +51,7 @@
           "response": { "valid": true },
           "code": {
             "curl": "curl -X POST '__BASE__/validate_key' -H 'Content-Type: application/json' -d '{\"api_key\":\"sk-...\"}'",
-            "python": "import os\nimport requests\n\ndef validate_key(base_url=None, api_key=None):\n    base_url = base_url or os.environ.get('BASE_URL')\n    if not base_url:\n        raise ValueError('base_url must be provided or set BASE_URL env var')\n    payload = {} if api_key is None else {'api_key': api_key}\n    r = requests.post(f\"{base_url}/validate_key\", json=payload, timeout=10)\n    return r.status_code, r.json()\n\nif __name__ == '__main__':\n    print(validate_key(api_key='sk-test'))",
+            "python": "import requests\n\nurl = \"__BASE__/validate_key\"\npayload = { 'api_key': 'sk-...'}\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=10)\n\nprint(response.text)",
             "javascript": "async function validateKey(baseUrl = null, apiKey = null) {\n  baseUrl = baseUrl || (typeof process !== 'undefined' && process.env && process.env.BASE_URL);\n  if (!baseUrl) throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const res = await fetch(`${baseUrl}/validate_key`, {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify(apiKey ? { api_key: apiKey } : {})\n  });\n  return { status: res.status, body: await res.json() };\n}\nvalidateKey(null).then(console.log).catch(console.error);"
           }
         },
@@ -64,7 +64,7 @@
           "response": { "agent_id": "string" },
           "code": {
             "curl": "curl -X POST '__BASE__/create_agent' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_name\":\"test-agent\",\"agent_slug\":\"test-agent\"}'",
-            "python": "import os\nimport requests\n\ndef create_agent(base_url=None, api_key=None, payload=None):\n    base_url = base_url or os.environ.get('BASE_URL')\n    if not base_url:\n        raise ValueError('base_url must be provided or set BASE_URL env var')\n    headers = {} if api_key is None else {'Authorization': api_key}\n    payload = payload or {'agent_name': 'test-agent', 'agent_slug': 'test-agent', 'permissions': {'run': True}, 'limits': {'rpm': 10}, 'description': 'Created by script'}\n    r = requests.post(f\"{base_url}/create_agent\", json=payload, headers=headers, timeout=15)\n    r.raise_for_status()\n    return r.json()\n\nif __name__ == '__main__':\n    print(create_agent(api_key='sk-test'))",
+            "python": "import requests\n\nurl = \"__BASE__/create_agent\"\npayload = { 'agent_name': 'test-agent', 'agent_slug': 'test-agent', 'permissions': { 'run': True }, 'limits': { 'rpm': 10 }, 'description': 'Created by script' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=15)\n\nprint(response.text)",
             "javascript": "async function createAgent(baseUrl = null, apiKey = null, payload = null) {\n  baseUrl = baseUrl || (typeof process !== 'undefined' && process.env && process.env.BASE_URL);\n  if (!baseUrl) throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = apiKey;\n  const body = JSON.stringify(payload || { agent_name: 'test-agent', agent_slug: 'test-agent', permissions: { run: true }, limits: { rpm: 10 }, description: 'Created by script' });\n  const res = await fetch(`${baseUrl}/create_agent`, { method: 'POST', headers, body });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\ncreateAgent().then(console.log).catch(console.error);"
           }
         },
@@ -77,7 +77,7 @@
           "response": { "thread_id": "string" },
           "code": {
             "curl": "curl -X POST '__BASE__/web/create_session' -H 'Content-Type: application/json' -d '{\"user_id\":\"51ebe8c7-201b-4275-9bc5-44d7222f3509\"}'",
-            "python": "import os\nimport requests\n\ndef create_session(base_url=None, user_id='51ebe8c7-201b-4275-9bc5-44d7222f3509'):\n    base_url = base_url or os.environ.get('BASE_URL')\n    if not base_url:\n        raise ValueError('base_url must be provided or set BASE_URL env var')\n    r = requests.post(f\"{base_url}/web/create_session\", json={'user_id': user_id}, timeout=10)\n    r.raise_for_status()\n    return r.json()\n\nif __name__ == '__main__':\n    print(create_session())",
+            "python": "import requests\n\nurl = \"__BASE__/web/create_session\"\npayload = { 'user_id': '51ebe8c7-201b-4275-9bc5-44d7222f3509' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=10)\n\nprint(response.text)",
             "javascript": "async function createSession(baseUrl = null, userId = '51ebe8c7-201b-4275-9bc5-44d7222f3509') {\n  baseUrl = baseUrl || (typeof process !== 'undefined' && process.env && process.env.BASE_URL);\n  if (!baseUrl) throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const res = await fetch(`${baseUrl}/web/create_session`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: userId }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\ncreateSession().then(console.log).catch(console.error);"
           }
         },
@@ -90,7 +90,7 @@
           "response": { "reply": "string / stream" },
           "code": {
             "curl": "curl -X POST '__BASE__/web/chat' -H 'Content-Type: application/json' -d '{\"thread_id\":\"local_thread_123\",\"user_id\":\"51ebe8c7-201b-4275-9bc5-44d7222f3509\",\"message\":\"Hello\",\"history\":[]}'",
-            "python": "import os\nimport requests\n\ndef send_chat(base_url=None, thread_id='local_thread_123', user_id='51ebe8c7-201b-4275-9bc5-44d7222f3509', message='Hello'):\n    base_url = base_url or os.environ.get('BASE_URL')\n    if not base_url:\n        raise ValueError('base_url must be provided or set BASE_URL env var')\n    payload = {'thread_id': thread_id, 'user_id': user_id, 'message': message, 'history': []}\n    r = requests.post(f\"{base_url}/web/chat\", json=payload, timeout=120)\n    r.raise_for_status()\n    # If server streams SSE, use stream=True and iterate; here we return full response body\n    return r.text\n\nif __name__ == '__main__':\n    print(send_chat())",
+            "python": "import requests\n\nurl = \"__BASE__/web/chat\"\npayload = { 'thread_id': 'local_thread_123', 'user_id': '51ebe8c7-201b-4275-9bc5-44d7222f3509', 'message': 'Hello', 'history': [] }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=120)\n\nprint(response.text)",
             "javascript": "async function sendChat(baseUrl = null, threadId = 'local_thread_123', userId = '51ebe8c7-201b-4275-9bc5-44d7222f3509', message = 'Hello') {\n  baseUrl = baseUrl || (typeof process !== 'undefined' && process.env && process.env.BASE_URL);\n  if (!baseUrl) throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const res = await fetch(`${baseUrl}/web/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ thread_id: threadId, user_id: userId, message, history: [] }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.text();\n}\nsendChat().then(console.log).catch(console.error);"
           }
         },
@@ -103,7 +103,7 @@
           "response": { "status": "string" },
           "code": {
             "curl": "curl -X GET '__BASE__/ping' -v",
-            "python": "import os\nimport requests\n\ndef ping(base_url=None):\n    base_url = base_url or os.environ.get('BASE_URL')\n    if not base_url:\n        raise ValueError('base_url must be provided or set BASE_URL env var')\n    r = requests.get(f\"{base_url}/ping\", timeout=10)\n    return r.status_code, r.text\n\nif __name__ == '__main__':\n    print(ping())",
+            "python": "import requests\n\nurl = \"__BASE__/ping\"\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.get(url, headers=headers, timeout=10)\n\nprint(response.text)",
             "javascript": "async function ping(baseUrl = null) {\n  baseUrl = baseUrl || (typeof process !== 'undefined' && process.env && process.env.BASE_URL);\n  if (!baseUrl) throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const res = await fetch(`${baseUrl}/ping`);\n  return { status: res.status, text: await res.text() };\n}\nping().then(console.log).catch(console.error);"
           }
         },
@@ -116,7 +116,7 @@
           "response": { "agents": [] },
           "code": {
             "curl": "curl -X GET '__BASE__/list_agents' -H 'Authorization: <API_KEY>'",
-            "python": "import os\nimport requests\n\ndef list_agents(base_url=None, api_key=None):\n    base_url = base_url or os.environ.get('BASE_URL')\n    if not base_url:\n        raise ValueError('base_url must be provided or set BASE_URL env var')\n    headers = {} if api_key is None else {'Authorization': api_key}\n    r = requests.get(f\"{base_url}/list_agents\", headers=headers, timeout=15)\n    r.raise_for_status()\n    return r.json()\n\nif __name__ == '__main__':\n    print(list_agents(api_key='sk-test'))",
+            "python": "import requests\n\nurl = \"__BASE__/list_agents\"\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.get(url, headers=headers, timeout=15)\n\nprint(response.text)",
             "javascript": "async function listAgents(baseUrl = null, apiKey = null) {\n  baseUrl = baseUrl || (typeof process !== 'undefined' && process.env && process.env.BASE_URL);\n  if (!baseUrl) throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const headers = {} ;\n  if (apiKey) headers['Authorization'] = apiKey;\n  const res = await fetch(`${baseUrl}/list_agents`, { headers });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\nlistAgents().then(console.log).catch(console.error);"
           }
         },
@@ -129,7 +129,7 @@
           "response": { "agent": {} },
           "code": {
             "curl": "curl -X GET '__BASE__/get_agent' -H 'Authorization: <API_KEY>' -G --data-urlencode 'agent_id=<AGENT_ID>'",
-            "python": "import os\nimport requests\n\ndef get_agent(base_url=None, api_key=None, agent_id=None):\n    base_url = base_url or os.environ.get('BASE_URL')\n    if not base_url:\n        raise ValueError('base_url must be provided or set BASE_URL env var')\n    headers = {} if api_key is None else {'Authorization': api_key}\n    params = {} if agent_id is None else {'agent_id': agent_id}\n    r = requests.get(f\"{base_url}/get_agent\", headers=headers, params=params, timeout=15)\n    r.raise_for_status()\n    return r.json()\n\nif __name__ == '__main__':\n    print(get_agent(api_key='sk-test', agent_id='agent-123'))",
+            "python": "import requests\n\nurl = \"__BASE__/get_agent\"\nparams = { 'agent_id': '<AGENT_ID>' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.get(url, params=params, headers=headers, timeout=15)\n\nprint(response.text)",
             "javascript": "async function getAgent(baseUrl = null, apiKey = null, agentId = null) {\n  baseUrl = baseUrl || (typeof process !== 'undefined' && process.env && process.env.BASE_URL);\n  if (!baseUrl) throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const url = new URL(`${baseUrl}/get_agent`);\n  if (agentId) url.searchParams.set('agent_id', agentId);\n  const headers = {} ;\n  if (apiKey) headers['Authorization'] = apiKey;\n  const res = await fetch(url.href, { headers });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\ngetAgent().then(console.log).catch(console.error);"
           }
         },
@@ -142,7 +142,7 @@
           "response": { "ok": true },
           "code": {
             "curl": "curl -X POST '__BASE__/update_agent' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\", \"updates\": {\"description\": \"updated\"}}'",
-            "python": "import os\nimport requests\n\ndef update_agent(base_url=None, api_key=None, agent_id=None, updates=None):\n    base_url = base_url or os.environ.get('BASE_URL')\n    if not base_url:\n        raise ValueError('base_url must be provided or set BASE_URL env var')\n    headers = {} if api_key is None else {'Authorization': api_key}\n    payload = {'agent_id': agent_id, 'updates': updates or {}}\n    r = requests.post(f\"{base_url}/update_agent\", headers=headers, json=payload, timeout=15)\n    r.raise_for_status()\n    return r.json()\n\nif __name__ == '__main__':\n    print(update_agent(api_key='sk-test', agent_id='agent-123', updates={'description':'updated'}))",
+            "python": "import requests\n\nurl = \"__BASE__/update_agent\"\npayload = { 'agent_id': '<ID>', 'updates': { 'description': 'updated' } }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=15)\n\nprint(response.text)",
             "javascript": "async function updateAgent(baseUrl = '__BASE__', apiKey = null, agentId = null, updates = {}) {\n  baseUrl = baseUrl === '__BASE__' ? (typeof process !== 'undefined' && process.env && process.env.BASE_URL) : baseUrl;\n  if (!baseUrl || baseUrl === '__BASE__') throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = apiKey;\n  const res = await fetch(`${baseUrl}/update_agent`, { method: 'POST', headers, body: JSON.stringify({ agent_id: agentId, updates }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\nupdateAgent().then(console.log).catch(console.error);"
           }
         },
@@ -155,7 +155,7 @@
           "response": { "ok": true },
           "code": {
             "curl": "curl -X POST '__BASE__/disable_agent' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\"}'",
-            "python": "import os\nimport requests\n\ndef disable_agent(base_url='__BASE__', api_key=None, agent_id=None):\n    base_url = base_url if base_url != '__BASE__' else os.environ.get('BASE_URL')\n    if not base_url or base_url == '__BASE__':\n        raise ValueError('base_url must be provided or set BASE_URL env var')\n    headers = {} if api_key is None else {'Authorization': api_key}\n    r = requests.post(f\"{base_url}/disable_agent\", headers=headers, json={'agent_id': agent_id}, timeout=15)\n    r.raise_for_status()\n    return r.json()\n\nif __name__ == '__main__':\n    print(disable_agent(api_key='sk-test', agent_id='agent-123'))",
+            "python": "import requests\n\nurl = \"__BASE__/disable_agent\"\npayload = { 'agent_id': '<ID>' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=15)\n\nprint(response.text)",
             "javascript": "async function disableAgent(baseUrl = '__BASE__', apiKey = null, agentId = null) {\n  baseUrl = baseUrl === '__BASE__' ? (typeof process !== 'undefined' && process.env && process.env.BASE_URL) : baseUrl;\n  if (!baseUrl || baseUrl === '__BASE__') throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = apiKey;\n  const res = await fetch(`${baseUrl}/disable_agent`, { method: 'POST', headers, body: JSON.stringify({ agent_id: agentId }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\ndisableAgent().then(console.log).catch(console.error);"
           }
         },
@@ -168,7 +168,7 @@
           "response": { "ok": true },
           "code": {
             "curl": "curl -X POST '__BASE__/enable_agent' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\"}'",
-            "python": "import os\nimport requests\n\ndef enable_agent(base_url='__BASE__', api_key=None, agent_id=None):\n    base_url = base_url if base_url != '__BASE__' else os.environ.get('BASE_URL')\n    if not base_url or base_url == '__BASE__':\n        raise ValueError('base_url must be provided or set BASE_URL env var')\n    headers = {} if api_key is None else {'Authorization': api_key}\n    r = requests.post(f\"{base_url}/enable_agent\", headers=headers, json={'agent_id': agent_id}, timeout=15)\n    r.raise_for_status()\n    return r.json()\n\nif __name__ == '__main__':\n    print(enable_agent(api_key='sk-test', agent_id='agent-123'))",
+            "python": "import requests\n\nurl = \"__BASE__/enable_agent\"\npayload = { 'agent_id': '<ID>' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=15)\n\nprint(response.text)",
             "javascript": "async function enableAgent(baseUrl = '__BASE__', apiKey = null, agentId = null) {\n  baseUrl = baseUrl === '__BASE__' ? (typeof process !== 'undefined' && process.env && process.env.BASE_URL) : baseUrl;\n  if (!baseUrl || baseUrl === '__BASE__') throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = apiKey;\n  const res = await fetch(`${baseUrl}/enable_agent`, { method: 'POST', headers, body: JSON.stringify({ agent_id: agentId }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\nenableAgent().then(console.log).catch(console.error);"
           }
         }
