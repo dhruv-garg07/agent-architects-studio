@@ -46,7 +46,10 @@ class ApiAgentsService:
         description: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
+        # Generate a unique agent_id
+        agent_id = str(uuid.uuid4())
         payload = {
+            "agent_id": agent_id,
             "user_id": user_id,
             "agent_name": agent_name,
             "agent_slug": agent_slug,
@@ -66,7 +69,7 @@ class ApiAgentsService:
         if not res.data:
             raise RuntimeError("Failed to create agent")
 
-        return res.data[0]
+        return agent_id, res.data[0]
 
     # =====================================================
     # READ (by agent_id)
