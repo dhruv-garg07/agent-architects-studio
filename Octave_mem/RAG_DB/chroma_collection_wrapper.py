@@ -186,3 +186,33 @@ class ChromaCollectionWrapper:
             Dict with collection details or error message.
         """
         return self.manager.get_collection_info(collection_name)
+    
+    def delete_documents_with_verify(
+        self,
+        collection_name: str,
+        ids: List[str]
+    ) -> Dict:
+        """
+        Delete documents by IDs and automatically verify the operation.
+        
+        Returns:
+            Dict with operation result and verification details.
+        """
+        # Perform the operation
+        result = self.manager.delete_documents(
+            collection_name=collection_name,
+            ids=ids
+        )
+        
+        # Verify the operation
+        verification = self.manager.verify_data_in_collection(
+            collection_name=collection_name,
+            expected_absent_ids=ids
+        )
+        
+        return {
+            "operation": "delete_documents",
+            "result": result,
+            "verification": verification,
+            "success": "error" not in verification and verification.get("ids_absent", False)
+        }

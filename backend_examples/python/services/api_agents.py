@@ -3,8 +3,11 @@ from typing import Optional, Dict, Any, List
 from supabase import create_client, Client
 from datetime import datetime
 from uuid import UUID
-
-
+"""
+This is a file responsible for management of agents which is a table on the supabase.
+This should also manage the Chroma DB memories as well. 
+Each agent ID = Chroma DB collection name.
+"""
 class ApiAgentsService:
     """
     Service class for CRUD operations on the `api_agents` table.

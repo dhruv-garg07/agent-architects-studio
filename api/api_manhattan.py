@@ -206,8 +206,10 @@ Chroma DB is used to store data for one agent and will act as its vector DB.
 The session_ids will be stored in a supabase table with user association in the field 
 """
 from backend_examples.python.services.api_agents import ApiAgentsService
-
+from Octave_mem.RAG_DB_CONTROLLER_AGENTS.agent_RAG import Agentic_RAG
 service = ApiAgentsService()
+chat_agentic_rag = Agentic_RAG(database=os.getenv("CHROMA_DATABASE_CHAT_HISTORY"))
+file_agentic_rag = Agentic_RAG(database=os.getenv("CHROMA_DATABASE_FILE_DATA")) 
 
 @manhattan_api.route("/create_agent", methods=["POST"])
 def create_agent():
@@ -329,6 +331,11 @@ def create_agent():
             description=description,
             metadata=metadata
         )
+        
+        # Try creating Chroma DB collections for the agent
+        chat_agentic_rag.create_agent_collection(agent_ID=agent['id'])
+        file_agentic_rag.create_agent_collection(agent_ID=agent['id'])
+        
         return jsonify(agent), 201
     except RuntimeError as e:
         # Service likely failed due to missing configuration; return the local record for tests
@@ -797,6 +804,11 @@ def delete_agent():
             agent_id=agent_id,
             user_id=user_id
         )
+        
+        # Try deleting Chroma DB collections for the agent
+        chat_agentic_rag.delete_agent_collection(agent_ID=agent_id)
+        file_agentic_rag.delete_agent_collection(agent_ID=agent_id)
+        
         if not agent:
             return jsonify({'error': 'agent_not_found'}), 404
         return jsonify({'ok': True, 'message': 'agent_deleted'}), 200   
