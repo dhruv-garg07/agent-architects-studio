@@ -317,7 +317,7 @@ if __name__ == "__main__":
     # ping_server()
     # test_validate_key_env()
     # test_validate_key_invalid()
-    # test_create_agent()
+    test_create_agent()
     # list_agents(api_key)
     
     # Get the id of the first agent from the list

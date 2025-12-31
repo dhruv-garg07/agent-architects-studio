@@ -322,7 +322,7 @@ def create_agent():
 
     # Try to persist via service; if it fails (e.g., missing supabase creds), return the local stub
     try:
-        agent = service.create_agent(
+        agent_id, agent = service.create_agent(
             user_id=user_id,
             agent_name=agent_name,
             agent_slug=agent_slug,
@@ -333,8 +333,8 @@ def create_agent():
         )
         
         # Try creating Chroma DB collections for the agent
-        chat_agentic_rag.create_agent_collection(agent_ID=agent['id'])
-        file_agentic_rag.create_agent_collection(agent_ID=agent['id'])
+        chat_agentic_rag.create_agent_collection(agent_ID=agent_id)
+        file_agentic_rag.create_agent_collection(agent_ID=agent_id)
         
         return jsonify(agent), 201
     except RuntimeError as e:
