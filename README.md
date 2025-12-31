@@ -1,150 +1,127 @@
-# Agent Architects Studio (The Manhattan Project)
+# Agent Architects Studio
 
-The Manhattan Project is a full-stack AI agent marketplace that lets the community publish, discover, verify, and run autonomous agents. This repository is a monorepo that contains:
+Welcome to Agent Architects Studio, a full-stack platform for building, sharing, and interacting with advanced AI agents. This studio provides the tools and infrastructure for developers and creators to design, test, and deploy sophisticated agents with complex memory and reasoning capabilities.
 
-- A Vite + React + TypeScript frontend (the “Agent Architects Studio”) for discovery, leaderboards, and the creator studio.
-- A Flask application (with a FastAPI reference) that renders the same experience for server-rendered deployments and exposes chat/RAG APIs.
-- Supabase migrations, LLM orchestration, and Chroma-powered memory utilities.
+## ✨ Features
 
-👉 **Need a component-by-component walkthrough?** See [`agents.md`](agents.md).
+- **Creator Studio:** An intuitive interface to create and configure new AI agents.
+- **Agent Marketplace:** Explore and interact with agents built by the community.
+- **Advanced Memory:** Built-in RAG (Retrieval-Augmented Generation) pipeline using ChromaDB for persistent, context-aware agent memory.
+- **User Authentication:** Secure user profiles and agent management powered by Supabase.
+- **Scalable Backend:** A robust Python backend built with Flask, ready for deployment on services like Vercel or Render.
+- **Modern Frontend:** A responsive and dynamic user experience built with React, TypeScript, and Vite.
 
-## Highlights
+## 🚀 Tech Stack
 
-- **Single source of truth** for agent/creator services shared between React, Flask, and FastAPI apps.
-- **Supabase-first data layer** with migrations, row-level security, and generated TS/Pydantic types.
-- **Integrated RAG loop**: Together AI streaming completions + LangChain memory + Chroma DB history/file stores.
-- **Deployment ready** with `render.yaml`, `vercel.json`, and infrastructure-as-code friendly configs.
+- **Frontend:** [React](https://react.dev/), [TypeScript](https://www.typescriptlang.org/), [Vite](https://vitejs.dev/), [Tailwind CSS](https://tailwindcss.com/), [shadcn/ui](https://ui.shadcn.com/)
+- **Backend:** [Python](https://www.python.org/), [Flask](https://flask.palletsprojects.com/)
+- **Database & Auth:** [Supabase](https://supabase.com/) (PostgreSQL)
+- **AI & VectorDB:** Retrieval-Augmented Generation (RAG), [ChromaDB](https://www.trychroma.com/)
+- **Deployment:** [Vercel](https://vercel.com/), [Render](https://render.com/)
 
-## Repository Layout
+## 🛠️ Getting Started
 
-| Path | What lives here |
-| --- | --- |
-| `src/` | Vite/React UI, route components, layout shell, Supabase client + hooks, and the shared UI system (`components/ui`). |
-| `api/` | Flask entry point (`index.py`), chat blueprint (`api_chats.py`), uploads, and templates wiring. |
-| `backend_examples/python/` | FastAPI sample (`api/main.py`), Supabase service layer, and shared Pydantic models. |
-| `LLM_calls/` | Together AI streaming client, context manager, and query rewriting helpers. |
-| `Octave_mem/` | Chroma DB wrapper + controllers for chat/file memory. |
-| `supabase/` | Database configuration and migrations for agents, creators, reviews, verification, and policies. |
-| `templates/` | Jinja templates that mirror the React routes for the Flask deployment path. |
-| `requirements.txt`, `package.json` | Python and Node dependency manifests. |
+Follow these instructions to set up your local development environment.
 
-## Prerequisites
+### Prerequisites
 
-- Node.js 18+ (recommended 20 LTS) and npm (or pnpm/yarn if you prefer, but scripts are npm based).
-- Python 3.10+ (3.11 used in Render config).
-- Supabase project + CLI if you plan to run migrations locally.
-- Access to a Together AI API key and Chroma DB instances if you want to run the chat endpoint end-to-end.
+- [Node.js](https://nodejs.org/en) (v18 or later)
+- [Python](https://www.python.org/downloads/) (v3.11 or later)
+- [Supabase CLI](https://supabase.com/docs/guides/cli)
+- [Vercel CLI](https://vercel.com/docs/cli) (for local backend emulation)
 
-## Frontend (Vite + React) Setup
+### 1. Clone the Repository
 
-1. **Install deps**
-   ```bash
-   npm install
-   ```
-2. **Configure env**
-   - Copy `.env.example` (create one if missing) to `.env.local`.
-   - Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. Update `src/integrations/supabase/client.ts` to read from those envs before committing.
-3. **Run the dev server**
-   ```bash
-   npm run dev
-   ```
-   The studio is now on `http://localhost:5173`.
-4. **Production build**
-   ```bash
-   npm run build && npm run preview
-   ```
-5. **Linting**
-   ```bash
-   npm run lint
-   ```
+```bash
+git clone https://github.com/your-username/agent-architects-studio.git
+cd agent-architects-studio
+```
 
-## Backend & Chat API Setup (Flask)
+### 2. Backend Setup
 
-1. **Create a virtualenv**
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate
-   ```
-2. **Install requirements**
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. **Env variables (`.env`)**
-   ```env
-   FLASK_ENV=development
-   SECRET_KEY=change-me
-   SUPABASE_URL=...
-   SUPABASE_ANON_KEY=...
-   SUPABASE_SERVICE_ROLE_KEY=...
-   TOGETHER_API_KEY=...
-   CHROMA_DATABASE_CHAT_HISTORY=/path/to/chroma/db
-   CHROMA_DATABASE_FILE_DATA=/path/to/file/db
-   SMTP_* (if you are sending emails)
-   ```
-4. **Run the Flask server**
-   ```bash
-   export FLASK_APP=api/index.py
-   flask run --reload
-   ```
-5. **Chat endpoints**
-   - Mounted at `/api/*` by `api/api_chats.py`.
-   - Requires Chroma to be reachable and the Together AI key to be valid.
-6. **FastAPI alternative**
-   ```bash
-   cd backend_examples/python
-   uvicorn api.main:app --reload
-   ```
+The backend is a Python Flask application served as a serverless function.
 
-## Supabase & Database
+```bash
+# Create and activate a virtual environment
+python -m venv venv
+source venv/bin/activate # On Windows, use `venv\Scripts\activate`
 
-- Install the Supabase CLI and log in.
-- Update `supabase/config.toml` with your project ref if needed.
-- Apply migrations locally:
-  ```bash
-  supabase db reset   # destructive
-  # or
-  supabase migration up
-  ```
-- Key tables: `agent_profiles`, `user_profiles`, `agent_reviews`, `agent_comments`, `collaboration_requests`, `agent_changelog`, `agent_verifications`, and `user_roles`.
-- Generated TypeScript types (`src/integrations/supabase/types.ts`) should be regenerated after schema changes to keep front-end typings honest. Use `supabase gen types typescript --linked` if you have the CLI configured.
+# Install Python dependencies
+pip install -r requirements.txt
+```
 
-## LLM, Memory & RAG Requirements
+You will need to set up your environment variables for the backend. Create a `.env` file in the root directory and add the necessary keys for Supabase and any language models you are using.
 
-- **Together AI**: Set `TOGETHER_API_KEY` so `LLM_calls/together_get_response.py` can stream completions.
-- **Chroma DB paths**: `CHROMA_DATABASE_CHAT_HISTORY` and `CHROMA_DATABASE_FILE_DATA` point to persistent vector stores. `Octave_mem/RAG_DB_CONTROLLER/*` and `api/api_chats.py` expect them to exist.
-- **LangChain/LlamaIndex**: Installed via `requirements.txt` for orchestrating retrieval + memory summarization.
+### 3. Frontend Setup
 
-## Useful npm Scripts
+The frontend is a React application built with Vite.
 
-| Script | Description |
-| --- | --- |
-| `npm run dev` | Start Vite dev server. |
-| `npm run build` | Production build (uses `vite build`). |
-| `npm run build:dev` | Dev-mode build for staging preview. |
-| `npm run preview` | Serve built assets locally. |
-| `npm run lint` | Run ESLint across the repo. |
+```bash
+# Install JavaScript dependencies
+npm install
+```
 
-## Python Entry Points
+### 4. Database Setup
 
-| Command | Purpose |
-| --- | --- |
-| `flask run --app api.index --reload` | Serve the Flask UI/API locally. |
-| `gunicorn api.index:app --workers 4 --bind 0.0.0.0:$PORT` | Production server command (see `render.yaml`). |
-| `uvicorn backend_examples.python.api.main:app --reload` | Run the FastAPI example. |
+This project uses Supabase for the database and authentication.
 
-## Onboarding Checklist for New Joiners
+```bash
+# Start the local Supabase services
+supabase start
+```
 
-- [ ] Read [`agents.md`](agents.md) to understand each module’s role.
-- [ ] Create Supabase credentials and update your `.env` + `supabase/config.toml`.
-- [ ] Stand up the frontend (`npm run dev`) and verify you can hit Supabase locally.
-- [ ] Run the Flask API + chat blueprint and confirm `/api/get_sessions` responds (requires Chroma + Together AI).
-- [ ] Seed agent and creator data using Supabase SQL or the FastAPI routes.
-- [ ] Review deployment manifests (`render.yaml`, `vercel.json`) if you will own hosting.
+This will output your local Supabase URL, anon key, and service role key. Use these to populate your `.env` file for the backend and your frontend environment variables.
 
-## Additional Documentation
+### 5. Running the Application
 
-- [`README_FLASK.md`](README_FLASK.md) &mdash; detailed walkthrough of the Flask-only implementation.
-- [`agents.md`](agents.md) &mdash; “which file does what” index.
-- Supabase SQL in `supabase/migrations/` &mdash; canonical schema definition.
+To run the full-stack application locally, you need to run the frontend and backend servers concurrently.
 
-Feel free to open an issue or drop a note in the project channel if anything here is unclear. Happy hacking!
+```bash
+# Run the backend server (simulates Vercel environment)
+vercel dev
+```
+
+In a separate terminal:
+
+```bash
+# Run the frontend development server
+npm run dev
+```
+
+Open your browser to `http://localhost:5173` to see the application in action.
+
+## 🤝 Contributing
+
+We welcome contributions from the community! Whether you're fixing a bug, adding a feature, or improving documentation, your help is appreciated.
+
+Please follow this workflow:
+
+1.  **Fork the repository.**
+2.  **Create a new branch** for your feature or bug fix: `git checkout -b feat/my-new-feature` or `bug/fix-for-something`.
+3.  **Make your changes** and commit them with clear, descriptive messages.
+4.  **Ensure your code adheres to the project's style.** Run the linter to check: `npm run lint`.
+5.  **Push your branch** to your fork: `git push origin feat/my-new-feature`.
+6.  **Open a pull request** to the `main` branch of the original repository.
+
+Please be detailed in your pull request description about the changes you've made and why.
+
+## 📂 Project Structure
+
+Here is a high-level overview of the project's directory structure:
+
+```
+/
+├── api/                # Backend Python/Flask serverless functions
+├── src/                # Frontend React/TypeScript source code
+│   ├── components/     # Reusable UI components
+│   ├── pages/          # Application pages/routes
+│   ├── lib/            # Utility functions and libraries
+│   └── integrations/   # Supabase client integration
+├── Octave_mem/         # Core logic for the RAG and memory systems
+├── supabase/           # Supabase local development configuration and migrations
+└── ...                 # Configuration files (Vite, TS, Tailwind, etc.)
+```
+
+## 📜 License
+
+This project is licensed under the MIT License. See the `LICENSE` file for more details.
