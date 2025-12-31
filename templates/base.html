@@ -227,7 +227,16 @@
                 opacity: 0;
             }
         }
+        /* Chrome, Safari, Edge */
+::-webkit-scrollbar {
+  width: 0px;  /* removes scrollbar space */
+  background: transparent; /* optional: transparent track */
+}
 
+/* Firefox */
+html {
+  scrollbar-width: none;  /* removes scrollbar */
+}
         .btn-secondary {
             background-color: transparent;
             color: hsl(var(--secondary-foreground));
