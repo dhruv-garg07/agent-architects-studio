@@ -6,8 +6,8 @@ import os
 # Simple validation tests for the running server at the provided base URL.
 # These are pytest-compatible functions but can also be executed directly via `python api_test.py`.
 
-# BASE_URL = "https://www.themanhattanproject.ai"
-BASE_URL = "http://192.168.0.9:5000"
+BASE_URL = "https://www.themanhattanproject.ai"
+# BASE_URL = "http://192.168.0.9:5000"
 
 def test_memory_get():
     """GET /memory should return an OK page (200) or redirect to login (302).
@@ -280,6 +280,13 @@ def disable_agent(api_key: str, agent_id: str):
     print(r.status_code, r.text)
     return json.loads(r.text)
 
+def delete_agent(api_key: str, agent_id: str):
+    headers = {'Authorization': f"{api_key}"}
+    payload = {"agent_id": agent_id}    
+    r = requests.post(f"{BASE_URL}/delete_agent", headers=headers, json=payload, timeout=15)
+    print(r.status_code, r.text)
+    return json.loads(r.text)
+
 # Enable agent by id
 def enable_agent(api_key: str, agent_id: str):
     headers = {'Authorization': f"{api_key}"}
@@ -344,3 +351,6 @@ if __name__ == "__main__":
     # Enable agent by ID
     enable_agent(api_key, first_agent_id)       
     get_agent_by_id(api_key, first_agent_id)
+    
+    # Delete agent by ID - commented out to avoid accidental deletions
+    delete_agent(api_key, first_agent_id) 

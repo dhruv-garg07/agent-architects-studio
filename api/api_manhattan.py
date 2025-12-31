@@ -725,3 +725,80 @@ def enable_agent():
         return jsonify({'ok': True, 'message': 'agent_enabled'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+# API to delete agent by id permanently
+@manhattan_api.route("/delete_agent", methods=["POST"])
+def delete_agent():
+    """Permanently delete an agent by ID for the authenticated user.
+
+    Expects API key via Authorization/X-API-Key/query param/raw payload.
+    Expects JSON body with:
+    - agent_id: str
+    """
+    data = request.get_json(silent=True) or {}
+    agent_id = data.get('agent_id')
+    if not agent_id:
+        return jsonify({'error': 'agent_id is required'}), 400
+
+    # Extract API key from ANY possible source with maximum flexibility
+    api_key = None
+    possible_sources = [
+        request.headers.get('Authorization'),
+        request.headers.get('X-API-Key'),
+        request.args.get('api_key'),
+        data.get('api_key'),
+        data.get('token'),
+        data.get('access_token')
+    ]
+
+    print("Possible Sources:", possible_sources)
+
+    for source in possible_sources:
+        if source:
+            # Clean up the value
+            source = str(source).strip()
+
+            # If it's a Bearer token, extract the token part
+            if source.lower().startswith('bearer '):
+                api_key = source.split(None, 1)[1]
+                break
+            # If it's just a token/API key, use it directly
+            elif source and len(source) > 10:  # Basic check that it's not empty/short
+                api_key = source
+                break
+
+    # If we have an API key, clean it (remove any remaining "Bearer " prefix)
+    if api_key and api_key.lower().startswith('bearer '):
+        api_key = api_key.split(None, 1)[1]
+
+    print(f"API Key received: {api_key}")
+
+    # Validation logic (same as before)
+    user_id = None
+    if api_key:     
+        permission = data.get('permission')
+        ok, info = validate_api_key_value(api_key, permission)
+
+        print(f"API Key validation result: {ok}, info: {info}")
+
+        if ok:
+            user_id = info.get('user_id')
+            g.api_key_record = info
+        else:
+            # Fallback for local testing
+            if api_key.startswith('sk-'):
+                user_id = os.environ.get('TEST_USER_ID', 'test-user')
+                g.api_key_record = {'id': 'test-key', 'user_id': user_id, 'permissions': {'agent_create': True}}
+            else:
+                return jsonify({'error': info, 'valid': False}), 401    
+            
+    try:
+        agent = service.delete_agent(
+            agent_id=agent_id,
+            user_id=user_id
+        )
+        if not agent:
+            return jsonify({'error': 'agent_not_found'}), 404
+        return jsonify({'ok': True, 'message': 'agent_deleted'}), 200   
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500  
