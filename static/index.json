@@ -1,60 +1,8 @@
 {
   "categories": [
     {
-      "name": "API Test Examples",
+      "name": "Agents",
       "endpoints": [
-        {
-          "path": "/memory",
-          "method": "GET",
-          "summary": "Memory page (UI)",
-          "description": "Returns the memory page (may redirect for unauthenticated users).",
-          "request": null,
-          "response": { "html": "string" },
-          "code": {
-            "curl": "curl -X GET '__BASE__/memory' -v",
-            "python": "import requests\n\nurl = \"__BASE__/memory\"\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.get(url, headers=headers, timeout=15)\n\nprint(response.text)",
-            "javascript": "// Node 18+ or browser\nasync function getMemory(baseUrl = null) {\n  baseUrl = baseUrl || (typeof process !== 'undefined' && process.env && process.env.BASE_URL);\n  if (!baseUrl) throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const res = await fetch(`${baseUrl}/memory`);\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.text();\n}\n\ngetMemory().then(t => console.log(t)).catch(e => console.error(e));"
-          }
-        },
-        {
-          "path": "/web/get_sessions",
-          "method": "GET",
-          "summary": "Get sessions (API)",
-          "description": "GET sessions by id query parameter. Returns JSON list or object.",
-          "request": { "id": "uuid (query)" },
-          "response": { "sessions": [] },
-          "code": {
-            "curl": "curl -G '__BASE__/web/get_sessions' --data-urlencode 'id=51ebe8c7-201b-4275-9bc5-44d7222f3509'",
-            "python": "import requests\n\nurl = \"__BASE__/web/get_sessions\"\nparams = { 'id': '51ebe8c7-201b-4275-9bc5-44d7222f3509' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.get(url, params=params, headers=headers, timeout=15)\n\nprint(response.text)",
-            "javascript": "async function getSessions(baseUrl = null, sessionId = '51ebe8c7-201b-4275-9bc5-44d7222f3509') {\n  baseUrl = baseUrl || (typeof process !== 'undefined' && process.env && process.env.BASE_URL);\n  if (!baseUrl) throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const url = new URL(`${baseUrl}/web/get_sessions`);\n  url.searchParams.set('id', sessionId);\n  const res = await fetch(url.href);\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\ngetSessions().then(j => console.log(j)).catch(e => console.error(e));"
-          }
-        },
-        {
-          "path": "/web/rag",
-          "method": "POST",
-          "summary": "RAG search",
-          "description": "Run a RAG-style search (POST JSON).",
-          "request": { "user_id": "string", "query": "string", "top_k": 3 },
-          "response": { "results": [] },
-          "code": {
-            "curl": "curl -X POST '__BASE__/web/rag' -H 'Content-Type: application/json' -d '{\"user_id\":\"51ebe8c7-201b-4275-9bc5-44d7222f3509\",\"query\":\"test query\",\"top_k\":3}'",
-            "python": "import requests\n\nurl = \"__BASE__/web/rag\"\npayload = { 'user_id': '51ebe8c7-201b-4275-9bc5-44d7222f3509', 'query': 'test query', 'top_k': 3 }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=15)\n\nprint(response.text)",
-            "javascript": "async function ragSearch(baseUrl = null, userId = '51ebe8c7-201b-4275-9bc5-44d7222f3509', query = 'test query', topK = 3) {\n  baseUrl = baseUrl || (typeof process !== 'undefined' && process.env && process.env.BASE_URL);\n  if (!baseUrl) throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const res = await fetch(`${baseUrl}/web/rag`, {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify({ user_id: userId, query, top_k: topK })\n  });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\nragSearch().then(r => console.log(r)).catch(e => console.error(e));"
-          }
-        },
-        {
-          "path": "/validate_key",
-          "method": "POST",
-          "summary": "Validate API key",
-          "description": "Validate API key. POST JSON {api_key: string}. Returns {valid: bool}.",
-          "request": { "api_key": "string" },
-          "response": { "valid": true },
-          "code": {
-            "curl": "curl -X POST '__BASE__/validate_key' -H 'Content-Type: application/json' -d '{\"api_key\":\"sk-...\"}'",
-            "python": "import requests\n\nurl = \"__BASE__/validate_key\"\npayload = { 'api_key': 'sk-...'}\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=10)\n\nprint(response.text)",
-            "javascript": "async function validateKey(baseUrl = null, apiKey = null) {\n  baseUrl = baseUrl || (typeof process !== 'undefined' && process.env && process.env.BASE_URL);\n  if (!baseUrl) throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const res = await fetch(`${baseUrl}/validate_key`, {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify(apiKey ? { api_key: apiKey } : {})\n  });\n  return { status: res.status, body: await res.json() };\n}\nvalidateKey(null).then(console.log).catch(console.error);"
-          }
-        },
         {
           "path": "/create_agent",
           "method": "POST",
@@ -66,45 +14,6 @@
             "curl": "curl -X POST '__BASE__/create_agent' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_name\":\"test-agent\",\"agent_slug\":\"test-agent\"}'",
             "python": "import requests\n\nurl = \"__BASE__/create_agent\"\npayload = { 'agent_name': 'test-agent', 'agent_slug': 'test-agent', 'permissions': { 'run': True }, 'limits': { 'rpm': 10 }, 'description': 'Created by script' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=15)\n\nprint(response.text)",
             "javascript": "async function createAgent(baseUrl = null, apiKey = null, payload = null) {\n  baseUrl = baseUrl || (typeof process !== 'undefined' && process.env && process.env.BASE_URL);\n  if (!baseUrl) throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = apiKey;\n  const body = JSON.stringify(payload || { agent_name: 'test-agent', agent_slug: 'test-agent', permissions: { run: true }, limits: { rpm: 10 }, description: 'Created by script' });\n  const res = await fetch(`${baseUrl}/create_agent`, { method: 'POST', headers, body });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\ncreateAgent().then(console.log).catch(console.error);"
-          }
-        },
-        {
-          "path": "/web/create_session",
-          "method": "POST",
-          "summary": "Create chat session",
-          "description": "Create a new chat session. Returns thread_id.",
-          "request": { "user_id": "string" },
-          "response": { "thread_id": "string" },
-          "code": {
-            "curl": "curl -X POST '__BASE__/web/create_session' -H 'Content-Type: application/json' -d '{\"user_id\":\"51ebe8c7-201b-4275-9bc5-44d7222f3509\"}'",
-            "python": "import requests\n\nurl = \"__BASE__/web/create_session\"\npayload = { 'user_id': '51ebe8c7-201b-4275-9bc5-44d7222f3509' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=10)\n\nprint(response.text)",
-            "javascript": "async function createSession(baseUrl = null, userId = '51ebe8c7-201b-4275-9bc5-44d7222f3509') {\n  baseUrl = baseUrl || (typeof process !== 'undefined' && process.env && process.env.BASE_URL);\n  if (!baseUrl) throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const res = await fetch(`${baseUrl}/web/create_session`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: userId }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\ncreateSession().then(console.log).catch(console.error);"
-          }
-        },
-        {
-          "path": "/web/chat",
-          "method": "POST",
-          "summary": "Send chat message (streaming)",
-          "description": "Send a chat message to the streaming chat endpoint. Example shows a simple non-streaming POST consumer.",
-          "request": { "thread_id": "string", "user_id": "string", "message": "string", "history": [] },
-          "response": { "reply": "string / stream" },
-          "code": {
-            "curl": "curl -X POST '__BASE__/web/chat' -H 'Content-Type: application/json' -d '{\"thread_id\":\"local_thread_123\",\"user_id\":\"51ebe8c7-201b-4275-9bc5-44d7222f3509\",\"message\":\"Hello\",\"history\":[]}'",
-            "python": "import requests\n\nurl = \"__BASE__/web/chat\"\npayload = { 'thread_id': 'local_thread_123', 'user_id': '51ebe8c7-201b-4275-9bc5-44d7222f3509', 'message': 'Hello', 'history': [] }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=120)\n\nprint(response.text)",
-            "javascript": "async function sendChat(baseUrl = null, threadId = 'local_thread_123', userId = '51ebe8c7-201b-4275-9bc5-44d7222f3509', message = 'Hello') {\n  baseUrl = baseUrl || (typeof process !== 'undefined' && process.env && process.env.BASE_URL);\n  if (!baseUrl) throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const res = await fetch(`${baseUrl}/web/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ thread_id: threadId, user_id: userId, message, history: [] }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.text();\n}\nsendChat().then(console.log).catch(console.error);"
-          }
-        },
-        {
-          "path": "/ping",
-          "method": "GET",
-          "summary": "Ping server",
-          "description": "Simple health check for the running server.",
-          "request": null,
-          "response": { "status": "string" },
-          "code": {
-            "curl": "curl -X GET '__BASE__/ping' -v",
-            "python": "import requests\n\nurl = \"__BASE__/ping\"\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.get(url, headers=headers, timeout=10)\n\nprint(response.text)",
-            "javascript": "async function ping(baseUrl = null) {\n  baseUrl = baseUrl || (typeof process !== 'undefined' && process.env && process.env.BASE_URL);\n  if (!baseUrl) throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const res = await fetch(`${baseUrl}/ping`);\n  return { status: res.status, text: await res.text() };\n}\nping().then(console.log).catch(console.error);"
           }
         },
         {
@@ -171,8 +80,173 @@
             "python": "import requests\n\nurl = \"__BASE__/enable_agent\"\npayload = { 'agent_id': '<ID>' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=15)\n\nprint(response.text)",
             "javascript": "async function enableAgent(baseUrl = '__BASE__', apiKey = null, agentId = null) {\n  baseUrl = baseUrl === '__BASE__' ? (typeof process !== 'undefined' && process.env && process.env.BASE_URL) : baseUrl;\n  if (!baseUrl || baseUrl === '__BASE__') throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = apiKey;\n  const res = await fetch(`${baseUrl}/enable_agent`, { method: 'POST', headers, body: JSON.stringify({ agent_id: agentId }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\nenableAgent().then(console.log).catch(console.error);"
           }
+        },
+        {
+          "path": "/delete_agent",
+          "method": "POST",
+          "summary": "Delete agent (permanent)",
+          "description": "Permanently delete an agent by id for the authenticated user. Will also attempt to remove associated vector DB collections.",
+          "request": { "agent_id": "string" },
+          "response": { "ok": true, "message": "agent_deleted" },
+          "code": {
+            "curl": "curl -X POST '__BASE__/delete_agent' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\"}'",
+            "python": "import requests\n\nurl = \"__BASE__/delete_agent\"\npayload = { 'agent_id': '<ID>' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=15)\n\nprint(response.text)",
+            "javascript": "async function deleteAgent(baseUrl = '__BASE__', apiKey = null, agentId = null) {\n  baseUrl = baseUrl === '__BASE__' ? (typeof process !== 'undefined' && process.env && process.env.BASE_URL) : baseUrl;\n  if (!baseUrl || baseUrl === '__BASE__') throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = apiKey;\n  const res = await fetch(`${baseUrl}/delete_agent`, { method: 'POST', headers, body: JSON.stringify({ agent_id: agentId }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\ndeleteAgent().then(console.log).catch(console.error);"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Documents",
+      "endpoints": [
+        {
+          "path": "/add_document",
+          "method": "POST",
+          "summary": "Add document(s) to agent",
+          "description": "Add one or more documents to an agent's vector DB. Expects 'documents' array and matching 'ids' array of equal length.",
+          "request": { "agent_id": "string", "documents": ["string"], "ids": ["string"], "metadata": {} },
+          "response": { "ok": true, "message": "documents_added" },
+          "code": {
+            "curl": "curl -X POST '__BASE__/add_document' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\",\"documents\":[\"doc 1 body\"],\"ids\":[\"doc-1\"],\"metadata\":{}}'",
+            "python": "import requests\n\nurl = \"__BASE__/add_document\"\npayload = { 'agent_id': '<ID>', 'documents': ['doc 1 body'], 'ids': ['doc-1'], 'metadata': {} }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=20)\n\nprint(response.text)",
+            "javascript": "async function addDocument(baseUrl = '__BASE__', apiKey = null, agentId = null, docs = ['doc 1 body'], ids = ['doc-1'], metadata = {}) {\n  baseUrl = baseUrl === '__BASE__' ? (typeof process !== 'undefined' && process.env && process.env.BASE_URL) : baseUrl;\n  if (!baseUrl || baseUrl === '__BASE__') throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = apiKey;\n  const res = await fetch(`${baseUrl}/add_document`, { method: 'POST', headers, body: JSON.stringify({ agent_id: agentId, documents: docs, ids, metadata }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\naddDocument().then(console.log).catch(console.error);"
+          }
+        },
+        {
+          "path": "/update_document",
+          "method": "POST",
+          "summary": "Update existing document(s)",
+          "description": "Update documents in an agent's vector DB by document id(s). Provide 'document_ids' and 'new_docs' fields.",
+          "request": { "agent_id": "string", "document_ids": ["string"], "new_docs": ["string"], "metadata": {} },
+          "response": { "ok": true, "message": "document_updated" },
+          "code": {
+            "curl": "curl -X POST '__BASE__/update_document' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\",\"document_ids\":[\"doc-1\"],\"new_docs\":[\"updated body\"],\"metadata\":{}}'",
+            "python": "import requests\n\nurl = \"__BASE__/update_document\"\npayload = { 'agent_id': '<ID>', 'document_ids': ['doc-1'], 'new_docs': ['updated body'], 'metadata': {} }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=20)\n\nprint(response.text)",
+            "javascript": "async function updateDocument(baseUrl = '__BASE__', apiKey = null, agentId = null, ids = ['doc-1'], docs = ['updated body'], metadata = {}) {\n  baseUrl = baseUrl === '__BASE__' ? (typeof process !== 'undefined' && process.env && process.env.BASE_URL) : baseUrl;\n  if (!baseUrl || baseUrl === '__BASE__') throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = apiKey;\n  const res = await fetch(`${baseUrl}/update_document`, { method: 'POST', headers, body: JSON.stringify({ agent_id: agentId, document_ids: ids, new_docs: docs, metadata }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\nupdateDocument().then(console.log).catch(console.error);"
+          }
+        },
+        {
+          "path": "/update_document_metadata",
+          "method": "POST",
+          "summary": "Update document metadata",
+          "description": "Update only the metadata for a given document id in an agent's vector DB.",
+          "request": { "agent_id": "string", "document_id": "string", "metadata": {} },
+          "response": { "ok": true, "message": "document_metadata_updated" },
+          "code": {
+            "curl": "curl -X POST '__BASE__/update_document_metadata' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\",\"document_id\":\"doc-1\",\"metadata\":{\"source\":\"upload\"}}'",
+            "python": "import requests\n\nurl = \"__BASE__/update_document_metadata\"\npayload = { 'agent_id': '<ID>', 'document_id': 'doc-1', 'metadata': { 'source': 'upload' } }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=20)\n\nprint(response.text)",
+            "javascript": "async function updateDocumentMetadata(baseUrl = '__BASE__', apiKey = null, agentId = null, documentId = 'doc-1', metadata = { source: 'upload' }) {\n  baseUrl = baseUrl === '__BASE__' ? (typeof process !== 'undefined' && process.env && process.env.BASE_URL) : baseUrl;\n  if (!baseUrl || baseUrl === '__BASE__') throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = apiKey;\n  const res = await fetch(`${baseUrl}/update_document_metadata`, { method: 'POST', headers, body: JSON.stringify({ agent_id: agentId, document_id: documentId, metadata }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\nupdateDocumentMetadata().then(console.log).catch(console.error);"
+          }
+        },
+        {
+          "path": "/search_documents",
+          "method": "POST",
+          "summary": "Search agent documents",
+          "description": "Perform a vector/semantic search against an agent's document collection. Provide 'query' and optional 'top_k'.",
+          "request": { "agent_id": "string", "query": "string", "top_k": 5 },
+          "response": { "results": [] },
+          "code": {
+            "curl": "curl -X POST '__BASE__/search_documents' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\",\"query\":\"what is X\",\"top_k\":5 }'",
+            "python": "import requests\n\nurl = \"__BASE__/search_documents\"\npayload = { 'agent_id': '<ID>', 'query': 'what is X', 'top_k': 5 }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=20)\n\nprint(response.text)",
+            "javascript": "async function searchDocuments(baseUrl = '__BASE__', apiKey = null, agentId = null, query = 'what is X', topK = 5) {\n  baseUrl = baseUrl === '__BASE__' ? (typeof process !== 'undefined' && process.env && process.env.BASE_URL) : baseUrl;\n  if (!baseUrl || baseUrl === '__BASE__') throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = apiKey;\n  const res = await fetch(`${baseUrl}/search_documents`, { method: 'POST', headers, body: JSON.stringify({ agent_id: agentId, query, top_k: topK }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\nsearchDocuments().then(console.log).catch(console.error);"
+          }
+        }
+      ]
+    },
+    {
+      "name": "API Test Examples",
+      "endpoints": [
+        {
+          "path": "/memory",
+          "method": "GET",
+          "summary": "Memory page (UI)",
+          "description": "Returns the memory page (may redirect for unauthenticated users).",
+          "request": null,
+          "response": { "html": "string" },
+          "code": {
+            "curl": "curl -X GET '__BASE__/memory' -v",
+            "python": "import requests\n\nurl = \"__BASE__/memory\"\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.get(url, headers=headers, timeout=15)\n\nprint(response.text)",
+            "javascript": "// Node 18+ or browser\nasync function getMemory(baseUrl = null) {\n  baseUrl = baseUrl || (typeof process !== 'undefined' && process.env && process.env.BASE_URL);\n  if (!baseUrl) throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const res = await fetch(`${baseUrl}/memory`);\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.text();\n}\n\ngetMemory().then(t => console.log(t)).catch(e => console.error(e));"
+          }
+        },
+        {
+          "path": "/web/get_sessions",
+          "method": "GET",
+          "summary": "Get sessions (API)",
+          "description": "GET sessions by id query parameter. Returns JSON list or object.",
+          "request": { "id": "uuid (query)" },
+          "response": { "sessions": [] },
+          "code": {
+            "curl": "curl -G '__BASE__/web/get_sessions' --data-urlencode 'id=51ebe8c7-201b-4275-9bc5-44d7222f3509'",
+            "python": "import requests\n\nurl = \"__BASE__/web/get_sessions\"\nparams = { 'id': '51ebe8c7-201b-4275-9bc5-44d7222f3509' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.get(url, params=params, headers=headers, timeout=15)\n\nprint(response.text)",
+            "javascript": "async function getSessions(baseUrl = null, sessionId = '51ebe8c7-201b-4275-9bc5-44d7222f3509') {\n  baseUrl = baseUrl || (typeof process !== 'undefined' && process.env && process.env.BASE_URL);\n  if (!baseUrl) throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const url = new URL(`${baseUrl}/web/get_sessions`);\n  url.searchParams.set('id', sessionId);\n  const res = await fetch(url.href);\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\ngetSessions().then(j => console.log(j)).catch(e => console.error(e));"
+          }
+        },
+        {
+          "path": "/web/rag",
+          "method": "POST",
+          "summary": "RAG search",
+          "description": "Run a RAG-style search (POST JSON).",
+          "request": { "user_id": "string", "query": "string", "top_k": 3 },
+          "response": { "results": [] },
+          "code": {
+            "curl": "curl -X POST '__BASE__/web/rag' -H 'Content-Type: application/json' -d '{\"user_id\":\"51ebe8c7-201b-4275-9bc5-44d7222f3509\",\"query\":\"test query\",\"top_k\":3}'",
+            "python": "import requests\n\nurl = \"__BASE__/web/rag\"\npayload = { 'user_id': '51ebe8c7-201b-4275-9bc5-44d7222f3509', 'query': 'test query', 'top_k': 3 }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=15)\n\nprint(response.text)",
+            "javascript": "async function ragSearch(baseUrl = null, userId = '51ebe8c7-201b-4275-9bc5-44d7222f3509', query = 'test query', topK = 3) {\n  baseUrl = baseUrl || (typeof process !== 'undefined' && process.env && process.env.BASE_URL);\n  if (!baseUrl) throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const res = await fetch(`${baseUrl}/web/rag`, {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify({ user_id: userId, query, top_k: topK })\n  });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\nragSearch().then(r => console.log(r)).catch(e => console.error(e));"
+          }
+        },
+        {
+          "path": "/validate_key",
+          "method": "POST",
+          "summary": "Validate API key",
+          "description": "Validate API key. POST JSON {api_key: string}. Returns {valid: bool}.",
+          "request": { "api_key": "string" },
+          "response": { "valid": true },
+          "code": {
+            "curl": "curl -X POST '__BASE__/validate_key' -H 'Content-Type: application/json' -d '{\"api_key\":\"sk-...\"}'",
+            "python": "import requests\n\nurl = \"__BASE__/validate_key\"\npayload = { 'api_key': 'sk-...'}\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=10)\n\nprint(response.text)",
+            "javascript": "async function validateKey(baseUrl = null, apiKey = null) {\n  baseUrl = baseUrl || (typeof process !== 'undefined' && process.env && process.env.BASE_URL);\n  if (!baseUrl) throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const res = await fetch(`${baseUrl}/validate_key`, {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify(apiKey ? { api_key: apiKey } : {})\n  });\n  return { status: res.status, body: await res.json() };\n}\nvalidateKey(null).then(console.log).catch(console.error);"
+          }
+        },
+        {
+          "path": "/web/create_session",
+          "method": "POST",
+          "summary": "Create chat session",
+          "description": "Create a new chat session. Returns thread_id.",
+          "request": { "user_id": "string" },
+          "response": { "thread_id": "string" },
+          "code": {
+            "curl": "curl -X POST '__BASE__/web/create_session' -H 'Content-Type: application/json' -d '{\"user_id\":\"51ebe8c7-201b-4275-9bc5-44d7222f3509\"}'",
+            "python": "import requests\n\nurl = \"__BASE__/web/create_session\"\npayload = { 'user_id': '51ebe8c7-201b-4275-9bc5-44d7222f3509' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=10)\n\nprint(response.text)",
+            "javascript": "async function createSession(baseUrl = null, userId = '51ebe8c7-201b-4275-9bc5-44d7222f3509') {\n  baseUrl = baseUrl || (typeof process !== 'undefined' && process.env && process.env.BASE_URL);\n  if (!baseUrl) throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const res = await fetch(`${baseUrl}/web/create_session`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: userId }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\ncreateSession().then(console.log).catch(console.error);"
+          }
+        },
+        {
+          "path": "/web/chat",
+          "method": "POST",
+          "summary": "Send chat message (streaming)",
+          "description": "Send a chat message to the streaming chat endpoint. Example shows a simple non-streaming POST consumer.",
+          "request": { "thread_id": "string", "user_id": "string", "message": "string", "history": [] },
+          "response": { "reply": "string / stream" },
+          "code": {
+            "curl": "curl -X POST '__BASE__/web/chat' -H 'Content-Type: application/json' -d '{\"thread_id\":\"local_thread_123\",\"user_id\":\"51ebe8c7-201b-4275-9bc5-44d7222f3509\",\"message\":\"Hello\",\"history\":[]}'",
+            "python": "import requests\n\nurl = \"__BASE__/web/chat\"\npayload = { 'thread_id': 'local_thread_123', 'user_id': '51ebe8c7-201b-4275-9bc5-44d7222f3509', 'message': 'Hello', 'history': [] }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=120)\n\nprint(response.text)",
+            "javascript": "async function sendChat(baseUrl = null, threadId = 'local_thread_123', userId = '51ebe8c7-201b-4275-9bc5-44d7222f3509', message = 'Hello') {\n  baseUrl = baseUrl || (typeof process !== 'undefined' && process.env && process.env.BASE_URL);\n  if (!baseUrl) throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const res = await fetch(`${baseUrl}/web/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ thread_id: threadId, user_id: userId, message, history: [] }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.text();\n}\nsendChat().then(console.log).catch(console.error);"
+          }
+        },
+        {
+          "path": "/ping",
+          "method": "GET",
+          "summary": "Ping server",
+          "description": "Simple health check for the running server.",
+          "request": null,
+          "response": { "status": "string" },
+          "code": {
+            "curl": "curl -X GET '__BASE__/ping' -v",
+            "python": "import requests\n\nurl = \"__BASE__/ping\"\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.get(url, headers=headers, timeout=10)\n\nprint(response.text)",
+            "javascript": "async function ping(baseUrl = null) {\n  baseUrl = baseUrl || (typeof process !== 'undefined' && process.env && process.env.BASE_URL);\n  if (!baseUrl) throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const res = await fetch(`${baseUrl}/ping`);\n  return { status: res.status, text: await res.text() };\n}\nping().then(console.log).catch(console.error);"
+          }
         }
       ]
     }
-  ]
-}
+  ]         }
