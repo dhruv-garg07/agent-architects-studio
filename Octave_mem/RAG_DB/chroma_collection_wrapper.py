@@ -87,6 +87,37 @@ class ChromaCollectionWrapper:
             "all_ids_in_collection": list(actual_ids)
         }
     
+    def update_collection_metadata_with_verify(
+        self,
+        collection_name: str,
+        ids: List[str],
+        metadatas: List[Dict]
+    ) -> Dict:
+        """
+        Update metadata in collection and automatically verify the operation.
+        
+        Returns:
+            Dict with operation result and verification details.
+        """
+        # Perform the operation
+        result = self.manager.update_collection_metadata(
+            collection_name=collection_name,
+            ids=ids,
+            metadatas=metadatas
+        )
+        
+        # Verify the operation
+        verification = self.manager.verify_data_in_collection(
+            collection_name=collection_name
+        )
+        
+        return {
+            "operation": "update_collection_metadata",
+            "result": result,
+            "verification": verification,
+            "success": "error" not in verification and verification.get("ids_match", False)
+        }
+
     def replace_collection_with_verify(
         self,
         collection_name: str,

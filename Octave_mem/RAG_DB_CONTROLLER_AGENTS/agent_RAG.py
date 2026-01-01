@@ -30,7 +30,7 @@ class Agentic_RAG:
         return self.wrapper.manager.delete_collection(collection_name=agent_ID)
     
     # CRUD operations for chat history can be added here as needed.
-    def add_chat_history(self,agent_ID: str, ids: List[str], documents: List[str], metadatas: Optional[List[Dict]] = None
+    def add_docs(self,agent_ID: str, ids: List[str], documents: List[str], metadatas: Optional[List[Dict]] = None
     ) -> Dict:
         """Add chat history to the agent's collection with verification."""
         return self.wrapper.create_or_update_collection_with_verify(
@@ -96,7 +96,7 @@ class Agentic_RAG:
             return []
         
     # UPDATE operations
-    def update_chat_history(
+    def update_docs(
         self,
         agent_ID: str,
         ids: List[str],
@@ -108,6 +108,19 @@ class Agentic_RAG:
             collection_name=agent_ID,
             ids=ids,
             documents=documents,
+            metadatas=metadatas
+        )
+    
+    def update_doc_metadata(
+        self,
+        agent_ID: str,
+        ids: List[str],
+        metadatas: List[Dict]
+    ) -> Dict:
+        """Update metadata of chat history entries in the agent's collection with verification."""
+        return self.wrapper.update_collection_metadata_with_verify(
+            collection_name=agent_ID,
+            ids=ids,
             metadatas=metadatas
         )
     

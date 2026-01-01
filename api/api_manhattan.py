@@ -39,7 +39,6 @@ production use replace the storage layer with a secure database and rotate keys.
   - /agents/{id}/documents
   - /agents/{id}/documents/{docId}
   - /agents/{id}/search
-  - /agents/{id}/query
 - LLM
   - /agents/{id}/llm/complete
   - /agents/{id}/llm/chat
@@ -814,3 +813,342 @@ def delete_agent():
         return jsonify({'ok': True, 'message': 'agent_deleted'}), 200   
     except Exception as e:
         return jsonify({'error': str(e)}), 500  
+    
+
+# Putting the documents in the vector DB for the agent.
+# Includes the CRUD operations for the documents. 
+# Categorized under /agents/documents
+@manhattan_api.route("/add_document", methods=["POST"])
+def add_document():
+    """Add a document to an agent's vector DB.
+
+    Expects JSON body with:
+    - agent_id: str
+    - document_content: str
+    - metadata: dict (optional)
+
+    Expects API key via Authorization/X-API-Key/query param/raw payload.
+    """
+    data = request.get_json(silent=True) or {}
+    agent_id = data.get('agent_id')
+    document_content = data.get('documents')
+    ids = data.get('ids', [])
+    metadata = data.get('metadata', {})
+    
+    # Each Id corresponds to one document in the documents list.
+    # Length of both should be same.
+    if not agent_id or not document_content or not ids:
+        return jsonify({'error': 'agent_id, documents, and ids are required'}), 400
+    
+    if len(document_content) != len(ids):
+        return jsonify({'error': 'Length of documents and ids must be the same'}), 400
+
+    # Extract API key from ANY possible source with maximum flexibility
+    api_key = None
+    possible_sources = [
+        request.headers.get('Authorization'),
+        request.headers.get('X-API-Key'),
+        request.args.get('api_key'),
+        data.get('api_key'),
+        data.get('token'),
+        data.get('access_token')
+    ]
+
+    for source in possible_sources:
+        if source:
+            # Clean up the value
+            source = str(source).strip()
+
+            # If it's a Bearer token, extract the token part
+            if source.lower().startswith('bearer '):
+                api_key = source.split(None, 1)[1]
+                break
+            # If it's just a token/API key, use it directly
+            elif source and len(source) > 10:  # Basic check that it's not empty/short
+                api_key = source
+                break
+    
+    # If we have an API key, clean it (remove any remaining "Bearer " prefix)
+    if api_key and api_key.lower().startswith('bearer '):
+        api_key = api_key.split(None, 1)[1]
+    
+    print(f"API Key received: {api_key}")
+    
+    # Validation logic (same as before)
+    user_id = None
+    if api_key:
+        permission = data.get('permission')
+        ok, info = validate_api_key_value(api_key, permission)
+
+        print(f"API Key validation result: {ok}, info: {info}")
+
+        if ok:
+            user_id = info.get('user_id')
+            g.api_key_record = info
+        else:
+            # Fallback for local testing
+            if api_key.startswith('sk-'):
+                user_id = os.environ.get('TEST_USER_ID', 'test-user')
+                g.api_key_record = {'id': 'test-key', 'user_id': user_id, 'permissions': {'agent_create': True}}
+            else:
+                return jsonify({'error': info, 'valid': False}), 401
+    else:
+        return jsonify({'error': 'missing_api_key', 'valid': False}), 401
+    try:
+        # Add documents to the agent's vector DB
+        for doc, doc_id in zip(document_content, ids):
+            file_agentic_rag.add_docs(
+                agent_ID=agent_id,
+                document_content=doc,
+                document_id=doc_id,
+                metadata=metadata
+            )
+        return jsonify({'ok': True, 'message': 'documents_added'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500  
+
+# Update document for a given agent.
+@manhattan_api.route("/update_document", methods=["POST"])
+def update_document():
+    """Update a document in an agent's vector DB.
+
+    Expects JSON body with:
+    - agent_id: str
+    - document_id: str
+    - new_docs: str
+    - metadata: dict (optional)
+
+    Expects API key via Authorization/X-API-Key/query param/raw payload.
+    """
+    data = request.get_json(silent=True) or {}
+    agent_id = data.get('agent_id')
+    document_id = data.get('document_ids')
+    new_content = data.get('new_docs')
+    metadata = data.get('metadata', {})
+
+    if not agent_id or not document_id or not new_content:
+        return jsonify({'error': 'agent_id, document_id, and new_content are required'}), 400
+
+    # Extract API key from ANY possible source with maximum flexibility
+    api_key = None
+    possible_sources = [
+        request.headers.get('Authorization'),
+        request.headers.get('X-API-Key'),
+        request.args.get('api_key'),
+        data.get('api_key'),
+        data.get('token'),
+        data.get('access_token')
+    ]
+
+    for source in possible_sources:
+        if source:
+            # Clean up the value
+            source = str(source).strip()
+
+            # If it's a Bearer token, extract the token part
+            if source.lower().startswith('bearer '):
+                api_key = source.split(None, 1)[1]
+                break
+            # If it's just a token/API key, use it directly
+            elif source and len(source) > 10:  # Basic check that it's not empty/short
+                api_key = source
+                break
+
+    # If we have an API key, clean it (remove any remaining "Bearer " prefix)
+    if api_key and api_key.lower().startswith('bearer '):
+        api_key = api_key.split(None, 1)[1]
+
+    print(f"API Key received: {api_key}")
+
+    # Validation logic (same as before)
+    user_id = None
+    if api_key:
+        permission = data.get('permission')
+        ok, info = validate_api_key_value(api_key, permission)
+
+        print(f"API Key validation result: {ok}, info: {info}")
+
+        if ok:
+            user_id = info.get('user_id')
+            g.api_key_record = info
+        else:
+            # Fallback for local testing
+            if api_key.startswith('sk-'):
+                user_id = os.environ.get('TEST_USER_ID', 'test-user')
+                g.api_key_record = {'id': 'test-key', 'user_id': user_id, 'permissions': {'agent_create': True}}
+            else:
+                return jsonify({'error': info, 'valid': False}), 401    
+            
+    try:
+        # Update document in the agent's vector DB
+        file_agentic_rag.update_docs(
+            agent_ID=agent_id,
+            ids=document_id,
+            documents=new_content,
+            metadatas=metadata
+        )
+        return jsonify({'ok': True, 'message': 'document_updated'}), 200
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@manhattan_api.route("/update_document_metadata", methods=["POST"])
+def update_document_metadata():
+    """Update metadata for a document in an agent's vector DB.
+
+    Expects JSON body with:
+    - agent_id: str
+    - document_id: str
+    - metadata: dict
+
+    Expects API key via Authorization/X-API-Key/query param/raw payload.
+    """
+    data = request.get_json(silent=True) or {}
+    agent_id = data.get('agent_id')
+    document_id = data.get('document_id')
+    metadata = data.get('metadata', {})
+
+    if not agent_id or not document_id or not metadata:
+        return jsonify({'error': 'agent_id, document_id, and metadata are required'}), 400
+
+    # Extract API key from ANY possible source with maximum flexibility
+    api_key = None
+    possible_sources = [
+        request.headers.get('Authorization'),
+        request.headers.get('X-API-Key'),
+        request.args.get('api_key'),
+        data.get('api_key'),
+        data.get('token'),
+        data.get('access_token')
+    ]
+
+    for source in possible_sources:
+        if source:
+            # Clean up the value
+            source = str(source).strip()
+
+            # If it's a Bearer token, extract the token part
+            if source.lower().startswith('bearer '):
+                api_key = source.split(None, 1)[1]
+                break
+            # If it's just a token/API key, use it directly
+            elif source and len(source) > 10:  # Basic check that it's not empty/short
+                api_key = source
+                break
+
+    # If we have an API key, clean it (remove any remaining "Bearer " prefix)
+    if api_key and api_key.lower().startswith('bearer '):
+        api_key = api_key.split(None, 1)[1]
+
+    print(f"API Key received: {api_key}")
+
+    # Validation logic (same as before)
+    user_id = None
+    if api_key:
+        permission = data.get('permission')
+        ok, info = validate_api_key_value(api_key, permission)
+
+        print(f"API Key validation result: {ok}, info: {info}")
+
+        if ok:
+            user_id = info.get('user_id')
+            g.api_key_record = info
+        else:
+            # Fallback for local testing
+            if api_key.startswith('sk-'):
+                user_id = os.environ.get('TEST_USER_ID', 'test-user')
+                g.api_key_record = {'id': 'test-key', 'user_id': user_id, 'permissions': {'agent_create': True}}
+            else:
+                return jsonify({'error': info, 'valid': False}), 401
+    try:
+        # Update document metadata in the agent's vector DB
+        file_agentic_rag.update_doc_metadata(
+            agent_ID=agent_id,
+            ids=document_id,
+            metadatas=metadata
+        )
+        return jsonify({'ok': True, 'message': 'document_metadata_updated'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+# Read/Search documents for a given agent.
+# Use RAG level API's to perform the search and retrieval.
+@manhattan_api.route("/search_documents", methods=["POST"])
+def search_documents():
+    """Search documents in an agent's vector DB.
+
+    Expects JSON body with:
+    - agent_id: str
+    - query: str
+    - top_k: int (optional, default=5)
+
+    Expects API key via Authorization/X-API-Key/query param/raw payload.
+    """
+    data = request.get_json(silent=True) or {}
+    agent_id = data.get('agent_id')
+    query = data.get('query')
+    top_k = data.get('top_k', 5)
+
+    if not agent_id or not query:
+        return jsonify({'error': 'agent_id and query are required'}), 400
+
+    # Extract API key from ANY possible source with maximum flexibility
+    api_key = None
+    possible_sources = [
+        request.headers.get('Authorization'),
+        request.headers.get('X-API-Key'),
+        request.args.get('api_key'),
+        data.get('api_key'),
+        data.get('token'),
+        data.get('access_token')
+    ]
+
+    for source in possible_sources:
+        if source:
+            # Clean up the value
+            source = str(source).strip()
+
+            # If it's a Bearer token, extract the token part
+            if source.lower().startswith('bearer '):
+                api_key = source.split(None, 1)[1]
+                break
+            # If it's just a token/API key, use it directly
+            elif source and len(source) > 10:  # Basic check that it's not empty/short
+                api_key = source
+                break
+
+    # If we have an API key, clean it (remove any remaining "Bearer " prefix)
+    if api_key and api_key.lower().startswith('bearer '):
+        api_key = api_key.split(None, 1)[1]
+
+    print(f"API Key received: {api_key}")
+
+    # Validation logic (same as before)
+    user_id = None
+    if api_key:
+        permission = data.get('permission')
+        ok, info = validate_api_key_value(api_key, permission)
+
+        print(f"API Key validation result: {ok}, info: {info}")
+
+        if ok:
+            user_id = info.get('user_id')
+            g.api_key_record = info
+        else:
+            # Fallback for local testing
+            if api_key.startswith('sk-'):
+                user_id = os.environ.get('TEST_USER_ID', 'test-user')
+                g.api_key_record = {'id': 'test-key', 'user_id': user_id, 'permissions': {'agent_create': True}}
+            else:
+                return jsonify({'error': info, 'valid': False}), 401
+    
+    try:
+        # Search documents in the agent's vector DB
+        results = file_agentic_rag.search_agent_collection(
+            agent_ID=agent_id,
+            query=query,
+            n_results=top_k
+        )
+        return jsonify({'results': results}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

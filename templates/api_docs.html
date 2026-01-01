@@ -382,7 +382,7 @@
   width: 100%;
   max-width: 1600px;
   margin: 0 auto;
-  align-items: start;
+  align-items: stretch;
 }
 
 /* Main container should also be wider */
@@ -970,37 +970,59 @@ table thead {
   color: #ec4899;
 }
 
-/* Transparent Colorful Scrollbar */
-::-webkit-scrollbar {
-  width: 12px;
+/* Transparent Colorful Scrollbar and left nav layout */
+#api-nav {
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* allow child to shrink and enable scrolling */
+}
+#categories-list {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  -webkit-overflow-scrolling: touch; /* smooth scroll on iOS */
 }
 
-::-webkit-scrollbar-track {
-  background: transparent; /* transparent track */
+/* Cross-browser scrollbar styles: fully transparent, no hover/focus effects */
+#api-nav, #categories-list {
+  /* Firefox: hide scrollbar */
+  scrollbar-width: none; /* hides scrollbar in Firefox */
+  scrollbar-color: transparent transparent;
 }
 
-/* Add subtle glow to active elements */
-.endpoint-item.active,
-.tab-btn.active,
-.lang-btn.active,
-.filter-chip.active {
-  position: relative;
+/* WebKit browsers */
+#api-nav::-webkit-scrollbar, #categories-list::-webkit-scrollbar {
+  width: 0; /* hide scrollbar in WebKit browsers */
+  height: 0;
+}
+#api-nav::-webkit-scrollbar-track, #categories-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+#api-nav::-webkit-scrollbar-thumb, #categories-list::-webkit-scrollbar-thumb {
+  background: transparent; /* fully transparent */
+  border: none;
+  opacity: 0;
 }
 
-.endpoint-item.active::after,
-.tab-btn.active::after,
-.lang-btn.active::after,
-.filter-chip.active::after {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(135deg, #3b82f6, #8b5cf6, #ec4899);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
+/* Explicitly remove hover/focus rules so the scrollbar never appears */
+#api-nav:hover::-webkit-scrollbar-thumb, #categories-list:hover::-webkit-scrollbar-thumb {
+  background: transparent;
+  opacity: 0;
+}
+#api-nav:focus-within::-webkit-scrollbar-thumb, #categories-list:focus-within::-webkit-scrollbar-thumb {
+  background: transparent;
+  opacity: 0;
+}
+#api-nav:hover, #categories-list:hover {
+  scrollbar-color: transparent transparent;
+}
+#api-nav:focus-within, #categories-list:focus-within {
+  scrollbar-color: transparent transparent;
+}
+
+/* Backdrop blur for readability */
+#api-nav .p-4, #categories-list {
+  backdrop-filter: blur(4px);
 }
 </style>
 

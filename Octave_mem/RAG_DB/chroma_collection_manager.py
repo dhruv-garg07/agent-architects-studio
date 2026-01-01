@@ -139,6 +139,30 @@ class ChromaCollectionManager:
 
         except Exception as e:
             return f"❌ Error updating collection '{collection_name}': {str(e)}"
+    
+    def update_collection_metadata(
+        self,
+        collection_name: str,
+        ids: List[str],
+        metadatas: List[Dict]
+    ) -> str:
+        """
+        Update metadata in an existing collection.
+        """
+        if not self.collection_exists(collection_name):
+            return f"⚠️ Collection '{collection_name}' does not exist."
+
+        try:
+            collection = self.get_collection(collection_name)
+            collection.upsert(
+                ids=ids,
+                documents=None,  # Don't update documents
+                metadatas=metadatas
+            )
+            return f"✅ Updated metadata for {len(ids)} documents in collection '{collection_name}'."
+
+        except Exception as e:
+            return f"❌ Error updating metadata in collection '{collection_name}': {str(e)}"
 
     def replace_collection(
         self,
