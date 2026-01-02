@@ -463,24 +463,30 @@
             const description = agent.description || agent.summary || '';
             const status = agent.status || agent.state || '';
 
-            const card = document.createElement('div');
-            card.className = 'border border-border rounded-lg p-4 bg-card flex flex-col justify-between h-full';
-            card.setAttribute('data-agent-id', id);
-            card.setAttribute('data-agent-name', name.toLowerCase());
-            card.setAttribute('data-agent-description', (description || '').toLowerCase());
+                const card = document.createElement('div');
+                card.className = 'border border-border rounded-lg p-4 bg-card flex flex-col justify-between h-full';
+                card.setAttribute('data-agent-id', id);
+                card.setAttribute('data-agent-name', name.toLowerCase());
+                card.setAttribute('data-agent-description', (description || '').toLowerCase());
 
-            card.innerHTML = `
-                <div>
-                    <h3 class="text-lg font-semibold text-foreground mb-1">${escapeHtml(name)}</h3>
-                    <p class="text-sm text-muted-foreground mb-3">${escapeHtml(description)}</p>
-                </div>
-                <div class="flex items-center justify-between mt-4">
-                    <span class="text-xs text-muted-foreground">${escapeHtml(status)}</span>
-                    <div class="flex items-center gap-2">
-                        <a href="/agents/${encodeURIComponent(id)}" class="text-primary hover:underline text-sm">Open</a>
+                // created_at and permissions may be present on normalized object
+                const created = agent.created_at ? new Date(agent.created_at).toLocaleString() : '';
+                const canRun = agent.permissions && agent.permissions.run;
+
+                card.innerHTML = `
+                    <div>
+                        <h3 class="text-lg font-semibold text-foreground mb-1">${escapeHtml(name)}</h3>
+                        <p class="text-sm text-muted-foreground mb-2">${escapeHtml(description)}</p>
+                        ${created ? `<p class="text-xs text-muted-foreground mb-2">Created: ${escapeHtml(created)}</p>` : ''}
                     </div>
-                </div>
-            `;
+                    <div class="flex items-center justify-between mt-4">
+                        <span class="text-xs text-muted-foreground">${escapeHtml(status)}</span>
+                        <div class="flex items-center gap-2">
+                            ${canRun ? `<button data-agent-id="${escapeHtml(id)}" class="bg-green-500 text-white px-2 py-1 rounded text-sm run-agent-btn">Run</button>` : ''}
+                            <a href="/agents/${encodeURIComponent(id)}" class="text-primary hover:underline text-sm">Open</a>
+                        </div>
+                    </div>
+                `;
 
             return card;
         }
@@ -499,6 +505,8 @@
         async function loadAgents() {
             try {
                 const res = await fetch('/dashboard/agents', { credentials: 'same-origin' });
+
+                console.log('Fetch /dashboard/agents response:', res);
 
                 let payload;
                 try { payload = await res.json(); } catch (e) { const txt = await res.text(); throw new Error(txt || 'Failed to fetch agents'); }
@@ -532,9 +540,13 @@
                     const rec = raw || {};
                     const normalized = {
                         id: rec.id || rec.agent_id || rec.uuid || '',
-                        name: rec.name || rec.title || rec.label || 'Untitled Agent',
+                        // support agent_name and agent_slug from backend
+                        name: rec.name || rec.agent_name || rec.agent_slug || rec.title || rec.label || 'Untitled Agent',
                         description: rec.description || rec.summary || rec.notes || '',
-                        status: rec.status || rec.state || ''
+                        status: rec.status || rec.state || '',
+                        // additional metadata for display or permissions
+                        created_at: rec.created_at || rec.createdAt || '',
+                        permissions: rec.permissions || {}
                     };
 
                     const card = renderAgentCard(normalized);

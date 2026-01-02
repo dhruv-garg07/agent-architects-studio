@@ -64,6 +64,7 @@ import os
 import json
 from supabase import create_client
 from key_utils import hash_key, parse_json_field
+from typing import Optional
 from functools import wraps
 from flask import request, g
 from werkzeug.exceptions import BadRequest
@@ -104,7 +105,7 @@ def health():
   return jsonify({"ok": True, "status": "healthy", "checked_at": datetime.utcnow().isoformat()}), 200
 
 # API Key validation and management
-def validate_api_key_value(api_key_plain: str, permission: str | None = None):
+def validate_api_key_value(api_key_plain: str, permission: Optional[str] = None):
     """Validate an API key string against the `api_keys` table.
 
     Returns (True, record) on success or (False, error_message) on failure.
@@ -149,7 +150,7 @@ def validate_api_key_value(api_key_plain: str, permission: str | None = None):
         return False, str(e)
 
 
-def require_api_key(permission: str | None = None):
+def require_api_key(permission: Optional[str] = None):
     """Decorator for routes that require a valid API key header or query param.
 
     Looks for `Authorization: Bearer <key>` or `X-API-Key` header or `api_key` query param.

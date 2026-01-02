@@ -10,7 +10,7 @@ from backend_examples.python.services.api_agents import ApiAgentsService
 import os 
 import json
 from supabase import create_client
-apis_my_agents = Blueprint('my_agents', __name__, url_prefix='/dashboard/my_agents')
+apis_my_agents = Blueprint('my_agents', __name__, url_prefix='/dashboard')
 
 # Create a server-side supabase client (service role) for validation and lookups
 _SUPABASE_URL = os.environ.get('SUPABASE_URL')
@@ -22,13 +22,15 @@ except Exception:
     
 
 # Give the list of the agents in the database created by the user return a JSON response
-@apis_my_agents.route('/', methods=['GET'])
+@apis_my_agents.route('/agents', methods=['GET'])
 @login_required
 def get_my_agents():
+    print('[DEBUG] Fetching agents for user:', current_user.get_id())
     try:
         user_id = current_user.get_id()
         api_agents_service = ApiAgentsService()
         agents = api_agents_service.list_agents_for_user(user_id)
+        print('[DEBUG] Fetched agents for user:', user_id, agents)
         return jsonify({"status": "success", "data": agents}), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
