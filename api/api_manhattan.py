@@ -1228,8 +1228,9 @@ def agent_chat():
                 "Default reply. Try one of these demo prompts: 'hello', 'how are you', 'inspire me', 'joke', 'example code', 'summarize'."
             )
 
-    conversation_id = str(uuid.uuid4())
-    return jsonify({'reply': reply, 'conversation_id': conversation_id}), 200
+    # Return a plain text reply (no conversation_id) so callers receive a simple greeting string.
+    # Use text/plain content type so clients expecting raw text handle it correctly.
+    return reply, 200, {'Content-Type': 'text/plain; charset=utf-8'}
 
 
 @manhattan_api.route('/agent_chat_demo', methods=['GET'])
