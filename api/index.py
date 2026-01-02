@@ -1289,7 +1289,7 @@ except Exception as e:
 @app.route('/')
 def homepage():
     """Redirect root to memory page."""
-    return redirect(url_for('memory'))
+    return render_template('homepage.html', user=current_user)
 
 @app.route('/api/docs')
 def api_docs():
