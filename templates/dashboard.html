@@ -49,9 +49,20 @@
             <section id="my-agents-content" class="content-section hidden">
                 <div class="mb-6">
                     <h2 class="text-2xl font-bold text-foreground">My Agents</h2>
+                    <p class="text-muted-foreground">Browse and manage the agents you own or have access to.</p>
                 </div>
-                <div class="card card-elevated p-8 text-center">
-                    <p>Agent content placeholder...</p>
+
+                <div class="card card-elevated p-4 mb-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+                        <input id="agent-search" type="search" placeholder="Search agents by name or description..." class="w-full sm:w-1/2 px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary" />
+                        <div class="flex items-center gap-2">
+                            <button id="refresh-agents" class="bg-primary text-primary-foreground px-3 py-2 rounded-md hover:bg-primary/90 transition-colors">Refresh</button>
+                        </div>
+                    </div>
+
+                    <div id="agents-empty" class="p-8 text-center text-muted-foreground hidden">No agents found. Create or import agents to see them here.</div>
+
+                    <div id="agents-container" class="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"></div>
                 </div>
             </section>
             
@@ -439,6 +450,127 @@
         
         // Initial load
         loadApiKeys();
+
+        // --- My Agents Logic ---
+        const agentsContainer = document.getElementById('agents-container');
+        const agentsEmpty = document.getElementById('agents-empty');
+        const agentSearch = document.getElementById('agent-search');
+        const refreshAgentsBtn = document.getElementById('refresh-agents');
+
+        function renderAgentCard(agent) {
+            const id = agent.id || agent.agent_id || agent.uuid || '';
+            const name = agent.name || agent.title || 'Untitled Agent';
+            const description = agent.description || agent.summary || '';
+            const status = agent.status || agent.state || '';
+
+            const card = document.createElement('div');
+            card.className = 'border border-border rounded-lg p-4 bg-card flex flex-col justify-between h-full';
+            card.setAttribute('data-agent-id', id);
+            card.setAttribute('data-agent-name', name.toLowerCase());
+            card.setAttribute('data-agent-description', (description || '').toLowerCase());
+
+            card.innerHTML = `
+                <div>
+                    <h3 class="text-lg font-semibold text-foreground mb-1">${escapeHtml(name)}</h3>
+                    <p class="text-sm text-muted-foreground mb-3">${escapeHtml(description)}</p>
+                </div>
+                <div class="flex items-center justify-between mt-4">
+                    <span class="text-xs text-muted-foreground">${escapeHtml(status)}</span>
+                    <div class="flex items-center gap-2">
+                        <a href="/agents/${encodeURIComponent(id)}" class="text-primary hover:underline text-sm">Open</a>
+                    </div>
+                </div>
+            `;
+
+            return card;
+        }
+
+        // Simple HTML escape to avoid injecting raw HTML into the page
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        async function loadAgents() {
+            try {
+                const res = await fetch('/dashboard/agents', { credentials: 'same-origin' });
+
+                let payload;
+                try { payload = await res.json(); } catch (e) { const txt = await res.text(); throw new Error(txt || 'Failed to fetch agents'); }
+
+                if (!res.ok) {
+                    const errMsg = (payload && (payload.error || payload.message)) || 'Failed to fetch agents';
+                    throw new Error(errMsg);
+                }
+
+                let data = payload;
+                if (!Array.isArray(data)) {
+                    if (data && Array.isArray(data.data)) data = data.data;
+                    else if (data && Array.isArray(data.result)) data = data.result;
+                    else if (data && Array.isArray(data.agents)) data = data.agents;
+                    else {
+                        agentsContainer.innerHTML = '';
+                        agentsEmpty.classList.remove('hidden');
+                        return;
+                    }
+                }
+
+                agentsContainer.innerHTML = '';
+                if (!Array.isArray(data) || data.length === 0) {
+                    agentsEmpty.classList.remove('hidden');
+                    return;
+                }
+
+                agentsEmpty.classList.add('hidden');
+
+                data.forEach(raw => {
+                    const rec = raw || {};
+                    const normalized = {
+                        id: rec.id || rec.agent_id || rec.uuid || '',
+                        name: rec.name || rec.title || rec.label || 'Untitled Agent',
+                        description: rec.description || rec.summary || rec.notes || '',
+                        status: rec.status || rec.state || ''
+                    };
+
+                    const card = renderAgentCard(normalized);
+                    agentsContainer.appendChild(card);
+                });
+
+                // After render, apply search filter if any
+                applyAgentFilter(agentSearch.value || '');
+            } catch (err) {
+                console.error('Error loading agents:', err);
+                agentsContainer.innerHTML = '';
+                agentsEmpty.classList.remove('hidden');
+            }
+        }
+
+        function applyAgentFilter(query) {
+            const q = (query || '').trim().toLowerCase();
+            const cards = agentsContainer.querySelectorAll('[data-agent-id]');
+            let visibleCount = 0;
+            cards.forEach(card => {
+                const name = card.getAttribute('data-agent-name') || '';
+                const desc = card.getAttribute('data-agent-description') || '';
+                const show = !q || name.includes(q) || desc.includes(q);
+                card.style.display = show ? '' : 'none';
+                if (show) visibleCount++;
+            });
+
+            if (visibleCount === 0) agentsEmpty.classList.remove('hidden');
+            else agentsEmpty.classList.add('hidden');
+        }
+
+        agentSearch.addEventListener('input', (e) => applyAgentFilter(e.target.value));
+        refreshAgentsBtn.addEventListener('click', () => loadAgents());
+
+        // Load agents on page load
+        loadAgents();
     });
 </script>
 
