@@ -99,13 +99,13 @@
           "path": "/agent_chat",
           "method": "POST",
           "summary": "Chat with agent",
-          "description": "Send a message to a specific agent and receive a reply from the agent. Provide 'agent_id', 'user_id', 'message', optional 'history', and 'options'.",
-          "request": { "agent_id": "string", "user_id": "string", "message": "string", "history": [], "options": {} },
+          "description": "Send a message to a specific agent and receive a reply from the agent. Provide 'agent_id' and 'message' (optional 'options').",
+          "request": { "agent_id": "string", "message": "string", "options": {} },
           "response": { "reply": "string", "conversation_id": "string" },
           "code": {
-            "curl": "curl -X POST '__BASE__/agent_chat' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"user_id\":\"<USER_ID>\",\"message\":\"Hello\",\"history\":[]}'",
-            "python": "import requests\n\nurl = \"__BASE__/agent_chat\n\"payload = { 'agent_id': '<AGENT_ID>', 'user_id': '<USER_ID>', 'message': 'Hello', 'history': [] }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=120)\n\nprint(response.text)",
-            "javascript": "async function chatWithAgent(baseUrl = '__BASE__', apiKey = null, agentId = null, userId = null, message = 'Hello') {\n  baseUrl = baseUrl === '__BASE__' ? (typeof process !== 'undefined' && process.env && process.env.BASE_URL) : baseUrl;\n  if (!baseUrl || baseUrl === '__BASE__') throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = apiKey;\n  const res = await fetch(`${baseUrl}/agent_chat`, { method: 'POST', headers, body: JSON.stringify({ agent_id: agentId, user_id: userId, message, history: [] }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\nchatWithAgent().then(console.log).catch(console.error);"
+            "curl": "curl -X POST '__BASE__/agent_chat' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"message\":\"Hello\"}'",
+            "python": "import requests\n\nurl = \"__BASE__/agent_chat\"\npayload = { 'agent_id': '<AGENT_ID>', 'message': 'Hello' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=120)\n\nprint(response.text)",
+            "javascript": "async function chatWithAgent(baseUrl = '__BASE__', apiKey = null, agentId = null, message = 'Hello') {\n  baseUrl = baseUrl === '__BASE__' ? (typeof process !== 'undefined' && process.env && process.env.BASE_URL) : baseUrl;\n  if (!baseUrl || baseUrl === '__BASE__') throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = apiKey;\n  const res = await fetch(`${baseUrl}/agent_chat`, { method: 'POST', headers, body: JSON.stringify({ agent_id: agentId, message }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\nchatWithAgent().then(console.log).catch(console.error);"
           }
         }
       ]
