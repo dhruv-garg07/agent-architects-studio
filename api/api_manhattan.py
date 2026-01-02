@@ -1158,3 +1158,125 @@ def search_documents():
         return jsonify({'results': results}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+# Simple demo chat endpoint for quick testing.
+@manhattan_api.route("/agent_chat", methods=["POST"])
+def agent_chat():
+    """Return demo replies based on example prompts.
+
+    Accepts JSON body with keys: 'agent_id', 'user_id', 'message', optional 'history'.
+    Behavior:
+    - If message contains 'hello' -> return reply for prompt 1
+    - If message contains 'how are you' -> return reply for prompt 2
+    - Otherwise return a default helpful reply
+    """
+    data = request.get_json(silent=True) or {}
+    message = (data.get('message') or '').strip()
+    message_lower = message.lower()
+    prompt_id = data.get('prompt_id')
+
+    # Basic validation
+    if not message and not prompt_id:
+        return jsonify({'error': 'message or prompt_id is required', 'reply': '', 'conversation_id': None}), 400
+
+    # Demo responses mapping (prompt_id -> reply)
+    demo_responses = {
+        'greeting': {
+            'example_triggers': ['hello', 'hi', 'hey'],
+            'reply': "Hello! 👋 I'm your demo agent. This friendly greeting showcases prompt->response mapping."
+        },
+        'status_check': {
+            'example_triggers': ['how are you', "how's it going"],
+            'reply': "I'm a demo agent running inside your app — feeling stateless and productive! Here's a cheerful status reply."
+        },
+        'inspire': {
+            'example_triggers': ['inspire me', 'motivate me', 'quote'],
+            'reply': "\"Dream big. Start small. Act now.\" — a short inspirational reply for the demo."
+        },
+        'joke': {
+            'example_triggers': ['joke', 'tell me a joke'],
+            'reply': "Why did the developer go broke? Because he used up all his cache. 😄 (Demo joke)"
+        },
+        'code_snippet': {
+            'example_triggers': ['example code', 'code snippet', 'show code'],
+            'reply': "Here's a tiny Python snippet:\n```python\nfor i in range(3):\n    print('demo', i)\n```\n(Example response.)"
+        },
+        'summary': {
+            'example_triggers': ['summarize', 'short summary'],
+            'reply': "Short summary (demo): This endpoint returns example replies for several prompts. Use it to prototype UI interactions."
+        }
+    }
+
+    # If a prompt_id was provided and exists in the mapping, use it directly
+    if prompt_id and prompt_id in demo_responses:
+        reply = demo_responses[prompt_id]['reply']
+    else:
+        # Try keyword matching on message
+        reply = None
+        for pid, info in demo_responses.items():
+            for trig in info.get('example_triggers', []):
+                if trig in message_lower:
+                    reply = info['reply']
+                    break
+            if reply:
+                break
+
+        # Fallback default reply
+        if not reply:
+            reply = (
+                "Default reply. Try one of these demo prompts: 'hello', 'how are you', 'inspire me', 'joke', 'example code', 'summarize'."
+            )
+
+    conversation_id = str(uuid.uuid4())
+    return jsonify({'reply': reply, 'conversation_id': conversation_id}), 200
+
+
+@manhattan_api.route('/agent_chat_demo', methods=['GET'])
+def agent_chat_demo():
+    """Return a small catalog of demo prompts and example replies for the frontend/demo pages."""
+    demos = []
+    # Build demo list from the same mapping so it's consistent
+    demo_mapping = {
+        'greeting': {
+            'prompt': 'Hello',
+            'description': 'Friendly greeting',
+            'example_reply': "Hello! 👋 I'm your demo agent. This friendly greeting showcases prompt->response mapping.",
+        },
+        'status_check': {
+            'prompt': 'How are you?',
+            'description': 'Agent status check',
+            'example_reply': "I'm a demo agent running inside your app — feeling stateless and productive! Here's a cheerful status reply.",
+        },
+        'inspire': {
+            'prompt': 'Inspire me',
+            'description': 'Short inspirational quote',
+            'example_reply': "\"Dream big. Start small. Act now.\" — a short inspirational reply for the demo.",
+        },
+        'joke': {
+            'prompt': 'Tell me a joke',
+            'description': 'Light-weight demo joke',
+            'example_reply': "Why did the developer go broke? Because he used up all his cache. 😄 (Demo joke)",
+        },
+        'code_snippet': {
+            'prompt': 'Show example code',
+            'description': 'Small code snippet',
+            'example_reply': "Here's a tiny Python snippet:\nfor i in range(3):\n    print('demo', i)",
+        },
+        'summary': {
+            'prompt': 'Summarize this',
+            'description': 'Short summary example',
+            'example_reply': "Short summary (demo): This endpoint returns example replies for several prompts. Use it to prototype UI interactions.",
+        }
+    }
+
+    for pid, meta in demo_mapping.items():
+        demos.append({
+            'id': pid,
+            'prompt': meta['prompt'],
+            'description': meta['description'],
+            'example_reply': meta['example_reply'],
+            'example_payload': { 'agent_id': 'demo-agent', 'user_id': 'demo-user', 'prompt_id': pid }
+        })
+
+    return jsonify({'demos': demos}), 200
