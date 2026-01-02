@@ -1188,11 +1188,11 @@ def agent_chat():
         },
         'status_check': {
             'example_triggers': ['how are you', "how's it going"],
-            'reply': "I'm a demo agent running inside your app — feeling stateless and productive! Here's a cheerful status reply."
+            'reply': "I'm a demo agent running inside your app - feeling stateless and productive! Here's a cheerful status reply."
         },
         'inspire': {
             'example_triggers': ['inspire me', 'motivate me', 'quote'],
-            'reply': "\"Dream big. Start small. Act now.\" — a short inspirational reply for the demo."
+            'reply': "\"Dream big. Start small. Act now.\" - a short inspirational reply for the demo."
         },
         'joke': {
             'example_triggers': ['joke', 'tell me a joke'],
@@ -1246,12 +1246,12 @@ def agent_chat_demo():
         'status_check': {
             'prompt': 'How are you?',
             'description': 'Agent status check',
-            'example_reply': "I'm a demo agent running inside your app — feeling stateless and productive! Here's a cheerful status reply.",
+            'example_reply': "I'm a demo agent running inside your app - feeling stateless and productive! Here's a cheerful status reply.",
         },
         'inspire': {
             'prompt': 'Inspire me',
             'description': 'Short inspirational quote',
-            'example_reply': "\"Dream big. Start small. Act now.\" — a short inspirational reply for the demo.",
+            'example_reply': "\"Dream big. Start small. Act now.\" - a short inspirational reply for the demo.",
         },
         'joke': {
             'prompt': 'Tell me a joke',
