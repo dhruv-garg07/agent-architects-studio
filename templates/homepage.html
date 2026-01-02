@@ -28,6 +28,346 @@
     </div>
 </section>
 
+<!-- Shared Memory Architecture Animation -->
+<section class="py-16 bg-muted/10 rounded-2xl my-8 mx-4 sm:mx-8 lg:mx-16 overflow-hidden border border-border/50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-12">
+            <h2 class="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+                Shared Memory Architecture
+            </h2>
+            <p class="text-xl text-muted-foreground max-w-2xl mx-auto">
+                AI agents interacting through a unified memory layer via APIs
+            </p>
+        </div>
+        
+        <!-- Animation Container -->
+        <div class="relative w-full h-[500px] bg-card rounded-xl border border-border overflow-hidden">
+            <!-- SVG Animation -->
+            <svg class="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg" id="memory-architecture-svg">
+                <defs>
+                    <!-- Glow effects -->
+                    <filter id="glow-cyan">
+                        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                        <feMerge>
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                    
+                    <filter id="glow-magenta">
+                        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                        <feMerge>
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                    
+                    <filter id="glow-purple">
+                        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                        <feMerge>
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                    
+                    <!-- Gradients -->
+                    <linearGradient id="cyan-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#00FFFF" stop-opacity="0.8" />
+                        <stop offset="100%" stop-color="#00FFFF" stop-opacity="0.2" />
+                    </linearGradient>
+                    
+                    <linearGradient id="magenta-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#FF00FF" stop-opacity="0.8" />
+                        <stop offset="100%" stop-color="#FF00FF" stop-opacity="0.2" />
+                    </linearGradient>
+                    
+                    <linearGradient id="purple-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#9D00FF" stop-opacity="0.8" />
+                        <stop offset="100%" stop-color="#9D00FF" stop-opacity="0.2" />
+                    </linearGradient>
+                    
+                    <!-- Data pattern -->
+                    <pattern id="data-pattern" width="10" height="10" patternUnits="userSpaceOnUse">
+                        <circle cx="5" cy="5" r="1" fill="#00FFFF" opacity="0.5"/>
+                    </pattern>
+                </defs>
+                
+                <!-- Background -->
+                <rect width="100%" height="100%" fill="#0a0a0a"/>
+                
+                <!-- Subtle grid -->
+                <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+                    <path d="M 50 0 L 0 0 0 50" fill="none" stroke="rgba(0,255,255,0.05)" stroke-width="0.5"/>
+                </pattern>
+                <rect width="100%" height="100%" fill="url(#grid)" opacity="0.3"/>
+                
+                <!-- SHARED MEMORY LAYER (Bottom Layer) -->
+                <g id="shared-memory-layer">
+                    <!-- Memory Base -->
+                    <rect x="15%" y="72%" width="70%" height="22%" rx="8" 
+                    fill="rgba(0,40,80,0.3)" 
+                    stroke="url(#cyan-gradient)" 
+                    stroke-width="2"/>
+                    
+                    <!-- Memory Title -->
+                    <text x="50%" y="76%" text-anchor="middle" fill="#00FFFF" 
+                        font-family="monospace" font-size="14" font-weight="bold">
+                        SHARED MEMORY LAYER
+                    </text>
+                    <!-- API Endpoints -->
+                    <g id="api-endpoints">
+                        <!-- Write API -->
+<rect x="25%" y="83%" width="15%" height="6%" rx="3" 
+      fill="rgba(0,100,255,0.2)" 
+      stroke="#00FFFF" 
+      stroke-width="1.5"/>
+<text x="32.5%" y="86.5%" text-anchor="middle" fill="#00FFFF" 
+      font-family="monospace" font-size="10">
+    /write
+</text>
+
+<!-- Read API -->
+<rect x="45%" y="83%" width="15%" height="6%" rx="3" 
+      fill="rgba(0,100,255,0.2)" 
+      stroke="#00FFFF" 
+      stroke-width="1.5"/>
+<text x="52.5%" y="86.5%" text-anchor="middle" fill="#00FFFF" 
+      font-family="monospace" font-size="10">
+    /read
+</text>
+
+<!-- Query API -->
+<rect x="65%" y="83%" width="15%" height="6%" rx="3" 
+      fill="rgba(0,100,255,0.2)" 
+      stroke="#00FFFF" 
+      stroke-width="1.5"/>
+<text x="72.5%" y="86.5%" text-anchor="middle" fill="#00FFFF" 
+      font-family="monospace" font-size="10">
+    /query
+</text>
+                    </g>
+                    
+                    <!-- Data stored in memory -->
+                    <circle id="memory-data-1" cx="26%" cy="78%" r="3" fill="#00FFFF" opacity="0.7">
+                        <animate attributeName="opacity" values="0.3;0.7;0.3" dur="2s" repeatCount="indefinite"/>
+                    </circle>
+                    <circle id="memory-data-2" cx="43%" cy="78%" r="3" fill="#FF00FF" opacity="0.7">
+                        <animate attributeName="opacity" values="0.3;0.7;0.3" dur="2s" repeatCount="indefinite" begin="0.5s"/>
+                    </circle>
+                    <circle id="memory-data-3" cx="60%" cy="78%" r="3" fill="#9D00FF" opacity="0.7">
+                        <animate attributeName="opacity" values="0.3;0.7;0.3" dur="2s" repeatCount="indefinite" begin="1s"/>
+                    </circle>
+                    </g>
+                
+                <!-- API CONNECTION LINES -->
+                <g id="api-connections">
+                    <!-- Agent A to Memory -->
+                    <path id="api-line-a" d="M 20% 30% L 30% 70%" 
+                          fill="none" stroke="#00FFFF" 
+                          stroke-width="1.5" stroke-dasharray="5,3" opacity="0">
+                        <animate attributeName="opacity" values="0;0.7;0" dur="4s" repeatCount="indefinite" begin="0s"/>
+                    </path>
+                    
+                    <!-- Agent B to Memory -->
+                    <path id="api-line-b" d="M 50% 30% L 50% 70%" 
+                          fill="none" stroke="#FF00FF" 
+                          stroke-width="1.5" stroke-dasharray="5,3" opacity="0">
+                        <animate attributeName="opacity" values="0;0.7;0" dur="4s" repeatCount="indefinite" begin="1s"/>
+                    </path>
+                    
+                    <!-- Agent C to Memory -->
+                    <path id="api-line-c" d="M 80% 30% L 70% 70%" 
+                          fill="none" stroke="#9D00FF" 
+                          stroke-width="1.5" stroke-dasharray="5,3" opacity="0">
+                        <animate attributeName="opacity" values="0;0.7;0" dur="4s" repeatCount="indefinite" begin="2s"/>
+                    </path>
+                </g>
+                
+                <!-- AI AGENTS LAYER (Top Layer) -->
+                <!-- Agent A - Connected via API -->
+                <g id="agent-a">
+                    <circle cx="20%" cy="30%" r="30" 
+                            fill="rgba(0,255,255,0.1)" 
+                            stroke="url(#cyan-gradient)" 
+                            stroke-width="3">
+                        <animate attributeName="r" values="30;32;30" dur="2s" repeatCount="indefinite"/>
+                    </circle>
+                    
+                    <!-- Agent Core -->
+                    <circle cx="20%" cy="30%" r="15" 
+                            fill="rgba(0,255,255,0.3)" 
+                            stroke="#00FFFF" 
+                            stroke-width="2">
+                        <animate attributeName="r" values="15;17;15" dur="1.5s" repeatCount="indefinite"/>
+                    </circle>
+                    
+                    <!-- Agent Label -->
+                    <text x="20%" y="30%" text-anchor="middle" dy="4" 
+                          fill="#00FFFF" font-family="monospace" font-size="14" font-weight="bold">
+                        Agent A
+                    </text>
+                    
+                    <!-- API Call Indicator -->
+                    <circle id="api-call-a" cx="20%" cy="30%" r="5" fill="#00FFFF" opacity="0">
+                        <animate attributeName="opacity" values="0;1;0" dur="4s" repeatCount="indefinite" begin="0s"/>
+                        <animate attributeName="r" values="5;3;5" dur="4s" repeatCount="indefinite" begin="0s"/>
+                    </circle>
+                    
+                    <!-- Status -->
+                    <text x="20%" y="45%" text-anchor="middle" 
+                          fill="#00FFFF" font-family="monospace" font-size="10" opacity="0.8">
+                        API: /write
+                    </text>
+                </g>
+                
+                <!-- Agent B - Connected via API -->
+                <g id="agent-b">
+                    <circle cx="50%" cy="30%" r="30" 
+                            fill="rgba(255,0,255,0.1)" 
+                            stroke="url(#magenta-gradient)" 
+                            stroke-width="3">
+                        <animate attributeName="r" values="30;32;30" dur="2s" repeatCount="indefinite" begin="0.5s"/>
+                    </circle>
+                    
+                    <circle cx="50%" cy="30%" r="15" 
+                            fill="rgba(255,0,255,0.3)" 
+                            stroke="#FF00FF" 
+                            stroke-width="2">
+                        <animate attributeName="r" values="15;17;15" dur="1.5s" repeatCount="indefinite" begin="0.5s"/>
+                    </circle>
+                    
+                    <text x="50%" y="30%" text-anchor="middle" dy="4" 
+                          fill="#FF00FF" font-family="monospace" font-size="14" font-weight="bold">
+                        Agent B
+                    </text>
+                    
+                    <circle id="api-call-b" cx="50%" cy="30%" r="5" fill="#FF00FF" opacity="0">
+                        <animate attributeName="opacity" values="0;1;0" dur="4s" repeatCount="indefinite" begin="1s"/>
+                        <animate attributeName="r" values="5;3;5" dur="4s" repeatCount="indefinite" begin="1s"/>
+                    </circle>
+                    
+                    <text x="50%" y="45%" text-anchor="middle" 
+                          fill="#FF00FF" font-family="monospace" font-size="10" opacity="0.8">
+                        API: /read
+                    </text>
+                </g>
+                
+                <!-- Agent C - Connected via API -->
+                <g id="agent-c">
+                    <circle cx="80%" cy="30%" r="30" 
+                            fill="rgba(157,0,255,0.1)" 
+                            stroke="url(#purple-gradient)" 
+                            stroke-width="3">
+                        <animate attributeName="r" values="30;32;30" dur="2s" repeatCount="indefinite" begin="1s"/>
+                    </circle>
+                    
+                    <circle cx="80%" cy="30%" r="15" 
+                            fill="rgba(157,0,255,0.3)" 
+                            stroke="#9D00FF" 
+                            stroke-width="2">
+                        <animate attributeName="r" values="15;17;15" dur="1.5s" repeatCount="indefinite" begin="1s"/>
+                    </circle>
+                    
+                    <text x="80%" y="30%" text-anchor="middle" dy="4" 
+                          fill="#9D00FF" font-family="monospace" font-size="14" font-weight="bold">
+                        Agent C
+                    </text>
+                    
+                    <circle id="api-call-c" cx="80%" cy="30%" r="5" fill="#9D00FF" opacity="0">
+                        <animate attributeName="opacity" values="0;1;0" dur="4s" repeatCount="indefinite" begin="2s"/>
+                        <animate attributeName="r" values="5;3;5" dur="4s" repeatCount="indefinite" begin="2s"/>
+                    </circle>
+                    
+                    <text x="80%" y="45%" text-anchor="middle" 
+                          fill="#9D00FF" font-family="monospace" font-size="10" opacity="0.8">
+                        API: /query
+                    </text>
+                </g>
+                
+                <!-- DATA PACKETS -->
+                <!-- From Agent A to Memory -->
+                <circle id="data-packet-a" cx="20%" cy="30%" r="6" fill="#00FFFF" opacity="0">
+                    <animate attributeName="opacity" values="0;1;0" dur="4s" repeatCount="indefinite" begin="0s"/>
+                    <animate attributeName="cx" values="20%;30%" dur="4s" repeatCount="indefinite" begin="0s"/>
+                    <animate attributeName="cy" values="30%;70%" dur="4s" repeatCount="indefinite" begin="0s"/>
+                </circle>
+                
+                <!-- From Agent B to Memory -->
+                <circle id="data-packet-b" cx="50%" cy="30%" r="6" fill="#FF00FF" opacity="0">
+                    <animate attributeName="opacity" values="0;1;0" dur="4s" repeatCount="indefinite" begin="1s"/>
+                    <animate attributeName="cx" values="50%;50%" dur="4s" repeatCount="indefinite" begin="1s"/>
+                    <animate attributeName="cy" values="30%;70%" dur="4s" repeatCount="indefinite" begin="1s"/>
+                </circle>
+                
+                <!-- From Agent C to Memory -->
+                <circle id="data-packet-c" cx="80%" cy="30%" r="6" fill="#9D00FF" opacity="0">
+                    <animate attributeName="opacity" values="0;1;0" dur="4s" repeatCount="indefinite" begin="2s"/>
+                    <animate attributeName="cx" values="80%;70%" dur="4s" repeatCount="indefinite" begin="2s"/>
+                    <animate attributeName="cy" values="30%;70%" dur="4s" repeatCount="indefinite" begin="2s"/>
+                </circle>
+                
+                <!-- From Memory to Agents -->
+                <circle id="data-response-1" cx="30%" cy="70%" r="6" fill="#FFFFFF" opacity="0">
+                    <animate attributeName="opacity" values="0;1;0" dur="4s" repeatCount="indefinite" begin="3s"/>
+                    <animate attributeName="cx" values="30%;20%" dur="4s" repeatCount="indefinite" begin="3s"/>
+                    <animate attributeName="cy" values="70%;30%" dur="4s" repeatCount="indefinite" begin="3s"/>
+                </circle>
+                
+                <circle id="data-response-2" cx="50%" cy="70%" r="6" fill="#FFFFFF" opacity="0">
+                    <animate attributeName="opacity" values="0;1;0" dur="4s" repeatCount="indefinite" begin="3.5s"/>
+                    <animate attributeName="cx" values="50%;50%" dur="4s" repeatCount="indefinite" begin="3.5s"/>
+                    <animate attributeName="cy" values="70%;30%" dur="4s" repeatCount="indefinite" begin="3.5s"/>
+                </circle>
+            </svg>
+            
+            
+        </div>
+        
+        <!-- Explanation -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="bg-muted/30 rounded-lg p-6 border border-border">
+                <h3 class="text-lg font-semibold text-foreground mb-3">How It Works</h3>
+                <ul class="space-y-2 text-sm text-cyan-200/80">
+                    <li class="flex items-start">
+                        <div class="w-2 h-2 rounded-full bg-cyan-500 mt-1 mr-2"></div>
+                        <span>Each agent independently processes data using its own algorithms</span>
+                    </li>
+                    <li class="flex items-start">
+                        <div class="w-2 h-2 rounded-full bg-magenta-500 mt-1 mr-2"></div>
+                        <span>Agents communicate with shared memory via standardized APIs</span>
+                    </li>
+                    <li class="flex items-start">
+                        <div class="w-2 h-2 rounded-full bg-purple-500 mt-1 mr-2"></div>
+                        <span>Memory layer stores, organizes, and retrieves data for all agents</span>
+                    </li>
+                    <li class="flex items-start">
+                        <div class="w-2 h-2 rounded-full bg-white mt-1 mr-2"></div>
+                        <span>Agents can access each other's processed data through the memory layer</span>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="bg-gray-900/50 rounded-lg p-6 border border-magenta-500/20">
+                <h3 class="text-lg font-semibold text-magenta-300 mb-3">API Endpoints</h3>
+                <div class="space-y-3">
+                    <div>
+                        <div class="text-sm font-mono text-magenta-300 mb-1">POST /write</div>
+                        <div class="text-xs text-magenta-200/70">Store processed data in shared memory</div>
+                    </div>
+                    <div>
+                        <div class="text-sm font-mono text-purple-300 mb-1">GET /read</div>
+                        <div class="text-xs text-purple-200/70">Retrieve stored data from memory</div>
+                    </div>
+                    <div>
+                        <div class="text-sm font-mono text-cyan-300 mb-1">POST /query</div>
+                        <div class="text-xs text-cyan-200/70">Search and filter memory contents</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
 <!-- Blueprint Section -->
 <section class="py-16 bg-muted/30">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -267,11 +607,73 @@
     </div>
 </section>
 
+<style>
+/* Animation styles for the memory architecture */
+@keyframes pulse {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+.agent-pulse {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.api-line {
+    stroke-dasharray: 10, 5;
+    animation: dash 3s linear infinite;
+}
+
+@keyframes dash {
+    to {
+        stroke-dashoffset: -100;
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .relative.h-\[500px\] {
+        height: 400px;
+    }
+}
+
+@media (max-width: 640px) {
+    .relative.h-\[500px\] {
+        height: 350px;
+    }
+    
+    .grid-cols-1.md\:grid-cols-3 {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
 <script>
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize icons
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+    
+    // Update agent count
+    updateAgentCount();
+    
+    // Close modal with Escape key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeWaitlistModal();
+        }
+    });
+});
+
 // Function to update agent count from Supabase
 async function updateAgentCount() {
     try {
-        // This would be replaced with your actual Supabase function call
         const response = await fetch('/api/agent-count');
         const data = await response.json();
         document.getElementById('agent-count').textContent = data.count.toLocaleString() + '+';
@@ -293,7 +695,6 @@ function closeWaitlistModal() {
 }
 
 // Function to handle waitlist form submission
-// Function to handle waitlist form submission
 async function submitWaitlist(event) {
     event.preventDefault();
     
@@ -314,10 +715,6 @@ async function submitWaitlist(event) {
         
         // Prepare data to send
         const formData = { email: email };
-        
-        // If you have user authentication info available in the frontend
-        // you could add it here, but typically this is handled by the backend
-        // using the session authentication
         
         // Call Python Flask endpoint
         const response = await fetch("{{ url_for('join_waitlist') }}", {
@@ -360,18 +757,5 @@ document.getElementById('waitlist-modal').addEventListener('click', function(eve
         closeWaitlistModal();
     }
 });
-
-// Initialize when page loads
-document.addEventListener('DOMContentLoaded', function() {
-    updateAgentCount();
-    
-    // Close modal with Escape key
-    document.addEventListener('keydown', function(event) {
-        if (event.key === 'Escape') {
-            closeWaitlistModal();
-        }
-    });
-});
-
 </script>
 {% endblock %}
