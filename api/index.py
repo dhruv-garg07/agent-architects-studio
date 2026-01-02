@@ -1282,6 +1282,8 @@ app.register_blueprint(api)
 try:
     from api_manhattan import manhattan_api
     app.register_blueprint(manhattan_api)
+    from my_agents import apis_my_agents
+    app.register_blueprint(apis_my_agents)
 except Exception as e:
     print('[STARTUP] Could not register manhattan_api blueprint:', e)
 
