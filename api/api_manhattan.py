@@ -1184,7 +1184,13 @@ def agent_chat():
     demo_responses = {
         'greeting': {
             'example_triggers': ['hello', 'hi', 'hey'],
-            'reply': "Hello! 👋 I'm your demo agent. This friendly greeting showcases prompt->response mapping."
+            'reply': (
+                "Hello there! 🌟 I'm test-agent — your friendly, enthusiastic helper. "
+                "I’m thrilled to be here with you and ready to jump in however you like: whether you want a thoughtful explanation, a step-by-step walkthrough, a creative idea, or just a cheerful chat.\n\n"
+                "Tell me what you're working on or what you'd like to explore, and I'll respond with clear, patient, and helpful guidance. "
+                "If you prefer examples or code snippets, say the word and I'll show them; if you want high-level strategy, I’ll summarize the key points. "
+                "Think of me as a collaborator who cares about making things simple and delightful — let’s do something great together! ✨"
+            )
         },
         'status_check': {
             'example_triggers': ['how are you', "how's it going"],
@@ -1242,7 +1248,13 @@ def agent_chat_demo():
         'greeting': {
             'prompt': 'Hello',
             'description': 'Friendly greeting',
-            'example_reply': "Hello! 👋 I'm your demo agent. This friendly greeting showcases prompt->response mapping.",
+            'example_reply': (
+                "Hello there! 🌟 I'm test-agent — your friendly, enthusiastic helper. "
+                "I’m thrilled to be here with you and ready to jump in however you like: whether you want a thoughtful explanation, a step-by-step walkthrough, a creative idea, or just a cheerful chat.\n\n"
+                "Tell me what you're working on or what you'd like to explore, and I'll respond with clear, patient, and helpful guidance. "
+                "If you prefer examples or code snippets, say the word and I'll show them; if you want high-level strategy, I’ll summarize the key points. "
+                "Think of me as a collaborator who cares about making things simple and delightful — let’s do something great together! ✨"
+            ),
         },
         'status_check': {
             'prompt': 'How are you?',
