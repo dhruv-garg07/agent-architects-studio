@@ -641,9 +641,120 @@
         // Initial load
         loadAgents();
 
-        // --- API Key Modal Logic (existing) ---
-        // ... (keep your existing API key modal logic here)
-        // Note: I've removed the duplicate code to keep this response concise
+        // --- API Key Modal Logic (minimal loader + delete) ---
+        // This adds a small loader to populate the API keys table from /api/keys
+        const apiKeysTableBody = document.getElementById('api-keys-table-body');
+        const apiKeysEmpty = document.getElementById('empty-state');
+
+        function maskKey(fullKey) {
+            if (!fullKey || fullKey.length < 12) return fullKey || '••••';
+            return fullKey.substring(0, 8) + '...' + fullKey.substring(fullKey.length - 4);
+        }
+
+        function renderKeyRow(record) {
+            const id = record.id || record.key_id || record.uuid || '';
+            const name = record.name || record.label || 'Untitled Key';
+            const expiration = record.expiration || record.expires_at || record.expiresAt || 'Never';
+            const masked = record.masked_key || record.masked || maskKey(record.key || '');
+
+            const row = document.createElement('tr');
+            row.setAttribute('data-key-id', id);
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap font-medium text-foreground">${escapeHtml(name)}</td>
+                <td class="px-6 py-4 whitespace-nowrap font-mono text-sm text-muted-foreground">${escapeHtml(masked)}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">${escapeHtml(expiration)}</td>
+                <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300">$0.00</span></td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button class="text-destructive hover:text-destructive/80 delete-key-btn">Revoke</button>
+                </td>
+            `;
+            return row;
+        }
+
+        function attachKeyDeleteListeners() {
+            apiKeysTableBody.querySelectorAll('.delete-key-btn').forEach(btn => {
+                // replace to avoid double-binding
+                btn.replaceWith(btn.cloneNode(true));
+            });
+
+            apiKeysTableBody.querySelectorAll('.delete-key-btn').forEach(btn => {
+                btn.addEventListener('click', async function() {
+                    const tr = this.closest('tr');
+                    const keyId = tr ? tr.getAttribute('data-key-id') : null;
+
+                    if (!confirm('Revoke this API key? This cannot be undone.')) return;
+
+                    try {
+                        if (keyId) {
+                            const res = await fetch(`/api/keys/${encodeURIComponent(keyId)}`, {
+                                method: 'DELETE',
+                                credentials: 'same-origin'
+                            });
+                            if (!res.ok) {
+                                const txt = await res.text();
+                                throw new Error(txt || 'Failed to revoke key');
+                            }
+                        }
+                        tr.remove();
+                        if (apiKeysTableBody.children.length === 0) apiKeysEmpty.classList.remove('hidden');
+                    } catch (err) {
+                        console.error('Failed to delete key:', err);
+                        alert('Failed to revoke API key. See console for details.');
+                    }
+                });
+            });
+        }
+
+        async function loadApiKeys() {
+            try {
+                const res = await fetch('/api/keys', { credentials: 'same-origin' });
+                let payload;
+                try { payload = await res.json(); } catch (e) { throw new Error('Failed to parse API keys response'); }
+
+                if (!res.ok) {
+                    const err = payload?.error || payload?.message || 'Failed to load API keys';
+                    throw new Error(err);
+                }
+
+                let data = payload;
+                if (!Array.isArray(data)) {
+                    if (Array.isArray(payload.data)) data = payload.data;
+                    else if (Array.isArray(payload.keys)) data = payload.keys;
+                    else if (Array.isArray(payload.result)) data = payload.result;
+                    else data = [];
+                }
+
+                apiKeysTableBody.innerHTML = '';
+                if (!data || data.length === 0) {
+                    apiKeysEmpty.classList.remove('hidden');
+                    return;
+                }
+
+                apiKeysEmpty.classList.add('hidden');
+
+                data.forEach(raw => {
+                    const rec = raw || {};
+                    const normalized = {
+                        id: rec.id || rec.key_id || rec.uuid || '',
+                        name: rec.name || rec.label || 'Untitled Key',
+                        expiration: rec.expiration || rec.expires_at || rec.expiresAt || 'Never',
+                        masked_key: rec.masked_key || rec.masked || maskKey(rec.key || ''),
+                        key: rec.key
+                    };
+                    const row = renderKeyRow(normalized);
+                    apiKeysTableBody.appendChild(row);
+                });
+
+                attachKeyDeleteListeners();
+            } catch (err) {
+                console.error('Error loading API keys:', err);
+                apiKeysTableBody.innerHTML = '';
+                apiKeysEmpty.classList.remove('hidden');
+            }
+        }
+
+        // Load keys initially
+        loadApiKeys();
 
     });
 </script>
