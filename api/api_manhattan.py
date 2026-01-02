@@ -56,7 +56,8 @@ production use replace the storage layer with a secure database and rotate keys.
   
 """
 
-from flask import Blueprint, jsonify, request, g
+from flask import Blueprint, jsonify, request, g, Response, stream_with_context
+import time
 from datetime import datetime
 import uuid
 # API authentication helpers and endpoints
@@ -1235,9 +1236,23 @@ def agent_chat():
                 "Default reply. Try one of these demo prompts: 'hello', 'how are you', 'inspire me', 'joke', 'example code', 'summarize'."
             )
 
-    # Return a plain text reply (no conversation_id) so callers receive a simple greeting string.
-    # Use text/plain content type so clients expecting raw text handle it correctly.
-    return reply, 200, {'Content-Type': 'text/plain; charset=utf-8'}
+    # Stream the reply character-by-character so clients can render it progressively.
+    # Optional JSON field `delay_ms` controls per-character delay in milliseconds (default 10ms).
+    delay_ms = data.get('delay_ms') or data.get('delay')
+    try:
+        # default delay: 3000 ms (3 seconds) per character if not provided
+        delay = float(delay_ms) / 1000.0 if delay_ms is not None else 3.0
+    except Exception:
+        delay = 3.0
+
+    def stream_reply(text, per_char_delay=0.01):
+        # Yield characters one-by-one (clients will receive a streamed response).
+        for ch in text:
+            yield ch
+            # small delay to make characters appear progressively
+            time.sleep(per_char_delay)
+
+    return Response(stream_with_context(stream_reply(reply, delay)), mimetype='text/plain; charset=utf-8')
 
 
 @manhattan_api.route('/agent_chat_demo', methods=['GET'])
