@@ -156,7 +156,6 @@
                                     <select id="agent-status" class="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
                                         <option value="active">Active</option>
                                         <option value="disabled">Disabled</option>
-                                        <option value="draft">Draft</option>
                                     </select>
                                 </div>
                                 <div class="grid grid-cols-2 gap-4">
@@ -403,12 +402,14 @@
             card.setAttribute('data-agent-name', (agent.agent_name || agent.name || '').toLowerCase());
             card.setAttribute('data-agent-description', (agent.description || '').toLowerCase());
             
-            const statusColor = agent.status === 'active' ? 'bg-green-500/20 text-green-700' : 
-                              agent.status === 'disabled' ? 'bg-gray-500/20 text-gray-700' : 
+            // Normalize display: treat legacy 'draft' as 'active' so the UI never shows a Draft option
+            const normStatus = (agent.status === 'draft') ? 'active' : (agent.status || 'unknown');
+            const statusColor = normStatus === 'active' ? 'bg-green-500/20 text-green-700' : 
+                              normStatus === 'disabled' ? 'bg-gray-500/20 text-gray-700' : 
                               'bg-yellow-500/20 text-yellow-700';
             
-            const statusDot = agent.status === 'active' ? 'bg-green-500' : 
-                            agent.status === 'disabled' ? 'bg-gray-500' : 
+            const statusDot = normStatus === 'active' ? 'bg-green-500' : 
+                            normStatus === 'disabled' ? 'bg-gray-500' : 
                             'bg-yellow-500';
             
             card.innerHTML = `
@@ -438,7 +439,7 @@
                     <div class="flex items-center justify-between">
                         <span class="inline-flex items-center gap-1.5 text-xs">
                             <span class="w-2 h-2 rounded-full ${statusDot}"></span>
-                            <span class="${statusColor} px-2 py-0.5 rounded-full capitalize">${agent.status || 'unknown'}</span>
+                            <span class="${statusColor} px-2 py-0.5 rounded-full capitalize">${normStatus}</span>
                         </span>
                         <span class="text-xs text-muted-foreground">
                             ${agent.limits?.rpm ? `${agent.limits.rpm} RPM` : ''}
@@ -594,7 +595,8 @@
             agentNameInput.value = agent.agent_name || agent.name || '';
             agentSlugInput.value = agent.agent_slug || generateSlug(agent.agent_name || agent.name || '');
             agentDescInput.value = agent.description || '';
-            agentStatusInput.value = agent.status || 'active';
+            // If backend has agents with legacy 'draft' status, map to 'active' for the admin UI
+            agentStatusInput.value = (agent.status === 'draft' ? 'active' : agent.status) || 'active';
             agentRpmInput.value = agent.limits?.rpm || '10';
             agentRunPermissionInput.value = (agent.permissions?.run ?? true).toString();
             deleteAgentBtn.classList.remove('hidden');
