@@ -818,11 +818,6 @@ def delete_agent():
     
 
 
-
-
-
-
-
 # Putting the documents in the vector DB for the agent.
 # Includes the CRUD operations for the documents. 
 # Categorized under /agents/documents
@@ -1080,7 +1075,7 @@ def update_document_metadata():
         return jsonify({'error': str(e)}), 500
     
 # Read/Search documents for a given agent.
-# Use RAG level API's to perform the search and retrieval.
+# Use RAG level API's to perform the search and retrieval for both documents and chat history.
 @manhattan_api.route("/search_documents", methods=["POST"])
 def search_documents():
     """Search documents in an agent's vector DB.
@@ -1160,6 +1155,86 @@ def search_documents():
         return jsonify({'results': results}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@manhattan_api.route("/search_chat_history", methods=["POST"])
+def search_chat_history():
+    """Fetch chat history for a given agent and user.
+
+    Expects JSON body with:
+    - agent_id: str
+    - user_id: str
+    - limit: int (optional, default=10)
+
+    Expects API key via Authorization/X-API-Key/query param/raw payload.
+    """
+    data = request.get_json(silent=True) or {}
+    agent_id = data.get('agent_id')
+    user_id = data.get('user_id')
+    limit = data.get('limit', 10)
+
+    if not agent_id or not user_id:
+        return jsonify({'error': 'agent_id and user_id are required'}), 400
+
+    # Extract API key from ANY possible source with maximum flexibility
+    api_key = None
+    possible_sources = [
+        request.headers.get('Authorization'),
+        request.headers.get('X-API-Key'),
+        request.args.get('api_key'),
+        data.get('api_key'),
+        data.get('token'),
+        data.get('access_token')
+    ]
+
+    for source in possible_sources:
+        if source:
+            # Clean up the value
+            source = str(source).strip()
+
+            # If it's a Bearer token, extract the token part
+            if source.lower().startswith('bearer '):
+                api_key = source.split(None, 1)[1]
+                break
+            # If it's just a token/API key, use it directly
+            elif source and len(source) > 10:  # Basic check that it's not empty/short
+                api_key = source
+                break
+
+    # If we have an API key, clean it (remove any remaining "Bearer " prefix)
+    if api_key and api_key.lower().startswith('bearer '):
+        api_key = api_key.split(None, 1)[1]
+
+    print(f"API Key received: {api_key}")
+
+    # Validation logic (same as before)
+    valid_user_id = None
+    if api_key:
+        permission = data.get('permission')
+        ok, info = validate_api_key_value(api_key, permission)
+
+        print(f"API Key validation result: {ok}, info: {info}")
+
+        if ok:
+            valid_user_id = info.get('user_id')
+            g.api_key_record = info
+        else:
+            # Fallback for local testing
+            if api_key.startswith('sk-'):
+                valid_user_id = os.environ.get('TEST_USER_ID', 'test-user')
+                g.api_key_record = {'id': 'test-key', 'user_id': valid_user_id, 'permissions': {'agent_create': True}}  
+            else:
+                return jsonify({'error': info, 'valid': False}), 401
+    try:
+        # Fetch conversation history
+        history = chat_agentic_rag.search_agent_collection(
+            agent_id=agent_id,
+            user_id=user_id,
+            limit=limit
+        )
+        return jsonify({'history': history}), 200       
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 
 # Simple demo chat endpoint for quick testing.

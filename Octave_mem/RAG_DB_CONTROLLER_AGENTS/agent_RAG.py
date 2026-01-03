@@ -47,13 +47,7 @@ class Agentic_RAG:
     
     # Search operations on one COLLECTION (agent_ID)
     #  === READ OPERATIONS ==== 
-    def search_agent_collection(
-        self,
-        agent_ID: str,
-        query: str,
-        n_results: int = 5,
-        include_metadata: bool = True
-    ):
+    def search_agent_collection(self, agent_ID: str, query: str, n_results: int = 5, include_metadata: bool = True):
         """Search an agent collection for documents related to `query`.
 
         This delegates to `read_controller.fetch_related_to_query` and returns a list of

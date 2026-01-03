@@ -34,3 +34,6 @@ def get_my_agents():
         return jsonify({"status": "success", "data": agents}), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
+# Update/Delete/Confirm Buttons to be put as APIs here and will be sued in the JavaScript code in dashboard.html
+# to call these APIs when the buttons are clicked.
