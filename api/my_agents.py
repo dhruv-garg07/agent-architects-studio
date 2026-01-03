@@ -69,3 +69,45 @@ def update_agent(agent_id):
         # Log server-side error and return a 500 with message
         print('[ERROR] update_agent failed for user', current_user.get_id(), 'agent', agent_id, str(e))
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@apis_my_agents.route('/create', methods=['POST'])
+@login_required
+def create_agent():
+    """Create a new agent for the current user.
+
+    Expects JSON body containing at least: agent_name, agent_slug, permissions, limits
+    Optional: description, metadata
+    """
+    try:
+        user_id = current_user.get_id()
+        payload = request.get_json() or {}
+
+        required = ['agent_name', 'agent_slug', 'permissions', 'limits']
+        missing = [k for k in required if not payload.get(k)]
+        if missing:
+            return jsonify({"status": "error", "message": f"Missing required fields: {', '.join(missing)}"}), 400
+
+        agent_name = payload.get('agent_name')
+        agent_slug = payload.get('agent_slug')
+        permissions = payload.get('permissions')
+        limits = payload.get('limits')
+        description = payload.get('description')
+        metadata = payload.get('metadata')
+
+        api_agents_service = ApiAgentsService()
+        agent_id, created = api_agents_service.create_agent(
+            user_id=user_id,
+            agent_name=agent_name,
+            agent_slug=agent_slug,
+            permissions=permissions,
+            limits=limits,
+            description=description,
+            metadata=metadata,
+        )
+
+        # Return the created record (service returns row data)
+        return jsonify({"status": "success", "data": created}), 201
+    except Exception as e:
+        print('[ERROR] create_agent failed for user', current_user.get_id(), str(e))
+        return jsonify({"status": "error", "message": str(e)}), 500
