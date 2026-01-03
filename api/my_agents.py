@@ -37,3 +37,35 @@ def get_my_agents():
 
 # Update/Delete/Confirm Buttons to be put as APIs here and will be sued in the JavaScript code in dashboard.html
 # to call these APIs when the buttons are clicked.
+
+@apis_my_agents.route('/update/<agent_id>', methods=['PUT'])
+@login_required
+def update_agent(agent_id):
+    """Update an existing agent owned by the current user.
+
+    Accepts a JSON body with any of the updatable fields. Only a subset of
+    fields are allowed and will be forwarded to the service layer.
+    """
+    try:
+        user_id = current_user.get_id()
+        payload = request.get_json() or {}
+
+        # Only allow a safe subset of fields to be updated from the client
+        allowed_fields = {
+            'agent_name', 'agent_slug', 'description', 'status',
+            'permissions', 'limits', 'metadata'
+        }
+
+        updates = {k: v for k, v in payload.items() if k in allowed_fields}
+
+        if not updates:
+            return jsonify({"status": "error", "message": "No valid update fields provided"}), 400
+
+        api_agents_service = ApiAgentsService()
+        updated = api_agents_service.update_agent(agent_id=agent_id, user_id=user_id, updates=updates)
+
+        return jsonify({"status": "success", "data": updated}), 200
+    except Exception as e:
+        # Log server-side error and return a 500 with message
+        print('[ERROR] update_agent failed for user', current_user.get_id(), 'agent', agent_id, str(e))
+        return jsonify({"status": "error", "message": str(e)}), 500
