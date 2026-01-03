@@ -111,3 +111,25 @@ def create_agent():
     except Exception as e:
         print('[ERROR] create_agent failed for user', current_user.get_id(), str(e))
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@apis_my_agents.route('/delete/<agent_id>', methods=['DELETE'])
+@login_required
+def delete_agent_route(agent_id):
+    """Delete an agent owned by the current user.
+
+    Uses the service layer to perform the deletion. Returns 200 on success,
+    404 if the agent was not found or delete failed, and 500 on server error.
+    """
+    try:
+        user_id = current_user.get_id()
+        api_agents_service = ApiAgentsService()
+        deleted = api_agents_service.delete_agent(agent_id=agent_id, user_id=user_id)
+
+        if not deleted:
+            return jsonify({"status": "error", "message": "Agent not found or delete failed"}), 404
+
+        return jsonify({"status": "success", "message": "Agent deleted"}), 200
+    except Exception as e:
+        print('[ERROR] delete_agent failed for user', current_user.get_id(), 'agent', agent_id, str(e))
+        return jsonify({"status": "error", "message": str(e)}), 500
