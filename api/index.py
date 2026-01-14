@@ -1178,6 +1178,114 @@ def update_waitlist_count():
         return 114  # Default fallback
 
 
+@app.route('/join-gitmem-waitlist', methods=['POST'])
+def join_gitmem_waitlist():
+    """Handle GitMem waitlist signups with full details"""
+    try:
+        data = request.get_json()
+        email = data.get('email', '').strip().lower()
+        
+        # Validate email
+        if not email or not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+            return jsonify({
+                'success': False, 
+                'message': 'Please enter a valid email address.'
+            }), 400
+        
+        # Check if email already exists in gitmem_waitlist
+        try:
+            existing_entry = supabase.table('gitmem_waitlist').select('email').eq('email', email).execute()
+            if existing_entry.data:
+                return jsonify({
+                    'success': True,
+                    'message': 'Email already registered for GitMem',
+                    'already_registered': True
+                })
+        except Exception as e:
+            print(f"Error checking existing GitMem entry: {e}")
+        
+        # Prepare data for insertion
+        gitmem_data = {
+            'email': email,
+            'name': data.get('name', '').strip() or None,
+            'tools': data.get('tools', ''),
+            'stack': data.get('stack', ''),
+            'goals': data.get('goals', ''),
+            'setup': data.get('setup', ''),
+            'open_to_feedback': data.get('open_to_feedback', False),
+            'created_at': datetime.utcnow().isoformat()
+        }
+        
+        # Get user ID if authenticated
+        if current_user.is_authenticated:
+            gitmem_data['user_id'] = current_user.id
+        
+        print("GitMem waitlist data to insert:", gitmem_data)
+        
+        # Insert new entry
+        insert_result = supabase.table('gitmem_waitlist').insert(gitmem_data).execute()
+        
+        if insert_result.data:
+            # Send welcome email
+            try:
+                sender_email = os.environ.get('SENDER_EMAIL')
+                sender_password = os.environ.get('SENDER_EMAIL_PASSWORD')
+                
+                if sender_email and sender_password:
+                    from email.mime.text import MIMEText
+                    from email.mime.multipart import MIMEMultipart
+                    import ssl
+                    
+                    receiver_email = email
+                    subject = "Welcome to GitMem Waitlist! 🎉"
+                    body = f"""Hi {gitmem_data.get('name', 'there')}!
+
+Thank you for joining the GitMem waitlist. We're excited to have you on board.
+
+Your primary interests:
+- Tools: {gitmem_data.get('tools', 'Not specified')}
+- Stack: {gitmem_data.get('stack', 'Not specified')}
+- Goals: {gitmem_data.get('goals', 'Not specified')}
+
+We're onboarding users in batches and will prioritize people who filled out all the questions. You'll be among the first to get early access!
+
+Stay tuned,
+The GitMem Team"""
+                    
+                    msg = MIMEMultipart()
+                    msg['From'] = sender_email
+                    msg['To'] = receiver_email
+                    msg['Subject'] = subject
+                    msg.attach(MIMEText(body, 'plain'))
+                    
+                    context = ssl.create_default_context()
+                    try:
+                        server = smtplib.SMTP_SSL("smtpout.secureserver.net", 465, context=context, timeout=15)
+                        server.login(sender_email, sender_password)
+                        server.sendmail(sender_email, receiver_email, msg.as_string())
+                        server.quit()
+                        print(f"Welcome email sent to {receiver_email}")
+                    except Exception as mail_err:
+                        print(f"Error sending email: {mail_err}")
+            except Exception as e:
+                print(f"Error in email sending setup: {e}")
+            
+            return jsonify({
+                'success': True,
+                'message': 'Successfully joined GitMem waitlist'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Failed to add to waitlist'
+            }), 500
+            
+    except Exception as e:
+        print(f"Error in join_gitmem_waitlist: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'Internal server error'
+        }), 500
 
 @app.route('/memory', methods=['GET', 'POST'])
 @login_required
