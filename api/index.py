@@ -31,6 +31,9 @@ import shutil
 import tempfile
 from datetime import datetime, timedelta
 import secrets
+import threading
+import requests
+import time
 
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, abort
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
@@ -77,6 +80,32 @@ supabase_backend: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'auth'
+
+# ==================== Keep-Alive Background Task ====================
+# This function pings the website every 5 minutes to prevent Render from sleeping
+def keep_alive_task():
+    """Background task that pings the website every 5 minutes."""
+    WEBSITE_URL = "https://themanhattanproject.ai"
+    PING_INTERVAL = 300  # 5 minutes in seconds
+    
+    def ping_website():
+        while True:
+            try:
+                time.sleep(PING_INTERVAL)
+                response = requests.get(f"{WEBSITE_URL}/ping", timeout=10)
+                if response.status_code == 200:
+                    print(f"[KEEP-ALIVE] Successfully pinged {WEBSITE_URL}/ping at {datetime.now().isoformat()}")
+                else:
+                    print(f"[KEEP-ALIVE] Ping returned status {response.status_code} at {datetime.now().isoformat()}")
+            except Exception as e:
+                print(f"[KEEP-ALIVE] Error pinging website: {e}")
+    
+    # Start the keep-alive thread as a daemon so it doesn't block shutdown
+    keep_alive_thread = threading.Thread(target=ping_website, daemon=True)
+    keep_alive_thread.start()
+    print("[KEEP-ALIVE] Background pinging task started. Will ping every 5 minutes.")
+
+# =====================================================================
 
 class User:
     def __init__(self, user_id=None, email=None):
@@ -1277,6 +1306,9 @@ def memory():
 
 from api_chats import api
 app.register_blueprint(api)
+
+# Initialize keep-alive background task to prevent Render from sleeping
+keep_alive_task()
 
 # Register Manhattan API blueprint (simple ping/health endpoints)
 try:
