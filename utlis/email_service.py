@@ -7,6 +7,7 @@ import smtplib
 import ssl
 import threading
 import logging
+import socket
 from typing import Optional, Callable
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -16,6 +17,9 @@ import time
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Set default socket timeout globally
+socket.setdefaulttimeout(60)
 
 
 class EmailService:
@@ -30,9 +34,9 @@ class EmailService:
         print(f"Sender password: {self.sender_password}")
         self.smtp_host = "smtpout.secureserver.net"
         self.smtp_port = 465
-        self.max_retries = 5
-        self.retry_delay = 3  # seconds
-        self.timeout = 30  # seconds for SMTP connection
+        self.max_retries = 7
+        self.base_retry_delay = 2  # seconds - will exponentially backoff
+        self.timeout = 60  # seconds for SMTP connection
         self.email_queue = Queue()
         self._start_email_worker()
 
@@ -63,7 +67,7 @@ class EmailService:
         callback: Optional[Callable] = None
     ) -> bool:
         """
-        Send email with retry logic.
+        Send email with exponential backoff retry logic.
 
         Args:
             receiver_email: Recipient email address
@@ -86,6 +90,8 @@ class EmailService:
                 # Create SSL context
                 context = ssl.create_default_context()
 
+                logger.info(f"Attempting to send email to {receiver_email} (attempt {attempt + 1}/{self.max_retries})")
+
                 # Send email with timeout
                 with smtplib.SMTP_SSL(
                     self.smtp_host,
@@ -102,11 +108,12 @@ class EmailService:
                 return True
 
             except smtplib.SMTPException as smtp_err:
+                wait_time = self.base_retry_delay * (2 ** attempt)
                 logger.warning(
-                    f"SMTP error on attempt {attempt + 1}/{self.max_retries}: {smtp_err}"
+                    f"SMTP error on attempt {attempt + 1}/{self.max_retries}: {smtp_err}. Waiting {wait_time}s before retry..."
                 )
                 if attempt < self.max_retries - 1:
-                    time.sleep(self.retry_delay)
+                    time.sleep(wait_time)
                 else:
                     error_msg = f"Failed after {self.max_retries} attempts: {smtp_err}"
                     logger.error(error_msg)
@@ -114,23 +121,25 @@ class EmailService:
                         callback(False, error_msg)
                     return False
 
-            except TimeoutError as timeout_err:
+            except (TimeoutError, socket.timeout) as timeout_err:
+                wait_time = self.base_retry_delay * (2 ** attempt)
                 logger.warning(
-                    f"Timeout on attempt {attempt + 1}/{self.max_retries}: {timeout_err}"
+                    f"Timeout on attempt {attempt + 1}/{self.max_retries}: {timeout_err}. Waiting {wait_time}s before retry..."
                 )
                 if attempt < self.max_retries - 1:
-                    time.sleep(self.retry_delay)
+                    time.sleep(wait_time)
                 else:
-                    error_msg = f"Timeout after {self.max_retries} attempts"
+                    error_msg = f"Timeout after {self.max_retries} attempts in render environment"
                     logger.error(error_msg)
                     if callback:
                         callback(False, error_msg)
                     return False
 
             except Exception as err:
-                logger.error(f"Unexpected error on attempt {attempt + 1}/{self.max_retries}: {err}")
+                wait_time = self.base_retry_delay * (2 ** attempt)
+                logger.error(f"Unexpected error on attempt {attempt + 1}/{self.max_retries}: {type(err).__name__}: {err}. Waiting {wait_time}s before retry...")
                 if attempt < self.max_retries - 1:
-                    time.sleep(self.retry_delay)
+                    time.sleep(wait_time)
                 else:
                     error_msg = f"Unexpected error after {self.max_retries} attempts: {err}"
                     logger.error(error_msg)
