@@ -1,14 +1,17 @@
-from together import Together
 import os
 from dotenv import load_dotenv
-TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
 load_dotenv()
 
-
 import time
-from together import Together
 from requests.exceptions import RequestException
 import traceback
+import requests
+import config
+
+TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
+# External endpoint (optional) - set in SimpleMem/config.py
+EXTERNAL_LLM_API_URL = getattr(config, 'EXTERNAL_LLM_API_URL', None)
+EXTERNAL_LLM_API_TIMEOUT = getattr(config, 'EXTERNAL_LLM_API_TIMEOUT', 300)
 
 
 # response = stream_chat_response(prompt=str(messages))
@@ -84,12 +87,58 @@ def stream_chat_response(
     Yields:
         str: The streamed content.
     """
-    client = Together(api_key=TOGETHER_API_KEY)
     retry_count = 0
 
     while retry_count < max_retries:
         try:
             start_time = time.time()
+
+            # If an external HTTP API is configured, use it (supports streaming)
+            if EXTERNAL_LLM_API_URL:
+                payload = {
+                    "message": prompt,
+                    "temperature": temperature,
+                    "max_tokens": max_tokens,
+                    "stream": True
+                }
+
+                with requests.post(EXTERNAL_LLM_API_URL, json=payload, stream=True, timeout=EXTERNAL_LLM_API_TIMEOUT) as r:
+                    r.raise_for_status()
+                    buffer = ''
+                    for chunk in r.iter_content(chunk_size=None, decode_unicode=True):
+                        if not chunk:
+                            continue
+                        text = chunk
+                        # Aggressive marker filtering consistent with original behavior
+                        if text.strip() == "<|end|>":
+                            continue
+                        if "<|end|>" in text:
+                            text = text.replace("<|end|>", "")
+                        if "[END FINAL RESPONSE]" in text:
+                            before_marker = text.split("[END FINAL RESPONSE]")[0]
+                            if before_marker and before_marker.strip():
+                                yield before_marker
+                            print("[TOKEN_FILTER] Hit [END FINAL RESPONSE], stopping stream")
+                            break
+                        if text.strip():
+                            yield text
+
+                end_time = time.time()
+                if verbose:
+                    print(f"\nTotal latency: {end_time - start_time:.2f} seconds")
+                break
+
+            # Fallback: use Together SDK streaming
+            client = None
+            try:
+                from together import Together
+                client = Together(api_key=TOGETHER_API_KEY)
+            except Exception:
+                client = None
+
+            if client is None:
+                raise RuntimeError("No external endpoint configured and Together SDK unavailable")
+
             response = client.chat.completions.create(
                 model=model,
                 messages=[{"role": "user", "content": prompt}],
@@ -102,9 +151,6 @@ def stream_chat_response(
                 stream=True
             )
 
-            # Begin streaming
-            # print(response)
-            # return(response.choices[0].message.content)
             for chunk in response:
                 if chunk is None:
                     break
@@ -116,16 +162,16 @@ def stream_chat_response(
                 delta = chunk.choices[0].delta
                 if hasattr(delta, "content") and delta.content:
                     content = delta.content
-                    
+
                     # AGGRESSIVE marker filtering - remove all marker tokens
                     # Skip <|end|> tokens completely
                     if content.strip() == "<|end|>":
                         continue
-                    
+
                     # Remove any stray <|end|> within content
                     if "<|end|>" in content:
                         content = content.replace("<|end|>", "")
-                    
+
                     # STOP immediately if we detect [END FINAL RESPONSE]
                     if "[END FINAL RESPONSE]" in content:
                         before_marker = content.split("[END FINAL RESPONSE]")[0]
@@ -133,7 +179,7 @@ def stream_chat_response(
                             yield before_marker
                         print("[TOKEN_FILTER] Hit [END FINAL RESPONSE], stopping stream")
                         break
-                    
+
                     # Only yield if content is not empty after cleaning
                     if content.strip():
                         yield content

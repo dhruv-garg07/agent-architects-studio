@@ -1,8 +1,14 @@
 import os
 import sys  
 from typing import List, Optional
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from models import Profile
+
+# Add backend_examples/python to path for model imports
+backend_python_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if backend_python_dir not in sys.path:
+    sys.path.insert(0, backend_python_dir)
+
+# Now safe to import Profile from backend_examples.python.models
+from backend_examples.python.models import Profile
 
 import os
 from supabase import create_client, Client

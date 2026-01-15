@@ -228,6 +228,26 @@ class ChromaCollectionManager:
         except Exception as e:
             return {"error": f"Error getting info for '{collection_name}': {str(e)}"}
 
+    # Delete documents
+    def delete_documents(
+        self,
+        collection_name: str,
+        ids: List[str]
+    ) -> str:
+        """
+        Delete documents by IDs from a collection.
+        """
+        if not self.collection_exists(collection_name):
+            return f"⚠️ Collection '{collection_name}' does not exist."
+
+        try:
+            collection = self.get_collection(collection_name)
+            collection.delete(ids=ids)
+            return f"✅ Deleted {len(ids)} documents from collection '{collection_name}'."
+        except Exception as e:
+            return f"❌ Error deleting documents from '{collection_name}': {str(e)}"    
+        
+    
     # To verify the data that was added in a collection.
     def verify_data_in_collection(
         self,

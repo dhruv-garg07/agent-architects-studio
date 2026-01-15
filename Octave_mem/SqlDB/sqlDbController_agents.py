@@ -15,7 +15,7 @@ if not url or not key:
 supabase: Client = create_client(url, key)
 
 # CRUD operations for the SQL DB Controller for agents with a supabase table called as: "agent_sessions"
-
+# It does not manage all the chat managers 
 class Agent_Chat_Manager():
     """
     This is a controller class to manage agents and their chat histories in the SQL DB (Supabase).
