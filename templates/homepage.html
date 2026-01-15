@@ -1,643 +1,310 @@
 {% extends "base.html" %}
 
-{% block title %}AI Agent Marketplace - Discover and Deploy AI Agents{% endblock %}
+{% block title %}GitMem - Real Context for Your Coding Agents{% endblock %}
 
 {% block content %}
 <!-- Hero Section -->
-<section class="relative overflow-hidden pt-16 pb-32">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<section class="relative overflow-hidden pt-20 pb-16 md:pt-32 md:pb-24">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center">
-            <h1 class="text-4xl sm:text-6xl font-bold text-foreground mb-6">
-                Discover the Future of
-                <span class="text-primary">AI Agents</span>
+            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6 tracking-tight">
+                GitMem: real context for your <span class="text-primary">coding agents.</span>
             </h1>
-            <p class="text-xl sm:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto">
-                Explore, deploy, and monetize cutting-edge AI agents. Join the revolution in autonomous digital assistants.
+            <p class="text-lg sm:text-xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed">
+                Index your repos and docs so agents stop hallucinating and you stop wasting tokens.
             </p>
-            <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="{{ url_for('explore') }}" class="btn-primary text-lg px-8 py-3 inline-flex items-center">
-                    <i data-lucide="search" class="mr-2 h-5 w-5"></i>
-                    Explore Agents
-                </a>
-                <a href="{{ url_for('creator_studio') }}" class="btn-secondary text-lg px-8 py-3 inline-flex items-center">
-                    <i data-lucide="plus" class="mr-2 h-5 w-5"></i>
-                    Submit Your Agent
-                </a>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+                <button onclick="openWaitlistModal()" class="btn-primary text-base sm:text-lg px-8 py-3 font-semibold rounded-lg hover:scale-105 transition-transform">
+                    Join the waitlist
+                </button>
             </div>
+            <!-- Social Proof -->
+            <p class="text-sm text-muted-foreground font-medium">
+                Developed and used by engineers at <span class="text-foreground font-semibold">Google</span> and <span class="text-foreground font-semibold">Texas Instruments</span>.
+            </p>
         </div>
     </div>
 </section>
 
-<!-- Shared Memory Architecture Animation -->
-<section class="py-16 bg-muted/10 rounded-2xl my-8 mx-4 sm:mx-8 lg:mx-16 overflow-hidden border border-border/50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-12">
-            <h2 class="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-                Shared Memory Architecture
-            </h2>
-            <p class="text-xl text-muted-foreground max-w-2xl mx-auto">
-                AI agents interacting through a unified memory layer via APIs
-            </p>
-        </div>
-        
-        <!-- Animation Container -->
-        <div class="relative w-full h-[500px] bg-card rounded-xl border border-border overflow-hidden">
-            <!-- SVG Animation -->
-            <svg class="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg" id="memory-architecture-svg">
-                <defs>
-                    <!-- Glow effects -->
-                    <filter id="glow-cyan">
-                        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-                        <feMerge>
-                            <feMergeNode in="coloredBlur"/>
-                            <feMergeNode in="SourceGraphic"/>
-                        </feMerge>
-                    </filter>
-                    
-                    <filter id="glow-magenta">
-                        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-                        <feMerge>
-                            <feMergeNode in="coloredBlur"/>
-                            <feMergeNode in="SourceGraphic"/>
-                        </feMerge>
-                    </filter>
-                    
-                    <filter id="glow-purple">
-                        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-                        <feMerge>
-                            <feMergeNode in="coloredBlur"/>
-                            <feMergeNode in="SourceGraphic"/>
-                        </feMerge>
-                    </filter>
-                    
-                    <!-- Gradients -->
-                    <linearGradient id="cyan-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#00FFFF" stop-opacity="0.8" />
-                        <stop offset="100%" stop-color="#00FFFF" stop-opacity="0.2" />
-                    </linearGradient>
-                    
-                    <linearGradient id="magenta-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#FF00FF" stop-opacity="0.8" />
-                        <stop offset="100%" stop-color="#FF00FF" stop-opacity="0.2" />
-                    </linearGradient>
-                    
-                    <linearGradient id="purple-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#9D00FF" stop-opacity="0.8" />
-                        <stop offset="100%" stop-color="#9D00FF" stop-opacity="0.2" />
-                    </linearGradient>
-                    
-                    <!-- Data pattern -->
-                    <pattern id="data-pattern" width="10" height="10" patternUnits="userSpaceOnUse">
-                        <circle cx="5" cy="5" r="1" fill="#00FFFF" opacity="0.5"/>
-                    </pattern>
-                </defs>
-                
-                <!-- Background -->
-                <rect width="100%" height="100%" fill="#0a0a0a"/>
-                
-                <!-- Subtle grid -->
-                <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
-                    <path d="M 50 0 L 0 0 0 50" fill="none" stroke="rgba(0,255,255,0.05)" stroke-width="0.5"/>
-                </pattern>
-                <rect width="100%" height="100%" fill="url(#grid)" opacity="0.3"/>
-                
-                <!-- SHARED MEMORY LAYER (Bottom Layer) -->
-                <g id="shared-memory-layer">
-                    <!-- Memory Base -->
-                    <rect x="15%" y="72%" width="70%" height="22%" rx="8" 
-                    fill="rgba(0,40,80,0.3)" 
-                    stroke="url(#cyan-gradient)" 
-                    stroke-width="2"/>
-                    
-                    <!-- Memory Title -->
-                    <text x="50%" y="76%" text-anchor="middle" fill="#00FFFF" 
-                        font-family="monospace" font-size="14" font-weight="bold">
-                        SHARED MEMORY LAYER
-                    </text>
-                    <!-- API Endpoints -->
-                    <g id="api-endpoints">
-                        <!-- Write API -->
-<rect x="25%" y="83%" width="15%" height="6%" rx="3" 
-      fill="rgba(0,100,255,0.2)" 
-      stroke="#00FFFF" 
-      stroke-width="1.5"/>
-<text x="32.5%" y="86.5%" text-anchor="middle" fill="#00FFFF" 
-      font-family="monospace" font-size="10">
-    /write
-</text>
-
-<!-- Read API -->
-<rect x="45%" y="83%" width="15%" height="6%" rx="3" 
-      fill="rgba(0,100,255,0.2)" 
-      stroke="#00FFFF" 
-      stroke-width="1.5"/>
-<text x="52.5%" y="86.5%" text-anchor="middle" fill="#00FFFF" 
-      font-family="monospace" font-size="10">
-    /read
-</text>
-
-<!-- Query API -->
-<rect x="65%" y="83%" width="15%" height="6%" rx="3" 
-      fill="rgba(0,100,255,0.2)" 
-      stroke="#00FFFF" 
-      stroke-width="1.5"/>
-<text x="72.5%" y="86.5%" text-anchor="middle" fill="#00FFFF" 
-      font-family="monospace" font-size="10">
-    /query
-</text>
-                    </g>
-                    
-                    <!-- Data stored in memory -->
-                    <circle id="memory-data-1" cx="26%" cy="78%" r="3" fill="#00FFFF" opacity="0.7">
-                        <animate attributeName="opacity" values="0.3;0.7;0.3" dur="2s" repeatCount="indefinite"/>
-                    </circle>
-                    <circle id="memory-data-2" cx="43%" cy="78%" r="3" fill="#FF00FF" opacity="0.7">
-                        <animate attributeName="opacity" values="0.3;0.7;0.3" dur="2s" repeatCount="indefinite" begin="0.5s"/>
-                    </circle>
-                    <circle id="memory-data-3" cx="60%" cy="78%" r="3" fill="#9D00FF" opacity="0.7">
-                        <animate attributeName="opacity" values="0.3;0.7;0.3" dur="2s" repeatCount="indefinite" begin="1s"/>
-                    </circle>
-                    </g>
-                
-                <!-- API CONNECTION LINES -->
-                <g id="api-connections">
-                    <!-- Agent A to Memory -->
-                    <path id="api-line-a" d="M 20% 30% L 30% 70%" 
-                          fill="none" stroke="#00FFFF" 
-                          stroke-width="1.5" stroke-dasharray="5,3" opacity="0">
-                        <animate attributeName="opacity" values="0;0.7;0" dur="4s" repeatCount="indefinite" begin="0s"/>
-                    </path>
-                    
-                    <!-- Agent B to Memory -->
-                    <path id="api-line-b" d="M 50% 30% L 50% 70%" 
-                          fill="none" stroke="#FF00FF" 
-                          stroke-width="1.5" stroke-dasharray="5,3" opacity="0">
-                        <animate attributeName="opacity" values="0;0.7;0" dur="4s" repeatCount="indefinite" begin="1s"/>
-                    </path>
-                    
-                    <!-- Agent C to Memory -->
-                    <path id="api-line-c" d="M 80% 30% L 70% 70%" 
-                          fill="none" stroke="#9D00FF" 
-                          stroke-width="1.5" stroke-dasharray="5,3" opacity="0">
-                        <animate attributeName="opacity" values="0;0.7;0" dur="4s" repeatCount="indefinite" begin="2s"/>
-                    </path>
-                </g>
-                
-                <!-- AI AGENTS LAYER (Top Layer) -->
-                <!-- Agent A - Connected via API -->
-                <g id="agent-a">
-                    <circle cx="20%" cy="30%" r="30" 
-                            fill="rgba(0,255,255,0.1)" 
-                            stroke="url(#cyan-gradient)" 
-                            stroke-width="3">
-                        <animate attributeName="r" values="30;32;30" dur="2s" repeatCount="indefinite"/>
-                    </circle>
-                    
-                    <!-- Agent Core -->
-                    <circle cx="20%" cy="30%" r="15" 
-                            fill="rgba(0,255,255,0.3)" 
-                            stroke="#00FFFF" 
-                            stroke-width="2">
-                        <animate attributeName="r" values="15;17;15" dur="1.5s" repeatCount="indefinite"/>
-                    </circle>
-                    
-                    <!-- Agent Label -->
-                    <text x="20%" y="30%" text-anchor="middle" dy="4" 
-                          fill="#00FFFF" font-family="monospace" font-size="14" font-weight="bold">
-                        Agent A
-                    </text>
-                    
-                    <!-- API Call Indicator -->
-                    <circle id="api-call-a" cx="20%" cy="30%" r="5" fill="#00FFFF" opacity="0">
-                        <animate attributeName="opacity" values="0;1;0" dur="4s" repeatCount="indefinite" begin="0s"/>
-                        <animate attributeName="r" values="5;3;5" dur="4s" repeatCount="indefinite" begin="0s"/>
-                    </circle>
-                    
-                    <!-- Status -->
-                    <text x="20%" y="45%" text-anchor="middle" 
-                          fill="#00FFFF" font-family="monospace" font-size="10" opacity="0.8">
-                        API: /write
-                    </text>
-                </g>
-                
-                <!-- Agent B - Connected via API -->
-                <g id="agent-b">
-                    <circle cx="50%" cy="30%" r="30" 
-                            fill="rgba(255,0,255,0.1)" 
-                            stroke="url(#magenta-gradient)" 
-                            stroke-width="3">
-                        <animate attributeName="r" values="30;32;30" dur="2s" repeatCount="indefinite" begin="0.5s"/>
-                    </circle>
-                    
-                    <circle cx="50%" cy="30%" r="15" 
-                            fill="rgba(255,0,255,0.3)" 
-                            stroke="#FF00FF" 
-                            stroke-width="2">
-                        <animate attributeName="r" values="15;17;15" dur="1.5s" repeatCount="indefinite" begin="0.5s"/>
-                    </circle>
-                    
-                    <text x="50%" y="30%" text-anchor="middle" dy="4" 
-                          fill="#FF00FF" font-family="monospace" font-size="14" font-weight="bold">
-                        Agent B
-                    </text>
-                    
-                    <circle id="api-call-b" cx="50%" cy="30%" r="5" fill="#FF00FF" opacity="0">
-                        <animate attributeName="opacity" values="0;1;0" dur="4s" repeatCount="indefinite" begin="1s"/>
-                        <animate attributeName="r" values="5;3;5" dur="4s" repeatCount="indefinite" begin="1s"/>
-                    </circle>
-                    
-                    <text x="50%" y="45%" text-anchor="middle" 
-                          fill="#FF00FF" font-family="monospace" font-size="10" opacity="0.8">
-                        API: /read
-                    </text>
-                </g>
-                
-                <!-- Agent C - Connected via API -->
-                <g id="agent-c">
-                    <circle cx="80%" cy="30%" r="30" 
-                            fill="rgba(157,0,255,0.1)" 
-                            stroke="url(#purple-gradient)" 
-                            stroke-width="3">
-                        <animate attributeName="r" values="30;32;30" dur="2s" repeatCount="indefinite" begin="1s"/>
-                    </circle>
-                    
-                    <circle cx="80%" cy="30%" r="15" 
-                            fill="rgba(157,0,255,0.3)" 
-                            stroke="#9D00FF" 
-                            stroke-width="2">
-                        <animate attributeName="r" values="15;17;15" dur="1.5s" repeatCount="indefinite" begin="1s"/>
-                    </circle>
-                    
-                    <text x="80%" y="30%" text-anchor="middle" dy="4" 
-                          fill="#9D00FF" font-family="monospace" font-size="14" font-weight="bold">
-                        Agent C
-                    </text>
-                    
-                    <circle id="api-call-c" cx="80%" cy="30%" r="5" fill="#9D00FF" opacity="0">
-                        <animate attributeName="opacity" values="0;1;0" dur="4s" repeatCount="indefinite" begin="2s"/>
-                        <animate attributeName="r" values="5;3;5" dur="4s" repeatCount="indefinite" begin="2s"/>
-                    </circle>
-                    
-                    <text x="80%" y="45%" text-anchor="middle" 
-                          fill="#9D00FF" font-family="monospace" font-size="10" opacity="0.8">
-                        API: /query
-                    </text>
-                </g>
-                
-                <!-- DATA PACKETS -->
-                <!-- From Agent A to Memory -->
-                <circle id="data-packet-a" cx="20%" cy="30%" r="6" fill="#00FFFF" opacity="0">
-                    <animate attributeName="opacity" values="0;1;0" dur="4s" repeatCount="indefinite" begin="0s"/>
-                    <animate attributeName="cx" values="20%;30%" dur="4s" repeatCount="indefinite" begin="0s"/>
-                    <animate attributeName="cy" values="30%;70%" dur="4s" repeatCount="indefinite" begin="0s"/>
-                </circle>
-                
-                <!-- From Agent B to Memory -->
-                <circle id="data-packet-b" cx="50%" cy="30%" r="6" fill="#FF00FF" opacity="0">
-                    <animate attributeName="opacity" values="0;1;0" dur="4s" repeatCount="indefinite" begin="1s"/>
-                    <animate attributeName="cx" values="50%;50%" dur="4s" repeatCount="indefinite" begin="1s"/>
-                    <animate attributeName="cy" values="30%;70%" dur="4s" repeatCount="indefinite" begin="1s"/>
-                </circle>
-                
-                <!-- From Agent C to Memory -->
-                <circle id="data-packet-c" cx="80%" cy="30%" r="6" fill="#9D00FF" opacity="0">
-                    <animate attributeName="opacity" values="0;1;0" dur="4s" repeatCount="indefinite" begin="2s"/>
-                    <animate attributeName="cx" values="80%;70%" dur="4s" repeatCount="indefinite" begin="2s"/>
-                    <animate attributeName="cy" values="30%;70%" dur="4s" repeatCount="indefinite" begin="2s"/>
-                </circle>
-                
-                <!-- From Memory to Agents -->
-                <circle id="data-response-1" cx="30%" cy="70%" r="6" fill="#FFFFFF" opacity="0">
-                    <animate attributeName="opacity" values="0;1;0" dur="4s" repeatCount="indefinite" begin="3s"/>
-                    <animate attributeName="cx" values="30%;20%" dur="4s" repeatCount="indefinite" begin="3s"/>
-                    <animate attributeName="cy" values="70%;30%" dur="4s" repeatCount="indefinite" begin="3s"/>
-                </circle>
-                
-                <circle id="data-response-2" cx="50%" cy="70%" r="6" fill="#FFFFFF" opacity="0">
-                    <animate attributeName="opacity" values="0;1;0" dur="4s" repeatCount="indefinite" begin="3.5s"/>
-                    <animate attributeName="cx" values="50%;50%" dur="4s" repeatCount="indefinite" begin="3.5s"/>
-                    <animate attributeName="cy" values="70%;30%" dur="4s" repeatCount="indefinite" begin="3.5s"/>
-                </circle>
-            </svg>
-            
-            
-        </div>
-        
-        <!-- Explanation -->
-        <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div class="bg-muted/30 rounded-lg p-6 border border-border">
-                <h3 class="text-lg font-semibold text-foreground mb-3">How It Works</h3>
-                <ul class="space-y-2 text-sm text-cyan-200/80">
-                    <li class="flex items-start">
-                        <div class="w-2 h-2 rounded-full bg-cyan-500 mt-1 mr-2"></div>
-                        <span>Each agent independently processes data using its own algorithms</span>
-                    </li>
-                    <li class="flex items-start">
-                        <div class="w-2 h-2 rounded-full bg-magenta-500 mt-1 mr-2"></div>
-                        <span>Agents communicate with shared memory via standardized APIs</span>
-                    </li>
-                    <li class="flex items-start">
-                        <div class="w-2 h-2 rounded-full bg-purple-500 mt-1 mr-2"></div>
-                        <span>Memory layer stores, organizes, and retrieves data for all agents</span>
-                    </li>
-                    <li class="flex items-start">
-                        <div class="w-2 h-2 rounded-full bg-white mt-1 mr-2"></div>
-                        <span>Agents can access each other's processed data through the memory layer</span>
-                    </li>
-                </ul>
-            </div>
-            
-            <div class="bg-gray-900/50 rounded-lg p-6 border border-magenta-500/20">
-                <h3 class="text-lg font-semibold text-magenta-300 mb-3">API Endpoints</h3>
-                <div class="space-y-3">
-                    <div>
-                        <div class="text-sm font-mono text-magenta-300 mb-1">POST /write</div>
-                        <div class="text-xs text-magenta-200/70">Store processed data in shared memory</div>
-                    </div>
-                    <div>
-                        <div class="text-sm font-mono text-purple-300 mb-1">GET /read</div>
-                        <div class="text-xs text-purple-200/70">Retrieve stored data from memory</div>
-                    </div>
-                    <div>
-                        <div class="text-sm font-mono text-cyan-300 mb-1">POST /query</div>
-                        <div class="text-xs text-cyan-200/70">Search and filter memory contents</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Blueprint Section -->
+<!-- Features Section -->
 <section class="py-16 bg-muted/30">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-16">
-            <h2 class="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-                Our Vision & Roadmap
-            </h2>
-            <p class="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Building the future of AI collaboration, one phase at a time
-            </p>
-        </div>
-        
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <!-- Phase 1: Agent Registry -->
-            <div class="card card-elevated p-8 text-center">
-                <div class="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-full mb-6">
-                    <span class="text-2xl font-bold text-primary-foreground">1</span>
-                </div>
-                <h3 class="text-xl font-semibold text-foreground mb-4">Agent Registry</h3>
-                <p class="text-muted-foreground mb-4">
-                    A platform for developers to list and showcase their already-deployed AI agents via a base URL.
-                </p>
-                <div class="mt-4">
-                    <span class="inline-flex items-center bg-green-100 text-green-800 text-sm font-medium px-3 py-1 rounded-full">
-                        <i data-lucide="check-circle" class="mr-1 h-4 w-4"></i>
-                        Launched
-                    </span>
-                </div>
-            </div>
-            
-            <!-- Phase 2: Memory Passport -->
-            <div class="card card-elevated p-8 text-center">
-                <div class="inline-flex items-center justify-center w-16 h-16 bg-sage rounded-full mb-6">
-                    <span class="text-2xl font-bold text-sage-foreground">2</span>
-                </div>
-                <h3 class="text-xl font-semibold text-foreground mb-4">The Memory Passport</h3>
-                <p class="text-muted-foreground mb-4">
-                    Our first product: allows users to share context between different consumer AIs.
-                </p>
-                <div class="mt-4">
-                    <div class="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full mb-2">
-                        <span id="waitlist-count">{{ waitlist_count | default(114) }}</span>+ waitlist signups
+            <!-- Feature 1 -->
+            <div class="card card-elevated p-8 rounded-lg border border-border/50 hover:border-primary/50 transition-colors">
+                <div class="flex items-start mb-4">
+                    <div class="flex-shrink-0">
+                        <div class="inline-flex items-center justify-center w-12 h-12 bg-primary/10 rounded-lg">
+                            <i data-lucide="shield-alert" class="h-6 w-6 text-primary"></i>
+                        </div>
                     </div>
-                    <button onclick="openWaitlistModal()" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
-                        Join the waitlist →
-                    </button>
                 </div>
-            </div>
-            
-            <!-- Phase 3: Manhattan Project -->
-            <div class="card card-elevated p-8 text-center">
-                <div class="inline-flex items-center justify-center w-16 h-16 bg-dusty-blue rounded-full mb-6">
-                    <span class="text-2xl font-bold text-dusty-blue-foreground">3</span>
-                </div>
-                <h3 class="text-xl font-semibold text-foreground mb-4">The Manhattan Project</h3>
-                <p class="text-muted-foreground">
-                    Enabling true collaboration, conflict resolution, and distributed workflows for all agents.
+                <h3 class="text-lg font-semibold text-foreground mb-3">Remove hallucinations on new APIs and beta features</h3>
+                <p class="text-muted-foreground text-sm leading-relaxed">
+                    Keep your agents grounded with up-to-date documentation and code references.
                 </p>
-                <div class="mt-4">
-                    <span class="inline-flex items-center bg-gray-100 text-gray-800 text-sm font-medium px-3 py-1 rounded-full">
-                        <i data-lucide="clock" class="mr-1 h-4 w-4"></i>
-                        Coming soon
-                    </span>
+            </div>
+
+            <!-- Feature 2 -->
+            <div class="card card-elevated p-8 rounded-lg border border-border/50 hover:border-primary/50 transition-colors">
+                <div class="flex items-start mb-4">
+                    <div class="flex-shrink-0">
+                        <div class="inline-flex items-center justify-center w-12 h-12 bg-primary/10 rounded-lg">
+                            <i data-lucide="zap" class="h-6 w-6 text-primary"></i>
+                        </div>
+                    </div>
                 </div>
+                <h3 class="text-lg font-semibold text-foreground mb-3">Compress context to lower token usage</h3>
+                <p class="text-muted-foreground text-sm leading-relaxed">
+                    Reduce API costs by providing only the relevant code and documentation your agents need.
+                </p>
+            </div>
+
+            <!-- Feature 3 -->
+            <div class="card card-elevated p-8 rounded-lg border border-border/50 hover:border-primary/50 transition-colors">
+                <div class="flex items-start mb-4">
+                    <div class="flex-shrink-0">
+                        <div class="inline-flex items-center justify-center w-12 h-12 bg-primary/10 rounded-lg">
+                            <i data-lucide="refresh-cw" class="h-6 w-6 text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+                <h3 class="text-lg font-semibold text-foreground mb-3">Auto-sync code and docs</h3>
+                <p class="text-muted-foreground text-sm leading-relaxed">
+                    Agents always see the latest version of your repositories and documentation.
+                </p>
             </div>
         </div>
     </div>
 </section>
-
-<!-- Waitlist Modal -->
-<div id="waitlist-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-    <div class="bg-card border border-border rounded-lg p-6 m-4 max-w-md w-full card-elevated">
-        <div class="flex justify-between items-center mb-4">
-            <h3 class="text-xl font-semibold text-foreground">Join the Waitlist</h3>
-            <button onclick="closeWaitlistModal()" class="text-muted-foreground hover:text-foreground">
-                <i data-lucide="x" class="h-5 w-5"></i>
-            </button>
+<!-- Multi-Step Waitlist Modal -->
+<div id="waitlist-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+    <div class="bg-card border border-border rounded-xl m-4 w-full max-w-md card-elevated shadow-2xl overflow-hidden">
+        <!-- Step Indicator Bar -->
+        <div class="px-6 sm:px-8 pt-6 pb-4">
+            <div class="flex justify-between items-center mb-6">
+                <span id="step-counter" class="text-sm font-medium text-muted-foreground">Step 1 of 3</span>
+                <button onclick="closeWaitlistModal()" class="text-muted-foreground hover:text-foreground transition-colors">
+                    <i data-lucide="x" class="h-5 w-5"></i>
+                </button>
+            </div>
+            <div class="flex gap-2" id="step-indicator-bar">
+                <div class="h-1 flex-1 bg-primary rounded-full" id="indicator-bar-1"></div>
+                <div class="h-1 flex-1 bg-muted rounded-full" id="indicator-bar-2"></div>
+                <div class="h-1 flex-1 bg-muted rounded-full" id="indicator-bar-3"></div>
+            </div>
         </div>
-        <p class="text-muted-foreground mb-4">
-            Be the first to know when The Memory Passport launches. Enter your email below to join the waitlist.
-        </p>
-        <form id="waitlist-form" onsubmit="submitWaitlist(event)">
-            <div class="mb-4">
-                <label for="email" class="block text-sm font-medium text-foreground mb-2">Email Address</label>
+
+        <!-- Modal Content -->
+        <div class="px-6 sm:px-8 pb-6 sm:pb-8">
+
+        <!-- Step 1 -->
+        <div id="step-1" class="step-content">
+            <div class="mb-6">
+                <h3 class="text-2xl font-bold text-foreground mb-2">Which tools do you use with AI today?</h3>
+                <p class="text-sm text-muted-foreground">Select all that apply</p>
+            </div>
+            <div class="space-y-3 mb-6">
+                <label class="flex items-center cursor-pointer group">
+                    <input type="checkbox" name="tools" value="Cursor" class="w-4 h-4 rounded border-border bg-card text-primary">
+                    <span class="ml-3 text-foreground group-hover:text-primary transition-colors">Cursor</span>
+                </label>
+                <label class="flex items-center cursor-pointer group">
+                    <input type="checkbox" name="tools" value="Claude Code" class="w-4 h-4 rounded border-border bg-card text-primary">
+                    <span class="ml-3 text-foreground group-hover:text-primary transition-colors">Claude Code</span>
+                </label>
+                <label class="flex items-center cursor-pointer group">
+                    <input type="checkbox" name="tools" value="VS Code agents" class="w-4 h-4 rounded border-border bg-card text-primary">
+                    <span class="ml-3 text-foreground group-hover:text-primary transition-colors">VS Code agents</span>
+                </label>
+                <label class="flex items-center cursor-pointer group">
+                    <input type="checkbox" name="tools" value="Custom in-house agent" class="w-4 h-4 rounded border-border bg-card text-primary">
+                    <span class="ml-3 text-foreground group-hover:text-primary transition-colors">Custom in-house agent</span>
+                </label>
+                <label class="flex items-center cursor-pointer group">
+                    <input type="checkbox" name="tools" value="Other" class="w-4 h-4 rounded border-border bg-card text-primary">
+                    <span class="ml-3 text-foreground group-hover:text-primary transition-colors">Other</span>
+                </label>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold text-foreground mb-3">Main languages / stack?</h3>
                 <input 
-                    type="email" 
-                    id="email" 
-                    name="email" 
-                    required 
-                    class="input w-full"
-                    placeholder="your.email@example.com"
+                    type="text" 
+                    id="stack-input" 
+                    name="stack" 
+                    class="input w-full text-sm"
+                    placeholder="e.g., TypeScript, Python, React, Next.js"
                 >
             </div>
-            <div class="flex justify-end space-x-3">
-                <button type="button" onclick="closeWaitlistModal()" class="btn-secondary">
-                    Cancel
-                </button>
-                <button type="submit" class="btn-primary">
-                    Join Waitlist
-                </button>
+
+            <button onclick="nextStep()" class="btn-primary w-full">Next</button>
+        </div>
+
+        <!-- Step 2 -->
+        <div id="step-2" class="step-content hidden">
+            <div class="mb-6">
+                <h3 class="text-2xl font-bold text-foreground mb-2">What do you want GitMem to help with most?</h3>
+                <p class="text-sm text-muted-foreground">Select all that apply</p>
             </div>
-        </form>
+            <div class="space-y-3 mb-6">
+                <label class="flex items-center cursor-pointer group">
+                    <input type="checkbox" name="goals" value="Remove hallucinations" class="w-4 h-4 rounded border-border bg-card text-primary">
+                    <span class="ml-3 text-foreground group-hover:text-primary transition-colors">Remove hallucinations</span>
+                </label>
+                <label class="flex items-center cursor-pointer group">
+                    <input type="checkbox" name="goals" value="Reduce token costs" class="w-4 h-4 rounded border-border bg-card text-primary">
+                    <span class="ml-3 text-foreground group-hover:text-primary transition-colors">Reduce token costs</span>
+                </label>
+                <label class="flex items-center cursor-pointer group">
+                    <input type="checkbox" name="goals" value="Better code & docs search" class="w-4 h-4 rounded border-border bg-card text-primary">
+                    <span class="ml-3 text-foreground group-hover:text-primary transition-colors">Better code & docs search</span>
+                </label>
+                <label class="flex items-center cursor-pointer group">
+                    <input type="checkbox" name="goals" value="Keep repos/docs in sync" class="w-4 h-4 rounded border-border bg-card text-primary">
+                    <span class="ml-3 text-foreground group-hover:text-primary transition-colors">Keep repos/docs in sync</span>
+                </label>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold text-foreground mb-3">Anything specific about your setup we should know?</h3>
+                <textarea 
+                    id="setup-input" 
+                    name="setup" 
+                    class="input w-full text-sm h-24 resize-none"
+                    placeholder="Optional: Tell us about your setup..."
+                ></textarea>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="prevStep()" class="btn-secondary w-1/3">Back</button>
+                <button onclick="nextStep()" class="btn-primary w-2/3">Next</button>
+            </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div id="step-3" class="step-content hidden">
+            <div class="mb-6">
+                <h3 class="text-2xl font-bold text-foreground mb-2">Where should we send your invite?</h3>
+                <p class="text-sm text-muted-foreground">Join GitMem's waitlist</p>
+            </div>
+
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label for="name-input" class="block text-sm font-medium text-foreground mb-2">Name (optional)</label>
+                    <input 
+                        type="text" 
+                        id="name-input" 
+                        name="name" 
+                        class="input w-full"
+                        placeholder="Your name"
+                    >
+                </div>
+                <div>
+                    <label for="email-input" class="block text-sm font-medium text-foreground mb-2">Email *</label>
+                    <input 
+                        type="email" 
+                        id="email-input" 
+                        name="email" 
+                        required 
+                        class="input w-full"
+                        placeholder="you@company.com"
+                    >
+                </div>
+            </div>
+
+            <label class="flex items-center cursor-pointer group mb-6">
+                <input type="checkbox" id="feedback-checkbox" name="feedback" class="w-4 h-4 rounded border-border bg-card text-primary">
+                <span class="ml-3 text-sm text-foreground group-hover:text-primary transition-colors">I'm open to a short feedback call</span>
+            </label>
+
+            <div class="flex gap-3">
+                <button onclick="prevStep()" class="btn-secondary w-1/3">Back</button>
+                <button onclick="submitWaitlist()" class="btn-primary w-2/3">Join GitMem waitlist</button>
+            </div>
+        </div>
+
+        <!-- Confirmation State -->
+        <div id="step-confirmation" class="step-content hidden text-center">
+            <div class="mb-6">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-green-100/20 rounded-full mb-4">
+                    <i data-lucide="check-circle-2" class="h-8 w-8 text-green-600"></i>
+                </div>
+            </div>
+            <h3 class="text-2xl font-bold text-foreground mb-3">You're on the list!</h3>
+            <p class="text-muted-foreground mb-6 text-sm leading-relaxed">
+                GitMem is onboarding users in batches and will prioritize people who filled out all the questions. We'll be in touch soon!
+            </p>
+            <button onclick="closeWaitlistModal()" class="btn-primary w-full">Close</button>
+        </div>
+        </div>
+
+        <!-- Step Indicator (hidden - kept for compatibility) -->
+        <div class="flex gap-2 mt-8 justify-center hidden" id="step-indicator">
+            <div class="h-1 w-8 bg-primary rounded-full" id="indicator-1"></div>
+            <div class="h-1 w-8 bg-muted rounded-full" id="indicator-2"></div>
+            <div class="h-1 w-8 bg-muted rounded-full" id="indicator-3"></div>
+        </div>
     </div>
 </div>
 
-<!-- Features Section -->
-<section class="py-16">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-16">
-            <h2 class="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-                Why Choose Our Platform?
-            </h2>
-            <p class="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Experience the next generation of AI agents with our comprehensive marketplace
-            </p>
-        </div>
-        
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <!-- Feature 1 -->
-            <div class="card card-elevated p-8 text-center">
-                <div class="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-full mb-6">
-                    <i data-lucide="brain-circuit" class="h-8 w-8 text-primary-foreground"></i>
-                </div>
-                <h3 class="text-xl font-semibold text-foreground mb-4">Smart AI Agents</h3>
-                <p class="text-muted-foreground">
-                    Discover intelligent agents powered by the latest AI models and technologies
-                </p>
-            </div>
-            
-            <!-- Feature 2 -->
-            <div class="card card-elevated p-8 text-center">
-                <div class="inline-flex items-center justify-center w-16 h-16 bg-sage rounded-full mb-6">
-                    <i data-lucide="users" class="h-8 w-8 text-sage-foreground"></i>
-                </div>
-                <h3 class="text-xl font-semibold text-foreground mb-4">Creator Community</h3>
-                <p class="text-muted-foreground">
-                    Join a vibrant community of AI developers and researchers
-                </p>
-            </div>
-            
-            <!-- Feature 3 -->
-            <div class="card card-elevated p-8 text-center">
-                <div class="inline-flex items-center justify-center w-16 h-16 bg-dusty-blue rounded-full mb-6">
-                    <i data-lucide="shield-check" class="h-8 w-8 text-dusty-blue-foreground"></i>
-                </div>
-                <h3 class="text-xl font-semibold text-foreground mb-4">Verified Quality</h3>
-                <p class="text-muted-foreground">
-                    All agents are reviewed and verified for quality and safety
-                </p>
-            </div>
-        </div>
-    </div>
-</section>
 
-<!-- Categories Section -->
-<section class="py-16">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-16">
-            <h2 class="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-                Popular Categories
-            </h2>
-            <p class="text-xl text-muted-foreground">
-                Explore agents across various domains and use cases
-            </p>
-        </div>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <!-- Category Cards -->
-            {% set categories = [
-                ('automation', 'Automation', 'Streamline workflows and processes'),
-                ('content', 'Content Creation', 'Generate and optimize content'),
-                ('analysis', 'Data Analysis', 'Extract insights from data'),
-                ('customer-service', 'Customer Service', 'Enhance customer interactions'),
-                ('productivity', 'Productivity', 'Boost efficiency and output'),
-                ('research', 'Research', 'Accelerate research and discovery'),
-                ('education', 'Education', 'Personalized learning experiences'),
-                ('finance', 'Finance', 'Financial analysis and insights')
-            ] %}
-            
-            {% for icon, name, description in categories %}
-                <a href="{{ url_for('explore', category=name.lower().replace(' ', '-')) }}" 
-                   class="card card-elevated p-6 hover:scale-105 transition-transform">
-                    <div class="flex items-center mb-3">
-                        <i data-lucide="{{ icon }}" class="h-6 w-6 text-primary mr-3"></i>
-                        <h3 class="font-semibold text-foreground">{{ name }}</h3>
-                    </div>
-                    <p class="text-sm text-muted-foreground">{{ description }}</p>
-                </a>
-            {% endfor %}
-        </div>
-    </div>
-</section>
-
-<!-- CTA Section -->
-<section class="py-16 bg-primary">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h2 class="text-3xl sm:text-4xl font-bold text-primary-foreground mb-4">
-            Ready to Get Started?
-        </h2>
-        <p class="text-xl text-primary-foreground/80 mb-8 max-w-2xl mx-auto">
-            Join thousands of developers and businesses leveraging AI agents to transform their workflows
-        </p>
-        <div class="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="{{ url_for('explore') }}" 
-               class="bg-primary-foreground text-primary px-8 py-3 rounded-lg font-semibold hover:bg-primary-foreground/90 transition-colors">
-                Browse Agents
-            </a>
-            <a href="{{ url_for('creator_studio') }}" 
-               class="border border-primary-foreground text-primary-foreground px-8 py-3 rounded-lg font-semibold hover:bg-primary-foreground/10 transition-colors">
-                Become a Creator
-            </a>
-        </div>
-    </div>
-</section>
 
 <style>
-/* Animation styles for the memory architecture */
-@keyframes pulse {
-    0%, 100% { opacity: 0.7; }
-    50% { opacity: 1; }
+.step-content {
+    animation: fadeIn 0.3s ease-in-out;
 }
 
-@keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-5px); }
-}
-
-.agent-pulse {
-    animation: pulse 2s ease-in-out infinite;
-}
-
-.api-line {
-    stroke-dasharray: 10, 5;
-    animation: dash 3s linear infinite;
-}
-
-@keyframes dash {
-    to {
-        stroke-dashoffset: -100;
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
     }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.step-content.hidden {
+    display: none;
+}
+
+input[type="checkbox"] {
+    cursor: pointer;
 }
 
 /* Responsive adjustments */
-@media (max-width: 768px) {
-    .relative.h-\[500px\] {
-        height: 400px;
-    }
-}
-
 @media (max-width: 640px) {
-    .relative.h-\[500px\] {
-        height: 350px;
+    #waitlist-modal {
+        padding: 1rem;
     }
     
-    .grid-cols-1.md\:grid-cols-3 {
-        grid-template-columns: 1fr;
+    .bg-card {
+        margin: 0;
     }
 }
 </style>
 
 <script>
+// Modal state
+let currentStep = 1;
+const modalData = {
+    tools: [],
+    stack: '',
+    goals: [],
+    setup: '',
+    name: '',
+    email: '',
+    feedback: false
+};
+
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize icons
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
     }
-    
-    // Update agent count
-    updateAgentCount();
     
     // Close modal with Escape key
     document.addEventListener('keydown', function(event) {
@@ -647,53 +314,126 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Function to update agent count from Supabase
-async function updateAgentCount() {
-    try {
-        const response = await fetch('/api/agent-count');
-        const data = await response.json();
-        document.getElementById('agent-count').textContent = data.count.toLocaleString() + '+';
-    } catch (error) {
-        console.error('Error fetching agent count:', error);
-        // Keep the default value if there's an error
+// Open modal
+function openWaitlistModal() {
+    currentStep = 1;
+    resetModalData();
+    showStep(1);
+    document.getElementById('waitlist-modal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+// Close modal
+function closeWaitlistModal() {
+    document.getElementById('waitlist-modal').classList.add('hidden');
+    document.body.style.overflow = '';
+    currentStep = 1;
+    resetModalData();
+}
+
+// Reset modal data
+function resetModalData() {
+    modalData.tools = [];
+    modalData.stack = '';
+    modalData.goals = [];
+    modalData.setup = '';
+    modalData.name = '';
+    modalData.email = '';
+    modalData.feedback = false;
+}
+
+// Show specific step
+function showStep(step) {
+    // Hide all steps
+    document.querySelectorAll('.step-content').forEach(el => {
+        el.classList.add('hidden');
+    });
+    
+    // Show current step
+    document.getElementById(`step-${step}`).classList.remove('hidden');
+    
+    // Update step counter
+    document.getElementById('step-counter').textContent = `Step ${step} of 3`;
+    
+    // Update indicator bars
+    for (let i = 1; i <= 3; i++) {
+        const bar = document.getElementById(`indicator-bar-${i}`);
+        if (i <= step) {
+            bar.classList.remove('bg-muted');
+            bar.classList.add('bg-primary');
+        } else {
+            bar.classList.remove('bg-primary');
+            bar.classList.add('bg-muted');
+        }
     }
 }
 
-// Waitlist modal functions (frontend UI - remains in JS)
-function openWaitlistModal() {
-    document.getElementById('waitlist-modal').classList.remove('hidden');
-    document.body.style.overflow = 'hidden'; // Prevent scrolling
+// Navigate to next step
+function nextStep() {
+    if (currentStep === 1) {
+        // Collect Step 1 data
+        const toolCheckboxes = document.querySelectorAll('input[name="tools"]:checked');
+        modalData.tools = Array.from(toolCheckboxes).map(cb => cb.value);
+        modalData.stack = document.getElementById('stack-input').value;
+        
+        if (modalData.stack.trim() === '') {
+            alert('Please enter your main languages / stack.');
+            return;
+        }
+        
+        currentStep = 2;
+    } else if (currentStep === 2) {
+        // Collect Step 2 data
+        const goalCheckboxes = document.querySelectorAll('input[name="goals"]:checked');
+        modalData.goals = Array.from(goalCheckboxes).map(cb => cb.value);
+        modalData.setup = document.getElementById('setup-input').value;
+        
+        if (modalData.goals.length === 0) {
+            alert('Please select at least one goal.');
+            return;
+        }
+        
+        currentStep = 3;
+    }
+    
+    showStep(currentStep);
 }
 
-function closeWaitlistModal() {
-    document.getElementById('waitlist-modal').classList.add('hidden');
-    document.body.style.overflow = ''; // Re-enable scrolling
+// Navigate to previous step
+function prevStep() {
+    if (currentStep > 1) {
+        currentStep--;
+        showStep(currentStep);
+    }
 }
 
-// Function to handle waitlist form submission
-async function submitWaitlist(event) {
-    event.preventDefault();
+// Submit waitlist form
+async function submitWaitlist() {
+    // Collect Step 3 data
+    modalData.email = document.getElementById('email-input').value;
+    modalData.name = document.getElementById('name-input').value;
+    modalData.feedback = document.getElementById('feedback-checkbox').checked;
     
-    const form = event.target;
-    const email = form.email.value;
-    const submitButton = form.querySelector('button[type="submit"]');
-    const originalButtonText = submitButton.textContent;
-    
-    if (!email || !email.includes('@')) {
+    // Validate email
+    if (!modalData.email || !modalData.email.includes('@')) {
         alert('Please enter a valid email address.');
         return;
     }
     
     try {
-        // Show loading state
-        submitButton.disabled = true;
-        submitButton.textContent = 'Joining...';
-        
         // Prepare data to send
-        const formData = { email: email };
+        const formData = {
+            email: modalData.email,
+            name: modalData.name,
+            tools: modalData.tools.join(', '),
+            stack: modalData.stack,
+            goals: modalData.goals.join(', '),
+            setup: modalData.setup,
+            open_to_feedback: modalData.feedback
+        };
         
         // Call Python Flask endpoint
-        const response = await fetch("{{ url_for('join_waitlist') }}", {
+        const response = await fetch("/join-gitmem-waitlist", {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -702,35 +442,28 @@ async function submitWaitlist(event) {
         });
         
         if (response.ok) {
-            const result = await response.json();
-            // Update the waitlist count
-            document.getElementById('waitlist-count').textContent = result.new_count;
-            
-            // Show success message
-            alert('Successfully joined the waitlist! Thank you for your interest.');
-            
-            // Close the modal
-            closeWaitlistModal();
-            
-            // Reset form
-            form.reset();
+            // Show confirmation state
+            showStep('confirmation');
+            currentStep = 'confirmation';
+            document.getElementById('step-indicator').classList.add('hidden');
         } else {
             throw new Error('Failed to join waitlist');
         }
     } catch (error) {
         console.error('Error joining waitlist:', error);
         alert('There was an error joining the waitlist. Please try again.');
-    } finally {
-        // Reset button state
-        submitButton.disabled = false;
-        submitButton.textContent = originalButtonText;
     }
 }
 
 // Close modal when clicking outside
-document.getElementById('waitlist-modal').addEventListener('click', function(event) {
-    if (event.target === this) {
-        closeWaitlistModal();
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('waitlist-modal');
+    if (modal) {
+        modal.addEventListener('click', function(event) {
+            if (event.target === this) {
+                closeWaitlistModal();
+            }
+        });
     }
 });
 </script>

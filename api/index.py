@@ -31,6 +31,9 @@ import shutil
 import tempfile
 from datetime import datetime, timedelta
 import secrets
+import threading
+import requests
+import time
 
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, abort
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
@@ -55,8 +58,8 @@ from backend_examples.python.models import SearchFilters
 # API Key helpers
 from key_utils import hash_key, mask_key, generate_secret_key
 from dotenv import load_dotenv
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+# Email service
+from utlis.email_service import get_email_service
 
 load_dotenv()
 
@@ -77,6 +80,32 @@ supabase_backend: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'auth'
+
+# ==================== Keep-Alive Background Task ====================
+# This function pings the website every 5 minutes to prevent Render from sleeping
+def keep_alive_task():
+    """Background task that pings the website every 5 minutes."""
+    WEBSITE_URL = "https://themanhattanproject.ai"
+    PING_INTERVAL = 300  # 5 minutes in seconds
+    
+    def ping_website():
+        while True:
+            try:
+                time.sleep(PING_INTERVAL)
+                response = requests.get(f"{WEBSITE_URL}/ping", timeout=10)
+                if response.status_code == 200:
+                    print(f"[KEEP-ALIVE] Successfully pinged {WEBSITE_URL}/ping at {datetime.now().isoformat()}")
+                else:
+                    print(f"[KEEP-ALIVE] Ping returned status {response.status_code} at {datetime.now().isoformat()}")
+            except Exception as e:
+                print(f"[KEEP-ALIVE] Error pinging website: {e}")
+    
+    # Start the keep-alive thread as a daemon so it doesn't block shutdown
+    keep_alive_thread = threading.Thread(target=ping_website, daemon=True)
+    keep_alive_thread.start()
+    print("[KEEP-ALIVE] Background pinging task started. Will ping every 5 minutes.")
+
+# =====================================================================
 
 class User:
     def __init__(self, user_id=None, email=None):
@@ -1083,32 +1112,17 @@ def join_waitlist():
         insert_result = supabase.table('waitlist').insert(waitlist_data).execute()
         
         if insert_result.data:
-            sender_email = os.environ.get('SENDER_EMAIL')
-            sender_password = os.environ.get('SENDER_EMAIL_PASSWORD')
-            print("Sender email:", sender_email)
-            print("Sender password:", sender_password) 
+            # Send welcome email asynchronously
+            email_service = get_email_service()
             receiver_email = email
             subject = "Welcome to the Agent Architects Waitlist!"
             body = "Thank you for joining the waitlist. We'll keep you updated!"
-            msg = MIMEMultipart()
-            msg['From'] = sender_email
-            msg['To'] = receiver_email
-            msg['Subject'] = subject
-            msg.attach(MIMEText(body, 'plain'))
-            import ssl
-            context = ssl.create_default_context()
-            try:
-                server = smtplib.SMTP_SSL("smtpout.secureserver.net", 465, context=context, timeout=15)
-                server.set_debuglevel(1)  # prints SMTP conversation
-                server.login(sender_email, sender_password)
-                server.sendmail(sender_email, receiver_email, msg.as_string())
-                server.quit()
-
-            except Exception as mail_err:
-                print(f"Error sending email: {mail_err}")
+            
+            # Send asynchronously to avoid blocking
+            email_service.send_email_async(receiver_email, subject, body)
+            
             # Get updated count
             count_result = supabase.table('waitlist').select('id', count='exact').execute()
-            print(count_result)# Starting offset
             return jsonify({
                 'success': True,
                 'message': 'Successfully joined waitlist',
@@ -1149,6 +1163,91 @@ def update_waitlist_count():
         return 114  # Default fallback
 
 
+@app.route('/join-gitmem-waitlist', methods=['POST'])
+def join_gitmem_waitlist():
+    """Handle GitMem waitlist signups with full details"""
+    try:
+        data = request.get_json()
+        email = data.get('email', '').strip().lower()
+        
+        # Validate email
+        if not email or not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+            return jsonify({
+                'success': False, 
+                'message': 'Please enter a valid email address.'
+            }), 400
+        
+        # Check if email already exists in gitmem_waitlist
+        try:
+            existing_entry = supabase.table('gitmem_waitlist').select('email').eq('email', email).execute()
+            if existing_entry.data:
+                return jsonify({
+                    'success': True,
+                    'message': 'Email already registered for GitMem',
+                    'already_registered': True
+                })
+        except Exception as e:
+            print(f"Error checking existing GitMem entry: {e}")
+        
+        # Prepare data for insertion
+        gitmem_data = {
+            'email': email,
+            'name': data.get('name', '').strip() or None,
+            'tools': data.get('tools', ''),
+            'stack': data.get('stack', ''),
+            'goals': data.get('goals', ''),
+            'setup': data.get('setup', ''),
+            'open_to_feedback': data.get('open_to_feedback', False),
+            'created_at': datetime.utcnow().isoformat()
+        }
+        
+        # Get user ID if authenticated
+        if current_user.is_authenticated:
+            gitmem_data['user_id'] = current_user.id
+        
+        print("GitMem waitlist data to insert:", gitmem_data)
+        
+        # Insert new entry
+        insert_result = supabase.table('gitmem_waitlist').insert(gitmem_data).execute()
+        
+        if insert_result.data:
+            # Send welcome email asynchronously
+            email_service = get_email_service()
+            receiver_email = email
+            subject = "Welcome to GitMem Waitlist! 🎉"
+            body = f"""Hi {gitmem_data.get('name', 'there')}!
+
+Thank you for joining the GitMem waitlist. We're excited to have you on board.
+
+Your primary interests:
+- Tools: {gitmem_data.get('tools', 'Not specified')}
+- Stack: {gitmem_data.get('stack', 'Not specified')}
+- Goals: {gitmem_data.get('goals', 'Not specified')}
+
+We're onboarding users in batches and will prioritize people who filled out all the questions. You'll be among the first to get early access!
+
+Stay tuned,
+The GitMem Team"""
+            
+            # Send asynchronously to avoid blocking
+            email_service.send_email_async(receiver_email, subject, body)
+            
+            return jsonify({
+                'success': True,
+                'message': 'Successfully joined GitMem waitlist'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Failed to add to waitlist'
+            }), 500
+            
+    except Exception as e:
+        print(f"Error in join_gitmem_waitlist: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'Internal server error'
+        }), 500
 
 @app.route('/memory', methods=['GET', 'POST'])
 @login_required
@@ -1277,6 +1376,9 @@ def memory():
 
 from api_chats import api
 app.register_blueprint(api)
+
+# Initialize keep-alive background task to prevent Render from sleeping
+keep_alive_task()
 
 # Register Manhattan API blueprint (simple ping/health endpoints)
 try:
