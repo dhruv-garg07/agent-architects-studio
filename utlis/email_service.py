@@ -30,9 +30,9 @@ class EmailService:
         print(f"Sender password: {self.sender_password}")
         self.smtp_host = "smtpout.secureserver.net"
         self.smtp_port = 465
-        self.max_retries = 3
-        self.retry_delay = 2  # seconds
-        self.timeout = 10  # seconds for SMTP connection
+        self.max_retries = 5
+        self.retry_delay = 3  # seconds
+        self.timeout = 30  # seconds for SMTP connection
         self.email_queue = Queue()
         self._start_email_worker()
 
