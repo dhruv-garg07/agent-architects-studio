@@ -58,8 +58,8 @@ from backend_examples.python.models import SearchFilters
 # API Key helpers
 from key_utils import hash_key, mask_key, generate_secret_key
 from dotenv import load_dotenv
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+# Email service
+from utlis.email_service import get_email_service
 
 load_dotenv()
 
@@ -1112,32 +1112,17 @@ def join_waitlist():
         insert_result = supabase.table('waitlist').insert(waitlist_data).execute()
         
         if insert_result.data:
-            sender_email = os.environ.get('SENDER_EMAIL')
-            sender_password = os.environ.get('SENDER_EMAIL_PASSWORD')
-            print("Sender email:", sender_email)
-            print("Sender password:", sender_password) 
+            # Send welcome email asynchronously
+            email_service = get_email_service()
             receiver_email = email
             subject = "Welcome to the Agent Architects Waitlist!"
             body = "Thank you for joining the waitlist. We'll keep you updated!"
-            msg = MIMEMultipart()
-            msg['From'] = sender_email
-            msg['To'] = receiver_email
-            msg['Subject'] = subject
-            msg.attach(MIMEText(body, 'plain'))
-            import ssl
-            context = ssl.create_default_context()
-            try:
-                server = smtplib.SMTP_SSL("smtpout.secureserver.net", 465, context=context, timeout=15)
-                server.set_debuglevel(1)  # prints SMTP conversation
-                server.login(sender_email, sender_password)
-                server.sendmail(sender_email, receiver_email, msg.as_string())
-                server.quit()
-
-            except Exception as mail_err:
-                print(f"Error sending email: {mail_err}")
+            
+            # Send asynchronously to avoid blocking
+            email_service.send_email_async(receiver_email, subject, body)
+            
             # Get updated count
             count_result = supabase.table('waitlist').select('id', count='exact').execute()
-            print(count_result)# Starting offset
             return jsonify({
                 'success': True,
                 'message': 'Successfully joined waitlist',
@@ -1226,19 +1211,11 @@ def join_gitmem_waitlist():
         insert_result = supabase.table('gitmem_waitlist').insert(gitmem_data).execute()
         
         if insert_result.data:
-            # Send welcome email
-            try:
-                sender_email = os.environ.get('SENDER_EMAIL')
-                sender_password = os.environ.get('SENDER_EMAIL_PASSWORD')
-                
-                if sender_email and sender_password:
-                    from email.mime.text import MIMEText
-                    from email.mime.multipart import MIMEMultipart
-                    import ssl
-                    
-                    receiver_email = email
-                    subject = "Welcome to GitMem Waitlist! 🎉"
-                    body = f"""Hi {gitmem_data.get('name', 'there')}!
+            # Send welcome email asynchronously
+            email_service = get_email_service()
+            receiver_email = email
+            subject = "Welcome to GitMem Waitlist! 🎉"
+            body = f"""Hi {gitmem_data.get('name', 'there')}!
 
 Thank you for joining the GitMem waitlist. We're excited to have you on board.
 
@@ -1251,24 +1228,9 @@ We're onboarding users in batches and will prioritize people who filled out all 
 
 Stay tuned,
 The GitMem Team"""
-                    
-                    msg = MIMEMultipart()
-                    msg['From'] = sender_email
-                    msg['To'] = receiver_email
-                    msg['Subject'] = subject
-                    msg.attach(MIMEText(body, 'plain'))
-                    
-                    context = ssl.create_default_context()
-                    try:
-                        server = smtplib.SMTP_SSL("smtpout.secureserver.net", 465, context=context, timeout=15)
-                        server.login(sender_email, sender_password)
-                        server.sendmail(sender_email, receiver_email, msg.as_string())
-                        server.quit()
-                        print(f"Welcome email sent to {receiver_email}")
-                    except Exception as mail_err:
-                        print(f"Error sending email: {mail_err}")
-            except Exception as e:
-                print(f"Error in email sending setup: {e}")
+            
+            # Send asynchronously to avoid blocking
+            email_service.send_email_async(receiver_email, subject, body)
             
             return jsonify({
                 'success': True,
