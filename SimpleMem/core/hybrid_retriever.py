@@ -12,7 +12,7 @@ from typing import List, Optional, Dict, Any
 from models.memory_entry import MemoryEntry
 from utils.llm_client import LLMClient
 from database.vector_store import VectorStore
-from config_loader import SEMANTIC_TOP_K, KEYWORD_TOP_K, STRUCTURED_TOP_K, ENABLE_PLANNING, ENABLE_REFLECTION, MAX_REFLECTION_ROUNDS, ENABLE_PARALLEL_RETRIEVAL, MAX_RETRIEVAL_WORKERS
+from config_loader import SEMANTIC_TOP_K, KEYWORD_TOP_K, STRUCTURED_TOP_K, ENABLE_PLANNING, ENABLE_REFLECTION, MAX_REFLECTION_ROUNDS, ENABLE_PARALLEL_RETRIEVAL, MAX_RETRIEVAL_WORKERS, USE_JSON_FORMAT
 import re
 from datetime import datetime, timedelta
 import dateparser
@@ -206,7 +206,7 @@ Return ONLY JSON, no other content.
             try:
                 # Use JSON format if configured
                 response_format = None
-                if hasattr(config, 'USE_JSON_FORMAT') and config.USE_JSON_FORMAT:
+                if USE_JSON_FORMAT:
                     response_format = {"type": "json_object"}
 
                 response = self.llm_client.chat_completion(
@@ -381,7 +381,7 @@ Return ONLY the JSON, no other text.
         try:
             # Use JSON format if configured
             response_format = None
-            if hasattr(config, 'USE_JSON_FORMAT') and config.USE_JSON_FORMAT:
+            if USE_JSON_FORMAT:
                 response_format = {"type": "json_object"}
                 
             response = self.llm_client.chat_completion(
@@ -464,7 +464,7 @@ Return ONLY the JSON, no other text.
         try:
             # Use JSON format if configured
             response_format = None
-            if hasattr(config, 'USE_JSON_FORMAT') and config.USE_JSON_FORMAT:
+            if USE_JSON_FORMAT:
                 response_format = {"type": "json_object"}
                 
             response = self.llm_client.chat_completion(
@@ -525,7 +525,7 @@ Return ONLY the JSON, no other text.
         try:
             # Use JSON format if configured
             response_format = None
-            if hasattr(config, 'USE_JSON_FORMAT') and config.USE_JSON_FORMAT:
+            if USE_JSON_FORMAT:
                 response_format = {"type": "json_object"}
                 
             response = self.llm_client.chat_completion(
@@ -694,7 +694,7 @@ Return ONLY the JSON, no other text.
         try:
             # Use JSON format if configured
             response_format = None
-            if hasattr(config, 'USE_JSON_FORMAT') and config.USE_JSON_FORMAT:
+            if USE_JSON_FORMAT:
                 response_format = {"type": "json_object"}
                 
             response = self.llm_client.chat_completion(
@@ -765,7 +765,7 @@ Return ONLY the JSON, no other text.
         try:
             # Use JSON format if configured
             response_format = None
-            if hasattr(config, 'USE_JSON_FORMAT') and config.USE_JSON_FORMAT:
+            if USE_JSON_FORMAT:
                 response_format = {"type": "json_object"}
                 
             response = self.llm_client.chat_completion(
@@ -885,7 +885,7 @@ Return ONLY the JSON, no other text.
         try:
             # Use JSON format if configured
             response_format = None
-            if hasattr(config, 'USE_JSON_FORMAT') and config.USE_JSON_FORMAT:
+            if USE_JSON_FORMAT:
                 response_format = {"type": "json_object"}
                 
             response = self.llm_client.chat_completion(
@@ -950,7 +950,7 @@ Return ONLY the JSON, no other text.
         try:
             # Use JSON format if configured
             response_format = None
-            if hasattr(config, 'USE_JSON_FORMAT') and config.USE_JSON_FORMAT:
+            if USE_JSON_FORMAT:
                 response_format = {"type": "json_object"}
                 
             response = self.llm_client.chat_completion(

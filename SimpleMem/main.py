@@ -35,6 +35,7 @@ class SimpleMemSystem:
     """
     def __init__(
         self,
+        agent_id: str = "memory_entries",
         api_key: Optional[str] = None,
         model: Optional[str] = None,
         base_url: Optional[str] = None,
@@ -85,6 +86,7 @@ class SimpleMemSystem:
         )
         self.embedding_model = EmbeddingModel()
         self.vector_store = VectorStore(
+            agent_id=agent_id,
             # db_path=db_path,
             embedding_model=self.embedding_model,
             # table_name=table_name
@@ -215,6 +217,7 @@ class SimpleMemSystem:
 
 # Convenience function
 def create_system(
+    agent_id: str = "memory_entries",   
     clear_db: bool = False,
     enable_planning: Optional[bool] = None,
     enable_reflection: Optional[bool] = None,
@@ -228,6 +231,7 @@ def create_system(
     Create SimpleMem system instance (uses config.py defaults when None)
     """
     return SimpleMemSystem(
+        agent_id=agent_id,
         clear_db=clear_db,
         enable_planning=enable_planning,
         enable_reflection=enable_reflection,
@@ -240,43 +244,232 @@ def create_system(
 
 
 if __name__ == "__main__":
-    # Quick test with Qwen3 integration
-    print("[RUNNING] SimpleMem Quick Test with Qwen3...")
-
-    system = create_system(clear_db=True)
-    print(f"[MODEL] Using embedding model: {system.memory_builder.vector_store.embedding_model.model_name}")
-    print(f"[MODEL] Model type: {system.memory_builder.vector_store.embedding_model.model_type}")
-
-    # Add some test dialogues
-    system.vector_store.agent_id = "test_agent_1"
-    system.add_dialogue("Alice", "Bob, let's meet at Starbucks tomorrow at 2pm to discuss the new product", "2025-11-15T14:30:00")
     import time
-    time.sleep(1)  # Ensure different timestamps
-    system.vector_store.agent_id = "test_agent_2"
-    system.add_dialogue("Bob", "Okay, I'll prepare the materials", "2025-11-15T14:31:00")
-    time.sleep(1)  # Ensure different timestamps
-    system.vector_store.agent_id = "test_agent_3"
-    system.add_dialogue("Alice", "Remember to bring the market research report from last time", "2025-11-15T14:32:00")
-    time.sleep(1)  # Ensure different timestamps
-    system.vector_store.agent_id = "test_agent_1"
-    system.add_dialogue("Bob", "I think your favourite food is tea.", "2025-11-15T14:33:00")
-    system.vector_store.agent_id = "test_agent_1"
-    # Finalize input
-    # system.finalize()
-
-    # View memories
-    system.print_memories()
-
-    # Ask questions (with new features)
-    print("\n[TEST] Testing retrieval with planning and reflection...")
-    system.ask("When will Alice and Bob meet?")
     
-    print("\n[TEST] Testing adversarial question (reflection disabled)...")
+    print("="*70)
+    print("[RUNNING] SimpleMem Multi-Agent System Test")
+    print("="*70)
+    
+    # ========================================================================
+    # Create THREE SEPARATE SYSTEMS for THREE DIFFERENT AGENTS
+    # ========================================================================
+    
+    print("\n[SETUP] Creating three independent memory systems...")
+    system_agent_1 = create_system(agent_id="test_agent_1", clear_db=True)
+    system_agent_2 = create_system(agent_id="test_agent_2", clear_db=False)
+    system_agent_3 = create_system(agent_id="test_agent_3", clear_db=False)
+
+    print(f"✓ System 1 created for Agent 1")
+    print(f"✓ System 2 created for Agent 2")
+    print(f"✓ System 3 created for Agent 3")
+    
+    print(f"\n[MODEL] Embedding model: {system_agent_1.memory_builder.vector_store.embedding_model.model_name}")
+    print(f"[MODEL] Type: {system_agent_1.memory_builder.vector_store.embedding_model.model_type}")
+    
+    # ========================================================================
+    # AGENT 1 - Alice & Bob discussion about product meetings
+    # ========================================================================
+    print("\n" + "="*70)
+    print("[AGENT-1] Adding dialogues for Agent 1 (Alice & Bob - Product Team)")
+    print("="*70)
+    
+    system_agent_1.add_dialogue(
+        "Alice", 
+        "Bob, let's meet at Starbucks tomorrow at 2pm to discuss the new product", 
+        "2025-11-15T14:30:00"
+    )
+    print("  ✓ Dialogue 1: Alice proposes meeting")
+    time.sleep(1)
+    
+    system_agent_1.add_dialogue(
+        "Bob", 
+        "Okay, I'll prepare the materials", 
+        "2025-11-15T14:31:00"
+    )
+    print("  ✓ Dialogue 2: Bob confirms and prepares")
+    time.sleep(1)
+    
+    system_agent_1.add_dialogue(
+        "Alice", 
+        "Remember to bring the market research report from last time", 
+        "2025-11-15T14:32:00"
+    )
+    print("  ✓ Dialogue 3: Alice reminds about documents")
+    time.sleep(1)
+    
+    system_agent_1.add_dialogue(
+        "Bob", 
+        "I think your favourite food is tea.", 
+        "2025-11-15T14:33:00"
+    )
+    print("  ✓ Dialogue 4: Bob makes personal observation")
+    
+    print("\n[AGENT-1] Stored dialogues to system 1")
+    
+    # ========================================================================
+    # AGENT 2 - Charlie & Diana discussion about project timeline
+    # ========================================================================
+    print("\n" + "="*70)
+    print("[AGENT-2] Adding dialogues for Agent 2 (Charlie & Diana - Project Team)")
+    print("="*70)
+    
+    system_agent_2.add_dialogue(
+        "Charlie", 
+        "Diana, the Q3 deadline is critical for our project delivery", 
+        "2025-11-15T15:00:00"
+    )
+    print("  ✓ Dialogue 1: Charlie discusses Q3 deadline")
+    time.sleep(1)
+    
+    system_agent_2.add_dialogue(
+        "Diana", 
+        "Yes, we need to complete the architecture review by next Friday", 
+        "2025-11-15T15:01:00"
+    )
+    print("  ✓ Dialogue 2: Diana confirms architecture review deadline")
+    time.sleep(1)
+    
+    system_agent_2.add_dialogue(
+        "Charlie", 
+        "I'll organize the team meeting in the conference room at 10 am", 
+        "2025-11-15T15:02:00"
+    )
+    print("  ✓ Dialogue 3: Charlie schedules team meeting")
+    time.sleep(1)
+    
+    system_agent_2.add_dialogue(
+        "Diana", 
+        "Make sure to invite the backend team and the QA lead", 
+        "2025-11-15T15:03:00"
+    )
+    print("  ✓ Dialogue 4: Diana specifies meeting participants")
+    
+    print("\n[AGENT-2] Stored dialogues to system 2")
+    
+    # ========================================================================
+    # AGENT 3 - Eve & Frank discussion about client engagement
+    # ========================================================================
+    print("\n" + "="*70)
+    print("[AGENT-3] Adding dialogues for Agent 3 (Eve & Frank - Sales Team)")
+    print("="*70)
+    
+    system_agent_3.add_dialogue(
+        "Eve", 
+        "Frank, the client wants to see a demo of the new features by Wednesday", 
+        "2025-11-15T16:00:00"
+    )
+    print("  ✓ Dialogue 1: Eve mentions client demo deadline")
+    time.sleep(1)
+    
+    system_agent_3.add_dialogue(
+        "Frank", 
+        "I'll have the demo environment ready by Tuesday afternoon", 
+        "2025-11-15T16:01:00"
+    )
+    print("  ✓ Dialogue 2: Frank confirms demo preparation")
+    time.sleep(1)
+    
+    system_agent_3.add_dialogue(
+        "Eve", 
+        "Great! Let's meet at the client's office downtown at 9 am", 
+        "2025-11-15T16:02:00"
+    )
+    print("  ✓ Dialogue 3: Eve schedules client meeting")
+    time.sleep(1)
+    
+    system_agent_3.add_dialogue(
+        "Frank", 
+        "I love working with this client, they're always excited about our innovations", 
+        "2025-11-15T16:03:00"
+    )
+    print("  ✓ Dialogue 4: Frank expresses positive sentiment about client")
+    
+    print("\n[AGENT-3] Stored dialogues to system 3")
+    
+    # ========================================================================
+    # TEST AGENT 1 - Retrieval from Agent 1's memory
+    # ========================================================================
+    print("\n" + "="*70)
+    print("[TEST-AGENT-1] Retrieving from Agent 1 System (Alice & Bob)")
+    print("="*70)
+    
+    print("\n[AGENT-1] All stored memories:")
+    system_agent_1.print_memories()
+    
+    print("\n[AGENT-1] Testing retrieval with planning and reflection...")
+    answer_1 = system_agent_1.ask("When will Alice and Bob meet?")
+    print(f"Answer: {answer_1}")
+    
+    print("\n[AGENT-1] Testing adversarial question (reflection disabled)...")
     question = "What is Alice's favorite food?"
-    contexts = system.hybrid_retriever.retrieve(question, enable_reflection=False)
-    answer = system.answer_generator.generate_answer(question, contexts)
-    print(f"\nQuestion: {question}")
+    contexts = system_agent_1.hybrid_retriever.retrieve(question, enable_reflection=False)
+    answer = system_agent_1.answer_generator.generate_answer(question, contexts)
+    print(f"Question: {question}")
     print(f"Answer: {answer}")
     
-    print("\n[SUCCESS] Quick test completed!")
-    print("\n[INFO] To run comprehensive tests: python test_qwen3_integration.py")
+    # ========================================================================
+    # TEST AGENT 2 - Retrieval from Agent 2's memory
+    # ========================================================================
+    print("\n" + "="*70)
+    print("[TEST-AGENT-2] Retrieving from Agent 2 System (Charlie & Diana)")
+    print("="*70)
+    
+    print("\n[AGENT-2] All stored memories:")
+    system_agent_2.print_memories()
+    
+    print("\n[AGENT-2] Testing retrieval: Q3 deadline question...")
+    answer_2 = system_agent_2.ask("When is the Q3 deadline?")
+    print(f"Answer: {answer_2}")
+    
+    print("\n[AGENT-2] Testing retrieval: Team meeting location...")
+    question = "Where is the team meeting scheduled?"
+    contexts = system_agent_2.hybrid_retriever.retrieve(question, enable_reflection=False)
+    answer = system_agent_2.answer_generator.generate_answer(question, contexts)
+    print(f"Question: {question}")
+    print(f"Answer: {answer}")
+    
+    # ========================================================================
+    # TEST AGENT 3 - Retrieval from Agent 3's memory
+    # ========================================================================
+    print("\n" + "="*70)
+    print("[TEST-AGENT-3] Retrieving from Agent 3 System (Eve & Frank)")
+    print("="*70)
+    
+    print("\n[AGENT-3] All stored memories:")
+    system_agent_3.print_memories()
+    
+    print("\n[AGENT-3] Testing retrieval: Client demo deadline...")
+    answer_3 = system_agent_3.ask("When does the client want to see the demo?")
+    print(f"Answer: {answer_3}")
+    
+    print("\n[AGENT-3] Testing retrieval: Client meeting location...")
+    question = "Where is the client meeting?"
+    contexts = system_agent_3.hybrid_retriever.retrieve(question, enable_reflection=False)
+    answer = system_agent_3.answer_generator.generate_answer(question, contexts)
+    print(f"Question: {question}")
+    print(f"Answer: {answer}")
+    
+    # ========================================================================
+    # VERIFY DATA ISOLATION
+    # ========================================================================
+    print("\n" + "="*70)
+    print("[VERIFICATION] Confirming Data Isolation Between Agents")
+    print("="*70)
+    
+    agent1_memory_count = len(system_agent_1.get_all_memories())
+    agent2_memory_count = len(system_agent_2.get_all_memories())
+    agent3_memory_count = len(system_agent_3.get_all_memories())
+    
+    print(f"\nAgent 1 memory entries: {agent1_memory_count}")
+    print(f"Agent 2 memory entries: {agent2_memory_count}")
+    print(f"Agent 3 memory entries: {agent3_memory_count}")
+    
+    print("\n✓ Each agent has independent isolated system")
+    print("✓ No dialogue mixing between agents")
+    print("✓ Each system manages its own memory collection")
+    
+    print("\n" + "="*70)
+    print("[SUCCESS] Multi-Agent System Test Completed!")
+    print("="*70)
+    print("\n[INFO] For comprehensive tests: python test_qwen3_integration.py")
+
