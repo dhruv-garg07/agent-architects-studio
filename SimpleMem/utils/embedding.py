@@ -5,11 +5,7 @@ for backward compatibility (encode, encode_single, encode_query, encode_document
 """
 from typing import List, Optional, Dict, Any
 import numpy as np
-# Prefer the local package config (SimpleMem.config) if available, otherwise fall back
-try:
-    from SimpleMem import config
-except Exception:
-    import config
+from config_loader import EMBEDDING_MODEL, REMOTE_EMBEDDING_URL, REMOTE_EMBEDDING_DIMENSION
 import os
 import requests
 import json
@@ -21,13 +17,13 @@ class EmbeddingModel:
     This class preserves the same public API as the original implementation.
     """
     def __init__(self, model_name: str = None, use_optimization: bool = True):
-        self.model_name = model_name or config.EMBEDDING_MODEL
+        self.model_name = model_name or EMBEDDING_MODEL
         self.use_optimization = use_optimization
 
-        print(f"Using remote embedding API (no local download): {getattr(config, 'REMOTE_EMBEDDING_URL', 'unknown')}")
+        print(f"Using remote embedding API (no local download): {REMOTE_EMBEDDING_URL or 'unknown'}")
         # Use remote embedding API by default
         self.model_type = "remote_api"
-        self.dimension = getattr(config, "REMOTE_EMBEDDING_DIMENSION", 384)
+        self.dimension = REMOTE_EMBEDDING_DIMENSION
         self.supports_query_prompt = False
 
     def encode(self, texts: List[str], is_query: bool = False) -> np.ndarray:

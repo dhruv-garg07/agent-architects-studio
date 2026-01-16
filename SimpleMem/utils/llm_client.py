@@ -4,7 +4,7 @@ LLM Client - Handles all LLM interactions
 import json
 from typing import List, Dict, Any, Optional
 from openai import OpenAI
-import config
+from config_loader import TOGETHER_API_KEY, LLM_MODEL, OPENAI_BASE_URL, ENABLE_THINKING, USE_STREAMING
 from together import Together
 def extract_output_after_think(response: str) -> str:
     """
@@ -29,11 +29,11 @@ class LLMClient:
         enable_thinking: Optional[bool] = None,
         use_streaming: Optional[bool] = None
     ):
-        self.api_key = api_key or config.OPENAI_API_KEY
-        self.model = model or config.LLM_MODEL
-        self.base_url = base_url or config.OPENAI_BASE_URL
-        self.enable_thinking = enable_thinking if enable_thinking is not None else config.ENABLE_THINKING
-        self.use_streaming = use_streaming if use_streaming is not None else config.USE_STREAMING
+        self.api_key = api_key or TOGETHER_API_KEY
+        self.model = model or LLM_MODEL
+        self.base_url = base_url or OPENAI_BASE_URL
+        self.enable_thinking = enable_thinking if enable_thinking is not None else ENABLE_THINKING
+        self.use_streaming = use_streaming if use_streaming is not None else USE_STREAMING
 
         # Initialize OpenAI client with optional base_url
         client_kwargs = {"api_key": self.api_key}

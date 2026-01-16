@@ -12,7 +12,7 @@ from typing import List, Optional, Dict, Any
 from models.memory_entry import MemoryEntry
 from utils.llm_client import LLMClient
 from database.vector_store import VectorStore
-import config
+from config_loader import SEMANTIC_TOP_K, KEYWORD_TOP_K, STRUCTURED_TOP_K, ENABLE_PLANNING, ENABLE_REFLECTION, MAX_REFLECTION_ROUNDS, ENABLE_PARALLEL_RETRIEVAL, MAX_RETRIEVAL_WORKERS
 import re
 from datetime import datetime, timedelta
 import dateparser
@@ -49,16 +49,16 @@ class HybridRetriever:
     ):
         self.llm_client = llm_client
         self.vector_store = vector_store
-        self.semantic_top_k = semantic_top_k or config.SEMANTIC_TOP_K
-        self.keyword_top_k = keyword_top_k or config.KEYWORD_TOP_K
-        self.structured_top_k = structured_top_k or config.STRUCTURED_TOP_K
+        self.semantic_top_k = semantic_top_k or SEMANTIC_TOP_K
+        self.keyword_top_k = keyword_top_k or KEYWORD_TOP_K
+        self.structured_top_k = structured_top_k or STRUCTURED_TOP_K
         
         # Use config values as default if not explicitly provided
-        self.enable_planning = enable_planning if enable_planning is not None else getattr(config, 'ENABLE_PLANNING', True)
-        self.enable_reflection = enable_reflection if enable_reflection is not None else getattr(config, 'ENABLE_REFLECTION', True)
-        self.max_reflection_rounds = max_reflection_rounds if max_reflection_rounds is not None else getattr(config, 'MAX_REFLECTION_ROUNDS', 2)
-        self.enable_parallel_retrieval = enable_parallel_retrieval if enable_parallel_retrieval is not None else getattr(config, 'ENABLE_PARALLEL_RETRIEVAL', True)
-        self.max_retrieval_workers = max_retrieval_workers if max_retrieval_workers is not None else getattr(config, 'MAX_RETRIEVAL_WORKERS', 3)
+        self.enable_planning = enable_planning if enable_planning is not None else ENABLE_PLANNING
+        self.enable_reflection = enable_reflection if enable_reflection is not None else ENABLE_REFLECTION
+        self.max_reflection_rounds = max_reflection_rounds if max_reflection_rounds is not None else MAX_REFLECTION_ROUNDS
+        self.enable_parallel_retrieval = enable_parallel_retrieval if enable_parallel_retrieval is not None else ENABLE_PARALLEL_RETRIEVAL
+        self.max_retrieval_workers = max_retrieval_workers if max_retrieval_workers is not None else MAX_RETRIEVAL_WORKERS
 
     def retrieve(self, query: str, enable_reflection: Optional[bool] = None) -> List[MemoryEntry]:
         """

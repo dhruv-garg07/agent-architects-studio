@@ -7,7 +7,7 @@ Generates answers from the final context C_final synthesized by query-aware retr
 from typing import List
 from models.memory_entry import MemoryEntry
 from utils.llm_client import LLMClient
-import config
+from config_loader import USE_JSON_FORMAT
 
 
 class AnswerGenerator:
@@ -64,7 +64,7 @@ class AnswerGenerator:
             try:
                 # Use JSON format if configured
                 response_format = None
-                if hasattr(config, 'USE_JSON_FORMAT') and config.USE_JSON_FORMAT:
+                if USE_JSON_FORMAT:
                     response_format = {"type": "json_object"}
 
                 response = self.llm_client.chat_completion(

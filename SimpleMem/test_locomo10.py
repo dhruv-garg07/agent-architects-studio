@@ -334,19 +334,20 @@ def calculate_sentence_similarity(prediction: str, reference: str) -> float:
 def create_judge_llm_client():
     """Create a dedicated LLM client for judge evaluation"""
     from utils.llm_client import LLMClient
-    import config
+    from config_loader import JUDGE_API_KEY, OPENAI_API_KEY, JUDGE_MODEL, LLM_MODEL
     
     # Use judge-specific settings, fall back to main settings if not specified
-    judge_api_key = getattr(config, 'JUDGE_API_KEY', None) or config.OPENAI_API_KEY
-    judge_base_url = getattr(config, 'JUDGE_BASE_URL', None)
+    judge_api_key = JUDGE_API_KEY or OPENAI_API_KEY
+    from config_loader import JUDGE_BASE_URL, OPENAI_BASE_URL, JUDGE_ENABLE_THINKING, JUDGE_USE_STREAMING
+    judge_base_url = JUDGE_BASE_URL
     if judge_base_url is None:
-        judge_base_url = getattr(config, 'OPENAI_BASE_URL', None)
-    judge_model = getattr(config, 'JUDGE_MODEL', None) or config.LLM_MODEL
-    judge_thinking = getattr(config, 'JUDGE_ENABLE_THINKING', False)
-    judge_streaming = getattr(config, 'JUDGE_USE_STREAMING', False)
+        judge_base_url = OPENAI_BASE_URL
+    judge_model = JUDGE_MODEL or LLM_MODEL
+    judge_thinking = JUDGE_ENABLE_THINKING
+    judge_streaming = JUDGE_USE_STREAMING
     
     print(f"Initializing LLM-as-judge with model: {judge_model}")
-    if judge_base_url and judge_base_url != getattr(config, 'OPENAI_BASE_URL', None):
+    if judge_base_url and judge_base_url != OPENAI_BASE_URL:
         print(f"Using separate judge endpoint: {judge_base_url}")
     
     # For OpenAI API, disable thinking mode to avoid parameter errors
@@ -456,14 +457,14 @@ Return ONLY the JSON, no other text.
             }
         ]
         
-        import config
+        from config_loader import USE_JSON_FORMAT, JUDGE_TEMPERATURE
         # Use JSON format if configured
         response_format = None
-        if hasattr(config, 'USE_JSON_FORMAT') and config.USE_JSON_FORMAT:
+        if USE_JSON_FORMAT:
             response_format = {"type": "json_object"}
         
         # Use judge-specific temperature setting
-        judge_temperature = getattr(config, 'JUDGE_TEMPERATURE', 0.3)
+        judge_temperature = JUDGE_TEMPERATURE
         
         response = judge_client.chat_completion(
             messages,
@@ -704,10 +705,10 @@ Return ONLY the JSON, no other text.
         max_retries = 3
         for attempt in range(max_retries):
             try:
-                import config
+                from config_loader import USE_JSON_FORMAT
                 # Use JSON format if configured
                 response_format = None
-                if hasattr(config, 'USE_JSON_FORMAT') and config.USE_JSON_FORMAT:
+                if USE_JSON_FORMAT:
                     response_format = {"type": "json_object"}
 
                 response = self.system.llm_client.chat_completion(
@@ -803,12 +804,12 @@ Return ONLY the JSON, no other text.
         
         # Use ThreadPoolExecutor for parallel question processing
         # Use explicit test_workers parameter, or config, or reasonable default
-        import config
+        from config_loader import MAX_RETRIEVAL_WORKERS
         
         if self.test_workers is not None:
             max_workers = self.test_workers
         else:
-            max_workers = getattr(config, 'MAX_RETRIEVAL_WORKERS', 16)
+            max_workers = MAX_RETRIEVAL_WORKERS
         
         # Apply reasonable limits
         max_workers = min(

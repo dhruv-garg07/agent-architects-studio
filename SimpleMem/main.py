@@ -10,7 +10,6 @@ from database.vector_store import VectorStore
 from core.memory_builder import MemoryBuilder
 from core.hybrid_retriever import HybridRetriever
 from core.answer_generator import AnswerGenerator
-import config
 import os, sys
 # Import parent dir and add to path
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -19,6 +18,11 @@ if grandparent_dir not in sys.path:
     sys.path.append(grandparent_dir)
 if parent_dir not in sys.path:
     sys.path.append(parent_dir)
+
+
+# Load environment variables from .env if exists
+from dotenv import load_dotenv
+load_dotenv()
 
 class SimpleMemSystem:
     """

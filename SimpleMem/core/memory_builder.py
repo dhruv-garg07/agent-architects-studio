@@ -10,7 +10,7 @@ from typing import List, Optional
 from models.memory_entry import MemoryEntry, Dialogue
 from utils.llm_client import LLMClient
 from database.vector_store import VectorStore
-import config
+from config_loader import WINDOW_SIZE, ENABLE_PARALLEL_PROCESSING, MAX_PARALLEL_WORKERS, USE_JSON_FORMAT
 import json
 import asyncio
 import concurrent.futures
@@ -40,11 +40,11 @@ class MemoryBuilder:
     ):
         self.llm_client = llm_client
         self.vector_store = vector_store
-        self.window_size = window_size or config.WINDOW_SIZE
+        self.window_size = window_size or WINDOW_SIZE
         
         # Use config values as default if not explicitly provided
-        self.enable_parallel_processing = enable_parallel_processing if enable_parallel_processing is not None else getattr(config, 'ENABLE_PARALLEL_PROCESSING', True)
-        self.max_parallel_workers = max_parallel_workers if max_parallel_workers is not None else getattr(config, 'MAX_PARALLEL_WORKERS', 4)
+        self.enable_parallel_processing = enable_parallel_processing if enable_parallel_processing is not None else ENABLE_PARALLEL_PROCESSING
+        self.max_parallel_workers = max_parallel_workers if max_parallel_workers is not None else MAX_PARALLEL_WORKERS
 
         # Dialogue buffer
         self.dialogue_buffer: List[Dialogue] = []
@@ -245,7 +245,7 @@ class MemoryBuilder:
             try:
                 # Use JSON format if configured
                 response_format = None
-                if hasattr(config, 'USE_JSON_FORMAT') and config.USE_JSON_FORMAT:
+                if USE_JSON_FORMAT:
                     response_format = {"type": "json_object"}
 
                 response = self.llm_client.chat_completion(
@@ -452,7 +452,7 @@ Now process the above dialogues. Return ONLY the JSON array, no other explanatio
             try:
                 # Use JSON format if configured
                 response_format = None
-                if hasattr(config, 'USE_JSON_FORMAT') and config.USE_JSON_FORMAT:
+                if USE_JSON_FORMAT:
                     response_format = {"type": "json_object"}
 
                 response = self.llm_client.chat_completion(

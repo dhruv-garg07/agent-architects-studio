@@ -14,7 +14,6 @@ from typing import List, Optional, Dict, Any, Tuple
 import numpy as np
 from models.memory_entry import MemoryEntry
 from utils.embedding import EmbeddingModel
-import config
 import os
 import sys
 from datetime import datetime
