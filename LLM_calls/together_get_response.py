@@ -6,7 +6,7 @@ import time
 from requests.exceptions import RequestException
 import traceback
 import requests
-import config
+from SimpleMem import config
 
 TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
 # External endpoint (optional) - set in SimpleMem/config.py
