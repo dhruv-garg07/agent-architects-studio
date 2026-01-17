@@ -581,51 +581,51 @@ html {
     </main>
 
     <!-- Footer -->
-    <footer class="bg-card border-t border-border mt-16">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-                <div>
-                    <h3 class="font-semibold text-foreground mb-4">Platform</h3>
-                    <div class="space-y-2">
-                        <a href="{{ url_for('explore') }}"
-                            class="block text-muted-foreground hover:text-primary transition-colors">Explore Agents</a>
-                        <a href="{{ url_for('creators') }}"
-                            class="block text-muted-foreground hover:text-primary transition-colors">Creator
-                            Directory</a>
-                        <a href="{{ url_for('creator_studio') }}"
-                            class="block text-muted-foreground hover:text-primary transition-colors">Submit Agent</a>
-                    </div>
+    <footer class="border-t border-opacity-10 border-white bg-gradient-to-b from-slate-900 to-slate-950 mt-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+                <!-- Brand -->
+                <div class="md:col-span-1">
+                    <h3 class="text-lg font-bold text-white mb-4">Agent Architects</h3>
+                    <p class="text-gray-400 text-sm">AI agent marketplace and collaboration platform.</p>
                 </div>
+
+                <!-- Explore -->
                 <div>
-                    <h3 class="font-semibold text-foreground mb-4">Resources</h3>
-                    <div class="space-y-2">
-                        <a href="#"
-                            class="block text-muted-foreground hover:text-primary transition-colors">Documentation</a>
-                        <a href="#" class="block text-muted-foreground hover:text-primary transition-colors">API
-                            Reference</a>
-                        <a href="#"
-                            class="block text-muted-foreground hover:text-primary transition-colors">Community</a>
-                    </div>
+                    <h4 class="font-semibold text-white mb-4">Platform</h4>
+                    <ul class="space-y-2">
+                        <li><a href="{{ url_for('homepage') }}" class="text-gray-400 hover:text-blue-400 transition text-sm">Home</a></li>
+                        <li><a href="{{ url_for('dashboard') }}" class="text-gray-400 hover:text-blue-400 transition text-sm">Dashboard</a></li>
+                    </ul>
                 </div>
+
+                <!-- Resources -->
                 <div>
-                    <h3 class="font-semibold text-foreground mb-4">Company</h3>
-                    <div class="space-y-2">
-                        <a href="#" class="block text-muted-foreground hover:text-primary transition-colors">About</a>
-                        <a href="#" class="block text-muted-foreground hover:text-primary transition-colors">Blog</a>
-                        <a href="#" class="block text-muted-foreground hover:text-primary transition-colors">Contact</a>
-                    </div>
+                    <h4 class="font-semibold text-white mb-4">Resources</h4>
+                    <ul class="space-y-2">
+                        <li><a href="{{ url_for('api_docs') }}" class="text-gray-400 hover:text-blue-400 transition text-sm">API Docs</a></li>
+                        <li><a href="{{ url_for('memory') }}" class="text-gray-400 hover:text-blue-400 transition text-sm">Memory System</a></li>
+                    </ul>
                 </div>
+
+                <!-- Account -->
                 <div>
-                    <h3 class="font-semibold text-foreground mb-4">Connect</h3>
-                    <div class="space-y-2">
-                        <a href="#" class="block text-muted-foreground hover:text-primary transition-colors">Twitter</a>
-                        <a href="#" class="block text-muted-foreground hover:text-primary transition-colors">GitHub</a>
-                        <a href="#" class="block text-muted-foreground hover:text-primary transition-colors">Discord</a>
-                    </div>
+                    <h4 class="font-semibold text-white mb-4">Account</h4>
+                    <ul class="space-y-2">
+                        {% if current_user %}
+                        <li><a href="{{ url_for('my_profile') }}" class="text-gray-400 hover:text-blue-400 transition text-sm">My Profile</a></li>
+                        <li><a href="{{ url_for('logout') }}" class="text-gray-400 hover:text-blue-400 transition text-sm">Logout</a></li>
+                        {% else %}
+                        <li><a href="{{ url_for('auth') }}" class="text-gray-400 hover:text-blue-400 transition text-sm">Sign In</a></li>
+                        <li><a href="{{ url_for('auth') }}" class="text-gray-400 hover:text-blue-400 transition text-sm">Create Account</a></li>
+                        {% endif %}
+                    </ul>
                 </div>
             </div>
-            <div class="border-t border-border mt-8 pt-8 text-center text-muted-foreground">
-                <p>&copy; 2024 AI Agent Marketplace. All rights reserved.</p>
+
+            <!-- Divider -->
+            <div class="border-t border-gray-700 pt-8">
+                <p class="text-gray-500 text-sm">&copy; 2026 Agent Architects Studio. All rights reserved.</p>
             </div>
         </div>
     </footer>
