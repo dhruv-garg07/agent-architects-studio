@@ -6,12 +6,15 @@ import time
 from requests.exceptions import RequestException
 import traceback
 import requests
-from SimpleMem import config
+# import config
 
 TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
 # External endpoint (optional) - set in SimpleMem/config.py
-EXTERNAL_LLM_API_URL = getattr(config, 'EXTERNAL_LLM_API_URL', None)
-EXTERNAL_LLM_API_TIMEOUT = getattr(config, 'EXTERNAL_LLM_API_TIMEOUT', 300)
+# EXTERNAL_LLM_API_URL = getattr(config, 'EXTERNAL_LLM_API_URL', None)
+# EXTERNAL_LLM_API_TIMEOUT = getattr(config, 'EXTERNAL_LLM_API_TIMEOUT', 300)
+
+EXTERNAL_LLM_API_URL = None
+EXTERNAL_LLM_API_TIMEOUT = 300
 
 
 # response = stream_chat_response(prompt=str(messages))
