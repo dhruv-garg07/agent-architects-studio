@@ -208,6 +208,16 @@ def creators():
                         search=search,
                         sort_by=sort_by)
 
+
+@app.route('/harshit')
+def harshit_page():
+    """Founder page for Harshit."""
+    try:
+        return render_template('harshit.html')
+    except Exception as e:
+        # If template missing or render fails, return a simple fallback
+        return f"<h1>Harshit</h1><p>Unable to render page: {e}</p>", 500
+
 @app.route('/submit')
 @login_required
 def creator_studio():
@@ -1400,6 +1410,7 @@ def homepage():
     """Redirect root to memory page."""
     return render_template('homepage.html', user=current_user)
 
+
 @app.route('/api/docs')
 def api_docs():
     """Render the API documentation placeholder page."""
@@ -1416,4 +1427,4 @@ def api_docs():
     return render_template('api_docs.html', docs_json=json.dumps(docs_json) if docs_json is not None else None)
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=1078)
