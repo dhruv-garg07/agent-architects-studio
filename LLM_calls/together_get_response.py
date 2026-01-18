@@ -95,7 +95,7 @@ def clean_response(response: str) -> str:
 
 def stream_chat_response(
     prompt: str,
-    model: str = "ServiceNow-AI/Apriel-1.5-15b-Thinker",
+    model: str = "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo",
     max_tokens: int = 5000,
     temperature: float = 0.7,
     top_p: float = 0.9,
