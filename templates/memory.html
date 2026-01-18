@@ -453,8 +453,7 @@
 
     .message-content {
         max-width: 80%;
-        padding: 1rem;
-        border-radius: 12px;
+        padding: 0;
         position: relative;
     }
 
@@ -462,35 +461,39 @@
         background: hsl(var(--primary));
         color: hsl(var(--primary-foreground));
         border-bottom-right-radius: 4px;
+        padding: 1rem;
+        border-radius: 12px;
     }
 
     .message.assistant .message-content {
-        background: hsl(var(--secondary));
-        border-bottom-left-radius: 4px;
-        padding: 1.25rem;
+        background: transparent;
+        border-bottom-left-radius: 0;
+        padding: 0;
+        color: hsl(var(--foreground));
+        font-size: 1rem;
+        line-height: 1.6;
     }
 
-    /* Formatting for assistant messages - Enhanced */
+    /* Minimal formatting for assistant messages - like Gemini */
     .message.assistant .message-content strong {
-        color: #ffffff;
-        font-weight: 900;
-        background: linear-gradient(135deg, rgba(135, 206, 235, 0.3), rgba(135, 206, 235, 0.15));
-        padding: 0.3rem 0.6rem;
-        border-radius: 4px;
-        display: inline-block;
-        border: 1px solid rgba(135, 206, 235, 0.4);
-        box-shadow: 0 0 8px rgba(135, 206, 235, 0.3);
-        letter-spacing: 0.5px;
+        font-weight: 600;
+        color: hsl(var(--foreground));
+        background: none;
+        padding: 0;
+        border-radius: 0;
+        border: none;
+        box-shadow: none;
+        letter-spacing: normal;
     }
 
     .message.assistant .message-content em {
-        color: #a8e6cf;
+        color: hsl(var(--foreground));
         font-style: italic;
-        font-weight: 600;
-        background: rgba(168, 230, 207, 0.08);
-        padding: 0.1rem 0.3rem;
-        border-radius: 3px;
-        display: inline-block;
+        font-weight: 400;
+        background: none;
+        padding: 0;
+        border-radius: 0;
+        display: inline;
     }
 
     .message.assistant .message-content u,
@@ -508,22 +511,21 @@
     }
 
     .message.assistant .message-content code {
-        background: rgba(59, 130, 246, 0.2);
-        padding: 3px 8px;
-        border-radius: 4px;
+        background: hsl(var(--secondary));
+        padding: 2px 4px;
+        border-radius: 3px;
         font-family: 'Courier New', monospace;
-        font-size: 0.95em;
-        color: #74b9ff;
-        border: 1px solid rgba(116, 185, 255, 0.3);
+        font-size: 0.9em;
+        color: hsl(var(--foreground));
     }
 
     .message.assistant .message-content pre {
-        background: rgba(0, 0, 0, 0.4);
-        padding: 1.25rem;
-        border-radius: 8px;
+        background: hsl(var(--secondary));
+        padding: 1rem;
+        border-radius: 6px;
         overflow-x: auto;
         margin: 1rem 0;
-        border-left: 4px solid rgba(59, 130, 246, 0.7);
+        border-left: none;
     }
 
     .message.assistant .message-content pre code {
@@ -550,74 +552,7 @@
         margin-bottom: 0;
     }
 
-    /* Formatted definition blocks */
-    .definition-block {
-        background: rgba(59, 130, 246, 0.08);
-        border-left: 4px solid rgba(135, 206, 235, 0.6);
-        padding: 1rem;
-        border-radius: 6px;
-        margin: 1rem 0;
-    }
-
-    .definition-term {
-        color: #87ceeb;
-        font-weight: 700;
-        font-size: 1.1em;
-        margin-bottom: 0.5rem;
-    }
-
-    .definition-meaning {
-        color: #e0e0e0;
-        line-height: 1.7;
-        margin: 0.5rem 0;
-    }
-
-    .definition-example {
-        background: rgba(168, 230, 207, 0.1);
-        border-left: 3px solid rgba(168, 230, 207, 0.5);
-        padding: 0.75rem;
-        margin: 0.75rem 0;
-        border-radius: 4px;
-        font-style: italic;
-        color: #b0e0e6;
-    }
-
-    .definition-example::before {
-        content: "📝 ";
-        margin-right: 0.5rem;
-    }
-
-    .synonym-list {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-        margin: 0.75rem 0;
-    }
-
-    .synonym-badge {
-        background: rgba(168, 230, 207, 0.2);
-        color: #a8e6cf;
-        padding: 0.4rem 0.8rem;
-        border-radius: 20px;
-        font-size: 0.95em;
-        border: 1px solid rgba(168, 230, 207, 0.4);
-    }
-
-    .etymology-section {
-        background: rgba(160, 231, 229, 0.08);
-        border-left: 4px solid rgba(160, 231, 229, 0.5);
-        padding: 0.75rem;
-        margin: 0.75rem 0;
-        border-radius: 4px;
-        font-size: 0.95em;
-    }
-
-    .etymology-label {
-        color: #a0e7e5;
-        font-weight: 600;
-        display: inline;
-        margin-right: 0.5rem;
-    }
+    /* Formatted definition blocks - REMOVED for cleaner UI */
 
     .section-divider {
         border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -1260,50 +1195,20 @@
         function formatResponseForDisplay(text) {
             let formatted = text;
             
-            // Apply markdown formatting in order: bold, italic, underline
-            formatted = formatBold(formatted);
-            formatted = formatItalic(formatted);
-            formatted = formatUnderline(formatted);
+            // Remove any end markers
+            formatted = formatted.replace(/\[END FINAL RESPONSE\]/g, '');
+            formatted = formatted.replace(/<\|end\|>/g, '');
             
-            // Convert inline code `text` to code blocks
-            formatted = formatted.replace(/`([^`]+)`/g, '<code>$1</code>');
+            // Escape HTML first
+            formatted = escapeHtml(formatted);
             
-            // Format definition blocks: "**Term** – description"
-            formatted = formatted.replace(/<strong>([^<]+)<\/strong>\s*–\s*([^<][^.!?\n]*[.!?])/g,
-                '<div class="definition-block">' +
-                '<div class="definition-term">$1</div>' +
-                '<div class="definition-meaning">$2</div>' +
-                '</div>');
+            // Simple markdown: **bold** -> <strong>bold</strong>
+            formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
             
-            // Format multiple meanings with (e.g., example) pattern
-            formatted = formatted.replace(/\(e\.g\.,\s*([^)]+)\)/g, 
-                '<span style="color:#ffd3b6; font-style:italic;">(e.g., $1)</span>');
+            // Simple markdown: *italic* -> <em>italic</em>
+            formatted = formatted.replace(/\*([^*]+)\*/g, '<em>$1</em>');
             
-            // Format "Example:" lines with special styling
-            formatted = formatted.replace(/Example:\s*"([^"]+)"/g, 
-                '<div class="definition-example">"$1"</div>');
-            
-            // Format "Synonyms:" with badge styling
-            formatted = formatted.replace(/Synonyms?:\s*([^\n.]+)/g, function(match, syns) {
-                const synonyms = syns.split(',').map(s => s.trim());
-                const badges = synonyms.map(s => 
-                    `<span class="synonym-badge">${s}</span>`
-                ).join('');
-                return `<div style="margin: 0.75rem 0;"><strong style="color:#87ceeb;">Synonyms:</strong><div class="synonym-list">${badges}</div></div>`;
-            });
-            
-            // Format Etymology with special styling
-            formatted = formatted.replace(/Etymology:\s*from\s+([^(]+)\s*\(([^)]+)\)\s*([^.]*)\./g,
-                '<div class="etymology-section">' +
-                '<span class="etymology-label">Etymology:</span>' +
-                'from <em>$1</em> ($2) $3.' +
-                '</div>');
-            
-            // Format code blocks (```text ... ```)
-            formatted = formatted.replace(/```text\n([\s\S]*?)\n```/g, 
-                '<pre><code>$1</code></pre>');
-            
-            // Convert multiple newlines to paragraph breaks
+            // Preserve line breaks
             formatted = formatted.replace(/\n\n+/g, '</p><p>');
             formatted = '<p>' + formatted + '</p>';
             
@@ -1311,27 +1216,8 @@
         }
 
         function highlightSemanticCategories(text) {
-            // Add color hints for different semantic categories
-            const replacements = {
-                // Origin/Etymology (cyan)
-                '\\b(Latin|Greek|Old French|Germanic|Sanskrit|Hebrew|Arabic)\\b': '<span style="color:#a0e7e5;">$1</span>',
-                // Usage context (peach)
-                '\\b(formal|informal|technical|slang|archaic|modern)\\b': '<span style="color:#ffd3b6;">$1</span>',
-                // Word types (coral)
-                '\\b(noun|verb|adjective|adverb|preposition|article|adjective|noun phrase)\\b': '<span style="color:#ffaaa5;">$1</span>',
-                // Markers to remove (but keep before removal)
-                '\\[END FINAL RESPONSE\\]\\s*<\\|end\\|>': '',
-                '<\\|end\\|>': '',
-                '\\[END FINAL RESPONSE\\]': ''
-            };
-            
-            let formatted = text;
-            for (const [pattern, replacement] of Object.entries(replacements)) {
-                const regex = new RegExp(pattern, 'gi');
-                formatted = formatted.replace(regex, replacement);
-            }
-            
-            return formatted;
+            // No semantic highlighting - keep it simple and clean like Gemini
+            return text;
         }
 
         function escapeHtml(text) {
@@ -1343,6 +1229,71 @@
                 "'": '&#039;'
             };
             return text.replace(/[&<>"']/g, m => map[m]);
+        }
+        
+        function cleanTextForDisplay(text) {
+            // AGGRESSIVE: Remove ALL leading whitespace FIRST
+            text = text.trimStart();
+            
+            // Remove HTML tags and special markers
+            text = text.replace(/<[^>]*>/g, '');
+            text = text.replace(/\[END FINAL RESPONSE\]/g, '');
+            text = text.replace(/<\|end\|>/g, '');
+            
+            // Fix first-person perspective (LLM speaks as if it's the user)
+            text = text.replace(/my name is/gi, 'your name is');
+            text = text.replace(/I'm a /gi, 'You are a ');
+            text = text.replace(/I've /gi, 'You have ');
+            text = text.replace(/I am a /gi, 'You are a ');
+            text = text.replace(/I am /gi, 'You are ');
+            
+            // Remove ALL pipe characters and table formatting
+            text = text.replace(/\s*\|\s*/g, ' ');  // Replace pipes with spaces
+            text = text.replace(/\|\s*-+\s*\|/g, '');  // Remove table separators
+            text = text.replace(/^\s*\|.*\|\s*$/gm, '');  // Remove entire table lines
+            
+            // Remove markdown headers (### , ##, #, etc.)
+            text = text.replace(/^#+\d+\.\s*/gm, '');  // ###2. or ### 2.
+            text = text.replace(/^#+[A-Z]\.\s*/gm, '');  // ###A.
+            text = text.replace(/^###\s*/gm, '');  // ###
+            text = text.replace(/^##\s*/gm, '');   // ##
+            text = text.replace(/^#\s*/gm, '');    // #
+            
+            // Remove horizontal rules
+            text = text.replace(/^-{3,}$/gm, '');
+            text = text.replace(/^\*{3,}$/gm, '');
+            text = text.replace(/^_{3,}$/gm, '');
+            text = text.replace(/^={3,}$/gm, '');
+            
+            // Remove markdown bold and italic markers
+            text = text.replace(/\*\*([^*]+)\*\*/g, '$1');  // Remove ** markers
+            text = text.replace(/\*([^*]+)\*/g, '$1');      // Remove * markers
+            
+            // Escape HTML special chars
+            text = escapeHtml(text);
+            
+            // AGGRESSIVE: Strip ALL whitespace from EVERY line
+            let lines = text.split('\n');
+            lines = lines.map(line => {
+                // Use regex to remove all leading and trailing whitespace
+                return line.replace(/^\s+|\s+$/g, '');
+            });
+            
+            // Remove ALL completely empty lines
+            lines = lines.filter(line => line && line.trim().length > 0);
+            
+            // Join back
+            text = lines.join('\n');
+            
+            // FINAL AGGRESSIVE TRIM
+            text = text.trim();
+            text = text.trimStart();
+            text = text.trimEnd();
+            
+            // Preserve line breaks properly
+            text = text.replace(/\n\n+/g, '\n\n');  // Collapse multiple line breaks to double
+            
+            return text;
         }
 
         function addMessageToConversation(role, content, timestamp = new Date()) {
@@ -1663,13 +1614,12 @@
                                         conversationHistory.appendChild(aiMessageElement);
                                     }
 
-                                    // Format the response on-the-fly as tokens stream in
-                                    let formattedContent = formatResponseForDisplay(fullAIResponse);
-                                    formattedContent = highlightSemanticCategories(formattedContent);
+                                    // Format the response on-the-fly as tokens stream in (minimal formatting)
+                                    const cleanResponse = cleanTextForDisplay(fullAIResponse);
                                     
                                     aiMessageElement.innerHTML = `
-                                        <div class="message-content" style="word-break:break-word;">
-                                            ${formattedContent}
+                                        <div class="message-content" style="word-break:break-word; white-space: pre-wrap; line-height: 1.6;">
+                                            ${cleanResponse}
                                             <div class="message-time">${new Date().toLocaleTimeString()}</div>
                                         </div>
                                     `;

@@ -39,14 +39,16 @@ def extract_output_after_think(response: str) -> str:
 
 def clean_response(response: str) -> str:
     """
-    Aggressively cleans up the response by removing end-of-stream markers and extra whitespace.
+    Aggressively cleans up the response by removing markdown formatting and ALL leading whitespace.
     
     Args:
         response (str): Raw response from LLM
         
     Returns:
-        str: Cleaned response with no markers
+        str: Cleaned response with no markers or markdown
     """
+    import re
+    
     # FIRST: Stop at [END FINAL RESPONSE] marker (truncate everything after)
     if "[END FINAL RESPONSE]" in response:
         response = response.split("[END FINAL RESPONSE]")[0]
@@ -54,9 +56,40 @@ def clean_response(response: str) -> str:
     # SECOND: Remove all <|end|> markers
     response = response.replace("<|end|>", "")
     
-    # THIRD: Clean up extra whitespace
-    response = " ".join(response.split())
+    # THIRD: Remove ALL leading whitespace from start
+    response = response.lstrip()
+    
+    # FOURTH: Remove all markdown table formatting and pipes
+    # Remove table separator lines (lines with pipes and dashes)
+    response = re.sub(r'^\|\s*[-:\s|]+\|?\s*$', '', response, flags=re.MULTILINE)
+    # Remove pipe characters
+    response = response.replace(" | ", " ")
+    response = response.replace("|", "")
+    
+    # FIFTH: Remove markdown headers (### , ##, #, etc.)
+    response = re.sub(r'^#+\d+\.\s*', '', response, flags=re.MULTILINE)
+    response = re.sub(r'^#+[A-Z]\.\s*', '', response, flags=re.MULTILINE)
+    response = re.sub(r'^#+\s+', '', response, flags=re.MULTILINE)
+    
+    # SIXTH: Remove horizontal rules (---, ***, ___, ===)
+    response = re.sub(r'^-{3,}$', '', response, flags=re.MULTILINE)
+    response = re.sub(r'^\*{3,}$', '', response, flags=re.MULTILINE)
+    response = re.sub(r'^_{3,}$', '', response, flags=re.MULTILINE)
+    response = re.sub(r'^={3,}$', '', response, flags=re.MULTILINE)
+    
+    # SEVENTH: Clean up whitespace on each line
+    lines = response.split('\n')
+    lines = [line.lstrip().rstrip() for line in lines]  # Strip both sides
+    lines = [line for line in lines if line.strip()]  # Remove empty lines
+    response = '\n'.join(lines)
+    
+    # Remove multiple blank lines
+    while '\n\n\n' in response:
+        response = response.replace('\n\n\n', '\n\n')
+    
+    # FINAL: Aggressive strip from all sides
     response = response.strip()
+    response = response.lstrip()
     
     return response
 

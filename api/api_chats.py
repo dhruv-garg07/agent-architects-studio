@@ -755,10 +755,39 @@ def chat_and_store():
             print(f"[BACKGROUND] Storage error: {e}")
     
     # Streaming response generator
+    def clean_token(token: str, is_first: bool = False) -> str:
+        """
+        Clean token for streaming - remove markers and leading space only on first token.
+        
+        Args:
+            token: Raw token from LLM
+            is_first: Whether this is the first token (strip leading whitespace)
+            
+        Returns:
+            Cleaned token preserving word separation spaces
+        """
+        if not token:
+            return ""
+        
+        # Remove end markers
+        token = token.replace("<|end|>", "")
+        token = token.replace("[END FINAL RESPONSE]", "")
+        
+        # Remove markdown table pipes
+        token = token.replace("|", "")
+        
+        # ONLY strip leading whitespace from first token
+        if is_first:
+            token = token.lstrip()
+        
+        return token
+
     def generate_streaming_response():
         """Generator for streaming SSE response with loader status"""
         full_reply_text = ""
         token_count = 0
+        first_token_sent = False
+        
         try:
             # Send initial loading state
             yield f"data: {json.dumps({'type': 'loading', 'status': 'initializing', 'message': 'Preparing context and retrieving information...'})}\n\n"
@@ -784,13 +813,27 @@ def chat_and_store():
             # Send streaming started indicator
             yield f"data: {json.dumps({'type': 'loading', 'status': 'streaming', 'message': 'Generating response...'})}\n\n"
             
-            # Stream tokens
+            # Stream tokens with minimal cleaning
             for token in reply_generator:
                 token_count += 1
+                
+                # Always keep original unmodified for storage
                 full_reply_text += token
                 
-                # Send token as SSE
-                yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
+                # Clean the token (minimal - only remove markers and first-token leading space)
+                cleaned_token = clean_token(token, is_first=(not first_token_sent))
+                
+                # Skip empty tokens or pure whitespace before first real token
+                if not first_token_sent:
+                    # Skip pure whitespace tokens at the start
+                    if not cleaned_token or not cleaned_token.strip():
+                        continue
+                    # First real token found
+                    first_token_sent = True
+                    yield f"data: {json.dumps({'type': 'token', 'content': cleaned_token})}\n\n"
+                else:
+                    # After first token, send everything (preserves spaces)
+                    yield f"data: {json.dumps({'type': 'token', 'content': cleaned_token})}\n\n"
             
             llm_time = time.time() - llm_start
             print(f"[STREAM] LLM generation completed in {llm_time:.2f}s, {token_count} tokens")
