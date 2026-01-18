@@ -770,6 +770,30 @@
             -webkit-overflow-scrolling: touch;
         }
     }
+
+    /* Loader/Spinner Animation Styles */
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    @keyframes pulse {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.5;
+        }
+    }
+
+    .animate-spin {
+        animation: spin 1s linear infinite;
+    }
+
+    .animate-pulse {
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
 </style>
 
 <script>
@@ -1541,6 +1565,9 @@
                 emptyConversation.classList.add('hidden');
             }
 
+            // Create inline loader element
+            let loaderElement = null;
+            
             // Ask server to generate + store both messages in Chroma using streaming (SSE)
             const res = await fetch('/web/chat', {
                 method: 'POST',
@@ -1593,7 +1620,39 @@
                                     return;
                                 }
 
-                                if (data.type === 'token') {
+                                if (data.type === 'loading') {
+                                    // Create inline loader if it doesn't exist
+                                    if (!loaderElement) {
+                                        loaderElement = document.createElement('div');
+                                        loaderElement.className = 'message assistant';
+                                        loaderElement.innerHTML = `
+                                            <div class="message-content flex items-center space-x-3" style="word-break:break-word;">
+                                                <div class="relative w-5 h-5">
+                                                    <div class="absolute inset-0 rounded-full border-2 border-transparent border-t-primary border-r-primary animate-spin"></div>
+                                                </div>
+                                                <span id="inlineLoaderText" class="text-sm text-muted-foreground italic">Preparing response...</span>
+                                            </div>
+                                        `;
+                                        conversationHistory.appendChild(loaderElement);
+                                    }
+                                    
+                                    // Update loader status message
+                                    const loaderText = loaderElement.querySelector('#inlineLoaderText');
+                                    if (loaderText) {
+                                        loaderText.textContent = data.message || 'Processing...';
+                                    }
+                                    
+                                    // Auto-scroll to show loader
+                                    conversationHistory.scrollTop = conversationHistory.scrollHeight;
+                                    console.log(`[LOADER] ${data.status}: ${data.message}`);
+
+                                } else if (data.type === 'token') {
+                                    // Remove loader on first token
+                                    if (loaderElement) {
+                                        loaderElement.remove();
+                                        loaderElement = null;
+                                    }
+                                    
                                     // Stream token received
                                     fullAIResponse += data.content;
 
@@ -1634,7 +1693,11 @@
                                     }
 
                                 } else if (data.type === 'done') {
-                                    // Streaming complete
+                                    // Remove loader on completion
+                                    if (loaderElement) {
+                                        loaderElement.remove();
+                                        loaderElement = null;
+                                    }
                                     console.log('Streaming complete. Full response:', fullAIResponse);
                                     
                                     // Update the session with complete AI message
@@ -1672,6 +1735,11 @@
                                     await refreshSingleSession(currentSession.id);
 
                                 } else if (data.type === 'error') {
+                                    // Remove loader on error
+                                    if (loaderElement) {
+                                        loaderElement.remove();
+                                        loaderElement = null;
+                                    }
                                     console.error('Stream error:', data.content);
                                     if (!aiMessageElement) {
                                         aiMessageElement = document.createElement('div');
@@ -1703,6 +1771,11 @@
 
             } catch (error) {
                 console.error('Error reading stream:', error);
+                // Remove loader on error
+                if (loaderElement) {
+                    loaderElement.remove();
+                    loaderElement = null;
+                }
                 if (aiMessageElement) {
                     aiMessageElement.innerHTML = `
                         <div class="message-content">

@@ -756,11 +756,19 @@ def chat_and_store():
     
     # Streaming response generator
     def generate_streaming_response():
-        """Generator for streaming SSE response"""
+        """Generator for streaming SSE response with loader status"""
         full_reply_text = ""
         token_count = 0
         try:
+            # Send initial loading state
+            yield f"data: {json.dumps({'type': 'loading', 'status': 'initializing', 'message': 'Preparing context and retrieving information...'})}\n\n"
+            time.sleep(0.1)  # Small delay to ensure client receives loading state
+            
             print(f"[STREAM] Starting LLM generation for query: {final_query}...")
+            
+            # Send status: context prepared
+            yield f"data: {json.dumps({'type': 'loading', 'status': 'ready', 'message': 'Context prepared. Starting generation...', 'context_size': len(rag_context)})}\n\n"
+            
             llm_start = time.time()
             
             # Call LLM - this is synchronous and returns a generator
@@ -773,6 +781,9 @@ def chat_and_store():
                 temperature=0.7 if conversation_mode == ConversationMode.CREATIVE else 0.3
             )
             
+            # Send streaming started indicator
+            yield f"data: {json.dumps({'type': 'loading', 'status': 'streaming', 'message': 'Generating response...'})}\n\n"
+            
             # Stream tokens
             for token in reply_generator:
                 token_count += 1
@@ -783,6 +794,9 @@ def chat_and_store():
             
             llm_time = time.time() - llm_start
             print(f"[STREAM] LLM generation completed in {llm_time:.2f}s, {token_count} tokens")
+            
+            # Send status: processing response
+            yield f"data: {json.dumps({'type': 'loading', 'status': 'processing', 'message': 'Processing and finalizing response...', 'tokens': token_count})}\n\n"
             
             # Clean response
             cleaned_response = clean_response(full_reply_text)
@@ -799,7 +813,7 @@ def chat_and_store():
             yield f"data: {json.dumps({'type': 'rag_results', 'content': rag_results})}\n\n"
             
             # Send completion signal
-            yield f"data: {json.dumps({'type': 'done', 'full_response': cleaned_response.strip()})}\n\n"
+            yield f"data: {json.dumps({'type': 'done', 'full_response': cleaned_response.strip(), 'tokens_generated': token_count, 'processing_time': llm_time})}\n\n"
             
             print(f"[STREAM] Streaming completed, total time: {time.time() - start_time:.2f}s")
             
