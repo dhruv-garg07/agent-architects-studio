@@ -214,7 +214,6 @@ class SimpleMemSystem:
 
         print("\n" + "=" * 60)
 
-
 # Convenience function
 def create_system(
     agent_id: str = "memory_entries",   
@@ -399,6 +398,10 @@ if __name__ == "__main__":
     print("\n[AGENT-1] Testing retrieval with planning and reflection...")
     answer_1 = system_agent_1.ask("When will Alice and Bob meet?")
     print(f"Answer: {answer_1}")
+    
+    # Ask what is photosynthesis to see if it pulls unrelated info
+    answer_1b = system_agent_1.ask("What is photosynthesis?. Provide even if the memory does not exist.")
+    print(f"Answer: {answer_1b}")
     
     print("\n[AGENT-1] Testing adversarial question (reflection disabled)...")
     question = "What is Alice's favorite food?"
