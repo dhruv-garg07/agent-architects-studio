@@ -5,7 +5,7 @@ for backward compatibility (encode, encode_single, encode_query, encode_document
 """
 from typing import List, Optional, Dict, Any
 import numpy as np
-from config_loader import EMBEDDING_MODEL, REMOTE_EMBEDDING_URL, REMOTE_EMBEDDING_DIMENSION
+from SimpleMem.config_loader import EMBEDDING_MODEL, REMOTE_EMBEDDING_URL, REMOTE_EMBEDDING_DIMENSION
 import os
 import requests
 import json

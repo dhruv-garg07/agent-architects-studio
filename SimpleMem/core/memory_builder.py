@@ -7,10 +7,10 @@ Implements Semantic Structured Compression:
 - Generates self-contained Atomic Entries {m_k} via coreference resolution and temporal anchoring
 """
 from typing import List, Optional
-from models.memory_entry import MemoryEntry, Dialogue
-from utils.llm_client import LLMClient
-from database.vector_store import VectorStore
-from config_loader import WINDOW_SIZE, ENABLE_PARALLEL_PROCESSING, MAX_PARALLEL_WORKERS, USE_JSON_FORMAT
+from SimpleMem.models.memory_entry import MemoryEntry, Dialogue
+from SimpleMem.utils.llm_client import LLMClient
+from SimpleMem.database.vector_store import VectorStore
+from SimpleMem.config_loader import WINDOW_SIZE, ENABLE_PARALLEL_PROCESSING, MAX_PARALLEL_WORKERS, USE_JSON_FORMAT
 import json
 import asyncio
 import concurrent.futures

@@ -12,8 +12,8 @@ Now uses Agentic_RAG with ChromaDB as the unified vector store.
 
 from typing import List, Optional, Dict, Any, Tuple
 import numpy as np
-from models.memory_entry import MemoryEntry
-from utils.embedding import EmbeddingModel
+from SimpleMem.models.memory_entry import MemoryEntry
+from SimpleMem.utils.embedding import EmbeddingModel
 import os
 import sys
 from datetime import datetime

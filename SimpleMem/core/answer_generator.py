@@ -5,9 +5,9 @@ Paper Reference: Section 3.3 - Reconstructive Synthesis (Read Path)
 Generates answers from the final context C_final synthesized by query-aware retrieval
 """
 from typing import List
-from models.memory_entry import MemoryEntry
-from utils.llm_client import LLMClient
-from config_loader import USE_JSON_FORMAT
+from SimpleMem.models.memory_entry import MemoryEntry
+from SimpleMem.utils.llm_client import LLMClient
+from SimpleMem.config_loader import USE_JSON_FORMAT
 
 
 class AnswerGenerator:

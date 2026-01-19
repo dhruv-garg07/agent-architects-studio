@@ -9,10 +9,10 @@ Implements:
 - Complexity-Aware Pruning to minimize token usage while maximizing accuracy
 """
 from typing import List, Optional, Dict, Any
-from models.memory_entry import MemoryEntry
-from utils.llm_client import LLMClient
-from database.vector_store import VectorStore
-from config_loader import SEMANTIC_TOP_K, KEYWORD_TOP_K, STRUCTURED_TOP_K, ENABLE_PLANNING, ENABLE_REFLECTION, MAX_REFLECTION_ROUNDS, ENABLE_PARALLEL_RETRIEVAL, MAX_RETRIEVAL_WORKERS, USE_JSON_FORMAT
+from SimpleMem.models.memory_entry import MemoryEntry
+from SimpleMem.utils.llm_client import LLMClient
+from SimpleMem.database.vector_store import VectorStore
+from SimpleMem.config_loader import SEMANTIC_TOP_K, KEYWORD_TOP_K, STRUCTURED_TOP_K, ENABLE_PLANNING, ENABLE_REFLECTION, MAX_REFLECTION_ROUNDS, ENABLE_PARALLEL_RETRIEVAL, MAX_RETRIEVAL_WORKERS, USE_JSON_FORMAT
 import re
 from datetime import datetime, timedelta
 import dateparser

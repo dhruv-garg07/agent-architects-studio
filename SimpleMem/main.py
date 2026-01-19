@@ -3,13 +3,13 @@ SimpleMem - Efficient Lifelong Memory for LLM Agents
 Main system class integrating all components
 """
 from typing import List, Optional
-from models.memory_entry import Dialogue, MemoryEntry
-from utils.llm_client import LLMClient
-from utils.embedding import EmbeddingModel
-from database.vector_store import VectorStore
-from core.memory_builder import MemoryBuilder
-from core.hybrid_retriever import HybridRetriever
-from core.answer_generator import AnswerGenerator
+from SimpleMem.models.memory_entry import Dialogue, MemoryEntry
+from SimpleMem.utils.llm_client import LLMClient
+from SimpleMem.utils.embedding import EmbeddingModel
+from SimpleMem.database.vector_store import VectorStore
+from SimpleMem.core.memory_builder import MemoryBuilder
+from SimpleMem.core.hybrid_retriever import HybridRetriever
+from SimpleMem.core.answer_generator import AnswerGenerator
 import os, sys
 # Import parent dir and add to path
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
