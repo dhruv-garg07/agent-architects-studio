@@ -5,72 +5,90 @@
 {% block content %}
 <!-- Hero Section -->
 <section class="relative overflow-hidden pt-20 pb-16 md:pt-32 md:pb-24">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Mesh gradient overlay -->
+    <div class="absolute inset-0 pointer-events-none">
+        <div class="absolute top-0 left-1/4 w-96 h-96 bg-violet-500/20 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-0 right-1/4 w-80 h-80 bg-cyan-500/15 rounded-full blur-3xl"></div>
+        <div class="absolute top-1/2 right-1/3 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl"></div>
+    </div>
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div class="text-center">
-            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground mb-6 tracking-tight">
-                GitMem: real context for your <span class="text-primary">coding agents.</span>
+            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 tracking-tight">
+                GitMem: real context for your <span
+                    class="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent">coding
+                    agents.</span>
             </h1>
-            <p class="text-lg sm:text-xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed">
+            <p class="text-lg sm:text-xl text-gray-400 mb-8 max-w-3xl mx-auto leading-relaxed">
                 Index your repos and docs so agents stop hallucinating and you stop wasting tokens.
             </p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-                <button onclick="openWaitlistModal()" class="btn-primary text-base sm:text-lg px-8 py-3 font-semibold rounded-lg hover:scale-105 transition-transform">
+                <button onclick="openWaitlistModal()"
+                    class="btn-primary text-base sm:text-lg px-8 py-3 font-semibold rounded-xl hover:scale-105 transition-transform shadow-lg shadow-violet-500/25">
                     Join the waitlist
                 </button>
             </div>
             <!-- Social Proof -->
-            <p class="text-sm text-muted-foreground font-medium">
-                Developed and used by engineers at <span class="text-foreground font-semibold">Google</span> and <span class="text-foreground font-semibold">Texas Instruments</span>.
+            <p class="text-sm text-gray-500 font-medium">
+                Developed and used by engineers at <span class="text-white font-semibold">Google</span> and <span
+                    class="text-white font-semibold">Texas Instruments</span>.
             </p>
         </div>
     </div>
 </section>
 
 <!-- Features Section -->
-<section class="py-16 bg-muted/30">
+<section class="py-16 relative">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
             <!-- Feature 1 -->
-            <div class="card card-elevated p-8 rounded-lg border border-border/50 hover:border-primary/50 transition-colors">
+            <div
+                class="backdrop-blur-xl bg-white/5 border border-white/10 p-8 rounded-2xl hover:border-violet-500/30 transition-all duration-300 hover:shadow-lg hover:shadow-violet-500/10 group">
                 <div class="flex items-start mb-4">
                     <div class="flex-shrink-0">
-                        <div class="inline-flex items-center justify-center w-12 h-12 bg-primary/10 rounded-lg">
-                            <i data-lucide="shield-alert" class="h-6 w-6 text-primary"></i>
+                        <div
+                            class="inline-flex items-center justify-center w-12 h-12 bg-violet-500/20 rounded-xl group-hover:bg-violet-500/30 transition-colors">
+                            <i data-lucide="shield-alert" class="h-6 w-6 text-violet-400"></i>
                         </div>
                     </div>
                 </div>
-                <h3 class="text-lg font-semibold text-foreground mb-3">Remove hallucinations on new APIs and beta features</h3>
-                <p class="text-muted-foreground text-sm leading-relaxed">
+                <h3 class="text-lg font-semibold text-white mb-3 tracking-tight">Remove hallucinations on new APIs and
+                    beta features</h3>
+                <p class="text-gray-400 text-sm leading-relaxed">
                     Keep your agents grounded with up-to-date documentation and code references.
                 </p>
             </div>
 
             <!-- Feature 2 -->
-            <div class="card card-elevated p-8 rounded-lg border border-border/50 hover:border-primary/50 transition-colors">
+            <div
+                class="backdrop-blur-xl bg-white/5 border border-white/10 p-8 rounded-2xl hover:border-cyan-500/30 transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/10 group">
                 <div class="flex items-start mb-4">
                     <div class="flex-shrink-0">
-                        <div class="inline-flex items-center justify-center w-12 h-12 bg-primary/10 rounded-lg">
-                            <i data-lucide="zap" class="h-6 w-6 text-primary"></i>
+                        <div
+                            class="inline-flex items-center justify-center w-12 h-12 bg-cyan-500/20 rounded-xl group-hover:bg-cyan-500/30 transition-colors">
+                            <i data-lucide="zap" class="h-6 w-6 text-cyan-400"></i>
                         </div>
                     </div>
                 </div>
-                <h3 class="text-lg font-semibold text-foreground mb-3">Compress context to lower token usage</h3>
-                <p class="text-muted-foreground text-sm leading-relaxed">
+                <h3 class="text-lg font-semibold text-white mb-3 tracking-tight">Compress context to lower token usage
+                </h3>
+                <p class="text-gray-400 text-sm leading-relaxed">
                     Reduce API costs by providing only the relevant code and documentation your agents need.
                 </p>
             </div>
 
             <!-- Feature 3 -->
-            <div class="card card-elevated p-8 rounded-lg border border-border/50 hover:border-primary/50 transition-colors">
+            <div
+                class="backdrop-blur-xl bg-white/5 border border-white/10 p-8 rounded-2xl hover:border-amber-500/30 transition-all duration-300 hover:shadow-lg hover:shadow-amber-500/10 group">
                 <div class="flex items-start mb-4">
                     <div class="flex-shrink-0">
-                        <div class="inline-flex items-center justify-center w-12 h-12 bg-primary/10 rounded-lg">
-                            <i data-lucide="refresh-cw" class="h-6 w-6 text-primary"></i>
+                        <div
+                            class="inline-flex items-center justify-center w-12 h-12 bg-amber-500/20 rounded-xl group-hover:bg-amber-500/30 transition-colors">
+                            <i data-lucide="refresh-cw" class="h-6 w-6 text-amber-400"></i>
                         </div>
                     </div>
                 </div>
-                <h3 class="text-lg font-semibold text-foreground mb-3">Auto-sync code and docs</h3>
-                <p class="text-muted-foreground text-sm leading-relaxed">
+                <h3 class="text-lg font-semibold text-white mb-3 tracking-tight">Auto-sync code and docs</h3>
+                <p class="text-gray-400 text-sm leading-relaxed">
                     Agents always see the latest version of your repositories and documentation.
                 </p>
             </div>
@@ -78,13 +96,16 @@
     </div>
 </section>
 <!-- Multi-Step Waitlist Modal -->
-<div id="waitlist-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 hidden">
-    <div class="bg-card border border-border rounded-xl m-4 w-full max-w-md card-elevated shadow-2xl overflow-hidden">
+<div id="waitlist-modal"
+    class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 hidden">
+    <div
+        class="backdrop-blur-2xl bg-white/5 border border-white/10 rounded-2xl m-4 w-full max-w-md shadow-2xl shadow-violet-500/10 overflow-hidden">
         <!-- Step Indicator Bar -->
         <div class="px-6 sm:px-8 pt-6 pb-4">
             <div class="flex justify-between items-center mb-6">
                 <span id="step-counter" class="text-sm font-medium text-muted-foreground">Step 1 of 3</span>
-                <button onclick="closeWaitlistModal()" class="text-muted-foreground hover:text-foreground transition-colors">
+                <button onclick="closeWaitlistModal()"
+                    class="text-muted-foreground hover:text-foreground transition-colors">
                     <i data-lucide="x" class="h-5 w-5"></i>
                 </button>
             </div>
@@ -98,145 +119,144 @@
         <!-- Modal Content -->
         <div class="px-6 sm:px-8 pb-6 sm:pb-8">
 
-        <!-- Step 1 -->
-        <div id="step-1" class="step-content">
-            <div class="mb-6">
-                <h3 class="text-2xl font-bold text-foreground mb-2">Which tools do you use with AI today?</h3>
-                <p class="text-sm text-muted-foreground">Select all that apply</p>
-            </div>
-            <div class="space-y-3 mb-6">
-                <label class="flex items-center cursor-pointer group">
-                    <input type="checkbox" name="tools" value="Cursor" class="w-4 h-4 rounded border-border bg-card text-primary">
-                    <span class="ml-3 text-foreground group-hover:text-primary transition-colors">Cursor</span>
-                </label>
-                <label class="flex items-center cursor-pointer group">
-                    <input type="checkbox" name="tools" value="Claude Code" class="w-4 h-4 rounded border-border bg-card text-primary">
-                    <span class="ml-3 text-foreground group-hover:text-primary transition-colors">Claude Code</span>
-                </label>
-                <label class="flex items-center cursor-pointer group">
-                    <input type="checkbox" name="tools" value="VS Code agents" class="w-4 h-4 rounded border-border bg-card text-primary">
-                    <span class="ml-3 text-foreground group-hover:text-primary transition-colors">VS Code agents</span>
-                </label>
-                <label class="flex items-center cursor-pointer group">
-                    <input type="checkbox" name="tools" value="Custom in-house agent" class="w-4 h-4 rounded border-border bg-card text-primary">
-                    <span class="ml-3 text-foreground group-hover:text-primary transition-colors">Custom in-house agent</span>
-                </label>
-                <label class="flex items-center cursor-pointer group">
-                    <input type="checkbox" name="tools" value="Other" class="w-4 h-4 rounded border-border bg-card text-primary">
-                    <span class="ml-3 text-foreground group-hover:text-primary transition-colors">Other</span>
-                </label>
-            </div>
-
-            <div class="mb-6">
-                <h3 class="text-lg font-semibold text-foreground mb-3">Main languages / stack?</h3>
-                <input 
-                    type="text" 
-                    id="stack-input" 
-                    name="stack" 
-                    class="input w-full text-sm"
-                    placeholder="e.g., TypeScript, Python, React, Next.js"
-                >
-            </div>
-
-            <button onclick="nextStep()" class="btn-primary w-full">Next</button>
-        </div>
-
-        <!-- Step 2 -->
-        <div id="step-2" class="step-content hidden">
-            <div class="mb-6">
-                <h3 class="text-2xl font-bold text-foreground mb-2">What do you want GitMem to help with most?</h3>
-                <p class="text-sm text-muted-foreground">Select all that apply</p>
-            </div>
-            <div class="space-y-3 mb-6">
-                <label class="flex items-center cursor-pointer group">
-                    <input type="checkbox" name="goals" value="Remove hallucinations" class="w-4 h-4 rounded border-border bg-card text-primary">
-                    <span class="ml-3 text-foreground group-hover:text-primary transition-colors">Remove hallucinations</span>
-                </label>
-                <label class="flex items-center cursor-pointer group">
-                    <input type="checkbox" name="goals" value="Reduce token costs" class="w-4 h-4 rounded border-border bg-card text-primary">
-                    <span class="ml-3 text-foreground group-hover:text-primary transition-colors">Reduce token costs</span>
-                </label>
-                <label class="flex items-center cursor-pointer group">
-                    <input type="checkbox" name="goals" value="Better code & docs search" class="w-4 h-4 rounded border-border bg-card text-primary">
-                    <span class="ml-3 text-foreground group-hover:text-primary transition-colors">Better code & docs search</span>
-                </label>
-                <label class="flex items-center cursor-pointer group">
-                    <input type="checkbox" name="goals" value="Keep repos/docs in sync" class="w-4 h-4 rounded border-border bg-card text-primary">
-                    <span class="ml-3 text-foreground group-hover:text-primary transition-colors">Keep repos/docs in sync</span>
-                </label>
-            </div>
-
-            <div class="mb-6">
-                <h3 class="text-lg font-semibold text-foreground mb-3">Anything specific about your setup we should know?</h3>
-                <textarea 
-                    id="setup-input" 
-                    name="setup" 
-                    class="input w-full text-sm h-24 resize-none"
-                    placeholder="Optional: Tell us about your setup..."
-                ></textarea>
-            </div>
-
-            <div class="flex gap-3">
-                <button onclick="prevStep()" class="btn-secondary w-1/3">Back</button>
-                <button onclick="nextStep()" class="btn-primary w-2/3">Next</button>
-            </div>
-        </div>
-
-        <!-- Step 3 -->
-        <div id="step-3" class="step-content hidden">
-            <div class="mb-6">
-                <h3 class="text-2xl font-bold text-foreground mb-2">Where should we send your invite?</h3>
-                <p class="text-sm text-muted-foreground">Join GitMem's waitlist</p>
-            </div>
-
-            <div class="space-y-4 mb-6">
-                <div>
-                    <label for="name-input" class="block text-sm font-medium text-foreground mb-2">Name (optional)</label>
-                    <input 
-                        type="text" 
-                        id="name-input" 
-                        name="name" 
-                        class="input w-full"
-                        placeholder="Your name"
-                    >
+            <!-- Step 1 -->
+            <div id="step-1" class="step-content">
+                <div class="mb-6">
+                    <h3 class="text-2xl font-bold text-foreground mb-2">Which tools do you use with AI today?</h3>
+                    <p class="text-sm text-muted-foreground">Select all that apply</p>
                 </div>
-                <div>
-                    <label for="email-input" class="block text-sm font-medium text-foreground mb-2">Email *</label>
-                    <input 
-                        type="email" 
-                        id="email-input" 
-                        name="email" 
-                        required 
-                        class="input w-full"
-                        placeholder="you@company.com"
-                    >
+                <div class="space-y-3 mb-6">
+                    <label class="flex items-center cursor-pointer group">
+                        <input type="checkbox" name="tools" value="Cursor"
+                            class="w-4 h-4 rounded border-border bg-card text-primary">
+                        <span class="ml-3 text-foreground group-hover:text-primary transition-colors">Cursor</span>
+                    </label>
+                    <label class="flex items-center cursor-pointer group">
+                        <input type="checkbox" name="tools" value="Claude Code"
+                            class="w-4 h-4 rounded border-border bg-card text-primary">
+                        <span class="ml-3 text-foreground group-hover:text-primary transition-colors">Claude Code</span>
+                    </label>
+                    <label class="flex items-center cursor-pointer group">
+                        <input type="checkbox" name="tools" value="VS Code agents"
+                            class="w-4 h-4 rounded border-border bg-card text-primary">
+                        <span class="ml-3 text-foreground group-hover:text-primary transition-colors">VS Code
+                            agents</span>
+                    </label>
+                    <label class="flex items-center cursor-pointer group">
+                        <input type="checkbox" name="tools" value="Custom in-house agent"
+                            class="w-4 h-4 rounded border-border bg-card text-primary">
+                        <span class="ml-3 text-foreground group-hover:text-primary transition-colors">Custom in-house
+                            agent</span>
+                    </label>
+                    <label class="flex items-center cursor-pointer group">
+                        <input type="checkbox" name="tools" value="Other"
+                            class="w-4 h-4 rounded border-border bg-card text-primary">
+                        <span class="ml-3 text-foreground group-hover:text-primary transition-colors">Other</span>
+                    </label>
+                </div>
+
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-foreground mb-3">Main languages / stack?</h3>
+                    <input type="text" id="stack-input" name="stack" class="input w-full text-sm"
+                        placeholder="e.g., TypeScript, Python, React, Next.js">
+                </div>
+
+                <button onclick="nextStep()" class="btn-primary w-full">Next</button>
+            </div>
+
+            <!-- Step 2 -->
+            <div id="step-2" class="step-content hidden">
+                <div class="mb-6">
+                    <h3 class="text-2xl font-bold text-foreground mb-2">What do you want GitMem to help with most?</h3>
+                    <p class="text-sm text-muted-foreground">Select all that apply</p>
+                </div>
+                <div class="space-y-3 mb-6">
+                    <label class="flex items-center cursor-pointer group">
+                        <input type="checkbox" name="goals" value="Remove hallucinations"
+                            class="w-4 h-4 rounded border-border bg-card text-primary">
+                        <span class="ml-3 text-foreground group-hover:text-primary transition-colors">Remove
+                            hallucinations</span>
+                    </label>
+                    <label class="flex items-center cursor-pointer group">
+                        <input type="checkbox" name="goals" value="Reduce token costs"
+                            class="w-4 h-4 rounded border-border bg-card text-primary">
+                        <span class="ml-3 text-foreground group-hover:text-primary transition-colors">Reduce token
+                            costs</span>
+                    </label>
+                    <label class="flex items-center cursor-pointer group">
+                        <input type="checkbox" name="goals" value="Better code & docs search"
+                            class="w-4 h-4 rounded border-border bg-card text-primary">
+                        <span class="ml-3 text-foreground group-hover:text-primary transition-colors">Better code & docs
+                            search</span>
+                    </label>
+                    <label class="flex items-center cursor-pointer group">
+                        <input type="checkbox" name="goals" value="Keep repos/docs in sync"
+                            class="w-4 h-4 rounded border-border bg-card text-primary">
+                        <span class="ml-3 text-foreground group-hover:text-primary transition-colors">Keep repos/docs in
+                            sync</span>
+                    </label>
+                </div>
+
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-foreground mb-3">Anything specific about your setup we should
+                        know?</h3>
+                    <textarea id="setup-input" name="setup" class="input w-full text-sm h-24 resize-none"
+                        placeholder="Optional: Tell us about your setup..."></textarea>
+                </div>
+
+                <div class="flex gap-3">
+                    <button onclick="prevStep()" class="btn-secondary w-1/3">Back</button>
+                    <button onclick="nextStep()" class="btn-primary w-2/3">Next</button>
                 </div>
             </div>
 
-            <label class="flex items-center cursor-pointer group mb-6">
-                <input type="checkbox" id="feedback-checkbox" name="feedback" class="w-4 h-4 rounded border-border bg-card text-primary">
-                <span class="ml-3 text-sm text-foreground group-hover:text-primary transition-colors">I'm open to a short feedback call</span>
-            </label>
+            <!-- Step 3 -->
+            <div id="step-3" class="step-content hidden">
+                <div class="mb-6">
+                    <h3 class="text-2xl font-bold text-foreground mb-2">Where should we send your invite?</h3>
+                    <p class="text-sm text-muted-foreground">Join GitMem's waitlist</p>
+                </div>
 
-            <div class="flex gap-3">
-                <button onclick="prevStep()" class="btn-secondary w-1/3">Back</button>
-                <button onclick="submitWaitlist()" class="btn-primary w-2/3">Join GitMem waitlist</button>
-            </div>
-        </div>
+                <div class="space-y-4 mb-6">
+                    <div>
+                        <label for="name-input" class="block text-sm font-medium text-foreground mb-2">Name
+                            (optional)</label>
+                        <input type="text" id="name-input" name="name" class="input w-full" placeholder="Your name">
+                    </div>
+                    <div>
+                        <label for="email-input" class="block text-sm font-medium text-foreground mb-2">Email *</label>
+                        <input type="email" id="email-input" name="email" required class="input w-full"
+                            placeholder="you@company.com">
+                    </div>
+                </div>
 
-        <!-- Confirmation State -->
-        <div id="step-confirmation" class="step-content hidden text-center">
-            <div class="mb-6">
-                <div class="inline-flex items-center justify-center w-16 h-16 bg-green-100/20 rounded-full mb-4">
-                    <i data-lucide="check-circle-2" class="h-8 w-8 text-green-600"></i>
+                <label class="flex items-center cursor-pointer group mb-6">
+                    <input type="checkbox" id="feedback-checkbox" name="feedback"
+                        class="w-4 h-4 rounded border-border bg-card text-primary">
+                    <span class="ml-3 text-sm text-foreground group-hover:text-primary transition-colors">I'm open to a
+                        short feedback call</span>
+                </label>
+
+                <div class="flex gap-3">
+                    <button onclick="prevStep()" class="btn-secondary w-1/3">Back</button>
+                    <button onclick="submitWaitlist()" class="btn-primary w-2/3">Join GitMem waitlist</button>
                 </div>
             </div>
-            <h3 class="text-2xl font-bold text-foreground mb-3">You're on the list!</h3>
-            <p class="text-muted-foreground mb-6 text-sm leading-relaxed">
-                GitMem is onboarding users in batches and will prioritize people who filled out all the questions. We'll be in touch soon!
-            </p>
-            <button onclick="closeWaitlistModal()" class="btn-primary w-full">Close</button>
-        </div>
+
+            <!-- Confirmation State -->
+            <div id="step-confirmation" class="step-content hidden text-center">
+                <div class="mb-6">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-green-100/20 rounded-full mb-4">
+                        <i data-lucide="check-circle-2" class="h-8 w-8 text-green-600"></i>
+                    </div>
+                </div>
+                <h3 class="text-2xl font-bold text-foreground mb-3">You're on the list!</h3>
+                <p class="text-muted-foreground mb-6 text-sm leading-relaxed">
+                    GitMem is onboarding users in batches and will prioritize people who filled out all the questions.
+                    We'll be in touch soon!
+                </p>
+                <button onclick="closeWaitlistModal()" class="btn-primary w-full">Close</button>
+            </div>
         </div>
 
         <!-- Step Indicator (hidden - kept for compatibility) -->
@@ -251,220 +271,221 @@
 
 
 <style>
-.step-content {
-    animation: fadeIn 0.3s ease-in-out;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
+    .step-content {
+        animation: fadeIn 0.3s ease-in-out;
     }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
 
-.step-content.hidden {
-    display: none;
-}
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
 
-input[type="checkbox"] {
-    cursor: pointer;
-}
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
 
-/* Responsive adjustments */
-@media (max-width: 640px) {
-    #waitlist-modal {
-        padding: 1rem;
+    .step-content.hidden {
+        display: none;
     }
-    
-    .bg-card {
-        margin: 0;
+
+    input[type="checkbox"] {
+        cursor: pointer;
     }
-}
+
+    /* Responsive adjustments */
+    @media (max-width: 640px) {
+        #waitlist-modal {
+            padding: 1rem;
+        }
+
+        .bg-card {
+            margin: 0;
+        }
+    }
 </style>
 
 <script>
-// Modal state
-let currentStep = 1;
-const modalData = {
-    tools: [],
-    stack: '',
-    goals: [],
-    setup: '',
-    name: '',
-    email: '',
-    feedback: false
-};
+    // Modal state
+    let currentStep = 1;
+    const modalData = {
+        tools: [],
+        stack: '',
+        goals: [],
+        setup: '',
+        name: '',
+        email: '',
+        feedback: false
+    };
 
-// Initialize when page loads
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize icons
-    if (typeof lucide !== 'undefined') {
-        lucide.createIcons();
-    }
-    
-    // Close modal with Escape key
-    document.addEventListener('keydown', function(event) {
-        if (event.key === 'Escape') {
-            closeWaitlistModal();
+    // Initialize when page loads
+    document.addEventListener('DOMContentLoaded', function () {
+        // Initialize icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
         }
-    });
-});
 
-// Open modal
-function openWaitlistModal() {
-    currentStep = 1;
-    resetModalData();
-    showStep(1);
-    document.getElementById('waitlist-modal').classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-}
-
-// Close modal
-function closeWaitlistModal() {
-    document.getElementById('waitlist-modal').classList.add('hidden');
-    document.body.style.overflow = '';
-    currentStep = 1;
-    resetModalData();
-}
-
-// Reset modal data
-function resetModalData() {
-    modalData.tools = [];
-    modalData.stack = '';
-    modalData.goals = [];
-    modalData.setup = '';
-    modalData.name = '';
-    modalData.email = '';
-    modalData.feedback = false;
-}
-
-// Show specific step
-function showStep(step) {
-    // Hide all steps
-    document.querySelectorAll('.step-content').forEach(el => {
-        el.classList.add('hidden');
-    });
-    
-    // Show current step
-    document.getElementById(`step-${step}`).classList.remove('hidden');
-    
-    // Update step counter
-    document.getElementById('step-counter').textContent = `Step ${step} of 3`;
-    
-    // Update indicator bars
-    for (let i = 1; i <= 3; i++) {
-        const bar = document.getElementById(`indicator-bar-${i}`);
-        if (i <= step) {
-            bar.classList.remove('bg-muted');
-            bar.classList.add('bg-primary');
-        } else {
-            bar.classList.remove('bg-primary');
-            bar.classList.add('bg-muted');
-        }
-    }
-}
-
-// Navigate to next step
-function nextStep() {
-    if (currentStep === 1) {
-        // Collect Step 1 data
-        const toolCheckboxes = document.querySelectorAll('input[name="tools"]:checked');
-        modalData.tools = Array.from(toolCheckboxes).map(cb => cb.value);
-        modalData.stack = document.getElementById('stack-input').value;
-        
-        if (modalData.stack.trim() === '') {
-            alert('Please enter your main languages / stack.');
-            return;
-        }
-        
-        currentStep = 2;
-    } else if (currentStep === 2) {
-        // Collect Step 2 data
-        const goalCheckboxes = document.querySelectorAll('input[name="goals"]:checked');
-        modalData.goals = Array.from(goalCheckboxes).map(cb => cb.value);
-        modalData.setup = document.getElementById('setup-input').value;
-        
-        if (modalData.goals.length === 0) {
-            alert('Please select at least one goal.');
-            return;
-        }
-        
-        currentStep = 3;
-    }
-    
-    showStep(currentStep);
-}
-
-// Navigate to previous step
-function prevStep() {
-    if (currentStep > 1) {
-        currentStep--;
-        showStep(currentStep);
-    }
-}
-
-// Submit waitlist form
-async function submitWaitlist() {
-    // Collect Step 3 data
-    modalData.email = document.getElementById('email-input').value;
-    modalData.name = document.getElementById('name-input').value;
-    modalData.feedback = document.getElementById('feedback-checkbox').checked;
-    
-    // Validate email
-    if (!modalData.email || !modalData.email.includes('@')) {
-        alert('Please enter a valid email address.');
-        return;
-    }
-    
-    try {
-        // Prepare data to send
-        const formData = {
-            email: modalData.email,
-            name: modalData.name,
-            tools: modalData.tools.join(', '),
-            stack: modalData.stack,
-            goals: modalData.goals.join(', '),
-            setup: modalData.setup,
-            open_to_feedback: modalData.feedback
-        };
-        
-        // Call Python Flask endpoint
-        const response = await fetch("/join-gitmem-waitlist", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(formData),
-        });
-        
-        if (response.ok) {
-            // Show confirmation state
-            showStep('confirmation');
-            currentStep = 'confirmation';
-            document.getElementById('step-indicator').classList.add('hidden');
-        } else {
-            throw new Error('Failed to join waitlist');
-        }
-    } catch (error) {
-        console.error('Error joining waitlist:', error);
-        alert('There was an error joining the waitlist. Please try again.');
-    }
-}
-
-// Close modal when clicking outside
-document.addEventListener('DOMContentLoaded', function() {
-    const modal = document.getElementById('waitlist-modal');
-    if (modal) {
-        modal.addEventListener('click', function(event) {
-            if (event.target === this) {
+        // Close modal with Escape key
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
                 closeWaitlistModal();
             }
         });
+    });
+
+    // Open modal
+    function openWaitlistModal() {
+        currentStep = 1;
+        resetModalData();
+        showStep(1);
+        document.getElementById('waitlist-modal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
     }
-});
+
+    // Close modal
+    function closeWaitlistModal() {
+        document.getElementById('waitlist-modal').classList.add('hidden');
+        document.body.style.overflow = '';
+        currentStep = 1;
+        resetModalData();
+    }
+
+    // Reset modal data
+    function resetModalData() {
+        modalData.tools = [];
+        modalData.stack = '';
+        modalData.goals = [];
+        modalData.setup = '';
+        modalData.name = '';
+        modalData.email = '';
+        modalData.feedback = false;
+    }
+
+    // Show specific step
+    function showStep(step) {
+        // Hide all steps
+        document.querySelectorAll('.step-content').forEach(el => {
+            el.classList.add('hidden');
+        });
+
+        // Show current step
+        document.getElementById(`step-${step}`).classList.remove('hidden');
+
+        // Update step counter
+        document.getElementById('step-counter').textContent = `Step ${step} of 3`;
+
+        // Update indicator bars
+        for (let i = 1; i <= 3; i++) {
+            const bar = document.getElementById(`indicator-bar-${i}`);
+            if (i <= step) {
+                bar.classList.remove('bg-muted');
+                bar.classList.add('bg-primary');
+            } else {
+                bar.classList.remove('bg-primary');
+                bar.classList.add('bg-muted');
+            }
+        }
+    }
+
+    // Navigate to next step
+    function nextStep() {
+        if (currentStep === 1) {
+            // Collect Step 1 data
+            const toolCheckboxes = document.querySelectorAll('input[name="tools"]:checked');
+            modalData.tools = Array.from(toolCheckboxes).map(cb => cb.value);
+            modalData.stack = document.getElementById('stack-input').value;
+
+            if (modalData.stack.trim() === '') {
+                alert('Please enter your main languages / stack.');
+                return;
+            }
+
+            currentStep = 2;
+        } else if (currentStep === 2) {
+            // Collect Step 2 data
+            const goalCheckboxes = document.querySelectorAll('input[name="goals"]:checked');
+            modalData.goals = Array.from(goalCheckboxes).map(cb => cb.value);
+            modalData.setup = document.getElementById('setup-input').value;
+
+            if (modalData.goals.length === 0) {
+                alert('Please select at least one goal.');
+                return;
+            }
+
+            currentStep = 3;
+        }
+
+        showStep(currentStep);
+    }
+
+    // Navigate to previous step
+    function prevStep() {
+        if (currentStep > 1) {
+            currentStep--;
+            showStep(currentStep);
+        }
+    }
+
+    // Submit waitlist form
+    async function submitWaitlist() {
+        // Collect Step 3 data
+        modalData.email = document.getElementById('email-input').value;
+        modalData.name = document.getElementById('name-input').value;
+        modalData.feedback = document.getElementById('feedback-checkbox').checked;
+
+        // Validate email
+        if (!modalData.email || !modalData.email.includes('@')) {
+            alert('Please enter a valid email address.');
+            return;
+        }
+
+        try {
+            // Prepare data to send
+            const formData = {
+                email: modalData.email,
+                name: modalData.name,
+                tools: modalData.tools.join(', '),
+                stack: modalData.stack,
+                goals: modalData.goals.join(', '),
+                setup: modalData.setup,
+                open_to_feedback: modalData.feedback
+            };
+
+            // Call Python Flask endpoint
+            const response = await fetch("/join-gitmem-waitlist", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            });
+
+            if (response.ok) {
+                // Show confirmation state
+                showStep('confirmation');
+                currentStep = 'confirmation';
+                document.getElementById('step-indicator').classList.add('hidden');
+            } else {
+                throw new Error('Failed to join waitlist');
+            }
+        } catch (error) {
+            console.error('Error joining waitlist:', error);
+            alert('There was an error joining the waitlist. Please try again.');
+        }
+    }
+
+    // Close modal when clicking outside
+    document.addEventListener('DOMContentLoaded', function () {
+        const modal = document.getElementById('waitlist-modal');
+        if (modal) {
+            modal.addEventListener('click', function (event) {
+                if (event.target === this) {
+                    closeWaitlistModal();
+                }
+            });
+        }
+    });
 </script>
 {% endblock %}

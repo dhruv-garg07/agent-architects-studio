@@ -1,110 +1,209 @@
 <!doctype html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<title>Harshit | Founder @ TheManhattanProject.ai</title>
-		<style>
-			:root { 
-                --bg: #03040b; 
-                --card-bg: rgba(255, 255, 255, 0.02);
-                --border: rgba(255, 255, 255, 0.08);
-                --text-main: #f8fafc; 
-                --text-dim: #94a3b8; 
-                --accent: #8b5cf6; 
-                --accent-glow: rgba(139, 92, 246, 0.15);
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Harshit | Founder @ TheManhattanProject.ai</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, sans-serif;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            /* Cinematic mesh gradient background */
+            background:
+                radial-gradient(ellipse 80% 50% at 20% 40%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse 60% 40% at 80% 20%, rgba(6, 182, 212, 0.1) 0%, transparent 40%),
+                radial-gradient(ellipse 50% 60% at 60% 80%, rgba(245, 158, 11, 0.08) 0%, transparent 40%),
+                linear-gradient(180deg, #0a0612 0%, #0d1020 50%, #080410 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            color: #f8fafc;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+        }
+
+        /* Glass card styling */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .glass-card:hover {
+            border-color: rgba(139, 92, 246, 0.3);
+            box-shadow: 0 8px 32px rgba(139, 92, 246, 0.1);
+        }
+
+        /* Avatar styling - larger and centered */
+        .founder-img {
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            border: 2px solid rgba(139, 92, 246, 0.4);
+            box-shadow: 0 0 60px rgba(139, 92, 246, 0.3), 0 8px 32px rgba(0, 0, 0, 0.4);
+            object-fit: cover;
+        }
+
+        .status-badge {
+            background: rgba(34, 197, 94, 0.15);
+            color: #4ade80;
+            padding: 0.5rem 1rem;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+
+        /* Tech Stack Pills */
+        .pill {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            color: #e2e8f0;
+            transition: all 0.2s ease;
+        }
+
+        .pill:hover {
+            border-color: rgba(139, 92, 246, 0.5);
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        /* CTA Buttons */
+        .btn {
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.25s ease;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+            color: #fff;
+            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.35);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 32px rgba(139, 92, 246, 0.5);
+        }
+
+        .btn-secondary {
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #fff;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-3px);
+            border-color: rgba(139, 92, 246, 0.4);
+        }
+
+        @media (max-width: 850px) {
+            .grid {
+                grid-template-columns: 1fr !important;
             }
-			body { 
-                margin: 0; padding: 0; background: var(--bg); color: var(--text-main);
-                font-family: 'Geist', 'Inter', -apple-system, sans-serif;
-                line-height: 1.6; -webkit-font-smoothing: antialiased;
+
+            h1 {
+                font-size: 2.2rem !important;
             }
-            .container { max-width: 1000px; margin: 0 auto; padding: 6rem 2rem; }
-            
-            /* Typography */
-            h1 { font-size: 3.5rem; font-weight: 800; letter-spacing: -0.05em; margin-bottom: 1.5rem; line-height: 1.1; }
-            .gradient-text { background: linear-gradient(to bottom right, #fff 30%, #64748b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-            p.lead { font-size: 1.35rem; color: var(--text-dim); margin-bottom: 3rem; max-width: 800px; font-weight: 400; }
 
-            /* Bento Grid */
-            .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 4rem; }
-            .card { 
-                background: var(--card-bg); border: 1px solid var(--border); 
-                padding: 2rem; border-radius: 24px; position: relative; overflow: hidden;
+            .founder-img {
+                width: 120px;
+                height: 120px;
             }
-            .card h3 { margin: 0 0 1rem 0; font-size: 0.85rem; color: var(--accent); text-transform: uppercase; letter-spacing: 0.15em; font-weight: 700; }
-            .card p { font-size: 0.95rem; color: var(--text-dim); margin: 0; line-height: 1.5; }
-            
-            /* Avatar Section */
-            .profile-header { display: flex; align-items: center; gap: 1.5rem; margin-bottom: 2.5rem; }
-            .founder-img { width: 80px; height: 80px; border-radius: 50%; border: 1px solid var(--border); object-fit: cover; }
-            .status-badge { background: rgba(34, 197, 94, 0.1); color: #4ade80; padding: 0.4rem 0.8rem; border-radius: 100px; font-size: 0.75rem; font-weight: 600; }
+        }
+    </style>
+</head>
 
-            /* Tech Stack */
-            .stack { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.5rem; }
-            .pill { background: rgba(255,255,255,0.03); border: 1px solid var(--border); padding: 0.4rem 0.9rem; border-radius: 12px; font-size: 0.8rem; color: #fff; }
+<body>
+    <main class="container">
+        <!-- Centered Profile Hero -->
+        <div class="text-center mb-12">
+            <img class="founder-img mx-auto mb-6" src="{{ url_for('static', filename='harshit.png') }}" alt="Harshit">
+            <div class="status-badge inline-block mb-4">Shipping Daily</div>
+            <p class="text-gray-400 text-lg">Founder @ TheManhattanProject.ai</p>
+        </div>
 
-            .cta-group { display: flex; gap: 1rem; }
-            .btn { padding: 0.9rem 1.8rem; border-radius: 14px; font-weight: 600; text-decoration: none; transition: all 0.2s ease; font-size: 1rem; }
-            .btn-primary { background: #fff; color: #000; box-shadow: 0 10px 20px rgba(255,255,255,0.1); }
-            .btn-secondary { border: 1px solid var(--border); color: #fff; }
-            .btn:hover { transform: translateY(-3px); }
+        <h1 class="text-4xl md:text-5xl font-extrabold text-center tracking-tight mb-6">
+            <span class="bg-gradient-to-br from-white via-gray-200 to-gray-500 bg-clip-text text-transparent">Frugal
+                Engineering.</span>
+            <br>
+            <span
+                class="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent">Persistent
+                Memory.</span>
+        </h1>
+        <p class="text-lg md:text-xl text-gray-400 text-center max-w-3xl mx-auto mb-10">I am an Electrical Engineer and
+            AI Researcher from <strong class="text-white">IIT Ropar</strong>. My mission is to ensure technical models
+            remain robust when resources are scarce and expertise is thin. I bridge the gap between rigorous research
+            and global scalability through <strong class="text-white">resource optimization</strong> and <strong
+                class="text-white">impact-driven integrity</strong>.</p>
 
-            @media (max-width: 850px) { .grid { grid-template-columns: 1fr; } h1 { font-size: 2.5rem; } }
-		</style>
-	</head>
-	<body>
-		<main class="container">
-            <div class="profile-header">
-                <img class="founder-img" src="{{ url_for('static', filename='harshit.png') }}" alt="Harshit">
-                <div>
-                    <div class="status-badge">Shipping Daily</div>
-                    <div style="margin-top: 0.5rem; font-weight: 500; opacity: 0.8;">Founder @ TheManhattanProject.ai</div>
-                </div>
+        <div class="flex flex-wrap gap-4 justify-center mb-16">
+            <a href="https://themanhattanproject.ai" class="btn btn-primary">Visit Studio</a>
+            <a href="mailto:2021eeb1175@iitrpr.ac.in" class="btn btn-secondary">Get in Touch</a>
+        </div>
+
+        <!-- Glass Bento Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+            <div class="glass-card">
+                <h3 class="text-xs font-bold text-violet-400 uppercase tracking-widest mb-3">The Mission</h3>
+                <p class="text-gray-400 text-sm leading-relaxed">Building engineering solutions that remain robust when
+                    mistakes are costly. Turning the tables on scarcity through high-stakes application and resilient
+                    design.</p>
             </div>
 
-			<h1 class="gradient-text">Frugal Engineering. <br>Persistent Memory.</h1>
-			<p class="lead">I am an Electrical Engineer and AI Researcher from <strong>IIT Ropar</strong>. My mission is to ensure technical models remain robust when resources are scarce and expertise is thin. I bridge the gap between rigorous research and global scalability through <strong>resource optimization</strong> and <strong>impact-driven integrity</strong>.</p>
-
-            <div class="cta-group">
-                <a href="https://themanhattanproject.ai" class="btn btn-primary">Visit Studio</a>
-                <a href="mailto:2021eeb1175@iitrpr.ac.in" class="btn btn-secondary">Get in Touch</a>
+            <div class="glass-card">
+                <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-widest mb-3">Systems Design</h3>
+                <p class="text-gray-400 text-sm leading-relaxed">Obsessed with "frugal engineering"—solving systemic
+                    inefficiencies without the luxury of infinite resources. Robustness over idealism.</p>
             </div>
 
-            <div class="grid">
-                <div class="card">
-                    <h3>The Mission</h3>
-                    <p>Building engineering solutions that remain robust when mistakes are costly. Turning the tables on scarcity through high-stakes application and resilient design.</p>
-                </div>
-
-                <div class="card">
-                    <h3>Systems Design</h3>
-                    <p>Obsessed with "frugal engineering"—solving systemic inefficiencies without the luxury of infinite resources. Robustness over idealism.</p>
-                </div>
-
-                <div class="card">
-                    <h3>Core Expertise</h3>
-                    <p>Architect of <strong>MAHA</strong> and <strong>RadBot</strong>. Specialized in memory-first orchestration and global, practical scalability for agentic workflows.</p>
-                </div>
-
-                <div class="card" style="grid-column: span 3;">
-                    <h3>The Architecture</h3>
-                    <div class="stack">
-                        <span class="pill">Resource Optimization</span>
-                        <span class="pill">Memory Architectures</span>
-                        <span class="pill">Robust Systems Design</span>
-                        <span class="pill">Python 3.11+</span>
-                        <span class="pill">ChromaDB</span>
-                        <span class="pill">Pydantic V2</span>
-                        <span class="pill">Agentic Orchestration</span>
-                    </div>
-                </div>
+            <div class="glass-card">
+                <h3 class="text-xs font-bold text-amber-400 uppercase tracking-widest mb-3">Core Expertise</h3>
+                <p class="text-gray-400 text-sm leading-relaxed">Architect of <strong class="text-white">MAHA</strong>
+                    and <strong class="text-white">RadBot</strong>. Specialized in memory-first orchestration and
+                    global, practical scalability for agentic workflows.</p>
             </div>
 
-            <footer style="margin-top: 5rem; color: var(--text-dim); font-size: 0.9rem; border-top: 1px solid var(--border); padding-top: 2rem; display: flex; justify-content: space-between;">
-                <div>&copy; 2026 TheManhattanProject.ai</div>
-                <div>Excellence // Innovation // Resilience // Impact</div>
-            </footer>
-		</main>
-	</body>
+            <div class="glass-card md:col-span-3">
+                <h3 class="text-xs font-bold text-fuchsia-400 uppercase tracking-widest mb-4">The Architecture</h3>
+                <div class="flex flex-wrap gap-3">
+                    <span class="pill">Resource Optimization</span>
+                    <span class="pill">Memory Architectures</span>
+                    <span class="pill">Robust Systems Design</span>
+                    <span class="pill">Python 3.11+</span>
+                    <span class="pill">ChromaDB</span>
+                    <span class="pill">Pydantic V2</span>
+                    <span class="pill">Agentic Orchestration</span>
+                </div>
+            </div>
+        </div>
+
+        <footer
+            class="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center text-gray-500 text-sm">
+            <div>&copy; 2026 TheManhattanProject.ai</div>
+            <div class="mt-4 md:mt-0 text-gray-600">Excellence // Innovation // Resilience // Impact</div>
+        </footer>
+    </main>
+</body>
+
 </html>

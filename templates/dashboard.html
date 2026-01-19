@@ -3,29 +3,42 @@
 {% block title %}Dashboard - AI Agent Marketplace{% endblock %}
 
 {% block content %}
-<div class="flex min-h-screen bg-background relative">
-    
+<div class="flex min-h-screen relative">
+
     <!-- Sidebar -->
-    <div class="w-64 bg-card border-r border-border fixed left-0 top-16 bottom-0 overflow-y-auto">
+    <div
+        class="w-64 backdrop-blur-xl bg-black/40 border-r border-white/10 fixed left-0 top-16 bottom-0 overflow-y-auto">
         <nav class="p-4 mt-17">
             <div class="mb-6">
                 <h3 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Main</h3>
                 <ul>
                     <li class="mb-2">
                         <a href="#account" class="nav-item active">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
                             <span>Account</span>
                         </a>
                     </li>
                     <li class="mb-2">
                         <a href="#my-agents" class="nav-item">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" /></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                            </svg>
                             <span>My Agents</span>
                         </a>
                     </li>
                     <li>
                         <a href="#api-keys" class="nav-item">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                            </svg>
                             <span>API Keys</span>
                         </a>
                     </li>
@@ -37,86 +50,108 @@
     <!-- Main Content -->
     <div class="ml-64 flex-1 overflow-auto">
         <div class="p-8">
-            
+
             <!-- Account Section -->
             <section id="account-content" class="content-section active">
                 <div class="mb-6">
-                    <h2 class="text-2xl font-bold text-foreground">Account Settings</h2>
-                    <p class="text-muted-foreground">Manage your account preferences</p>
+                    <h2 class="text-2xl font-bold text-white tracking-tight">Account Settings</h2>
+                    <p class="text-gray-400">Manage your account preferences</p>
                 </div>
-                <div class="card card-elevated p-6 mb-6">
-                    <p class="text-muted-foreground">Account content placeholder...</p>
+                <div class="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 mb-6">
+                    <p class="text-gray-400">Account content placeholder...</p>
                 </div>
             </section>
-            
+
             <!-- My Agents Section -->
             <section id="my-agents-content" class="content-section hidden">
                 <div class="mb-6">
-                    <h2 class="text-2xl font-bold text-foreground">My Agents</h2>
-                    <p class="text-muted-foreground">Browse and manage the agents you own or have access to.</p>
+                    <h2 class="text-2xl font-bold text-white tracking-tight">My Agents</h2>
+                    <p class="text-gray-400">Browse and manage the agents you own or have access to.</p>
                 </div>
 
-                <div class="card card-elevated p-4 mb-6">
+                <div class="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-4 mb-6">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                        <input id="agent-search" type="search" placeholder="Search agents by name or description..." class="w-full sm:w-1/2 px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary" />
+                        <input id="agent-search" type="search" placeholder="Search agents by name or description..."
+                            class="w-full sm:w-1/2 px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary" />
                         <div class="flex items-center gap-2">
-                            <button id="create-agent-btn" class="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 transition-colors flex items-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            <button id="create-agent-btn"
+                                class="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 transition-colors flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none"
+                                    viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 4v16m8-8H4" />
                                 </svg>
                                 Create Agent
                             </button>
-                            <button id="refresh-agents" class="bg-secondary text-secondary-foreground px-3 py-2 rounded-md hover:bg-secondary/90 transition-colors flex items-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            <button id="refresh-agents"
+                                class="bg-secondary text-secondary-foreground px-3 py-2 rounded-md hover:bg-secondary/90 transition-colors flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                 </svg>
                             </button>
                         </div>
                     </div>
 
                     <div id="agents-empty" class="p-8 text-center text-muted-foreground hidden">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-muted-foreground mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-muted-foreground mb-4"
+                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
                         </svg>
                         <p class="text-lg mb-2">No agents found</p>
                         <p class="text-sm">Create or import agents to see them here</p>
                     </div>
 
-                    <div id="agents-container" class="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"></div>
+                    <div id="agents-container"
+                        class="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"></div>
                 </div>
             </section>
-            
+
             <!-- API Keys Section -->
             <section id="api-keys-content" class="content-section hidden">
                 <div class="flex justify-between items-center mb-6">
                     <div>
-                        <h2 class="text-2xl font-bold text-foreground">API Keys</h2>
-                        <p class="text-muted-foreground">Manage your API keys to access models</p>
+                        <h2 class="text-2xl font-bold text-white tracking-tight">API Keys</h2>
+                        <p class="text-gray-400">Manage your API keys to access models</p>
                     </div>
-                    <button id="open-create-modal-btn" class="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 transition-colors flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <button id="open-create-modal-btn"
+                        class="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 transition-colors flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                         </svg>
                         Create New Key
                     </button>
                 </div>
-                
-                <div class="card card-elevated overflow-hidden mb-6">
+
+                <div class="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl overflow-hidden mb-6">
                     <table class="min-w-full divide-y divide-border">
                         <thead class="bg-muted">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Name</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Key</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Limit / Exp</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Usage</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                    Name</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                    Key</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                    Limit / Exp</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                    Usage</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                                    Actions</th>
                             </tr>
                         </thead>
                         <tbody id="api-keys-table-body" class="divide-y divide-border bg-card">
                             <!-- Keys will be populated dynamically from Supabase via /api/keys -->
                         </tbody>
                     </table>
-                    
+
                     <div id="empty-state" class="hidden p-8 text-center text-muted-foreground">
                         No API keys found. Create one to get started.
                     </div>
@@ -128,44 +163,63 @@
 
 <!-- Create/Edit Agent Modal -->
 <div id="agent-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"></div>
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-md transition-opacity"></div>
 
     <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
         <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-            <div class="relative transform overflow-hidden rounded-lg bg-card text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg border border-border">
+            <div
+                class="relative transform overflow-hidden rounded-2xl backdrop-blur-2xl bg-white/5 text-left shadow-2xl shadow-violet-500/10 transition-all sm:my-8 sm:w-full sm:max-w-lg border border-white/10">
                 <div class="bg-card px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
                     <div class="sm:flex sm:items-start">
                         <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
-                            <h3 class="text-lg font-semibold leading-6 text-foreground" id="modal-title">Create New Agent</h3>
+                            <h3 class="text-lg font-semibold leading-6 text-foreground" id="modal-title">Create New
+                                Agent</h3>
                             <div class="mt-4 space-y-4">
                                 <input type="hidden" id="agent-id">
                                 <div>
-                                    <label for="agent-name" class="block text-sm font-medium text-foreground mb-1">Agent Name</label>
-                                    <input type="text" id="agent-name" class="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary" placeholder="e.g. Customer Support Bot">
+                                    <label for="agent-name" class="block text-sm font-medium text-foreground mb-1">Agent
+                                        Name</label>
+                                    <input type="text" id="agent-name"
+                                        class="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                                        placeholder="e.g. Customer Support Bot">
                                 </div>
                                 <div>
-                                    <label for="agent-slug" class="block text-sm font-medium text-foreground mb-1">Agent Slug</label>
-                                    <input type="text" id="agent-slug" class="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary" placeholder="e.g. customer-support">
+                                    <label for="agent-slug" class="block text-sm font-medium text-foreground mb-1">Agent
+                                        Slug</label>
+                                    <input type="text" id="agent-slug"
+                                        class="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                                        placeholder="e.g. customer-support">
                                 </div>
                                 <div>
-                                    <label for="agent-description" class="block text-sm font-medium text-foreground mb-1">Description</label>
-                                    <textarea id="agent-description" rows="3" class="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary" placeholder="What does this agent do?"></textarea>
+                                    <label for="agent-description"
+                                        class="block text-sm font-medium text-foreground mb-1">Description</label>
+                                    <textarea id="agent-description" rows="3"
+                                        class="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                                        placeholder="What does this agent do?"></textarea>
                                 </div>
                                 <div>
-                                    <label for="agent-status" class="block text-sm font-medium text-foreground mb-1">Status</label>
-                                    <select id="agent-status" class="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                    <label for="agent-status"
+                                        class="block text-sm font-medium text-foreground mb-1">Status</label>
+                                    <select id="agent-status"
+                                        class="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
                                         <option value="active">Active</option>
                                         <option value="disabled">Disabled</option>
                                     </select>
                                 </div>
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label for="agent-rpm" class="block text-sm font-medium text-foreground mb-1">RPM Limit</label>
-                                        <input type="number" id="agent-rpm" class="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary" value="10">
+                                        <label for="agent-rpm"
+                                            class="block text-sm font-medium text-foreground mb-1">RPM Limit</label>
+                                        <input type="number" id="agent-rpm"
+                                            class="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                                            value="10">
                                     </div>
                                     <div>
-                                        <label for="agent-run-permission" class="block text-sm font-medium text-foreground mb-1">Run Permission</label>
-                                        <select id="agent-run-permission" class="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                        <label for="agent-run-permission"
+                                            class="block text-sm font-medium text-foreground mb-1">Run
+                                            Permission</label>
+                                        <select id="agent-run-permission"
+                                            class="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
                                             <option value="true">Enabled</option>
                                             <option value="false">Disabled</option>
                                         </select>
@@ -176,9 +230,13 @@
                     </div>
                 </div>
                 <div class="bg-muted/50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 gap-3">
-                    <button type="button" id="confirm-agent-btn" class="inline-flex w-full justify-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 sm:ml-3 sm:w-auto">Save Agent</button>
-                    <button type="button" id="delete-agent-btn" class="inline-flex w-full justify-center rounded-md bg-destructive px-3 py-2 text-sm font-semibold text-destructive-foreground shadow-sm hover:bg-destructive/90 sm:w-auto hidden">Delete</button>
-                    <button type="button" id="cancel-agent-btn" class="mt-3 inline-flex w-full justify-center rounded-md bg-background px-3 py-2 text-sm font-semibold text-foreground shadow-sm ring-1 ring-inset ring-border hover:bg-muted sm:mt-0 sm:w-auto">Cancel</button>
+                    <button type="button" id="confirm-agent-btn"
+                        class="inline-flex w-full justify-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 sm:ml-3 sm:w-auto">Save
+                        Agent</button>
+                    <button type="button" id="delete-agent-btn"
+                        class="inline-flex w-full justify-center rounded-md bg-destructive px-3 py-2 text-sm font-semibold text-destructive-foreground shadow-sm hover:bg-destructive/90 sm:w-auto hidden">Delete</button>
+                    <button type="button" id="cancel-agent-btn"
+                        class="mt-3 inline-flex w-full justify-center rounded-md bg-background px-3 py-2 text-sm font-semibold text-foreground shadow-sm ring-1 ring-inset ring-border hover:bg-muted sm:mt-0 sm:w-auto">Cancel</button>
                 </div>
             </div>
         </div>
@@ -186,29 +244,38 @@
 </div>
 
 <!-- Confirmation Modal -->
-<div id="confirm-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="confirm-modal-title" role="dialog" aria-modal="true">
+<div id="confirm-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="confirm-modal-title" role="dialog"
+    aria-modal="true">
     <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"></div>
     <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
         <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-            <div class="relative transform overflow-hidden rounded-lg bg-card text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md border border-border">
+            <div
+                class="relative transform overflow-hidden rounded-lg bg-card text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md border border-border">
                 <div class="bg-card px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
                     <div class="sm:flex sm:items-start">
-                        <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                            <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                        <div
+                            class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
                             </svg>
                         </div>
                         <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
-                            <h3 class="text-lg font-semibold leading-6 text-foreground" id="confirm-modal-title">Delete Agent</h3>
+                            <h3 class="text-lg font-semibold leading-6 text-foreground" id="confirm-modal-title">Delete
+                                Agent</h3>
                             <div class="mt-2">
-                                <p class="text-sm text-muted-foreground" id="confirm-modal-message">Are you sure you want to delete this agent? This action cannot be undone.</p>
+                                <p class="text-sm text-muted-foreground" id="confirm-modal-message">Are you sure you
+                                    want to delete this agent? This action cannot be undone.</p>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="bg-muted/50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-                    <button type="button" id="confirm-delete-btn" class="inline-flex w-full justify-center rounded-md bg-destructive px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto">Delete</button>
-                    <button type="button" id="cancel-delete-btn" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">Cancel</button>
+                    <button type="button" id="confirm-delete-btn"
+                        class="inline-flex w-full justify-center rounded-md bg-destructive px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto">Delete</button>
+                    <button type="button" id="cancel-delete-btn"
+                        class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">Cancel</button>
                 </div>
             </div>
         </div>
@@ -216,23 +283,31 @@
 </div>
 
 <!-- API Key Modals -->
-<div id="create-key-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+<div id="create-key-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog"
+    aria-modal="true">
     <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"></div>
     <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
         <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-            <div class="relative transform overflow-hidden rounded-lg bg-card text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg border border-border">
+            <div
+                class="relative transform overflow-hidden rounded-lg bg-card text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg border border-border">
                 <div class="bg-card px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
                     <div class="sm:flex sm:items-start">
                         <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
-                            <h3 class="text-lg font-semibold leading-6 text-foreground" id="create-key-modal-title">Create API Key</h3>
+                            <h3 class="text-lg font-semibold leading-6 text-foreground" id="create-key-modal-title">
+                                Create API Key</h3>
                             <div class="mt-4 space-y-4">
                                 <div>
-                                    <label for="key-name" class="block text-sm font-medium text-foreground mb-1">Key Name</label>
-                                    <input type="text" id="key-name" class="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary" placeholder="e.g. Browser Key">
+                                    <label for="key-name" class="block text-sm font-medium text-foreground mb-1">Key
+                                        Name</label>
+                                    <input type="text" id="key-name"
+                                        class="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                                        placeholder="e.g. Browser Key">
                                 </div>
                                 <div>
-                                    <label for="key-expiration" class="block text-sm font-medium text-foreground mb-1">Expiration</label>
-                                    <select id="key-expiration" class="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                                    <label for="key-expiration"
+                                        class="block text-sm font-medium text-foreground mb-1">Expiration</label>
+                                    <select id="key-expiration"
+                                        class="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
                                         <option value="">Never</option>
                                         <option value="1">1 day</option>
                                         <option value="3">3 days</option>
@@ -241,44 +316,59 @@
                                     </select>
                                 </div>
                                 <div>
-                                    <label for="key-note" class="block text-sm font-medium text-foreground mb-1">Note (optional)</label>
-                                    <input type="text" id="key-note" class="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Any metadata or usage note">
+                                    <label for="key-note" class="block text-sm font-medium text-foreground mb-1">Note
+                                        (optional)</label>
+                                    <input type="text" id="key-note"
+                                        class="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                                        placeholder="Any metadata or usage note">
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="bg-muted/50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 gap-3">
-                    <button type="button" id="confirm-create-key-btn" class="inline-flex w-full justify-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 sm:ml-3 sm:w-auto">Create Key</button>
-                    <button type="button" id="cancel-create-key-btn" class="mt-3 inline-flex w-full justify-center rounded-md bg-background px-3 py-2 text-sm font-semibold text-foreground shadow-sm ring-1 ring-inset ring-border hover:bg-muted sm:mt-0 sm:w-auto">Cancel</button>
+                    <button type="button" id="confirm-create-key-btn"
+                        class="inline-flex w-full justify-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 sm:ml-3 sm:w-auto">Create
+                        Key</button>
+                    <button type="button" id="cancel-create-key-btn"
+                        class="mt-3 inline-flex w-full justify-center rounded-md bg-background px-3 py-2 text-sm font-semibold text-foreground shadow-sm ring-1 ring-inset ring-border hover:bg-muted sm:mt-0 sm:w-auto">Cancel</button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div id="show-key-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+<div id="show-key-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog"
+    aria-modal="true">
     <div class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"></div>
     <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
         <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-            <div class="relative transform overflow-hidden rounded-lg bg-card text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md border border-border">
+            <div
+                class="relative transform overflow-hidden rounded-lg bg-card text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-md border border-border">
                 <div class="bg-card px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
                     <div class="sm:flex sm:items-start">
-                        <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 sm:mx-0 sm:h-10 sm:w-10">
-                            <svg class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 11c.667 0 1-.333 1-1s-.333-1-1-1-1 .333-1 1 .333 1 1 1z" />
+                        <div
+                            class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 sm:mx-0 sm:h-10 sm:w-10">
+                            <svg class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M12 11c.667 0 1-.333 1-1s-.333-1-1-1-1 .333-1 1 .333 1 1 1z" />
                             </svg>
                         </div>
                         <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
-                            <h3 class="text-lg font-semibold leading-6 text-foreground" id="show-key-modal-title">API Key Created</h3>
+                            <h3 class="text-lg font-semibold leading-6 text-foreground" id="show-key-modal-title">API
+                                Key Created</h3>
                             <div class="mt-4 space-y-3">
-                                <p class="text-sm text-muted-foreground">This is the only time the full API key will be shown. Copy it now and store it securely.</p>
+                                <p class="text-sm text-muted-foreground">This is the only time the full API key will be
+                                    shown. Copy it now and store it securely.</p>
                                 <div class="bg-background border border-input rounded-md p-3 font-mono break-all">
                                     <div id="show-key-value" class="text-sm"></div>
                                 </div>
                                 <div class="flex gap-2">
-                                    <button id="copy-key-btn" class="bg-primary text-primary-foreground px-3 py-1.5 rounded-md">Copy</button>
-                                    <button id="close-show-key-btn" class="bg-background px-3 py-1.5 rounded-md ring-1 ring-inset ring-border">Close</button>
+                                    <button id="copy-key-btn"
+                                        class="bg-primary text-primary-foreground px-3 py-1.5 rounded-md">Copy</button>
+                                    <button id="close-show-key-btn"
+                                        class="bg-background px-3 py-1.5 rounded-md ring-1 ring-inset ring-border">Close</button>
                                 </div>
                             </div>
                         </div>
@@ -290,7 +380,7 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         // Color variables for consistent theme
         const colors = {
             primary: 'hsl(221.2 83.2% 53.3%)',
@@ -306,18 +396,18 @@
         // --- Navigation Logic ---
         const navItems = document.querySelectorAll('.nav-item');
         const contentSections = document.querySelectorAll('.content-section');
-        
+
         function switchContent(target) {
             navItems.forEach(item => item.classList.remove('active'));
             contentSections.forEach(section => section.classList.add('hidden'));
             const activeLink = document.querySelector(`a[href="${target}"]`);
-            if(activeLink) activeLink.classList.add('active');
+            if (activeLink) activeLink.classList.add('active');
             const targetSection = document.querySelector(`${target}-content`);
-            if(targetSection) targetSection.classList.remove('hidden');
+            if (targetSection) targetSection.classList.remove('hidden');
         }
-        
+
         navItems.forEach(item => {
-            item.addEventListener('click', function(e) {
+            item.addEventListener('click', function (e) {
                 e.preventDefault();
                 const target = this.getAttribute('href');
                 switchContent(target);
@@ -337,7 +427,7 @@
         const agentSearch = document.getElementById('agent-search');
         const agentsContainer = document.getElementById('agents-container');
         const agentsEmpty = document.getElementById('agents-empty');
-        
+
         // Agent modal elements
         const agentIdInput = document.getElementById('agent-id');
         const agentNameInput = document.getElementById('agent-name');
@@ -387,7 +477,7 @@
         }
 
         // Update slug when name changes
-        agentNameInput.addEventListener('input', function() {
+        agentNameInput.addEventListener('input', function () {
             if (!agentIdInput.value) { // Only auto-generate for new agents
                 const slug = generateSlug(this.value);
                 agentSlugInput.value = slug;
@@ -401,17 +491,17 @@
             card.setAttribute('data-agent-id', agent.agent_id || agent.id);
             card.setAttribute('data-agent-name', (agent.agent_name || agent.name || '').toLowerCase());
             card.setAttribute('data-agent-description', (agent.description || '').toLowerCase());
-            
+
             // Normalize display: treat legacy 'draft' as 'active' so the UI never shows a Draft option
             const normStatus = (agent.status === 'draft') ? 'active' : (agent.status || 'unknown');
-            const statusColor = normStatus === 'active' ? 'bg-green-500/20 text-green-700' : 
-                              normStatus === 'disabled' ? 'bg-gray-500/20 text-gray-700' : 
-                              'bg-yellow-500/20 text-yellow-700';
-            
-            const statusDot = normStatus === 'active' ? 'bg-green-500' : 
-                            normStatus === 'disabled' ? 'bg-gray-500' : 
-                            'bg-yellow-500';
-            
+            const statusColor = normStatus === 'active' ? 'bg-green-500/20 text-green-700' :
+                normStatus === 'disabled' ? 'bg-gray-500/20 text-gray-700' :
+                    'bg-yellow-500/20 text-yellow-700';
+
+            const statusDot = normStatus === 'active' ? 'bg-green-500' :
+                normStatus === 'disabled' ? 'bg-gray-500' :
+                    'bg-yellow-500';
+
             card.innerHTML = `
                 <div class="flex items-start justify-between mb-4">
                     <div class="flex-1">
@@ -471,20 +561,20 @@
                     </div>
                 </div>
             `;
-            
+
             // Add event listeners
             const editBtn = card.querySelector('.agent-edit-btn');
             const openBtn = card.querySelector('.open-agent-btn');
             const deleteBtn = card.querySelector('.delete-agent-btn');
             const runBtn = card.querySelector('.run-agent-btn');
-            
+
             editBtn.addEventListener('click', () => openEditModal(agent));
             openBtn.addEventListener('click', () => window.location.href = `/agents/${agent.agent_id || agent.id}`);
             deleteBtn.addEventListener('click', () => openDeleteModal(agent));
             if (runBtn) {
                 runBtn.addEventListener('click', () => runAgent(agent.agent_id || agent.id));
             }
-            
+
             return card;
         }
 
@@ -502,15 +592,15 @@
         // Load agents from backend
         async function loadAgents() {
             try {
-                const res = await fetch('/dashboard/agents', { 
-                    credentials: 'same-origin' 
+                const res = await fetch('/dashboard/agents', {
+                    credentials: 'same-origin'
                 });
 
                 let payload;
-                try { 
-                    payload = await res.json(); 
-                } catch (e) { 
-                    throw new Error('Failed to parse agent data'); 
+                try {
+                    payload = await res.json();
+                } catch (e) {
+                    throw new Error('Failed to parse agent data');
                 }
 
                 if (!res.ok) {
@@ -527,17 +617,17 @@
                 }
 
                 agentsContainer.innerHTML = '';
-                
+
                 if (!agents || agents.length === 0) {
                     agentsEmpty.classList.remove('hidden');
                     return;
                 }
 
                 agentsEmpty.classList.add('hidden');
-                
+
                 // Sort by creation date (newest first)
                 agents.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-                
+
                 agents.forEach(agent => {
                     const card = renderAgentCard(agent);
                     agentsContainer.appendChild(card);
@@ -545,7 +635,7 @@
 
                 // Apply search filter if any
                 applyAgentFilter(agentSearch.value || '');
-                
+
             } catch (err) {
                 console.error('Error loading agents:', err);
                 agentsContainer.innerHTML = '';
@@ -558,7 +648,7 @@
             const q = query.trim().toLowerCase();
             const cards = agentsContainer.querySelectorAll('.agent-card');
             let visibleCount = 0;
-            
+
             cards.forEach(card => {
                 const name = card.getAttribute('data-agent-name') || '';
                 const desc = card.getAttribute('data-agent-description') || '';
@@ -608,10 +698,10 @@
         function openDeleteModal(agent) {
             const agentId = agent.agent_id || agent.id;
             const agentName = agent.agent_name || agent.name;
-            
-            document.getElementById('confirm-modal-message').textContent = 
+
+            document.getElementById('confirm-modal-message').textContent =
                 `Are you sure you want to delete "${agentName}"? This action cannot be undone.`;
-            
+
             confirmDeleteBtn.onclick = () => deleteAgent(agentId);
             toggleModal(confirmModal, true);
         }
@@ -620,7 +710,7 @@
         confirmAgentBtn.addEventListener('click', async () => {
             const agentId = agentIdInput.value;
             const isEdit = !!agentId;
-            
+
             const agentData = {
                 agent_name: agentNameInput.value,
                 agent_slug: agentSlugInput.value,
@@ -637,7 +727,7 @@
             try {
                 const url = isEdit ? `/dashboard/update/${agentId}` : '/dashboard/create';
                 const method = isEdit ? 'PUT' : 'POST';
-                
+
                 const res = await fetch(url, {
                     method,
                     headers: {
@@ -654,7 +744,7 @@
 
                 toggleModal(agentModal, false);
                 loadAgents(); // Refresh the list
-                
+
             } catch (err) {
                 console.error('Error saving agent:', err);
                 alert(`Failed to save agent: ${err.message}`);
@@ -676,7 +766,7 @@
 
                 toggleModal(confirmModal, false);
                 loadAgents(); // Refresh the list
-                
+
             } catch (err) {
                 console.error('Error deleting agent:', err);
                 alert(`Failed to delete agent: ${err.message}`);
@@ -701,7 +791,7 @@
 
         // Search functionality
         agentSearch.addEventListener('input', (e) => applyAgentFilter(e.target.value));
-        
+
         // Refresh agents
         refreshAgentsBtn.addEventListener('click', loadAgents);
 
@@ -745,7 +835,7 @@
             });
 
             apiKeysTableBody.querySelectorAll('.delete-key-btn').forEach(btn => {
-                btn.addEventListener('click', async function() {
+                btn.addEventListener('click', async function () {
                     const tr = this.closest('tr');
                     const keyId = tr ? tr.getAttribute('data-key-id') : null;
 
@@ -934,21 +1024,21 @@
         font-weight: 500;
         transition: all 0.2s;
     }
-    
+
     .nav-item:hover {
         background-color: hsl(var(--muted));
         color: hsl(var(--foreground));
     }
-    
+
     .nav-item.active {
         background-color: hsl(var(--primary));
         color: hsl(var(--primary-foreground));
     }
-    
+
     .nav-item svg {
         margin-right: 0.75rem;
     }
-    
+
     .content-section {
         transition: opacity 0.3s;
     }
@@ -963,6 +1053,7 @@
             opacity: 0;
             transform: translateY(20px);
         }
+
         to {
             opacity: 1;
             transform: translateY(0);
@@ -981,7 +1072,7 @@
     .gradient-border {
         position: relative;
         background: linear-gradient(white, white) padding-box,
-                    linear-gradient(135deg, hsl(221.2 83.2% 53.3% / 0.3), hsl(221.2 83.2% 53.3% / 0.1)) border-box;
+            linear-gradient(135deg, hsl(221.2 83.2% 53.3% / 0.3), hsl(221.2 83.2% 53.3% / 0.1)) border-box;
         border: 1px solid transparent;
     }
 
@@ -995,6 +1086,7 @@
             opacity: 0;
             transform: scale(0.95) translateY(-20px);
         }
+
         to {
             opacity: 1;
             transform: scale(1) translateY(0);
