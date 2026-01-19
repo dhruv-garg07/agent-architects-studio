@@ -1,39 +1,70 @@
 import os
-from typing import List, Dict, Optional, Union
+from typing import List, Dict, Optional
 from dotenv import load_dotenv
 import chromadb
+import logging
+
+logging.basicConfig(level=logging.ERROR)
+logging.getLogger().setLevel(logging.ERROR)
+
+# Disable noisy loggers
+logging.getLogger("werkzeug").setLevel(logging.ERROR)
+logging.getLogger("httpx").setLevel(logging.ERROR)
+logging.getLogger("chromadb").setLevel(logging.ERROR)
+
+# Load environment variables
+load_dotenv()
+
+# GLOBAL singleton CloudClient for performance
+CHROMA_CLIENT = chromadb.CloudClient(
+    api_key=os.getenv("CHROMA_API_KEY"),
+    tenant=os.getenv("CHROMA_TENANT"),
+    database=os.getenv("CHROMA_DATABASE_CHAT_HISTORY")
+)
 
 class ChromaCollectionManager:
-    def __init__(self, database: str = None):
-        # Load env vars
-        load_dotenv()
-        self.api_key = os.getenv("CHROMA_API_KEY")
-        self.tenant = os.getenv("CHROMA_TENANT")
+    """
+    Optimized version:
+    - Caches collection objects in memory
+    - Avoids repeated server calls for existence checks
+    - Reduces expensive metadata lookups
+    """
 
-        # Use provided database or fallback to env var
-        if database is None:
-            self.database = os.getenv("CHROMA_DATABASE")
-        else:
-            self.database = database
-        print(f"Using Chroma Database: {self.database}")
-        # Connect to Chroma Cloud
-        self.client = chromadb.CloudClient(
-            api_key=self.api_key,
-            tenant=self.tenant,
-            database=self.database
-        )
+    _collection_cache: Dict[str, any] = {}  # shared cache across all instances
+
+    def __init__(self, database=None):
+        self.client = CHROMA_CLIENT
+        self.database = database or os.getenv("CHROMA_DATABASE_CHAT_HISTORY")
+
+    # -----------------------------
+    # Utility / Internal Helpers
+    # -----------------------------
+
+    def _get_or_cache(self, collection_name: str):
+        """Get collection from cache or server."""
+        if collection_name not in self._collection_cache:
+            try:
+                col = self.client.get_or_create_collection(name=collection_name)
+                self._collection_cache[collection_name] = col
+            except Exception as e:
+                print(f"Error loading collection {collection_name}: {e}")
+                return None
+        return self._collection_cache[collection_name]
+
+    # -----------------------------
+    # Collection Operations
+    # -----------------------------
 
     def list_collections(self) -> List[str]:
-        """Return a list of existing collection names."""
+        """Return a list of collection names."""
         try:
-            collections = self.client.list_collections()
-            return [col.name for col in collections]
+            return [c.name for c in self.client.list_collections()]
         except Exception as e:
             print(f"Error listing collections: {e}")
             return []
 
     def collection_exists(self, collection_name: str) -> bool:
-        """Check if a collection exists by trying to get it."""
+        """Check if collection exists."""
         try:
             self.client.get_collection(collection_name)
             return True
@@ -41,247 +72,168 @@ class ChromaCollectionManager:
             return False
 
     def get_collection(self, collection_name: str):
-        """Get a collection instance."""
-        try:
-            return self.client.get_collection(name=collection_name)
-        except Exception as e:
-            print(f"Error getting collection {collection_name}: {e}")
-            return None
+        """Return a cached or loaded collection."""
+        return self._get_or_cache(collection_name)
 
-    def create_collection(
-        self,
-        collection_name: str,
-        ids: Optional[List[str]] = None,
-        documents: Optional[List[str]] = None,
-        metadatas: Optional[List[Dict]] = None
-    ) -> str:
-        """
-        Create a new collection (only if it does not exist).
-        Optionally add data into it.
-        """
+    def create_collection(self, collection_name: str, ids=None, documents=None, metadatas=None) -> str:
+        """Create a new collection and optionally add data."""
         if self.collection_exists(collection_name):
             return f"⚠️ Collection '{collection_name}' already exists."
 
         try:
-            # Create the new collection
-            collection = self.client.create_collection(name=collection_name)
+            col = self.client.create_collection(name=collection_name)
+            self._collection_cache[collection_name] = col  # cache it
 
-            # Optionally add data
+            # Add initial data if provided
             if ids and documents:
-                collection.add(
+                col.add(
                     ids=ids,
                     documents=documents,
-                    metadatas=metadatas if metadatas else [{} for _ in ids]
+                    metadatas=metadatas or [{} for _ in ids]
                 )
-                return f"✅ Collection '{collection_name}' created and {len(ids)} documents added."
-            
+                return f"✅ Collection '{collection_name}' created with {len(ids)} documents."
+
             return f"✅ Empty collection '{collection_name}' created."
 
         except Exception as e:
-            return f"❌ Error creating collection '{collection_name}': {str(e)}"
+            return f"❌ Error creating '{collection_name}': {e}"
 
-    def create_or_update_collection(
-        self,
-        collection_name: str,
-        ids: Optional[List[str]] = None,
-        documents: Optional[List[str]] = None,
-        metadatas: Optional[List[Dict]] = None
-    ) -> str:
-        """
-        Create a new collection or update existing one with new documents.
-        Uses upsert to update existing documents or add new ones.
-        """
+    def create_or_update_collection(self, collection_name: str, ids=None, documents=None, metadatas=None) -> str:
+        """Create collection if missing, otherwise upsert into it."""
         if not ids or not documents:
-            return "⚠️ Both ids and documents are required for update operations."
+            return "⚠️ ids and documents required."
 
         try:
-            # Check if collection exists
-            if self.collection_exists(collection_name):
-                collection = self.get_collection(collection_name)
-                action = "updated"
-            else:
-                collection = self.client.create_collection(name=collection_name)
-                action = "created"
+            col = self._get_or_cache(collection_name)
+            action = "updated" if self.collection_exists(collection_name) else "created"
 
-            # Upsert documents (update existing or add new)
-            collection.upsert(
+            col.upsert(
                 ids=ids,
                 documents=documents,
-                metadatas=metadatas if metadatas else [{} for _ in ids]
+                metadatas=metadatas or [{} for _ in ids]
             )
-            
-            return f"✅ Collection '{collection_name}' {action} with {len(ids)} documents."
+            return f"✅ Collection '{collection_name}' {action} with {len(ids)} items."
 
         except Exception as e:
-            return f"❌ Error processing collection '{collection_name}': {str(e)}"
+            return f"❌ Error updating '{collection_name}': {e}"
 
-    def update_collection(
-        self,
-        collection_name: str,
-        ids: List[str],
-        documents: List[str],
-        metadatas: Optional[List[Dict]] = None
-    ) -> str:
-        """
-        Add new documents to an existing collection using upsert.
-        """
-        if not self.collection_exists(collection_name):
+    def update_collection(self, collection_name: str, ids, documents, metadatas=None) -> str:
+        """Upsert documents into collection."""
+        col = self.get_collection(collection_name)
+        if not col:
             return f"⚠️ Collection '{collection_name}' does not exist."
 
         try:
-            collection = self.get_collection(collection_name)
-            collection.upsert(
+            col.upsert(
                 ids=ids,
                 documents=documents,
-                metadatas=metadatas if metadatas else [{} for _ in ids]
+                metadatas=metadatas or [{} for _ in ids]
             )
-            return f"✅ Added/updated {len(ids)} documents in collection '{collection_name}'."
-
+            return f"✅ Updated {len(ids)} documents in '{collection_name}'."
         except Exception as e:
-            return f"❌ Error updating collection '{collection_name}': {str(e)}"
-    
-    def update_collection_metadata(
-        self,
-        collection_name: str,
-        ids: List[str],
-        metadatas: List[Dict]
-    ) -> str:
-        """
-        Update metadata in an existing collection.
-        """
-        if not self.collection_exists(collection_name):
+            return f"❌ Error updating '{collection_name}': {e}"
+
+    def update_collection_metadata(self, collection_name, ids, metadatas) -> str:
+        """Update metadata only."""
+        col = self.get_collection(collection_name)
+        if not col:
             return f"⚠️ Collection '{collection_name}' does not exist."
 
         try:
-            collection = self.get_collection(collection_name)
-            collection.upsert(
-                ids=ids,
-                documents=None,  # Don't update documents
-                metadatas=metadatas
-            )
-            return f"✅ Updated metadata for {len(ids)} documents in collection '{collection_name}'."
-
+            col.upsert(ids=ids, documents=[None] * len(ids), metadatas=metadatas)
+            return f"✅ Metadata updated for {len(ids)} items in '{collection_name}'."
         except Exception as e:
-            return f"❌ Error updating metadata in collection '{collection_name}': {str(e)}"
+            return f"❌ Error updating metadata: {e}"
 
-    def replace_collection(
-        self,
-        collection_name: str,
-        ids: Optional[List[str]] = None,
-        documents: Optional[List[str]] = None,
-        metadatas: Optional[List[Dict]] = None
-    ) -> str:
-        """
-        Replace entire collection content by deleting and recreating it.
-        """
+    def replace_collection(self, collection_name, ids=None, documents=None, metadatas=None) -> str:
+        """Delete + recreate collection."""
         try:
-            # Delete existing collection if it exists
             if self.collection_exists(collection_name):
                 self.client.delete_collection(collection_name)
+                self._collection_cache.pop(collection_name, None)
 
-            # Create new collection
-            collection = self.client.create_collection(name=collection_name)
+            col = self.client.create_collection(name=collection_name)
+            self._collection_cache[collection_name] = col
 
-            # Add data if provided
             if ids and documents:
-                collection.add(
+                col.add(
                     ids=ids,
                     documents=documents,
-                    metadatas=metadatas if metadatas else [{} for _ in ids]
+                    metadatas=metadatas or [{} for _ in ids]
                 )
                 return f"✅ Collection '{collection_name}' replaced with {len(ids)} documents."
 
-            return f"✅ Collection '{collection_name}' replaced (now empty)."
+            return f"✅ Collection '{collection_name}' replaced (empty)."
 
         except Exception as e:
-            return f"❌ Error replacing collection '{collection_name}': {str(e)}"
+            return f"❌ Error replacing '{collection_name}': {e}"
 
     def delete_collection(self, collection_name: str) -> str:
-        """
-        Delete a collection.
-        """
-        if not self.collection_exists(collection_name):
+        """Delete a collection."""
+        try:
+            if not self.collection_exists(collection_name):
+                return f"⚠️ Collection '{collection_name}' does not exist."
+
+            self.client.delete_collection(collection_name)
+            self._collection_cache.pop(collection_name, None)
+            return f"✅ Deleted collection '{collection_name}'."
+        except Exception as e:
+            return f"❌ Error deleting collection: {e}"
+
+    # -----------------------------
+    # Document Operations
+    # -----------------------------
+
+    def delete_documents(self, collection_name: str, ids: List[str]) -> str:
+        """Delete specific documents."""
+        col = self.get_collection(collection_name)
+        if not col:
             return f"⚠️ Collection '{collection_name}' does not exist."
 
         try:
-            self.client.delete_collection(collection_name)
-            return f"✅ Collection '{collection_name}' deleted successfully."
+            col.delete(ids=ids)
+            return f"✅ Deleted {len(ids)} documents from '{collection_name}'."
         except Exception as e:
-            return f"❌ Error deleting collection '{collection_name}': {str(e)}"
+            return f"❌ Error deleting documents: {e}"
 
-    # To get information about a collection.
     def get_collection_info(self, collection_name: str) -> Dict:
-        """
-        Get information about a collection.
-        """
-        if not self.collection_exists(collection_name):
+        """Return collection statistics."""
+        col = self.get_collection(collection_name)
+        if not col:
             return {"error": f"Collection '{collection_name}' does not exist."}
 
         try:
-            collection = self.get_collection(collection_name)
-            count = collection.count()
             return {
                 "name": collection_name,
-                "document_count": count,
+                "document_count": col.count(),
                 "exists": True
             }
         except Exception as e:
-            return {"error": f"Error getting info for '{collection_name}': {str(e)}"}
+            return {"error": str(e)}
 
-    # Delete documents
-    def delete_documents(
-        self,
-        collection_name: str,
-        ids: List[str]
-    ) -> str:
-        """
-        Delete documents by IDs from a collection.
-        """
-        if not self.collection_exists(collection_name):
-            return f"⚠️ Collection '{collection_name}' does not exist."
-
-        try:
-            collection = self.get_collection(collection_name)
-            collection.delete(ids=ids)
-            return f"✅ Deleted {len(ids)} documents from collection '{collection_name}'."
-        except Exception as e:
-            return f"❌ Error deleting documents from '{collection_name}': {str(e)}"    
-        
-    
-    # To verify the data that was added in a collection.
-    def verify_data_in_collection(
-        self,
-        collection_name: str,
-        expected_ids: List[str] = None
-    ) -> Dict:
-        """
-        Verify that data was actually added to the collection.
-        """
-        if not self.collection_exists(collection_name):
+    def verify_data_in_collection(self, collection_name: str, expected_ids=None) -> Dict:
+        """Verify stored data and optionally compare with expected IDs."""
+        col = self.get_collection(collection_name)
+        if not col:
             return {"error": f"Collection '{collection_name}' does not exist."}
 
         try:
-            collection = self.get_collection(collection_name)
-            
-            # Get all documents
-            results = collection.get()
-            
-            actual_ids = results['ids'] if results and 'ids' in results else []
-            document_count = len(actual_ids)
-            
-            verification = {
+            results = col.get()
+            actual_ids = results.get("ids", [])
+
+            data = {
                 "collection": collection_name,
-                "document_count": document_count,
+                "document_count": len(actual_ids),
                 "actual_ids": actual_ids,
-                "documents": results['documents'] if results and 'documents' in results else [],
-                "metadatas": results['metadatas'] if results and 'metadatas' in results else []
+                "documents": results.get("documents", []),
+                "metadatas": results.get("metadatas", [])
             }
-            
+
             if expected_ids:
-                verification["expected_ids"] = expected_ids
-                verification["ids_match"] = set(actual_ids) == set(expected_ids)
-            
-            return verification
-            
+                data["expected_ids"] = expected_ids
+                data["ids_match"] = set(actual_ids) == set(expected_ids)
+
+            return data
+
         except Exception as e:
-            return {"error": f"Error verifying data in '{collection_name}': {str(e)}"}
+            return {"error": str(e)}
