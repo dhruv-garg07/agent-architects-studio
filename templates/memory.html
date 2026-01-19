@@ -3,35 +3,35 @@
 <!-- {% block title %}Memory Dashboard | AI Agent Marketplace{% endblock %} -->
 
 {% block content %}
-<div class="memory-dashboard min-h-screen bg-background text-foreground flex flex-col">
+<div class="memory-dashboard min-h-screen bg-[#0f0f0f] text-[#e8eaed] flex flex-col">
     <!-- Top Navigation Bar -->
     <!-- original header classes commented out: bg-card border-b border-border py-4 px-6 flex justify-between items-center shrink-0 -->
     <header>
         <!-- Ensure session selector exists for JS (kept hidden by default) -->
 
         {#
-            <!-- <div class="flex items-center space-x-3">
+        <!-- <div class="flex items-center space-x-3">
                 <i data-lucide="brain" class="h-7 w-7 text-primary"></i>
                 <h1 class="text-xl font-semibold">Memory Dashboard</h1>
             </div> -->
-            <div class="flex items-center space-x-4">
-                <!-- Session Management -->
-                <!-- <div id="sessionControls" class="flex items-center space-x-3"> -->
-                    <!-- newSessionBtn moved to the left nav -->
-                    <!--
+        <div class="flex items-center space-x-4">
+            <!-- Session Management -->
+            <!-- <div id="sessionControls" class="flex items-center space-x-3"> -->
+            <!-- newSessionBtn moved to the left nav -->
+            <!--
                     <button id="newSessionBtn" class="btn-primary flex items-center space-x-2 hidden">
                         <i data-lucide="plus" class="h-4 w-4"></i>
                         <span>New Session</span>
                     </button>
                     -->
-                    <!-- <div id="sessionSelector" class="hidden"> -->
+            <!-- <div id="sessionSelector" class="hidden"> -->
 
-                    </div>
-                </div>
+        </div>
+</div>
 
-                <!-- Add Data moved to chat input attach icon -->
+<!-- Add Data moved to chat input attach icon -->
 
-                <!-- <div class="flex items-center space-x-3">
+<!-- <div class="flex items-center space-x-3">
                     <button class="p-2 rounded-full hover:bg-secondary transition-colors">
                         <i data-lucide="bell" class="h-5 w-5"></i>
                     </button>
@@ -40,136 +40,139 @@
                         U
                     </div>
                 </div> -->
-            </div>
-        #}
-    </header>
+</div>
+#}
+</header>
 
-    <!-- Main Dashboard Content -->
-    <div class="flex flex-1 overflow-hidden">
-        <!-- Left Panel - Memory Sources & Sessions -->
-        <div class="w-80 bg-card border-r border-border flex flex-col shrink-0">
-            <div class="p-5">
-                <nav class="space-y-1">
-                    <button id="newSessionBtn" class="btn-primary flex items-center space-x-2">
-                        <i data-lucide="plus" class="h-4 w-4"></i>
-                        <span>New Session</span>
-                    </button>
-                </nav>
-            </div>
-
-            <!-- Moved Memory Settings up so it's visible above the bottom fold -->
-            <div class="p-5 border-t border-border shrink-0" id="memorySettingsTop">
-                <h2 class="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Memory Settings</h2>
-                <div class="space-y-3">
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm">Chat History</span>
-                        <label class="switch">
-                            <input type="checkbox" id="chatHistoryToggle" checked disabled>
-                            <span class="slider round"></span>
-                        </label>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm">File RAG</span>
-                        <label class="switch">
-                            <input type="checkbox" id="fileRagToggle">
-                            <span class="slider round"></span>
-                        </label>
-                    </div>
-                </div>
-            </div>
-
-            <div id="sessionsPanel" class="flex-1 overflow-y-auto p-5 border-t border-border">
-                <div id="noSessionsMessage" class="text-center py-8">
-                    <i data-lucide="message-square" class="h-12 w-12 text-muted-foreground mx-auto mb-3"></i>
-                    <p class="text-muted-foreground">No chat sessions yet</p>
-                    <p class="text-sm text-muted-foreground mt-1">Start a new conversation to create your first session
-                    </p>
-                </div>
-
-                <!-- Sessions list (rendered by JS) -->
-                <div id="sessionsList" class="space-y-3 hidden">
-                    <!-- Sessions will be dynamically populated here -->
-                </div>
-            </div>
-
-            <!-- bottom memory settings removed (moved up) -->
+<!-- Main Dashboard Content -->
+<div class="flex flex-1 overflow-hidden">
+    <!-- Left Panel - Sessions Sidebar -->
+    <div class="w-72 bg-[#1a1a1a] border-r border-[#2d2d2d] flex flex-col shrink-0">
+        <div class="p-4">
+            <button id="newSessionBtn"
+                class="w-full bg-[#4285f4] hover:bg-[#5a9cf5] text-white font-medium py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98]">
+                <i data-lucide="plus" class="h-4 w-4"></i>
+                <span>New Session</span>
+            </button>
         </div>
 
-        <!-- Center Panel - FIXED CHAT LAYOUT -->
-        <div class="flex-1 bg-background border-r border-border flex flex-col relative min-h-0">
-            <!-- Header -->
-            <div class="shrink-0 p-5 border-b border-border bg-background z-10">
-                <h2 class="text-lg font-semibold">AI Assistant</h2>
-                <p class="text-sm text-muted-foreground mt-1" id="conversationContext">Ask questions about your memory
-                    data</p>
-            </div>
-
-            <!-- Scrollable Conversation Area -->
-            <div class="flex-1 overflow-hidden relative">
-                <div id="conversationHistory" class="absolute inset-0 overflow-y-auto p-5 space-y-6">
-                    <div class="text-center py-12 text-muted-foreground" id="emptyConversation">
-                        <i data-lucide="message-square" class="h-16 w-16 mx-auto mb-4 opacity-50"></i>
-                        <p class="text-lg">No conversation yet</p>
-                        <p class="text-sm mt-1">Start by asking a question about your memory data</p>
-                    </div>
-
-                    <!-- Conversation messages will be dynamically added here -->
-                    <!-- Example messages for testing -->
-                    <div class="message user">
-                        <div class="message-content">
-                            <p>Hello, how can I see my recent memory data?</p>
-                            <div class="message-time">12:00 PM</div>
+        <!-- Memory Settings -->
+        <div class="px-4 py-3 border-t border-[#2d2d2d]" id="memorySettingsTop">
+            <h2 class="text-xs font-medium text-[#9aa0a6] uppercase tracking-wider mb-3">Settings</h2>
+            <div class="space-y-2">
+                <label class="flex items-center justify-between cursor-pointer group">
+                    <span class="text-sm text-[#e8eaed]">Chat History</span>
+                    <input type="checkbox" id="chatHistoryToggle" checked disabled class="sr-only">
+                    <div class="w-9 h-5 bg-[#4285f4] rounded-full relative">
+                        <div class="absolute right-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform">
                         </div>
                     </div>
-                    <div class="message assistant">
-                        <div class="message-content">
-                            <p>I can help you explore your memory data! You can ask me questions about your recent
-                                sessions, search for specific information, or analyze patterns in your data.</p>
-                            <div class="message-time">12:01 PM</div>
+                </label>
+                <label class="flex items-center justify-between cursor-pointer group">
+                    <span class="text-sm text-[#e8eaed]">File RAG</span>
+                    <input type="checkbox" id="fileRagToggle" class="sr-only peer">
+                    <div class="w-9 h-5 bg-[#3d3d3d] peer-checked:bg-[#4285f4] rounded-full relative transition-colors">
+                        <div
+                            class="absolute left-0.5 peer-checked:right-0.5 peer-checked:left-auto top-0.5 w-4 h-4 bg-white rounded-full transition-all">
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- Fixed Chat Input -->
-            <div class="shrink-0 bg-card border-t border-border p-5 sticky-chat-input card-oval">
-                <form id="chatForm" class="flex items-center space-x-3">
-                    <div class="flex-1 relative">
-                        <button type="button" id="attachFileBtn"
-                            class="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors text-2xl font-semibold">
-                            +
-                        </button>
-                        <input type="text" id="chatInput" placeholder="Query your memory..." class="input w-full pl-10 pr-12"
-                            autocomplete="off">
-                    </div>
-                    <button type="submit" class="btn-primary p-3 pill lift-on-hover">
-                        <i data-lucide="send" class="h-5 w-5"></i>
-                    </button>
-                </form>
+                </label>
             </div>
         </div>
 
-        <!-- Right Panel - RAG Results -->
-        <div class="w-96 bg-card flex flex-col shrink-0">
-            <div class="p-5 border-b border-border flex justify-between items-center shrink-0">
-                <h2 class="text-lg font-semibold">RAG Results</h2>
-                <div class="flex space-x-2">
-                    <button id="exportResultsBtn" class="btn-secondary text-sm py-1 px-2 flex items-center"
-                        title="Export Results">
-                        <i data-lucide="download" class="h-4 w-4"></i>
-                    </button>
+        <!-- Sessions List -->
+        <div id="sessionsPanel" class="flex-1 overflow-y-auto px-3 py-2 border-t border-[#2d2d2d]">
+            <div id="noSessionsMessage" class="text-center py-10">
+                <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-[#2d2d2d] flex items-center justify-center">
+                    <i data-lucide="message-square" class="h-6 w-6 text-[#9aa0a6]"></i>
                 </div>
+                <p class="text-[#9aa0a6] text-sm">No chat sessions yet</p>
+                <p class="text-xs text-[#6b6b6b] mt-1">Start a conversation to create one</p>
             </div>
 
-            <div class="flex-1 overflow-y-auto p-5 space-y-4" id="ragResults">
-                <div class="text-center py-12 text-muted-foreground" id="emptyRagResults">
-                    <i data-lucide="search" class="h-16 w-16 mx-auto mb-4 opacity-50"></i>
-                    <p class="text-lg">No results yet</p>
-                    <p class="text-sm mt-1">Ask a question to see relevant memory matches</p>
-                </div>
+            <div id="sessionsList" class="space-y-1 hidden">
+                <!-- Sessions dynamically populated -->
             </div>
         </div>
     </div>
+
+    <!-- Center Panel - Chat Area -->
+    <div class="flex-1 bg-[#0f0f0f] border-r border-[#2d2d2d] flex flex-col relative min-h-0">
+        <!-- Header -->
+        <div class="shrink-0 px-6 py-4 border-b border-[#2d2d2d] bg-[#0f0f0f]">
+            <h2 class="text-lg font-medium text-white">AI Assistant</h2>
+            <p class="text-sm text-[#9aa0a6] mt-0.5" id="conversationContext">Ask questions about your memory data</p>
+        </div>
+
+        <!-- Scrollable Conversation Area -->
+        <div class="flex-1 overflow-hidden relative">
+            <div id="conversationHistory" class="absolute inset-0 overflow-y-auto p-5 space-y-6">
+                <div class="text-center py-12 text-muted-foreground" id="emptyConversation">
+                    <i data-lucide="message-square" class="h-16 w-16 mx-auto mb-4 opacity-50"></i>
+                    <p class="text-lg">No conversation yet</p>
+                    <p class="text-sm mt-1">Start by asking a question about your memory data</p>
+                </div>
+
+                <!-- Conversation messages will be dynamically added here -->
+                <!-- Example messages for testing -->
+                <div class="message user">
+                    <div class="message-content">
+                        <p>Hello, how can I see my recent memory data?</p>
+                        <div class="message-time">12:00 PM</div>
+                    </div>
+                </div>
+                <div class="message assistant">
+                    <div class="message-content">
+                        <p>I can help you explore your memory data! You can ask me questions about your recent
+                            sessions, search for specific information, or analyze patterns in your data.</p>
+                        <div class="message-time">12:01 PM</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Input - Gemini Style -->
+        <div class="shrink-0 bg-[#1a1a1a] border-t border-[#2d2d2d] p-4">
+            <form id="chatForm" class="flex items-center gap-3">
+                <div class="flex-1 relative">
+                    <button type="button" id="attachFileBtn"
+                        class="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#2d2d2d] hover:bg-[#3d3d3d] flex items-center justify-center text-[#9aa0a6] hover:text-white transition-all">
+                        <i data-lucide="plus" class="h-4 w-4"></i>
+                    </button>
+                    <input type="text" id="chatInput" placeholder="Ask about your memory..."
+                        class="w-full bg-[#2d2d2d] border border-[#3d3d3d] rounded-full py-3 pl-14 pr-4 text-[#e8eaed] placeholder-[#6b6b6b] focus:outline-none focus:border-[#4285f4] focus:ring-1 focus:ring-[#4285f4] transition-all"
+                        autocomplete="off">
+                </div>
+                <button type="submit"
+                    class="w-11 h-11 rounded-full bg-[#4285f4] hover:bg-[#5a9cf5] flex items-center justify-center text-white transition-all hover:-translate-y-0.5 active:scale-95">
+                    <i data-lucide="send" class="h-5 w-5"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Right Panel - RAG Results -->
+    <div class="w-80 bg-[#1a1a1a] flex flex-col shrink-0">
+        <div class="px-5 py-4 border-b border-[#2d2d2d] flex justify-between items-center">
+            <h2 class="text-base font-medium text-white">RAG Results</h2>
+            <button id="exportResultsBtn"
+                class="w-8 h-8 rounded-lg bg-[#2d2d2d] hover:bg-[#3d3d3d] flex items-center justify-center text-[#9aa0a6] hover:text-white transition-all"
+                title="Export">
+                <i data-lucide="download" class="h-4 w-4"></i>
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-4 space-y-3" id="ragResults">
+            <div class="text-center py-12" id="emptyRagResults">
+                <div class="w-14 h-14 mx-auto mb-4 rounded-full bg-[#2d2d2d] flex items-center justify-center">
+                    <i data-lucide="search" class="h-7 w-7 text-[#6b6b6b]"></i>
+                </div>
+                <p class="text-[#9aa0a6] text-sm">No results yet</p>
+                <p class="text-xs text-[#6b6b6b] mt-1">Ask a question to see matches</p>
+            </div>
+        </div>
+    </div>
+</div>
 </div>
 
 <!-- Add Data Modal -->
@@ -181,737 +184,820 @@
             <h2 class="text-xl font-semibold">Add New Memory</h2>
             <button id="closeModal"
                 class="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-full hover:bg-secondary"></button>
-        <form id="memoryForm" method="POST" action="/memory" enctype="multipart/form-data" class="space-y-6 p-6">
-            <div>
-                <label for="memory_text" class="block font-medium mb-2">Text Input</label>
-                <textarea id="memory_text" name="memory_text" rows="4" class="input w-full"
-                    placeholder="Add your memory text..."></textarea>
-            </div>
-
-            <div>
-                <label for="memory_file" class="block font-medium mb-2">Upload Document</label>
-                <div class="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer"
-                    id="dropZone">
-                    <i data-lucide="upload-cloud" class="h-12 w-12 text-muted-foreground mx-auto"></i>
-                    <p class="mt-2 text-sm text-muted-foreground">Drag and drop your file here, or click to browse</p>
-                    <input type="file" id="memory_file" name="memory_file" class="hidden" multiple
-                        accept=".pdf,.ppt,.pptx,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif,.bmp,.svg,.webp,.heic,.tiff,.xls,.xlsx,.csv" />
-                    <button type="button" id="fileUploadBtn" class="btn-secondary mt-3">Select File</button>
+            <form id="memoryForm" method="POST" action="/memory" enctype="multipart/form-data" class="space-y-6 p-6">
+                <div>
+                    <label for="memory_text" class="block font-medium mb-2">Text Input</label>
+                    <textarea id="memory_text" name="memory_text" rows="4" class="input w-full"
+                        placeholder="Add your memory text..."></textarea>
                 </div>
-                <p class="text-xs text-muted-foreground mt-2">Supported formats: PDF, PPT, DOC, TXT, JPG, PNG, GIF (Max
-                    25MB per file)</p>
 
-                <div id="filePreview" class="mt-4 hidden">
-                    <div class="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
-                        <div class="flex items-center space-x-3">
-                            <i data-lucide="file-text" class="h-5 w-5 text-primary"></i>
-                            <div>
-                                <p id="fileName" class="text-sm font-medium"></p>
-                                <p id="fileSize" class="text-xs text-muted-foreground"></p>
-                            </div>
-                        </div>
-                        <button type="button" id="removeFileBtn"
-                            class="text-muted-foreground hover:text-destructive transition-colors p-1">
-                            <i data-lucide="trash-2" class="h-4 w-4"></i>
-                        </button>
+                <div>
+                    <label for="memory_file" class="block font-medium mb-2">Upload Document</label>
+                    <div class="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors cursor-pointer"
+                        id="dropZone">
+                        <i data-lucide="upload-cloud" class="h-12 w-12 text-muted-foreground mx-auto"></i>
+                        <p class="mt-2 text-sm text-muted-foreground">Drag and drop your file here, or click to browse
+                        </p>
+                        <input type="file" id="memory_file" name="memory_file" class="hidden" multiple
+                            accept=".pdf,.ppt,.pptx,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif,.bmp,.svg,.webp,.heic,.tiff,.xls,.xlsx,.csv" />
+                        <button type="button" id="fileUploadBtn" class="btn-secondary mt-3">Select File</button>
                     </div>
+                    <p class="text-xs text-muted-foreground mt-2">Supported formats: PDF, PPT, DOC, TXT, JPG, PNG, GIF
+                        (Max
+                        25MB per file)</p>
+
+                    <div id="filePreview" class="mt-4 hidden">
+                        <div class="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <i data-lucide="file-text" class="h-5 w-5 text-primary"></i>
+                                <div>
+                                    <p id="fileName" class="text-sm font-medium"></p>
+                                    <p id="fileSize" class="text-xs text-muted-foreground"></p>
+                                </div>
+                            </div>
+                            <button type="button" id="removeFileBtn"
+                                class="text-muted-foreground hover:text-destructive transition-colors p-1">
+                                <i data-lucide="trash-2" class="h-4 w-4"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="fileError" class="mt-2 text-xs text-destructive hidden"></div>
                 </div>
 
-                <div id="fileError" class="mt-2 text-xs text-destructive hidden"></div>
-            </div>
+                <div>
+                    <label for="memory_tags" class="block font-medium mb-2">Tags</label>
+                    <input type="text" id="memory_tags" name="memory_tags" class="input w-full"
+                        placeholder="Add tags (comma separated)" />
+                </div>
 
-            <div>
-                <label for="memory_tags" class="block font-medium mb-2">Tags</label>
-                <input type="text" id="memory_tags" name="memory_tags" class="input w-full"
-                    placeholder="Add tags (comma separated)" />
-            </div>
-
-            <div class="flex justify-end space-x-3 pt-4 border-t border-border">
-                <button type="button" id="cancelModal" class="btn-secondary">Cancel</button>
-                <button type="submit" class="btn-primary">Save Memory</button>
-            </div>
-        </form>
+                <div class="flex justify-end space-x-3 pt-4 border-t border-border">
+                    <button type="button" id="cancelModal" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Memory</button>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
 
-<style>
-    /* CRITICAL: Chat Layout Fixes */
-    .memory-dashboard {
-        height: 100vh;
-        overflow: hidden;
-    }
+    <style>
+        /* CRITICAL: Chat Layout Fixes */
+        .memory-dashboard {
+            height: 100vh;
+            overflow: hidden;
+        }
 
-    .memory-dashboard .flex-1 {
-        min-height: 0;
-    }
+        .memory-dashboard .flex-1 {
+            min-height: 0;
+        }
 
-    /* Center Panel - Absolute Positioning for Scroll Area */
-    .memory-dashboard .relative {
-        position: relative;
-    }
+        /* Center Panel - Absolute Positioning for Scroll Area */
+        .memory-dashboard .relative {
+            position: relative;
+        }
 
-    .memory-dashboard .absolute.inset-0 {
-        position: absolute;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        left: 0;
-    }
+        .memory-dashboard .absolute.inset-0 {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+        }
 
-    /* Conversation History Scroll Area */
-    #conversationHistory {
-        /* bottom padding adjusted so the lifted/sticky input doesn't cover messages
+        /* Conversation History Scroll Area */
+        #conversationHistory {
+            /* bottom padding adjusted so the lifted/sticky input doesn't cover messages
            Reduced to lift the overall layout up a bit */
-        padding-bottom: 6.5rem;
-        box-sizing: border-box;
-    }
-
-    /* Smooth scrolling */
-    #conversationHistory {
-        scroll-behavior: smooth;
-        scrollbar-width: thin;
-        scrollbar-color: hsl(var(--border)) transparent;
-    }
-
-    #conversationHistory::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    #conversationHistory::-webkit-scrollbar-track {
-        background: transparent;
-    }
-
-    #conversationHistory::-webkit-scrollbar-thumb {
-        background-color: hsl(var(--border));
-        border-radius: 3px;
-    }
-
-    #conversationHistory::-webkit-scrollbar-thumb:hover {
-        background-color: hsl(var(--muted-foreground));
-    }
-
-    /* Sticky Chat Input (stick to bottom of center panel so it's always visible) */
-    .sticky-chat-input {
-        position: sticky;
-        /* raise the chat box a bit higher so the whole control sits up */
-        bottom: 28px;
-        margin-left: 18px;
-        margin-right: 18px;
-        background: hsl(var(--card));
-        border: 1px solid hsl(var(--border));
-        border-radius: 12px;
-        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
-        z-index: 60;
-        transform: translateY(0);
-        transition: transform 120ms ease, box-shadow 120ms ease;
-        padding: 0.75rem;
-    }
-
-    /* Chat input plus button (filled circular control) */
-    #attachFileBtn {
-        width: 44px;
-        height: 44px;
-        left: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        border-radius: 10px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        background: hsl(var(--primary));
-        border: 1px solid hsl(var(--primary));
-        font-size: 20px;
-        line-height: 1;
-        color: hsl(var(--primary-foreground));
-        transition: background .12s ease, transform .12s ease;
-        box-shadow: 0 6px 14px rgba(0,0,0,0.12);
-    }
-
-    #attachFileBtn:hover {
-        transform: translateY(-50%) scale(1.03);
-        background: color-mix(in srgb, hsl(var(--primary)) 85%, black 15%);
-    }
-
-    /* Larger rounded input with left space for the plus control */
-    #chatInput {
-        padding-left: 64px; /* leave room for the circular + */
-        padding-right: 48px; /* keep space for send button */
-        height: 56px;
-        font-size: 1.25rem;
-        border-radius: 12px;
-    }
-
-    /* Make the chat form align items center and ensure the input fills height */
-    .sticky-chat-input form {
-        align-items: center;
-    }
-
-    /* Existing Memory Dashboard Styles */
-    .memory-dashboard .nav-item {
-        display: flex;
-        align-items: center;
-        color: hsl(var(--muted-foreground));
-        transition: all 0.2s ease;
-    }
-
-    .memory-dashboard .nav-item:hover {
-        background-color: hsl(var(--secondary));
-        color: hsl(var(--foreground));
-    }
-
-    .memory-dashboard .nav-item.active {
-        background-color: hsl(var(--primary));
-        color: hsl(var(--primary-foreground));
-    }
-
-    /* RAG Result Block Styling */
-    .rag-result {
-        background: hsl(var(--card));
-        border: 1px solid hsl(var(--border));
-        border-radius: 8px;
-        padding: 1rem;
-        transition: all 0.2s ease;
-    }
-
-    .rag-result:hover {
-        border-color: hsl(var(--primary));
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-
-    .rag-result.selected {
-        border-color: hsl(var(--primary));
-        background: hsl(var(--primary)/0.05);
-    }
-
-    .rag-score {
-        display: inline-flex;
-        align-items: center;
-        background: hsl(var(--primary));
-        color: hsl(var(--primary-foreground));
-        padding: 0.25rem 0.5rem;
-        border-radius: 4px;
-        font-size: 0.75rem;
-        font-weight: 600;
-    }
-
-    .rag-text-match {
-        background: hsl(var(--primary)/0.2);
-        padding: 0.1rem 0.25rem;
-        border-radius: 2px;
-        font-weight: 500;
-    }
-
-    .rag-meta {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-size: 0.75rem;
-        color: hsl(var(--muted-foreground));
-        margin-top: 0.75rem;
-        padding-top: 0.75rem;
-        border-top: 1px solid hsl(var(--border)/0.5);
-    }
-
-    .rag-feedback {
-        display: flex;
-        gap: 0.5rem;
-    }
-
-    .feedback-btn {
-        background: transparent;
-        border: 1px solid hsl(var(--border));
-        border-radius: 4px;
-        padding: 0.25rem 0.5rem;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-
-    .feedback-btn:hover {
-        background: hsl(var(--secondary));
-    }
-
-    .feedback-btn.active {
-        background: hsl(var(--primary));
-        color: hsl(var(--primary-foreground));
-        border-color: hsl(var(--primary));
-    }
-
-    /* Conversation Message Styling */
-    .message {
-        display: flex;
-        margin-bottom: 1.5rem;
-    }
-
-    .message.user {
-        justify-content: flex-end;
-    }
-
-    .message.assistant {
-        justify-content: flex-start;
-    }
-
-    .message-content {
-        max-width: 80%;
-        padding: 0;
-        position: relative;
-    }
-
-    .message.user .message-content {
-        background: hsl(var(--primary));
-        color: hsl(var(--primary-foreground));
-        border-bottom-right-radius: 4px;
-        padding: 1rem;
-        border-radius: 12px;
-    }
-
-    .message.assistant .message-content {
-        background: transparent;
-        border-bottom-left-radius: 0;
-        padding: 0;
-        color: hsl(var(--foreground));
-        font-size: 1rem;
-        line-height: 1.6;
-    }
-
-    /* Minimal formatting for assistant messages - like Gemini */
-    .message.assistant .message-content strong {
-        font-weight: 600;
-        color: hsl(var(--foreground));
-        background: none;
-        padding: 0;
-        border-radius: 0;
-        border: none;
-        box-shadow: none;
-        letter-spacing: normal;
-    }
-
-    .message.assistant .message-content em {
-        color: hsl(var(--foreground));
-        font-style: italic;
-        font-weight: 400;
-        background: none;
-        padding: 0;
-        border-radius: 0;
-        display: inline;
-    }
-
-    .message.assistant .message-content u,
-    .underline-text {
-        color: #ffd3b6;
-        text-decoration: underline;
-        text-decoration-thickness: 2px;
-        text-underline-offset: 3px;
-        text-decoration-color: #ffd3b6;
-        font-weight: 600;
-        background: rgba(255, 211, 182, 0.08);
-        padding: 0.1rem 0.3rem;
-        border-radius: 3px;
-        display: inline-block;
-    }
-
-    .message.assistant .message-content code {
-        background: hsl(var(--secondary));
-        padding: 2px 4px;
-        border-radius: 3px;
-        font-family: 'Courier New', monospace;
-        font-size: 0.9em;
-        color: hsl(var(--foreground));
-    }
-
-    .message.assistant .message-content pre {
-        background: hsl(var(--secondary));
-        padding: 1rem;
-        border-radius: 6px;
-        overflow-x: auto;
-        margin: 1rem 0;
-        border-left: none;
-    }
-
-    .message.assistant .message-content pre code {
-        background: transparent;
-        padding: 0;
-        border-radius: 0;
-        border: none;
-        color: #a0e7e5;
-        font-family: 'Courier New', monospace;
-        font-size: 0.95em;
-    }
-
-    .message.assistant .message-content p {
-        margin: 0.75rem 0;
-        line-height: 1.7;
-        font-size: 1rem;
-    }
-
-    .message.assistant .message-content p:first-child {
-        margin-top: 0;
-    }
-
-    .message.assistant .message-content p:last-child {
-        margin-bottom: 0;
-    }
-
-    /* Formatted definition blocks - REMOVED for cleaner UI */
-
-    .section-divider {
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-        margin: 1.25rem 0;
-    }
-
-    .message-time {
-        font-size: 0.75rem;
-        color: hsl(var(--muted-foreground));
-        margin-top: 0.5rem;
-        text-align: right;
-    }
-
-    .message.assistant .message-time {
-        text-align: left;
-    }
-
-    /* Session List Styling */
-    .session-item {
-        display: flex;
-        align-items: center;
-        padding: 0.75rem;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        border: 1px solid transparent;
-    }
-
-    .session-item:hover {
-        background: hsl(var(--secondary));
-    }
-
-    .session-item.active {
-        background: hsl(var(--primary)/0.1);
-        border-color: hsl(var(--primary));
-    }
-
-    .session-preview {
-        font-size: 0.875rem;
-        color: hsl(var(--muted-foreground));
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    /* Switch Styling */
-    .switch {
-        position: relative;
-        display: inline-block;
-        width: 40px;
-        height: 22px;
-    }
-
-    .switch input {
-        opacity: 0;
-        width: 0;
-        height: 0;
-    }
-
-    .slider {
-        position: absolute;
-        cursor: pointer;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: hsl(var(--muted));
-        transition: .4s;
-    }
-
-    .slider:before {
-        position: absolute;
-        content: "";
-        height: 16px;
-        width: 16px;
-        left: 3px;
-        bottom: 3px;
-        background-color: white;
-        transition: .4s;
-    }
-
-    input:checked+.slider {
-        background-color: hsl(var(--primary));
-    }
-
-    input:checked+.slider:before {
-        transform: translateX(18px);
-    }
-
-    .slider.round {
-        border-radius: 34px;
-    }
-
-    .slider.round:before {
-        border-radius: 50%;
-    }
-
-    /* Modal styles */
-    #addDataModal {
-        transition: opacity 0.2s ease;
-    }
-
-    #addDataModal:not(.hidden) {
-        display: flex;
-        opacity: 1;
-    }
-
-    /* File preview styles */
-    #filePreview {
-        transition: all 0.3s ease;
-    }
-
-    /* Responsive adjustments */
-    @media (max-width: 1024px) {
-        .memory-dashboard .w-80 {
-            width: 250px;
+            padding-bottom: 6.5rem;
+            box-sizing: border-box;
         }
 
-        .memory-dashboard .w-96 {
-            width: 300px;
-        }
-    }
-
-    @media (max-width: 768px) {
-        .memory-dashboard .flex {
-            flex-direction: column;
+        /* Smooth scrolling */
+        #conversationHistory {
+            scroll-behavior: smooth;
+            scrollbar-width: thin;
+            scrollbar-color: hsl(var(--border)) transparent;
         }
 
-        .memory-dashboard .w-80,
-        .memory-dashboard .w-96 {
-            width: 100%;
+        #conversationHistory::-webkit-scrollbar {
+            width: 6px;
         }
 
-        .memory-dashboard .border-r {
-            border-right: none;
-            border-bottom: 1px solid hsl(var(--border));
+        #conversationHistory::-webkit-scrollbar-track {
+            background: transparent;
         }
 
-        .message-content {
-            max-width: 90%;
+        #conversationHistory::-webkit-scrollbar-thumb {
+            background-color: hsl(var(--border));
+            border-radius: 3px;
         }
 
-        /* Mobile-specific chat input styling */
+        #conversationHistory::-webkit-scrollbar-thumb:hover {
+            background-color: hsl(var(--muted-foreground));
+        }
+
+        /* Sticky Chat Input (stick to bottom of center panel so it's always visible) */
         .sticky-chat-input {
+            position: sticky;
+            /* raise the chat box a bit higher so the whole control sits up */
+            bottom: 28px;
+            margin-left: 18px;
+            margin-right: 18px;
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: 12px;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+            z-index: 60;
+            transform: translateY(0);
+            transition: transform 120ms ease, box-shadow 120ms ease;
             padding: 0.75rem;
         }
 
-        /* Ensure proper scrolling on mobile */
-        #conversationHistory {
-            -webkit-overflow-scrolling: touch;
+        /* Chat input plus button (filled circular control) */
+        #attachFileBtn {
+            width: 44px;
+            height: 44px;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: hsl(var(--primary));
+            border: 1px solid hsl(var(--primary));
+            font-size: 20px;
+            line-height: 1;
+            color: hsl(var(--primary-foreground));
+            transition: background .12s ease, transform .12s ease;
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
         }
-    }
 
-    /* Loader/Spinner Animation Styles */
-    @keyframes spin {
-        to {
-            transform: rotate(360deg);
+        #attachFileBtn:hover {
+            transform: translateY(-50%) scale(1.03);
+            background: color-mix(in srgb, hsl(var(--primary)) 85%, black 15%);
         }
-    }
 
-    @keyframes pulse {
-        0%, 100% {
+        /* Larger rounded input with left space for the plus control */
+        #chatInput {
+            padding-left: 64px;
+            /* leave room for the circular + */
+            padding-right: 48px;
+            /* keep space for send button */
+            height: 56px;
+            font-size: 1.25rem;
+            border-radius: 12px;
+        }
+
+        /* Make the chat form align items center and ensure the input fills height */
+        .sticky-chat-input form {
+            align-items: center;
+        }
+
+        /* Existing Memory Dashboard Styles */
+        .memory-dashboard .nav-item {
+            display: flex;
+            align-items: center;
+            color: hsl(var(--muted-foreground));
+            transition: all 0.2s ease;
+        }
+
+        .memory-dashboard .nav-item:hover {
+            background-color: hsl(var(--secondary));
+            color: hsl(var(--foreground));
+        }
+
+        .memory-dashboard .nav-item.active {
+            background-color: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+        }
+
+        /* RAG Result Block Styling */
+        .rag-result {
+            background: hsl(var(--card));
+            border: 1px solid hsl(var(--border));
+            border-radius: 8px;
+            padding: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .rag-result:hover {
+            border-color: hsl(var(--primary));
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .rag-result.selected {
+            border-color: hsl(var(--primary));
+            background: hsl(var(--primary)/0.05);
+        }
+
+        .rag-score {
+            display: inline-flex;
+            align-items: center;
+            background: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .rag-text-match {
+            background: hsl(var(--primary)/0.2);
+            padding: 0.1rem 0.25rem;
+            border-radius: 2px;
+            font-weight: 500;
+        }
+
+        .rag-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75rem;
+            color: hsl(var(--muted-foreground));
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid hsl(var(--border)/0.5);
+        }
+
+        .rag-feedback {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .feedback-btn {
+            background: transparent;
+            border: 1px solid hsl(var(--border));
+            border-radius: 4px;
+            padding: 0.25rem 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .feedback-btn:hover {
+            background: hsl(var(--secondary));
+        }
+
+        .feedback-btn.active {
+            background: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            border-color: hsl(var(--primary));
+        }
+
+        /* Conversation Message Styling */
+        .message {
+            display: flex;
+            margin-bottom: 1.5rem;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message.assistant {
+            justify-content: flex-start;
+        }
+
+        .message-content {
+            max-width: 80%;
+            padding: 0;
+            position: relative;
+        }
+
+        .message.user .message-content {
+            background: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            border-bottom-right-radius: 4px;
+            padding: 1rem;
+            border-radius: 12px;
+        }
+
+        .message.assistant .message-content {
+            background: transparent;
+            border-bottom-left-radius: 0;
+            padding: 0;
+            color: hsl(var(--foreground));
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        /* Minimal formatting for assistant messages - like Gemini */
+        .message.assistant .message-content strong {
+            font-weight: 600;
+            color: hsl(var(--foreground));
+            background: none;
+            padding: 0;
+            border-radius: 0;
+            border: none;
+            box-shadow: none;
+            letter-spacing: normal;
+        }
+
+        .message.assistant .message-content em {
+            color: hsl(var(--foreground));
+            font-style: italic;
+            font-weight: 400;
+            background: none;
+            padding: 0;
+            border-radius: 0;
+            display: inline;
+        }
+
+        .message.assistant .message-content u,
+        .underline-text {
+            color: #ffd3b6;
+            text-decoration: underline;
+            text-decoration-thickness: 2px;
+            text-underline-offset: 3px;
+            text-decoration-color: #ffd3b6;
+            font-weight: 600;
+            background: rgba(255, 211, 182, 0.08);
+            padding: 0.1rem 0.3rem;
+            border-radius: 3px;
+            display: inline-block;
+        }
+
+        .message.assistant .message-content code {
+            background: hsl(var(--secondary));
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: hsl(var(--foreground));
+        }
+
+        .message.assistant .message-content pre {
+            background: hsl(var(--secondary));
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 1rem 0;
+            border-left: none;
+        }
+
+        .message.assistant .message-content pre code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            border: none;
+            color: #a0e7e5;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+        }
+
+        .message.assistant .message-content p {
+            margin: 0.75rem 0;
+            line-height: 1.7;
+            font-size: 1rem;
+        }
+
+        .message.assistant .message-content p:first-child {
+            margin-top: 0;
+        }
+
+        .message.assistant .message-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Formatted definition blocks - REMOVED for cleaner UI */
+
+        .section-divider {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin: 1.25rem 0;
+        }
+
+        .message-time {
+            font-size: 0.75rem;
+            color: hsl(var(--muted-foreground));
+            margin-top: 0.5rem;
+            text-align: right;
+        }
+
+        .message.assistant .message-time {
+            text-align: left;
+        }
+
+        /* Session List Styling */
+        .session-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+
+        .session-item:hover {
+            background: hsl(var(--secondary));
+        }
+
+        .session-item.active {
+            background: hsl(var(--primary)/0.1);
+            border-color: hsl(var(--primary));
+        }
+
+        .session-preview {
+            font-size: 0.875rem;
+            color: hsl(var(--muted-foreground));
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Switch Styling */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 22px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: hsl(var(--muted));
+            transition: .4s;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+        }
+
+        input:checked+.slider {
+            background-color: hsl(var(--primary));
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(18px);
+        }
+
+        .slider.round {
+            border-radius: 34px;
+        }
+
+        .slider.round:before {
+            border-radius: 50%;
+        }
+
+        /* Modal styles */
+        #addDataModal {
+            transition: opacity 0.2s ease;
+        }
+
+        #addDataModal:not(.hidden) {
+            display: flex;
             opacity: 1;
         }
-        50% {
-            opacity: 0.5;
+
+        /* File preview styles */
+        #filePreview {
+            transition: all 0.3s ease;
         }
-    }
 
-    .animate-spin {
-        animation: spin 1s linear infinite;
-    }
-
-    .animate-pulse {
-        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    }
-</style>
-
-<script>
-    // Auto-scroll to bottom functionality
-    function scrollToBottom() {
-        const conversationHistory = document.getElementById('conversationHistory');
-        if (conversationHistory) {
-            conversationHistory.scrollTop = conversationHistory.scrollHeight;
-        }
-    }
-
-    // Initialize on load and whenever new messages are added
-    document.addEventListener('DOMContentLoaded', function () {
-        scrollToBottom();
-
-        // Example: Add this to your message submission logic
-        // document.getElementById('chatForm').addEventListener('submit', function(e) {
-        //     e.preventDefault();
-        //     // Add your message logic here
-        //     setTimeout(scrollToBottom, 100);
-        // });
-    });
-
-    // Also scroll when window resizes
-    window.addEventListener('resize', scrollToBottom);
-</script>
-<!-- memory.html -->
-<script>
-    // expose the logged-in user's id to JS
-    window.USER_ID = "{{ current_user.id }}";
-</script>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        // Initialize Lucide icons
-        lucide.createIcons();
-
-        // State management
-        let currentSession = null;
-        let sessions = [];
-        let ragResults = [];
-        let currentSendToken = 0;
-
-        // Timestamp helpers: normalize different timestamp formats to milliseconds / ISO
-        function tsToMs(v) {
-            if (v === null || v === undefined) return 0;
-            // numbers: either seconds (10-digit) or milliseconds
-            if (typeof v === 'number') {
-                return String(v).length <= 10 ? v * 1000 : v;
+        /* Responsive adjustments */
+        @media (max-width: 1024px) {
+            .memory-dashboard .w-80 {
+                width: 250px;
             }
-            // numeric strings
-            if (/^\d+$/.test(String(v))) {
-                const n = Number(v);
-                return String(v).length <= 10 ? n * 1000 : n;
-            }
-            // try Date.parse on other strings (ISO etc)
-            const p = Date.parse(String(v));
-            return isNaN(p) ? 0 : p;
-        }
 
-        function toIso(v) {
-            const ms = tsToMs(v);
-            return new Date(ms).toISOString();
-        }
-
-        // DOM Elements
-        const modal = document.getElementById('addDataModal');
-        const modalBackdrop = document.getElementById('modalBackdrop');
-        const closeBtn = document.getElementById('closeModal');
-        const cancelBtn = document.getElementById('cancelModal');
-        const fileUploadBtn = document.getElementById('fileUploadBtn');
-        const fileInput = document.getElementById('memory_file');
-        const dropZone = document.getElementById('dropZone');
-        const filePreview = document.getElementById('filePreview');
-        const fileName = document.getElementById('fileName');
-        const fileSize = document.getElementById('fileSize');
-        const removeFileBtn = document.getElementById('removeFileBtn');
-        const fileError = document.getElementById('fileError');
-        const chatForm = document.getElementById('chatForm');
-        const chatInput = document.getElementById('chatInput');
-        const attachFileBtn = document.getElementById('attachFileBtn');
-        const conversationHistory = document.getElementById('conversationHistory');
-        const emptyConversation = document.getElementById('emptyConversation');
-        const ragResultsContainer = document.getElementById('ragResults');
-        const emptyRagResults = document.getElementById('emptyRagResults');
-        const sessionsPanel = document.getElementById('sessionsPanel');
-        const sessionsList = document.getElementById('sessionsList');
-        const noSessionsMessage = document.getElementById('noSessionsMessage');
-        const newSessionBtn = document.getElementById('newSessionBtn');
-        const navItems = document.querySelectorAll('.nav-item');
-        const exportResultsBtn = document.getElementById('exportResultsBtn');
-        const fileRagToggle = document.getElementById('fileRagToggle');
-        const chatHistoryToggle = document.getElementById('chatHistoryToggle');
-
-        // Initialize the dashboard
-        initDashboard();
-
-        // Utility: escape HTML to avoid XSS when injecting session content
-        function escapeHtml(unsafe) {
-            if (!unsafe && unsafe !== 0) return '';
-            return String(unsafe)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
-        }
-
-        // Client-side timestamp helpers for optimistic ordering
-        function getClientUpdatedMs(session) {
-            // prefer an explicit clientUpdatedMs (ms since epoch), fall back to server updatedAt
-            if (!session) return 0;
-            if (typeof session.clientUpdatedMs === 'number') return session.clientUpdatedMs;
-            if (session.updatedAt) return tsToMs(session.updatedAt);
-            if (session.createdAt) return tsToMs(session.createdAt);
-            return 0;
-        }
-
-        async function initDashboard() {
-            await refreshSessionsFromServer();
-            updateSessionUI();
-            if (sessions.length > 0) {
-                await loadSession(sessions[0].id); // newest first
-            } else {
-                renderConversation([]); // empty state
+            .memory-dashboard .w-96 {
+                width: 300px;
             }
         }
 
+        @media (max-width: 768px) {
+            .memory-dashboard .flex {
+                flex-direction: column;
+            }
 
+            .memory-dashboard .w-80,
+            .memory-dashboard .w-96 {
+                width: 100%;
+            }
 
-        function updateSessionUI() {
-            newSessionBtn.classList.remove('hidden');      // <-- always visible
-            // Only consider sessions that have a derived name for display.
-            // If no sessions have names yet, hide the list and show the empty message.
-            const visibleSessionsCount = sessions.filter(s => s && s.name && String(s.name).trim().length > 0).length;
-            sessionsList.classList.toggle('hidden', visibleSessionsCount === 0);
-            noSessionsMessage.classList.toggle('hidden', visibleSessionsCount !== 0);
-            renderSessionsList();
+            .memory-dashboard .border-r {
+                border-right: none;
+                border-bottom: 1px solid hsl(var(--border));
+            }
+
+            .message-content {
+                max-width: 90%;
+            }
+
+            /* Mobile-specific chat input styling */
+            .sticky-chat-input {
+                padding: 0.75rem;
+            }
+
+            /* Ensure proper scrolling on mobile */
+            #conversationHistory {
+                -webkit-overflow-scrolling: touch;
+            }
         }
 
+        /* Loader/Spinner Animation Styles */
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+
+    <script>
+        // Auto-scroll to bottom functionality
+        function scrollToBottom() {
+            const conversationHistory = document.getElementById('conversationHistory');
+            if (conversationHistory) {
+                conversationHistory.scrollTop = conversationHistory.scrollHeight;
+            }
+        }
+
+        // Initialize on load and whenever new messages are added
+        document.addEventListener('DOMContentLoaded', function () {
+            scrollToBottom();
+
+            // Example: Add this to your message submission logic
+            // document.getElementById('chatForm').addEventListener('submit', function(e) {
+            //     e.preventDefault();
+            //     // Add your message logic here
+            //     setTimeout(scrollToBottom, 100);
+            // });
+        });
+
+        // Also scroll when window resizes
+        window.addEventListener('resize', scrollToBottom);
+    </script>
+    <!-- memory.html -->
+    <script>
+        // expose the logged-in user's id to JS
+        window.USER_ID = "{{ current_user.id }}";
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Initialize Lucide icons
+            lucide.createIcons();
+
+            // State management
+            let currentSession = null;
+            let sessions = [];
+            let ragResults = [];
+            let currentSendToken = 0;
+
+            // Timestamp helpers: normalize different timestamp formats to milliseconds / ISO
+            function tsToMs(v) {
+                if (v === null || v === undefined) return 0;
+                // numbers: either seconds (10-digit) or milliseconds
+                if (typeof v === 'number') {
+                    return String(v).length <= 10 ? v * 1000 : v;
+                }
+                // numeric strings
+                if (/^\d+$/.test(String(v))) {
+                    const n = Number(v);
+                    return String(v).length <= 10 ? n * 1000 : n;
+                }
+                // try Date.parse on other strings (ISO etc)
+                const p = Date.parse(String(v));
+                return isNaN(p) ? 0 : p;
+            }
+
+            function toIso(v) {
+                const ms = tsToMs(v);
+                return new Date(ms).toISOString();
+            }
+
+            // DOM Elements
+            const modal = document.getElementById('addDataModal');
+            const modalBackdrop = document.getElementById('modalBackdrop');
+            const closeBtn = document.getElementById('closeModal');
+            const cancelBtn = document.getElementById('cancelModal');
+            const fileUploadBtn = document.getElementById('fileUploadBtn');
+            const fileInput = document.getElementById('memory_file');
+            const dropZone = document.getElementById('dropZone');
+            const filePreview = document.getElementById('filePreview');
+            const fileName = document.getElementById('fileName');
+            const fileSize = document.getElementById('fileSize');
+            const removeFileBtn = document.getElementById('removeFileBtn');
+            const fileError = document.getElementById('fileError');
+            const chatForm = document.getElementById('chatForm');
+            const chatInput = document.getElementById('chatInput');
+            const attachFileBtn = document.getElementById('attachFileBtn');
+            const conversationHistory = document.getElementById('conversationHistory');
+            const emptyConversation = document.getElementById('emptyConversation');
+            const ragResultsContainer = document.getElementById('ragResults');
+            const emptyRagResults = document.getElementById('emptyRagResults');
+            const sessionsPanel = document.getElementById('sessionsPanel');
+            const sessionsList = document.getElementById('sessionsList');
+            const noSessionsMessage = document.getElementById('noSessionsMessage');
+            const newSessionBtn = document.getElementById('newSessionBtn');
+            const navItems = document.querySelectorAll('.nav-item');
+            const exportResultsBtn = document.getElementById('exportResultsBtn');
+            const fileRagToggle = document.getElementById('fileRagToggle');
+            const chatHistoryToggle = document.getElementById('chatHistoryToggle');
+
+            // Initialize the dashboard
+            initDashboard();
+
+            // Utility: escape HTML to avoid XSS when injecting session content
+            function escapeHtml(unsafe) {
+                if (!unsafe && unsafe !== 0) return '';
+                return String(unsafe)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
+
+            // Client-side timestamp helpers for optimistic ordering
+            function getClientUpdatedMs(session) {
+                // prefer an explicit clientUpdatedMs (ms since epoch), fall back to server updatedAt
+                if (!session) return 0;
+                if (typeof session.clientUpdatedMs === 'number') return session.clientUpdatedMs;
+                if (session.updatedAt) return tsToMs(session.updatedAt);
+                if (session.createdAt) return tsToMs(session.createdAt);
+                return 0;
+            }
+
+            async function initDashboard() {
+                await refreshSessionsFromServer();
+                updateSessionUI();
+                if (sessions.length > 0) {
+                    await loadSession(sessions[0].id); // newest first
+                } else {
+                    renderConversation([]); // empty state
+                }
+            }
 
 
 
-        function renderSessionsList() {
-            sessionsList.innerHTML = '';
-            // ensure sessions are ordered by clientUpdatedMs (optimistic) descending (newest first)
-            // getClientUpdatedMs prefers clientUpdatedMs if set, otherwise falls back to server updatedAt
-            sessions.sort((a, b) => getClientUpdatedMs(b) - getClientUpdatedMs(a));
-            console.log('[memory] sessions before render:', sessions.map(s => ({ id: s.id, clientUpdatedMs: getClientUpdatedMs(s), updatedAt: s.updatedAt, name: s.name })));
-            sessions.forEach(s => {
-                // Skip rendering sessions that do not yet have a derived name. We don't want
-                // to show an empty box or a session id placeholder for unnamed sessions.
-                if (!s || !s.name || String(s.name).trim().length === 0) return;
-                const el = document.createElement('div');
-                el.className = `session-item ${currentSession && currentSession.id === s.id ? 'active' : ''}`;
-                // displayName is guaranteed to exist because we skipped unnamed sessions above
-                const displayName = s.name;
-                el.innerHTML = `
+            function updateSessionUI() {
+                newSessionBtn.classList.remove('hidden');      // <-- always visible
+                // Only consider sessions that have a derived name for display.
+                // If no sessions have names yet, hide the list and show the empty message.
+                const visibleSessionsCount = sessions.filter(s => s && s.name && String(s.name).trim().length > 0).length;
+                sessionsList.classList.toggle('hidden', visibleSessionsCount === 0);
+                noSessionsMessage.classList.toggle('hidden', visibleSessionsCount !== 0);
+                renderSessionsList();
+            }
+
+
+
+
+            function renderSessionsList() {
+                sessionsList.innerHTML = '';
+                // ensure sessions are ordered by clientUpdatedMs (optimistic) descending (newest first)
+                // getClientUpdatedMs prefers clientUpdatedMs if set, otherwise falls back to server updatedAt
+                sessions.sort((a, b) => getClientUpdatedMs(b) - getClientUpdatedMs(a));
+                console.log('[memory] sessions before render:', sessions.map(s => ({ id: s.id, clientUpdatedMs: getClientUpdatedMs(s), updatedAt: s.updatedAt, name: s.name })));
+                sessions.forEach(s => {
+                    // Skip rendering sessions that do not yet have a derived name. We don't want
+                    // to show an empty box or a session id placeholder for unnamed sessions.
+                    if (!s || !s.name || String(s.name).trim().length === 0) return;
+                    const el = document.createElement('div');
+                    el.className = `session-item ${currentSession && currentSession.id === s.id ? 'active' : ''}`;
+                    // displayName is guaranteed to exist because we skipped unnamed sessions above
+                    const displayName = s.name;
+                    el.innerHTML = `
             <div class="flex-1 min-w-0">
                 <div class="font-medium">${escapeHtml(displayName)}</div>
             </div>
             `;
-                el.addEventListener('click', () => loadSession(s.id));
-                sessionsList.appendChild(el);
-            });
-        }
+                    el.addEventListener('click', () => loadSession(s.id));
+                    sessionsList.appendChild(el);
+                });
+            }
 
-        newSessionBtn.addEventListener('click', createNewSession);
+            newSessionBtn.addEventListener('click', createNewSession);
 
 
-        // New function
-        async function refreshSessionsFromServer() {
-            const res = await fetch(`/web/get_sessions?id={{ current_user.id }}`);
-            const ids = await res.json();  // ["uuid1","uuid2",...]
+            // New function
+            async function refreshSessionsFromServer() {
+                const res = await fetch(`/web/get_sessions?id={{ current_user.id }}`);
+                const ids = await res.json();  // ["uuid1","uuid2",...]
 
-            if (!Array.isArray(ids)) { sessions = []; return; }
+                if (!Array.isArray(ids)) { sessions = []; return; }
 
-            const enriched = await Promise.all(ids.map(async (thread_id) => {
+                const enriched = await Promise.all(ids.map(async (thread_id) => {
+                    try {
+                        const r = await fetch(`/web/sessions/${thread_id}/messages?id=${encodeURIComponent(window.USER_ID)}`);
+                        const { messages = [] } = await r.json();
+
+                        // sort descending to get the most recent as "last"
+                        const last = messages.slice().sort((a, b) => {
+                            const ta = tsToMs(a.metadata?.timestamp ?? a.timestamp ?? 0);
+                            const tb = tsToMs(b.metadata?.timestamp ?? b.timestamp ?? 0);
+                            if (tb !== ta) return tb - ta;
+                            const ia = (a.metadata?.index ?? a.index ?? 0), ib = (b.metadata?.index ?? b.index ?? 0);
+                            return ib - ia;
+                        })[0];
+
+                        // If there are no messages, treat the session as very old so it doesn't float to the top
+                        const iso = (last?.metadata?.timestamp ?? last?.timestamp ?? null)
+                            ? toIso(last.metadata?.timestamp ?? last.timestamp)
+                            : new Date(0).toISOString();
+
+                        // derive a human-friendly session name from the first user prompt (earliest user message)
+                        let name = null;
+                        try {
+                            const rowsAsc = messages.slice().sort((a, b) => {
+                                const ta = tsToMs(a.metadata?.timestamp ?? a.timestamp ?? 0);
+                                const tb = tsToMs(b.metadata?.timestamp ?? b.timestamp ?? 0);
+                                if (ta !== tb) return ta - tb;
+                                const ia = (a.metadata?.index ?? a.index ?? 0), ib = (b.metadata?.index ?? b.index ?? 0);
+                                return ia - ib;
+                            });
+                            const firstUser = rowsAsc.find(m => {
+                                const role = (m.role || '').toLowerCase();
+                                return role === 'user' || role === 'human' || role === '';
+                            });
+                            const firstContent = firstUser?.content || firstUser?.document || '';
+                            if (firstContent) {
+                                // use up to 48 chars for the session name
+                                name = firstContent.trim().replace(/\s+/g, ' ').slice(0, 48);
+                                if (firstContent.length > 48) name = name + '…';
+                            }
+                        } catch (e) {
+                            name = null;
+                        }
+
+                        return {
+                            id: thread_id,
+                            createdAt: iso,
+                            updatedAt: iso,
+                            preview: last?.document || last?.content || '',
+                            name: name || null
+                        };
+                    } catch {
+                        // If fetching messages failed, mark session as very old and empty so it doesn't bubble to top
+                        return {
+                            id: thread_id,
+                            createdAt: new Date(0).toISOString(),
+                            updatedAt: new Date(0).toISOString(),
+                            preview: '',
+                            name: null
+                        };
+                    }
+                }));
+
+                // Preserve any client-side optimistic timestamps so we don't lose recent local promotions.
+                enriched.forEach(item => {
+                    const existing = sessions.find(s => s.id === item.id);
+                    const serverMs = tsToMs(item.updatedAt);
+                    item.clientUpdatedMs = Math.max(serverMs, existing && typeof existing.clientUpdatedMs === 'number' ? existing.clientUpdatedMs : 0);
+                });
+
+                // Sort using clientUpdatedMs (which incorporates optimistic local updates)
+                enriched.sort((a, b) => (b.clientUpdatedMs || 0) - (a.clientUpdatedMs || 0));
+                sessions = enriched;
+                console.log('[memory] sessions after refresh:', sessions.map(s => ({ id: s.id, clientUpdatedMs: s.clientUpdatedMs, updatedAt: s.updatedAt, name: s.name })));
+            }
+
+            // Refresh a single session's metadata and preview (avoids reloading every session)
+            async function refreshSingleSession(thread_id) {
                 try {
                     const r = await fetch(`/web/sessions/${thread_id}/messages?id=${encodeURIComponent(window.USER_ID)}`);
+                    if (!r.ok) return null;
                     const { messages = [] } = await r.json();
 
-                    // sort descending to get the most recent as "last"
                     const last = messages.slice().sort((a, b) => {
                         const ta = tsToMs(a.metadata?.timestamp ?? a.timestamp ?? 0);
                         const tb = tsToMs(b.metadata?.timestamp ?? b.timestamp ?? 0);
@@ -920,19 +1006,18 @@
                         return ib - ia;
                     })[0];
 
-                    // If there are no messages, treat the session as very old so it doesn't float to the top
+
                     const iso = (last?.metadata?.timestamp ?? last?.timestamp ?? null)
                         ? toIso(last.metadata?.timestamp ?? last.timestamp)
                         : new Date(0).toISOString();
 
-                    // derive a human-friendly session name from the first user prompt (earliest user message)
+                    // derive a friendly name from the first user prompt in this session
                     let name = null;
                     try {
                         const rowsAsc = messages.slice().sort((a, b) => {
-                            const ta = tsToMs(a.metadata?.timestamp ?? a.timestamp ?? 0);
-                            const tb = tsToMs(b.metadata?.timestamp ?? b.timestamp ?? 0);
+                            const ta = (a.metadata?.timestamp ?? 0), tb = (b.metadata?.timestamp ?? 0);
                             if (ta !== tb) return ta - tb;
-                            const ia = (a.metadata?.index ?? a.index ?? 0), ib = (b.metadata?.index ?? b.index ?? 0);
+                            const ia = (a.metadata?.index ?? 0), ib = (b.metadata?.index ?? 0);
                             return ia - ib;
                         });
                         const firstUser = rowsAsc.find(m => {
@@ -941,7 +1026,6 @@
                         });
                         const firstContent = firstUser?.content || firstUser?.document || '';
                         if (firstContent) {
-                            // use up to 48 chars for the session name
                             name = firstContent.trim().replace(/\s+/g, ' ').slice(0, 48);
                             if (firstContent.length > 48) name = name + '…';
                         }
@@ -949,445 +1033,371 @@
                         name = null;
                     }
 
-                    return {
-                        id: thread_id,
-                        createdAt: iso,
-                        updatedAt: iso,
-                        preview: last?.document || last?.content || '',
-                        name: name || null
-                    };
-                } catch {
-                    // If fetching messages failed, mark session as very old and empty so it doesn't bubble to top
-                    return {
-                        id: thread_id,
-                        createdAt: new Date(0).toISOString(),
-                        updatedAt: new Date(0).toISOString(),
-                        preview: '',
-                        name: null
-                    };
-                }
-            }));
-
-            // Preserve any client-side optimistic timestamps so we don't lose recent local promotions.
-            enriched.forEach(item => {
-                const existing = sessions.find(s => s.id === item.id);
-                const serverMs = tsToMs(item.updatedAt);
-                item.clientUpdatedMs = Math.max(serverMs, existing && typeof existing.clientUpdatedMs === 'number' ? existing.clientUpdatedMs : 0);
-            });
-
-            // Sort using clientUpdatedMs (which incorporates optimistic local updates)
-            enriched.sort((a, b) => (b.clientUpdatedMs || 0) - (a.clientUpdatedMs || 0));
-            sessions = enriched;
-            console.log('[memory] sessions after refresh:', sessions.map(s => ({ id: s.id, clientUpdatedMs: s.clientUpdatedMs, updatedAt: s.updatedAt, name: s.name })));
-        }
-
-        // Refresh a single session's metadata and preview (avoids reloading every session)
-        async function refreshSingleSession(thread_id) {
-            try {
-                const r = await fetch(`/web/sessions/${thread_id}/messages?id=${encodeURIComponent(window.USER_ID)}`);
-                if (!r.ok) return null;
-                const { messages = [] } = await r.json();
-
-                const last = messages.slice().sort((a, b) => {
-                    const ta = tsToMs(a.metadata?.timestamp ?? a.timestamp ?? 0);
-                    const tb = tsToMs(b.metadata?.timestamp ?? b.timestamp ?? 0);
-                    if (tb !== ta) return tb - ta;
-                    const ia = (a.metadata?.index ?? a.index ?? 0), ib = (b.metadata?.index ?? b.index ?? 0);
-                    return ib - ia;
-                })[0];
-
-
-                const iso = (last?.metadata?.timestamp ?? last?.timestamp ?? null)
-                    ? toIso(last.metadata?.timestamp ?? last.timestamp)
-                    : new Date(0).toISOString();
-
-                // derive a friendly name from the first user prompt in this session
-                let name = null;
-                try {
-                    const rowsAsc = messages.slice().sort((a, b) => {
-                        const ta = (a.metadata?.timestamp ?? 0), tb = (b.metadata?.timestamp ?? 0);
-                        if (ta !== tb) return ta - tb;
-                        const ia = (a.metadata?.index ?? 0), ib = (b.metadata?.index ?? 0);
-                        return ia - ib;
-                    });
-                    const firstUser = rowsAsc.find(m => {
-                        const role = (m.role || '').toLowerCase();
-                        return role === 'user' || role === 'human' || role === '';
-                    });
-                    const firstContent = firstUser?.content || firstUser?.document || '';
-                    if (firstContent) {
-                        name = firstContent.trim().replace(/\s+/g, ' ').slice(0, 48);
-                        if (firstContent.length > 48) name = name + '…';
+                    // Update sessions array in place if present, and promote this session to the top
+                    const idx = sessions.findIndex(s => s.id === thread_id);
+                    const preview = last?.document || last?.content || '';
+                    const updated = { id: thread_id, createdAt: iso, updatedAt: iso, preview, name };
+                    if (idx >= 0) {
+                        // merge metadata, preserve clientUpdatedMs if present
+                        const existingClientMs = sessions[idx].clientUpdatedMs || 0;
+                        sessions[idx] = { ...sessions[idx], ...updated, clientUpdatedMs: Math.max(tsToMs(updated.updatedAt), existingClientMs) };
+                        // move the updated session to the front so it appears as most-recent
+                        const moved = sessions.splice(idx, 1)[0];
+                        sessions.unshift(moved);
+                    } else {
+                        // new session, add to front and set clientUpdatedMs
+                        updated.clientUpdatedMs = tsToMs(updated.updatedAt) || Date.now();
+                        sessions.unshift(updated);
                     }
+
+                    return updated;
                 } catch (e) {
-                    name = null;
-                }
-
-                // Update sessions array in place if present, and promote this session to the top
-                const idx = sessions.findIndex(s => s.id === thread_id);
-                const preview = last?.document || last?.content || '';
-                const updated = { id: thread_id, createdAt: iso, updatedAt: iso, preview, name };
-                if (idx >= 0) {
-                    // merge metadata, preserve clientUpdatedMs if present
-                    const existingClientMs = sessions[idx].clientUpdatedMs || 0;
-                    sessions[idx] = { ...sessions[idx], ...updated, clientUpdatedMs: Math.max(tsToMs(updated.updatedAt), existingClientMs) };
-                    // move the updated session to the front so it appears as most-recent
-                    const moved = sessions.splice(idx, 1)[0];
-                    sessions.unshift(moved);
-                } else {
-                    // new session, add to front and set clientUpdatedMs
-                    updated.clientUpdatedMs = tsToMs(updated.updatedAt) || Date.now();
-                    sessions.unshift(updated);
-                }
-
-                return updated;
-            } catch (e) {
-                console.warn('refreshSingleSession failed for', thread_id, e);
-                return null;
-            }
-        }
-
-
-
-        async function createNewSession() {
-            const res = await fetch('/web/create_session', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    user_id: '{{current_user.id}}',
-                })
-            });
-            const { thread_id, createdAt } = await res.json();
-
-            // Put new session at the top
-            const newSession = {
-                id: thread_id,                // UUID from backend
-                createdAt: createdAt || new Date().toISOString(),
-                updatedAt: createdAt || new Date().toISOString(),
-                messages: []
-            };
-
-            // set a clientUpdatedMs so it sorts to the top immediately
-            newSession.clientUpdatedMs = Date.now();
-            sessions.unshift(newSession);
-            currentSession = newSession;
-
-            updateSessionUI();
-            // Clear the chat area immediately (nice UX) then load from server (will be empty)
-            renderConversation([]);
-            await loadSession(newSession.id);
-        }
-
-        let currentLoadToken = 0;
-
-        async function loadSession(sessionId) {
-            const session = sessions.find(s => s.id === sessionId);
-            if (!session) return;
-
-            const myToken = ++currentLoadToken;       // capture token for this load
-            currentSession = session;
-            renderConversation([]);           // clear immediately for better UX    
-            clearRAGResults();
-
-            const res = await fetch(`/web/sessions/${currentSession.id}/messages?id={{ current_user.id }}`);
-            const data = await res.json();
-
-            if (myToken !== currentLoadToken) return; // a newer load started, abort
-
-            const rows = data.messages || [];
-
-            // sort ascending for display
-            rows.sort((a, b) => {
-                const ta = (a.metadata?.timestamp ?? 0);
-                const tb = (b.metadata?.timestamp ?? 0);
-                if (ta !== tb) return ta - tb;
-                const ia = (a.metadata?.index ?? 0);
-                const ib = (b.metadata?.index ?? 0);
-                return ia - ib;
-            });
-
-            currentSession.messages = rows.map(r => ({
-                role: (r.role === 'llm' || r.role === 'assistant') ? 'assistant' : 'user',
-                content: r.content || '',
-                timestamp: r.timestamp
-                    ? new Date(r.timestamp).toISOString()
-                    : new Date().toISOString()
-            }));
-            // Update session's updatedAt based on the latest message timestamp so ordering reflects recent activity
-            if (rows.length > 0) {
-                const lastRow = rows[rows.length - 1];
-                const lastTs = lastRow.metadata?.timestamp || lastRow.timestamp || null;
-                if (lastTs) {
-                    const lastIso = toIso(lastTs);
-                    currentSession.updatedAt = lastIso;
-                    // update sessions array entry
-                    const idx = sessions.findIndex(s => s.id === currentSession.id);
-                    if (idx >= 0) sessions[idx] = { ...sessions[idx], updatedAt: lastIso };
+                    console.warn('refreshSingleSession failed for', thread_id, e);
+                    return null;
                 }
             }
-            renderConversation(currentSession.messages);
-            updateSessionUI();
-            // Just clear RAG results when loading a session
-            // JUST CHECK AGAIN - NEEDS IMPROVEMENT - CHECK LOGIN AGAIN
-            clearRAGResults();
 
-            //  rag result
-            const lastUser = [...currentSession.messages].reverse().find(m => m.role === 'user');
-            if (lastUser?.content) {
-                await fetchRAGResults({ query: lastUser.content, threadId: currentSession.id, topK: 5 });
-            } else {
+
+
+            async function createNewSession() {
+                const res = await fetch('/web/create_session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: '{{current_user.id}}',
+                    })
+                });
+                const { thread_id, createdAt } = await res.json();
+
+                // Put new session at the top
+                const newSession = {
+                    id: thread_id,                // UUID from backend
+                    createdAt: createdAt || new Date().toISOString(),
+                    updatedAt: createdAt || new Date().toISOString(),
+                    messages: []
+                };
+
+                // set a clientUpdatedMs so it sorts to the top immediately
+                newSession.clientUpdatedMs = Date.now();
+                sessions.unshift(newSession);
+                currentSession = newSession;
+
+                updateSessionUI();
+                // Clear the chat area immediately (nice UX) then load from server (will be empty)
+                renderConversation([]);
+                await loadSession(newSession.id);
+            }
+
+            let currentLoadToken = 0;
+
+            async function loadSession(sessionId) {
+                const session = sessions.find(s => s.id === sessionId);
+                if (!session) return;
+
+                const myToken = ++currentLoadToken;       // capture token for this load
+                currentSession = session;
+                renderConversation([]);           // clear immediately for better UX    
                 clearRAGResults();
-            }
-        }
 
+                const res = await fetch(`/web/sessions/${currentSession.id}/messages?id={{ current_user.id }}`);
+                const data = await res.json();
 
+                if (myToken !== currentLoadToken) return; // a newer load started, abort
 
+                const rows = data.messages || [];
 
-        function renderConversation(messages) {
-            conversationHistory.innerHTML = '';
+                // sort ascending for display
+                rows.sort((a, b) => {
+                    const ta = (a.metadata?.timestamp ?? 0);
+                    const tb = (b.metadata?.timestamp ?? 0);
+                    if (ta !== tb) return ta - tb;
+                    const ia = (a.metadata?.index ?? 0);
+                    const ib = (b.metadata?.index ?? 0);
+                    return ia - ib;
+                });
 
-            if (messages.length === 0) {
-                emptyConversation.classList.remove('hidden');
-                return;
-            }
+                currentSession.messages = rows.map(r => ({
+                    role: (r.role === 'llm' || r.role === 'assistant') ? 'assistant' : 'user',
+                    content: r.content || '',
+                    timestamp: r.timestamp
+                        ? new Date(r.timestamp).toISOString()
+                        : new Date().toISOString()
+                }));
+                // Update session's updatedAt based on the latest message timestamp so ordering reflects recent activity
+                if (rows.length > 0) {
+                    const lastRow = rows[rows.length - 1];
+                    const lastTs = lastRow.metadata?.timestamp || lastRow.timestamp || null;
+                    if (lastTs) {
+                        const lastIso = toIso(lastTs);
+                        currentSession.updatedAt = lastIso;
+                        // update sessions array entry
+                        const idx = sessions.findIndex(s => s.id === currentSession.id);
+                        if (idx >= 0) sessions[idx] = { ...sessions[idx], updatedAt: lastIso };
+                    }
+                }
+                renderConversation(currentSession.messages);
+                updateSessionUI();
+                // Just clear RAG results when loading a session
+                // JUST CHECK AGAIN - NEEDS IMPROVEMENT - CHECK LOGIN AGAIN
+                clearRAGResults();
 
-            emptyConversation.classList.add('hidden');
-
-            messages.forEach(message => {
-                addMessageToConversation(message.role, message.content, message.timestamp);
-            });
-
-            // Scroll to bottom
-            conversationHistory.scrollTop = conversationHistory.scrollHeight;
-        }
-
-        // Formatting functions for response display
-        
-        /**
-         * Format bold text: **text** → <strong>text</strong>
-         * Applies cyan gradient background with shadow effect and white text
-         */
-        function formatBold(text) {
-            return text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-        }
-
-        /**
-         * Format italic text: *text* → <em>text</em>
-         * Applies mint green color with subtle background
-         */
-        function formatItalic(text) {
-            return text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-        }
-
-        /**
-         * Format underline text: __text__ or <u>text</u> → <u>text</u>
-         * Applies peach color with underline decoration and subtle background
-         */
-        function formatUnderline(text) {
-            let formatted = text;
-            // Handle __text__ syntax (double underscore)
-            formatted = formatted.replace(/__([^_]+)__/g, '<u class="underline-text">$1</u>');
-            // Ensure existing <u> tags get the class for styling
-            formatted = formatted.replace(/<u>([^<]+)<\/u>/g, '<u class="underline-text">$1</u>');
-            return formatted;
-        }
-
-        function formatResponseForDisplay(text) {
-            let formatted = text;
-            
-            // Remove any end markers
-            formatted = formatted.replace(/\[END FINAL RESPONSE\]/g, '');
-            formatted = formatted.replace(/<\|end\|>/g, '');
-            
-            // Escape HTML first
-            formatted = escapeHtml(formatted);
-            
-            // Simple markdown: **bold** -> <strong>bold</strong>
-            formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-            
-            // Simple markdown: *italic* -> <em>italic</em>
-            formatted = formatted.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-            
-            // Preserve line breaks
-            formatted = formatted.replace(/\n\n+/g, '</p><p>');
-            formatted = '<p>' + formatted + '</p>';
-            
-            return formatted;
-        }
-
-        function highlightSemanticCategories(text) {
-            // No semantic highlighting - keep it simple and clean like Gemini
-            return text;
-        }
-
-        function escapeHtml(text) {
-            const map = {
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#039;'
-            };
-            return text.replace(/[&<>"']/g, m => map[m]);
-        }
-        
-        function cleanTextForDisplay(text) {
-            // AGGRESSIVE: Remove ALL leading whitespace FIRST
-            text = text.trimStart();
-            
-            // Remove HTML tags and special markers
-            text = text.replace(/<[^>]*>/g, '');
-            text = text.replace(/\[END FINAL RESPONSE\]/g, '');
-            text = text.replace(/<\|end\|>/g, '');
-            
-            // Fix first-person perspective (LLM speaks as if it's the user)
-            text = text.replace(/my name is/gi, 'your name is');
-            text = text.replace(/I'm a /gi, 'You are a ');
-            text = text.replace(/I've /gi, 'You have ');
-            text = text.replace(/I am a /gi, 'You are a ');
-            text = text.replace(/I am /gi, 'You are ');
-            
-            // Remove ALL pipe characters and table formatting
-            text = text.replace(/\s*\|\s*/g, ' ');  // Replace pipes with spaces
-            text = text.replace(/\|\s*-+\s*\|/g, '');  // Remove table separators
-            text = text.replace(/^\s*\|.*\|\s*$/gm, '');  // Remove entire table lines
-            
-            // Remove markdown headers (### , ##, #, etc.)
-            text = text.replace(/^#+\d+\.\s*/gm, '');  // ###2. or ### 2.
-            text = text.replace(/^#+[A-Z]\.\s*/gm, '');  // ###A.
-            text = text.replace(/^###\s*/gm, '');  // ###
-            text = text.replace(/^##\s*/gm, '');   // ##
-            text = text.replace(/^#\s*/gm, '');    // #
-            
-            // Remove horizontal rules
-            text = text.replace(/^-{3,}$/gm, '');
-            text = text.replace(/^\*{3,}$/gm, '');
-            text = text.replace(/^_{3,}$/gm, '');
-            text = text.replace(/^={3,}$/gm, '');
-            
-            // Remove markdown bold and italic markers
-            text = text.replace(/\*\*([^*]+)\*\*/g, '$1');  // Remove ** markers
-            text = text.replace(/\*([^*]+)\*/g, '$1');      // Remove * markers
-            
-            // Escape HTML special chars
-            text = escapeHtml(text);
-            
-            // AGGRESSIVE: Strip ALL whitespace from EVERY line
-            let lines = text.split('\n');
-            lines = lines.map(line => {
-                // Use regex to remove all leading and trailing whitespace
-                return line.replace(/^\s+|\s+$/g, '');
-            });
-            
-            // Remove ALL completely empty lines
-            lines = lines.filter(line => line && line.trim().length > 0);
-            
-            // Join back
-            text = lines.join('\n');
-            
-            // FINAL AGGRESSIVE TRIM
-            text = text.trim();
-            text = text.trimStart();
-            text = text.trimEnd();
-            
-            // Preserve line breaks properly
-            text = text.replace(/\n\n+/g, '\n\n');  // Collapse multiple line breaks to double
-            
-            return text;
-        }
-
-        function addMessageToConversation(role, content, timestamp = new Date()) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${role}`;
-
-            const timeString = typeof timestamp === 'string' ? timestamp : timestamp.toLocaleTimeString();
-
-            // Format assistant messages for display with markdown & semantics
-            let displayContent = content;
-            if (role === 'assistant') {
-                // First format the response structure
-                displayContent = formatResponseForDisplay(content);
-                // Then highlight semantic categories
-                displayContent = highlightSemanticCategories(displayContent);
-            } else {
-                // Escape user messages for safety
-                displayContent = escapeHtml(content);
+                //  rag result
+                const lastUser = [...currentSession.messages].reverse().find(m => m.role === 'user');
+                if (lastUser?.content) {
+                    await fetchRAGResults({ query: lastUser.content, threadId: currentSession.id, topK: 5 });
+                } else {
+                    clearRAGResults();
+                }
             }
 
-            messageDiv.innerHTML = `
+
+
+
+            function renderConversation(messages) {
+                conversationHistory.innerHTML = '';
+
+                if (messages.length === 0) {
+                    emptyConversation.classList.remove('hidden');
+                    return;
+                }
+
+                emptyConversation.classList.add('hidden');
+
+                messages.forEach(message => {
+                    addMessageToConversation(message.role, message.content, message.timestamp);
+                });
+
+                // Scroll to bottom
+                conversationHistory.scrollTop = conversationHistory.scrollHeight;
+            }
+
+            // Formatting functions for response display
+
+            /**
+             * Format bold text: **text** → <strong>text</strong>
+             * Applies cyan gradient background with shadow effect and white text
+             */
+            function formatBold(text) {
+                return text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+            }
+
+            /**
+             * Format italic text: *text* → <em>text</em>
+             * Applies mint green color with subtle background
+             */
+            function formatItalic(text) {
+                return text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+            }
+
+            /**
+             * Format underline text: __text__ or <u>text</u> → <u>text</u>
+             * Applies peach color with underline decoration and subtle background
+             */
+            function formatUnderline(text) {
+                let formatted = text;
+                // Handle __text__ syntax (double underscore)
+                formatted = formatted.replace(/__([^_]+)__/g, '<u class="underline-text">$1</u>');
+                // Ensure existing <u> tags get the class for styling
+                formatted = formatted.replace(/<u>([^<]+)<\/u>/g, '<u class="underline-text">$1</u>');
+                return formatted;
+            }
+
+            function formatResponseForDisplay(text) {
+                let formatted = text;
+
+                // Remove any end markers
+                formatted = formatted.replace(/\[END FINAL RESPONSE\]/g, '');
+                formatted = formatted.replace(/<\|end\|>/g, '');
+
+                // Escape HTML first
+                formatted = escapeHtml(formatted);
+
+                // Simple markdown: **bold** -> <strong>bold</strong>
+                formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+                // Simple markdown: *italic* -> <em>italic</em>
+                formatted = formatted.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+                // Preserve line breaks
+                formatted = formatted.replace(/\n\n+/g, '</p><p>');
+                formatted = '<p>' + formatted + '</p>';
+
+                return formatted;
+            }
+
+            function highlightSemanticCategories(text) {
+                // No semantic highlighting - keep it simple and clean like Gemini
+                return text;
+            }
+
+            function escapeHtml(text) {
+                const map = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                };
+                return text.replace(/[&<>"']/g, m => map[m]);
+            }
+
+            function cleanTextForDisplay(text) {
+                // AGGRESSIVE: Remove ALL leading whitespace FIRST
+                text = text.trimStart();
+
+                // Remove HTML tags and special markers
+                text = text.replace(/<[^>]*>/g, '');
+                text = text.replace(/\[END FINAL RESPONSE\]/g, '');
+                text = text.replace(/<\|end\|>/g, '');
+
+                // Fix first-person perspective (LLM speaks as if it's the user)
+                text = text.replace(/my name is/gi, 'your name is');
+                text = text.replace(/I'm a /gi, 'You are a ');
+                text = text.replace(/I've /gi, 'You have ');
+                text = text.replace(/I am a /gi, 'You are a ');
+                text = text.replace(/I am /gi, 'You are ');
+
+                // Remove ALL pipe characters and table formatting
+                text = text.replace(/\s*\|\s*/g, ' ');  // Replace pipes with spaces
+                text = text.replace(/\|\s*-+\s*\|/g, '');  // Remove table separators
+                text = text.replace(/^\s*\|.*\|\s*$/gm, '');  // Remove entire table lines
+
+                // Remove markdown headers (### , ##, #, etc.)
+                text = text.replace(/^#+\d+\.\s*/gm, '');  // ###2. or ### 2.
+                text = text.replace(/^#+[A-Z]\.\s*/gm, '');  // ###A.
+                text = text.replace(/^###\s*/gm, '');  // ###
+                text = text.replace(/^##\s*/gm, '');   // ##
+                text = text.replace(/^#\s*/gm, '');    // #
+
+                // Remove horizontal rules
+                text = text.replace(/^-{3,}$/gm, '');
+                text = text.replace(/^\*{3,}$/gm, '');
+                text = text.replace(/^_{3,}$/gm, '');
+                text = text.replace(/^={3,}$/gm, '');
+
+                // Remove markdown bold and italic markers
+                text = text.replace(/\*\*([^*]+)\*\*/g, '$1');  // Remove ** markers
+                text = text.replace(/\*([^*]+)\*/g, '$1');      // Remove * markers
+
+                // Escape HTML special chars
+                text = escapeHtml(text);
+
+                // AGGRESSIVE: Strip ALL whitespace from EVERY line
+                let lines = text.split('\n');
+                lines = lines.map(line => {
+                    // Use regex to remove all leading and trailing whitespace
+                    return line.replace(/^\s+|\s+$/g, '');
+                });
+
+                // Remove ALL completely empty lines
+                lines = lines.filter(line => line && line.trim().length > 0);
+
+                // Join back
+                text = lines.join('\n');
+
+                // FINAL AGGRESSIVE TRIM
+                text = text.trim();
+                text = text.trimStart();
+                text = text.trimEnd();
+
+                // Preserve line breaks properly
+                text = text.replace(/\n\n+/g, '\n\n');  // Collapse multiple line breaks to double
+
+                return text;
+            }
+
+            function addMessageToConversation(role, content, timestamp = new Date()) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${role}`;
+
+                const timeString = typeof timestamp === 'string' ? timestamp : timestamp.toLocaleTimeString();
+
+                // Format assistant messages for display with markdown & semantics
+                let displayContent = content;
+                if (role === 'assistant') {
+                    // First format the response structure
+                    displayContent = formatResponseForDisplay(content);
+                    // Then highlight semantic categories
+                    displayContent = highlightSemanticCategories(displayContent);
+                } else {
+                    // Escape user messages for safety
+                    displayContent = escapeHtml(content);
+                }
+
+                messageDiv.innerHTML = `
                 <div class="message-content" style="word-break:break-word;">
                     ${displayContent}
                     <div class="message-time">${timeString}</div>
                 </div>
             `;
 
-            conversationHistory.appendChild(messageDiv);
-            emptyConversation.classList.add('hidden');
+                conversationHistory.appendChild(messageDiv);
+                emptyConversation.classList.add('hidden');
 
-            // Scroll to bottom
-            conversationHistory.scrollTop = conversationHistory.scrollHeight;
-        }
-
-        async function fetchRAGResults({ query, threadId, topK = 5 }) {
-            const res = await fetch('/web/rag', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    user_id: window.USER_ID,   // set in memory.html
-                    thread_id: threadId,       // currentSession.id
-                    query,
-                    top_k: topK
-                })
-            });
-            const data = await res.json();
-            ragResults = (data.results || []).map(r => ({
-                id: r.id,
-                score: r.score ?? 0,
-                text: r.text ?? '',
-                source: r.source ?? 'Unknown',
-                timestamp: r.timestamp ?? '',
-                matches: Array.isArray(r.matches) ? r.matches : []
-            }));
-            renderRAGResults();
-        }
-
-        async function refreshRAGForLastUserMessage() {
-            const lastUser = [...(currentSession?.messages || [])].reverse().find(m => m.role === 'user');
-            if (!lastUser) return;
-            const res = await fetch('/web/rag', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    user_id: window.USER_ID,
-                    thread_id: currentSession.id,
-                    query: lastUser.content,
-                    top_k: 5
-                })
-            });
-            const data = await res.json();
-            ragResults = (data.results || []).map(r => ({
-                id: r.id, score: r.score ?? 0, text: r.text ?? '',
-                source: r.source ?? 'Unknown', timestamp: r.timestamp ?? '',
-                matches: Array.isArray(r.matches) ? r.matches : []
-            }));
-            renderRAGResults();
-        }
-
-
-        function renderRAGResults() {
-            ragResultsContainer.innerHTML = '';
-
-            if (ragResults.length === 0) {
-                emptyRagResults.classList.remove('hidden');
-                return;
+                // Scroll to bottom
+                conversationHistory.scrollTop = conversationHistory.scrollHeight;
             }
 
-            emptyRagResults.classList.add('hidden');
+            async function fetchRAGResults({ query, threadId, topK = 5 }) {
+                const res = await fetch('/web/rag', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: window.USER_ID,   // set in memory.html
+                        thread_id: threadId,       // currentSession.id
+                        query,
+                        top_k: topK
+                    })
+                });
+                const data = await res.json();
+                ragResults = (data.results || []).map(r => ({
+                    id: r.id,
+                    score: r.score ?? 0,
+                    text: r.text ?? '',
+                    source: r.source ?? 'Unknown',
+                    timestamp: r.timestamp ?? '',
+                    matches: Array.isArray(r.matches) ? r.matches : []
+                }));
+                renderRAGResults();
+            }
 
-            ragResults.forEach(result => {
-                const resultDiv = document.createElement('div');
-                resultDiv.className = 'rag-result';
-                resultDiv.innerHTML = `
+            async function refreshRAGForLastUserMessage() {
+                const lastUser = [...(currentSession?.messages || [])].reverse().find(m => m.role === 'user');
+                if (!lastUser) return;
+                const res = await fetch('/web/rag', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: window.USER_ID,
+                        thread_id: currentSession.id,
+                        query: lastUser.content,
+                        top_k: 5
+                    })
+                });
+                const data = await res.json();
+                ragResults = (data.results || []).map(r => ({
+                    id: r.id, score: r.score ?? 0, text: r.text ?? '',
+                    source: r.source ?? 'Unknown', timestamp: r.timestamp ?? '',
+                    matches: Array.isArray(r.matches) ? r.matches : []
+                }));
+                renderRAGResults();
+            }
+
+
+            function renderRAGResults() {
+                ragResultsContainer.innerHTML = '';
+
+                if (ragResults.length === 0) {
+                    emptyRagResults.classList.remove('hidden');
+                    return;
+                }
+
+                emptyRagResults.classList.add('hidden');
+
+                ragResults.forEach(result => {
+                    const resultDiv = document.createElement('div');
+                    resultDiv.className = 'rag-result';
+                    resultDiv.innerHTML = `
                     <div class="flex justify-between items-start mb-2">
                         <span class="rag-score">${(result.score * 100).toFixed(0)}% match</span>
                         <button class="text-muted-foreground hover:text-foreground" onclick="toggleRAGResultSelection(${result.id})">
@@ -1412,171 +1422,171 @@
                         </div>
                     </div>
                 `;
-                ragResultsContainer.appendChild(resultDiv);
-            });
+                    ragResultsContainer.appendChild(resultDiv);
+                });
 
-            // Re-initialize Lucide icons for new elements
-            lucide.createIcons();
-        }
-
-        function highlightMatches(text, matches) {
-            let highlightedText = text;
-            matches.forEach(match => {
-                const regex = new RegExp(match, 'gi');
-                highlightedText = highlightedText.replace(regex, '<span class="rag-text-match">$&</span>');
-            });
-            return highlightedText;
-        }
-
-        function clearRAGResults() {
-            ragResults = [];
-            ragResultsContainer.innerHTML = '';
-            emptyRagResults.classList.remove('hidden');
-        }
-
-        // Global functions for RAG interaction
-        window.toggleRAGResultSelection = function (resultId) {
-            const result = ragResults.find(r => r.id === resultId);
-            if (result) {
-                // In a real implementation, this would update the AI response
-                console.log('Selected RAG result:', result);
+                // Re-initialize Lucide icons for new elements
+                lucide.createIcons();
             }
-        };
 
-        window.rateRAGResult = async function (resultId, rating) {
-            try {
-                await fetch('/web/rag/feedback', {
+            function highlightMatches(text, matches) {
+                let highlightedText = text;
+                matches.forEach(match => {
+                    const regex = new RegExp(match, 'gi');
+                    highlightedText = highlightedText.replace(regex, '<span class="rag-text-match">$&</span>');
+                });
+                return highlightedText;
+            }
+
+            function clearRAGResults() {
+                ragResults = [];
+                ragResultsContainer.innerHTML = '';
+                emptyRagResults.classList.remove('hidden');
+            }
+
+            // Global functions for RAG interaction
+            window.toggleRAGResultSelection = function (resultId) {
+                const result = ragResults.find(r => r.id === resultId);
+                if (result) {
+                    // In a real implementation, this would update the AI response
+                    console.log('Selected RAG result:', result);
+                }
+            };
+
+            window.rateRAGResult = async function (resultId, rating) {
+                try {
+                    await fetch('/web/rag/feedback', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            user_id: window.USER_ID,
+                            thread_id: currentSession?.id,
+                            result_id: resultId,
+                            rating
+                        })
+                    });
+                } catch { }
+                // existing visual feedback code can stay
+            };
+
+
+            // Chat form submission
+            chatForm.addEventListener('submit', async function (e) {
+                e.preventDefault();
+                const message = chatInput.value.trim();
+                if (!message) return;
+
+                chatInput.value = '';
+
+                // Ensure a server session exists
+                if (!currentSession) {
+                    await createNewSession();
+                }
+
+                // If this session does not yet have a derived name, use the first user prompt
+                // as the session name (truncated). This makes the name appear immediately
+                // after the user sends the first prompt without requiring a page reload.
+                if (currentSession && !currentSession.name) {
+                    const truncated = message.trim().replace(/\s+/g, ' ').slice(0, 48);
+                    currentSession.name = truncated + (message.length > 48 ? '…' : '');
+                }
+
+                // New logic here as well.
+                const myToken = ++currentSendToken;
+                const thisSessionId = currentSession.id;
+
+                // Optimistic UI: show user message
+                const userMessage = { role: 'user', content: message, timestamp: new Date().toISOString() };
+                currentSession.messages.push(userMessage);
+                addMessageToConversation('user', message);
+                currentSession.updatedAt = new Date().toISOString();
+
+                // Immediately update the sessions array and promote this session to the top so the UI reflects recent activity
+                (function promoteCurrentSession() {
+                    const idx = sessions.findIndex(s => s.id === currentSession.id);
+                    const preview = message.slice(0, 200);
+                    const updatedAt = currentSession.updatedAt;
+                    const updated = { id: currentSession.id, createdAt: currentSession.createdAt || new Date().toISOString(), updatedAt, preview, name: currentSession.name, clientUpdatedMs: Date.now() };
+                    if (idx >= 0) {
+                        sessions[idx] = { ...sessions[idx], ...updated };
+                        const moved = sessions.splice(idx, 1)[0];
+                        sessions.unshift(moved);
+                    } else {
+                        sessions.unshift(updated);
+                    }
+                    renderSessionsList();
+                })();
+
+                // Create a placeholder for the assistant message that will be streamed
+                let aiMessageElement = null;
+                let fullAIResponse = '';
+
+                // Hide empty conversation message immediately
+                if (emptyConversation) {
+                    emptyConversation.classList.add('hidden');
+                }
+
+                // Create inline loader element
+                let loaderElement = null;
+
+                // Ask server to generate + store both messages in Chroma using streaming (SSE)
+                const res = await fetch('/web/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        user_id: window.USER_ID,
-                        thread_id: currentSession?.id,
-                        result_id: resultId,
-                        rating
+                        thread_id: currentSession.id,   // UUID
+                        user_id: window.USER_ID,      // from base.html
+                        message,
+                        history: currentSession.messages,
+                        use_file_rag: fileRagToggle.checked  // Send RAG toggle state
                     })
                 });
-            } catch { }
-            // existing visual feedback code can stay
-        };
 
-
-        // Chat form submission
-        chatForm.addEventListener('submit', async function (e) {
-            e.preventDefault();
-            const message = chatInput.value.trim();
-            if (!message) return;
-
-            chatInput.value = '';
-
-            // Ensure a server session exists
-            if (!currentSession) {
-                await createNewSession();
-            }
-
-            // If this session does not yet have a derived name, use the first user prompt
-            // as the session name (truncated). This makes the name appear immediately
-            // after the user sends the first prompt without requiring a page reload.
-            if (currentSession && !currentSession.name) {
-                const truncated = message.trim().replace(/\s+/g, ' ').slice(0, 48);
-                currentSession.name = truncated + (message.length > 48 ? '…' : '');
-            }
-
-            // New logic here as well.
-            const myToken = ++currentSendToken;
-            const thisSessionId = currentSession.id;
-
-            // Optimistic UI: show user message
-            const userMessage = { role: 'user', content: message, timestamp: new Date().toISOString() };
-            currentSession.messages.push(userMessage);
-            addMessageToConversation('user', message);
-            currentSession.updatedAt = new Date().toISOString();
-
-            // Immediately update the sessions array and promote this session to the top so the UI reflects recent activity
-            (function promoteCurrentSession() {
-                const idx = sessions.findIndex(s => s.id === currentSession.id);
-                const preview = message.slice(0, 200);
-                const updatedAt = currentSession.updatedAt;
-                const updated = { id: currentSession.id, createdAt: currentSession.createdAt || new Date().toISOString(), updatedAt, preview, name: currentSession.name, clientUpdatedMs: Date.now() };
-                if (idx >= 0) {
-                    sessions[idx] = { ...sessions[idx], ...updated };
-                    const moved = sessions.splice(idx, 1)[0];
-                    sessions.unshift(moved);
-                } else {
-                    sessions.unshift(updated);
+                // Check if user switched session during request preparation
+                if (myToken !== currentSendToken || !currentSession || currentSession.id !== thisSessionId) {
+                    return;
                 }
-                renderSessionsList();
-            })();
 
-            // Create a placeholder for the assistant message that will be streamed
-            let aiMessageElement = null;
-            let fullAIResponse = '';
+                // Handle streaming response
+                if (!res.ok) {
+                    console.error('Chat request failed:', res.status);
+                    return;
+                }
 
-            // Hide empty conversation message immediately
-            if (emptyConversation) {
-                emptyConversation.classList.add('hidden');
-            }
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
 
-            // Create inline loader element
-            let loaderElement = null;
-            
-            // Ask server to generate + store both messages in Chroma using streaming (SSE)
-            const res = await fetch('/web/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    thread_id: currentSession.id,   // UUID
-                    user_id: window.USER_ID,      // from base.html
-                    message,
-                    history: currentSession.messages,
-                    use_file_rag: fileRagToggle.checked  // Send RAG toggle state
-                })
-            });
+                try {
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
 
-            // Check if user switched session during request preparation
-            if (myToken !== currentSendToken || !currentSession || currentSession.id !== thisSessionId) {
-                return;
-            }
+                        // Decode the chunk and add to buffer
+                        buffer += decoder.decode(value, { stream: true });
 
-            // Handle streaming response
-            if (!res.ok) {
-                console.error('Chat request failed:', res.status);
-                return;
-            }
+                        // Process complete SSE messages
+                        const lines = buffer.split('\n');
+                        buffer = lines[lines.length - 1]; // Keep incomplete line in buffer
 
-            const reader = res.body.getReader();
-            const decoder = new TextDecoder();
-            let buffer = '';
+                        for (let i = 0; i < lines.length - 1; i++) {
+                            const line = lines[i].trim();
+                            if (line.startsWith('data: ')) {
+                                try {
+                                    const data = JSON.parse(line.slice(6)); // Remove "data: " prefix
 
-            try {
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
+                                    if (myToken !== currentSendToken) {
+                                        // User switched sessions, stop processing
+                                        reader.cancel();
+                                        return;
+                                    }
 
-                    // Decode the chunk and add to buffer
-                    buffer += decoder.decode(value, { stream: true });
-
-                    // Process complete SSE messages
-                    const lines = buffer.split('\n');
-                    buffer = lines[lines.length - 1]; // Keep incomplete line in buffer
-
-                    for (let i = 0; i < lines.length - 1; i++) {
-                        const line = lines[i].trim();
-                        if (line.startsWith('data: ')) {
-                            try {
-                                const data = JSON.parse(line.slice(6)); // Remove "data: " prefix
-
-                                if (myToken !== currentSendToken) {
-                                    // User switched sessions, stop processing
-                                    reader.cancel();
-                                    return;
-                                }
-
-                                if (data.type === 'loading') {
-                                    // Create inline loader if it doesn't exist
-                                    if (!loaderElement) {
-                                        loaderElement = document.createElement('div');
-                                        loaderElement.className = 'message assistant';
-                                        loaderElement.innerHTML = `
+                                    if (data.type === 'loading') {
+                                        // Create inline loader if it doesn't exist
+                                        if (!loaderElement) {
+                                            loaderElement = document.createElement('div');
+                                            loaderElement.className = 'message assistant';
+                                            loaderElement.innerHTML = `
                                             <div class="message-content flex items-center space-x-3" style="word-break:break-word;">
                                                 <div class="relative w-5 h-5">
                                                     <div class="absolute inset-0 rounded-full border-2 border-transparent border-t-primary border-r-primary animate-spin"></div>
@@ -1584,422 +1594,422 @@
                                                 <span id="inlineLoaderText" class="text-sm text-muted-foreground italic">Preparing response...</span>
                                             </div>
                                         `;
-                                        conversationHistory.appendChild(loaderElement);
-                                    }
-                                    
-                                    // Update loader status message
-                                    const loaderText = loaderElement.querySelector('#inlineLoaderText');
-                                    if (loaderText) {
-                                        loaderText.textContent = data.message || 'Processing...';
-                                    }
-                                    
-                                    // Auto-scroll to show loader
-                                    conversationHistory.scrollTop = conversationHistory.scrollHeight;
-                                    console.log(`[LOADER] ${data.status}: ${data.message}`);
+                                            conversationHistory.appendChild(loaderElement);
+                                        }
 
-                                } else if (data.type === 'token') {
-                                    // Remove loader on first token
-                                    if (loaderElement) {
-                                        loaderElement.remove();
-                                        loaderElement = null;
-                                    }
-                                    
-                                    // Stream token received
-                                    fullAIResponse += data.content;
+                                        // Update loader status message
+                                        const loaderText = loaderElement.querySelector('#inlineLoaderText');
+                                        if (loaderText) {
+                                            loaderText.textContent = data.message || 'Processing...';
+                                        }
 
-                                    // Create message element if it doesn't exist yet
-                                    if (!aiMessageElement) {
-                                        aiMessageElement = document.createElement('div');
-                                        aiMessageElement.className = 'message assistant';
-                                        conversationHistory.appendChild(aiMessageElement);
-                                    }
+                                        // Auto-scroll to show loader
+                                        conversationHistory.scrollTop = conversationHistory.scrollHeight;
+                                        console.log(`[LOADER] ${data.status}: ${data.message}`);
 
-                                    // Format the response on-the-fly as tokens stream in (minimal formatting)
-                                    const cleanResponse = cleanTextForDisplay(fullAIResponse);
-                                    
-                                    aiMessageElement.innerHTML = `
+                                    } else if (data.type === 'token') {
+                                        // Remove loader on first token
+                                        if (loaderElement) {
+                                            loaderElement.remove();
+                                            loaderElement = null;
+                                        }
+
+                                        // Stream token received
+                                        fullAIResponse += data.content;
+
+                                        // Create message element if it doesn't exist yet
+                                        if (!aiMessageElement) {
+                                            aiMessageElement = document.createElement('div');
+                                            aiMessageElement.className = 'message assistant';
+                                            conversationHistory.appendChild(aiMessageElement);
+                                        }
+
+                                        // Format the response on-the-fly as tokens stream in (minimal formatting)
+                                        const cleanResponse = cleanTextForDisplay(fullAIResponse);
+
+                                        aiMessageElement.innerHTML = `
                                         <div class="message-content" style="word-break:break-word; white-space: pre-wrap; line-height: 1.6;">
                                             ${cleanResponse}
                                             <div class="message-time">${new Date().toLocaleTimeString()}</div>
                                         </div>
                                     `;
 
-                                    // Auto-scroll to bottom as tokens stream in
-                                    conversationHistory.scrollTop = conversationHistory.scrollHeight;
+                                        // Auto-scroll to bottom as tokens stream in
+                                        conversationHistory.scrollTop = conversationHistory.scrollHeight;
 
-                                } else if (data.type === 'rag_results') {
-                                    // RAG results received
-                                    console.log('RAG results received:', data.content);
-                                    if (Array.isArray(data.content)) {
-                                        ragResults = data.content.map(r => ({
-                                            id: r.id,
-                                            score: r.score ?? 0,
-                                            text: r.text ?? '',
-                                            source: r.source ?? 'Unknown',
-                                            timestamp: r.timestamp ?? '',
-                                            matches: Array.isArray(r.matches) ? r.matches : []
-                                        }));
-                                        renderRAGResults();
-                                    }
-
-                                } else if (data.type === 'done') {
-                                    // Remove loader on completion
-                                    if (loaderElement) {
-                                        loaderElement.remove();
-                                        loaderElement = null;
-                                    }
-                                    console.log('Streaming complete. Full response:', fullAIResponse);
-                                    
-                                    // Update the session with complete AI message
-                                    const aiMessage = {
-                                        role: 'assistant',
-                                        content: fullAIResponse,
-                                        timestamp: new Date().toISOString()
-                                    };
-                                    currentSession.messages.push(aiMessage);
-
-                                    // Update the current session preview/updatedAt locally so ordering reflects recent activity
-                                    currentSession.preview = fullAIResponse.slice(0, 200);
-                                    currentSession.updatedAt = new Date().toISOString();
-
-                                    // Immediately reflect this change in UI by updating/promoting the session locally
-                                    (function promoteCurrentSessionAfterAI() {
-                                        const idx2 = sessions.findIndex(s => s.id === currentSession.id);
-                                        const preview2 = currentSession.preview;
-                                        const updatedAt2 = currentSession.updatedAt;
-                                        const updated2 = { id: currentSession.id, createdAt: currentSession.createdAt || new Date().toISOString(), updatedAt: updatedAt2, preview: preview2, name: currentSession.name, clientUpdatedMs: Date.now() };
-                                        if (idx2 >= 0) {
-                                            // preserve any existing clientUpdatedMs if it's newer
-                                            const existingClientMs = sessions[idx2].clientUpdatedMs || 0;
-                                            updated2.clientUpdatedMs = Math.max(updated2.clientUpdatedMs, existingClientMs);
-                                            sessions[idx2] = { ...sessions[idx2], ...updated2 };
-                                            const moved2 = sessions.splice(idx2, 1)[0];
-                                            sessions.unshift(moved2);
-                                        } else {
-                                            sessions.unshift(updated2);
+                                    } else if (data.type === 'rag_results') {
+                                        // RAG results received
+                                        console.log('RAG results received:', data.content);
+                                        if (Array.isArray(data.content)) {
+                                            ragResults = data.content.map(r => ({
+                                                id: r.id,
+                                                score: r.score ?? 0,
+                                                text: r.text ?? '',
+                                                source: r.source ?? 'Unknown',
+                                                timestamp: r.timestamp ?? '',
+                                                matches: Array.isArray(r.matches) ? r.matches : []
+                                            }));
+                                            renderRAGResults();
                                         }
-                                        renderSessionsList();
-                                    })();
 
-                                    // Refresh from server in background to reconcile authoritative data
-                                    await refreshSingleSession(currentSession.id);
+                                    } else if (data.type === 'done') {
+                                        // Remove loader on completion
+                                        if (loaderElement) {
+                                            loaderElement.remove();
+                                            loaderElement = null;
+                                        }
+                                        console.log('Streaming complete. Full response:', fullAIResponse);
 
-                                } else if (data.type === 'error') {
-                                    // Remove loader on error
-                                    if (loaderElement) {
-                                        loaderElement.remove();
-                                        loaderElement = null;
-                                    }
-                                    console.error('Stream error:', data.content);
-                                    if (!aiMessageElement) {
-                                        aiMessageElement = document.createElement('div');
-                                        aiMessageElement.className = 'message assistant';
-                                        conversationHistory.appendChild(aiMessageElement);
-                                    }
-                                    aiMessageElement.innerHTML = `
+                                        // Update the session with complete AI message
+                                        const aiMessage = {
+                                            role: 'assistant',
+                                            content: fullAIResponse,
+                                            timestamp: new Date().toISOString()
+                                        };
+                                        currentSession.messages.push(aiMessage);
+
+                                        // Update the current session preview/updatedAt locally so ordering reflects recent activity
+                                        currentSession.preview = fullAIResponse.slice(0, 200);
+                                        currentSession.updatedAt = new Date().toISOString();
+
+                                        // Immediately reflect this change in UI by updating/promoting the session locally
+                                        (function promoteCurrentSessionAfterAI() {
+                                            const idx2 = sessions.findIndex(s => s.id === currentSession.id);
+                                            const preview2 = currentSession.preview;
+                                            const updatedAt2 = currentSession.updatedAt;
+                                            const updated2 = { id: currentSession.id, createdAt: currentSession.createdAt || new Date().toISOString(), updatedAt: updatedAt2, preview: preview2, name: currentSession.name, clientUpdatedMs: Date.now() };
+                                            if (idx2 >= 0) {
+                                                // preserve any existing clientUpdatedMs if it's newer
+                                                const existingClientMs = sessions[idx2].clientUpdatedMs || 0;
+                                                updated2.clientUpdatedMs = Math.max(updated2.clientUpdatedMs, existingClientMs);
+                                                sessions[idx2] = { ...sessions[idx2], ...updated2 };
+                                                const moved2 = sessions.splice(idx2, 1)[0];
+                                                sessions.unshift(moved2);
+                                            } else {
+                                                sessions.unshift(updated2);
+                                            }
+                                            renderSessionsList();
+                                        })();
+
+                                        // Refresh from server in background to reconcile authoritative data
+                                        await refreshSingleSession(currentSession.id);
+
+                                    } else if (data.type === 'error') {
+                                        // Remove loader on error
+                                        if (loaderElement) {
+                                            loaderElement.remove();
+                                            loaderElement = null;
+                                        }
+                                        console.error('Stream error:', data.content);
+                                        if (!aiMessageElement) {
+                                            aiMessageElement = document.createElement('div');
+                                            aiMessageElement.className = 'message assistant';
+                                            conversationHistory.appendChild(aiMessageElement);
+                                        }
+                                        aiMessageElement.innerHTML = `
                                         <div class="message-content">
                                             <div style="color: red;">Error: ${document.createElement('div').textContent = data.content}</div>
                                         </div>
                                     `;
+                                    }
+                                } catch (e) {
+                                    console.warn('Failed to parse SSE message:', line, e);
                                 }
-                            } catch (e) {
-                                console.warn('Failed to parse SSE message:', line, e);
                             }
                         }
                     }
-                }
 
-                // Process any remaining buffer content
-                if (buffer.trim().startsWith('data: ')) {
-                    try {
-                        const data = JSON.parse(buffer.slice(6));
-                        console.log('Processing final buffer data:', data);
-                    } catch (e) {
-                        console.warn('Failed to parse final SSE message:', buffer, e);
+                    // Process any remaining buffer content
+                    if (buffer.trim().startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(buffer.slice(6));
+                            console.log('Processing final buffer data:', data);
+                        } catch (e) {
+                            console.warn('Failed to parse final SSE message:', buffer, e);
+                        }
                     }
-                }
 
-            } catch (error) {
-                console.error('Error reading stream:', error);
-                // Remove loader on error
-                if (loaderElement) {
-                    loaderElement.remove();
-                    loaderElement = null;
-                }
-                if (aiMessageElement) {
-                    aiMessageElement.innerHTML = `
+                } catch (error) {
+                    console.error('Error reading stream:', error);
+                    // Remove loader on error
+                    if (loaderElement) {
+                        loaderElement.remove();
+                        loaderElement = null;
+                    }
+                    if (aiMessageElement) {
+                        aiMessageElement.innerHTML = `
                         <div class="message-content">
                             <div style="color: red;">Connection error: ${error.message}</div>
                         </div>
                     `;
+                    }
                 }
-            }
-        });
-
-
-        window.rateRAGResult = async function (resultId, rating) {
-            const result = ragResults.find(r => r.id === resultId);
-            if (!result) return;
-
-            try {
-                await fetch('/web/rag/feedback', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        user_id: window.USER_ID,
-                        thread_id: currentSession?.id,
-                        result_id: resultId,
-                        rating
-                    })
-                });
-            } catch (e) {
-                console.warn('RAG feedback failed', e);
-            }
-
-            // Visual feedback (existing code stays)
-            const idx = ragResults.findIndex(r => r.id === resultId);
-            const buttons = document.querySelectorAll(`.rag-result:nth-child(${idx + 1}) .feedback-btn`);
-            buttons.forEach(btn => btn.classList.remove('active'));
-            const targetBtn = rating === 'helpful' ? buttons[0] : buttons[1];
-            targetBtn.classList.add('active');
-        };
-
-
-        // Export functionality
-        exportResultsBtn.addEventListener('click', function () {
-            if (ragResults.length === 0) {
-                alert('No results to export');
-                return;
-            }
-
-            // Create CSV content
-            const headers = ['Score', 'Source', 'Timestamp', 'Text'];
-            const csvContent = [
-                headers.join(','),
-                ...ragResults.map(result => [
-                    result.score,
-                    `"${result.source}"`,
-                    `"${result.timestamp}"`,
-                    `"${result.text.replace(/"/g, '""')}"`
-                ].join(','))
-            ].join('\n');
-
-            // Create and download file
-            const blob = new Blob([csvContent], { type: 'text/csv' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `rag-results-${new Date().toISOString().split('T')[0]}.csv`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        });
-
-        // New session button
-        newSessionBtn.addEventListener('click', createNewSession);
-
-        // Navigation items
-        navItems.forEach(item => {
-            item.addEventListener('click', (e) => {
-                e.preventDefault();
-                navItems.forEach(i => i.classList.remove('active'));
-                item.classList.add('active');
-
-                // Handle section switching
-                const section = item.getAttribute('data-section');
-                // In a full implementation, this would load different content based on the section
-                console.log('Switching to section:', section);
             });
-        });
 
-        // Modal functionality (existing code)
-        function showModal() {
-            modal.classList.remove('hidden');
-            document.body.style.overflow = 'hidden';
-        }
 
-        function hideModal() {
-            modal.classList.add('hidden');
-            document.body.style.overflow = '';
-            // Do not reset file input here to preserve file selection when reopening modal
-        }
+            window.rateRAGResult = async function (resultId, rating) {
+                const result = ragResults.find(r => r.id === resultId);
+                if (!result) return;
 
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
+                try {
+                    await fetch('/web/rag/feedback', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            user_id: window.USER_ID,
+                            thread_id: currentSession?.id,
+                            result_id: resultId,
+                            rating
+                        })
+                    });
+                } catch (e) {
+                    console.warn('RAG feedback failed', e);
+                }
 
-        function validateFileSize(file) {
-            const maxSize = 25 * 1024 * 1024;
-            return file.size <= maxSize;
-        }
+                // Visual feedback (existing code stays)
+                const idx = ragResults.findIndex(r => r.id === resultId);
+                const buttons = document.querySelectorAll(`.rag-result:nth-child(${idx + 1}) .feedback-btn`);
+                buttons.forEach(btn => btn.classList.remove('active'));
+                const targetBtn = rating === 'helpful' ? buttons[0] : buttons[1];
+                targetBtn.classList.add('active');
+            };
 
-        // File selection state for modal
-        let selectedFiles = [];
 
-        function updateFileInputFiles() {
-            const dataTransfer = new DataTransfer();
-            selectedFiles.forEach(file => dataTransfer.items.add(file));
-            fileInput.files = dataTransfer.files;
-        }
+            // Export functionality
+            exportResultsBtn.addEventListener('click', function () {
+                if (ragResults.length === 0) {
+                    alert('No results to export');
+                    return;
+                }
 
-        function showFilePreview(filesArr) {
-            filePreview.innerHTML = '';
-            filesArr.forEach((file, idx) => {
-                const fileDiv = document.createElement('div');
-                fileDiv.className = 'file-preview-item flex items-center justify-between mb-2 p-2 bg-secondary/30 rounded';
-                fileDiv.innerHTML = `
+                // Create CSV content
+                const headers = ['Score', 'Source', 'Timestamp', 'Text'];
+                const csvContent = [
+                    headers.join(','),
+                    ...ragResults.map(result => [
+                        result.score,
+                        `"${result.source}"`,
+                        `"${result.timestamp}"`,
+                        `"${result.text.replace(/"/g, '""')}"`
+                    ].join(','))
+                ].join('\n');
+
+                // Create and download file
+                const blob = new Blob([csvContent], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `rag-results-${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+
+            // New session button
+            newSessionBtn.addEventListener('click', createNewSession);
+
+            // Navigation items
+            navItems.forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    navItems.forEach(i => i.classList.remove('active'));
+                    item.classList.add('active');
+
+                    // Handle section switching
+                    const section = item.getAttribute('data-section');
+                    // In a full implementation, this would load different content based on the section
+                    console.log('Switching to section:', section);
+                });
+            });
+
+            // Modal functionality (existing code)
+            function showModal() {
+                modal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function hideModal() {
+                modal.classList.add('hidden');
+                document.body.style.overflow = '';
+                // Do not reset file input here to preserve file selection when reopening modal
+            }
+
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            function validateFileSize(file) {
+                const maxSize = 25 * 1024 * 1024;
+                return file.size <= maxSize;
+            }
+
+            // File selection state for modal
+            let selectedFiles = [];
+
+            function updateFileInputFiles() {
+                const dataTransfer = new DataTransfer();
+                selectedFiles.forEach(file => dataTransfer.items.add(file));
+                fileInput.files = dataTransfer.files;
+            }
+
+            function showFilePreview(filesArr) {
+                filePreview.innerHTML = '';
+                filesArr.forEach((file, idx) => {
+                    const fileDiv = document.createElement('div');
+                    fileDiv.className = 'file-preview-item flex items-center justify-between mb-2 p-2 bg-secondary/30 rounded';
+                    fileDiv.innerHTML = `
                     <span class="truncate max-w-[180px]">${file.name}</span>
                     <span class="ml-2 text-xs text-muted-foreground">${formatFileSize(file.size)}</span>
                     <button type="button" class="ml-2 text-destructive hover:text-red-600 delete-file-btn" data-idx="${idx}" title="Remove file">
                         <i data-lucide="x" class="h-4 w-4"></i>
                     </button>
                 `;
-                filePreview.appendChild(fileDiv);
-            });
-            filePreview.classList.remove('hidden');
-            fileError.classList.add('hidden');
-            lucide.createIcons();
-        }
+                    filePreview.appendChild(fileDiv);
+                });
+                filePreview.classList.remove('hidden');
+                fileError.classList.add('hidden');
+                lucide.createIcons();
+            }
 
-        function hideFilePreview() {
-            filePreview.classList.add('hidden');
-            selectedFiles = [];
-            updateFileInputFiles();
-            fileInput.value = '';
-        }
+            function hideFilePreview() {
+                filePreview.classList.add('hidden');
+                selectedFiles = [];
+                updateFileInputFiles();
+                fileInput.value = '';
+            }
 
-        function showFileError(message) {
-            fileError.textContent = message;
-            fileError.classList.remove('hidden');
-            filePreview.classList.add('hidden');
-        }
+            function showFileError(message) {
+                fileError.textContent = message;
+                fileError.classList.remove('hidden');
+                filePreview.classList.add('hidden');
+            }
 
-        function resetFileInput() {
-            fileInput.value = '';
-            selectedFiles = [];
-            filePreview.classList.add('hidden');
-            fileError.classList.add('hidden');
-        }
+            function resetFileInput() {
+                fileInput.value = '';
+                selectedFiles = [];
+                filePreview.classList.add('hidden');
+                fileError.classList.add('hidden');
+            }
 
-        // Event listeners for modal
-        // Open modal from chat input attach icon
-        if (attachFileBtn) {
-            attachFileBtn.addEventListener('click', function (event) {
-                event.stopPropagation();
-                showModal();
+            // Event listeners for modal
+            // Open modal from chat input attach icon
+            if (attachFileBtn) {
+                attachFileBtn.addEventListener('click', function (event) {
+                    event.stopPropagation();
+                    showModal();
+                    resetFileInput();
+                });
+            }
+            closeBtn.addEventListener('click', function () {
+                hideModal();
                 resetFileInput();
             });
-        }
-        closeBtn.addEventListener('click', function () {
-            hideModal();
-            resetFileInput();
-        });
-        cancelBtn.addEventListener('click', function () {
-            hideModal();
-            resetFileInput();
-        });
-        modalBackdrop.addEventListener('click', function () {
-            hideModal();
-            resetFileInput();
-        });
-
-        fileInput.addEventListener('change', function () {
-            if (this.files && this.files.length > 0) {
-                for (let file of this.files) {
-                    if (!validateFileSize(file)) {
-                        showFileError('File size exceeds the maximum limit of 25MB');
-                        return;
-                    }
-                }
-                // Add new files to selectedFiles, avoiding duplicates by name+size
-                Array.from(this.files).forEach(file => {
-                    if (!selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
-                        selectedFiles.push(file);
-                    }
-                });
-                updateFileInputFiles();
-                showFilePreview(selectedFiles);
-            }
-        });
-
-        filePreview.addEventListener('click', function (e) {
-            if (e.target.closest('.delete-file-btn')) {
-                const idx = parseInt(e.target.closest('.delete-file-btn').getAttribute('data-idx'));
-                selectedFiles.splice(idx, 1);
-                updateFileInputFiles();
-                if (selectedFiles.length > 0) {
-                    showFilePreview(selectedFiles);
-                } else {
-                    hideFilePreview();
-                }
-            }
-        });
-
-        removeFileBtn.addEventListener('click', hideFilePreview);
-        fileUploadBtn.addEventListener('click', (event) => {
-            event.stopPropagation(); // Prevent click from bubbling to dropZone
-            fileInput.click();
-        });
-        dropZone.addEventListener('click', () => fileInput.click());
-
-        // Drag and drop functionality
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, preventDefaults, false);
-        });
-
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropZone.addEventListener(eventName, highlight, false);
-        });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, unhighlight, false);
-        });
-
-        function highlight() {
-            dropZone.classList.add('border-primary');
-        }
-
-        function unhighlight() {
-            dropZone.classList.remove('border-primary');
-        }
-
-        dropZone.addEventListener('drop', handleDrop, false);
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-            if (files && files.length > 0) {
-                for (let file of files) {
-                    if (!validateFileSize(file)) {
-                        showFileError('File size exceeds the maximum limit of 25MB');
-                        return;
-                    }
-                }
-                // Add dropped files to selectedFiles, avoiding duplicates
-                Array.from(files).forEach(file => {
-                    if (!selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
-                        selectedFiles.push(file);
-                    }
-                });
-                updateFileInputFiles();
-                showFilePreview(selectedFiles);
-            }
-        }
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+            cancelBtn.addEventListener('click', function () {
                 hideModal();
+                resetFileInput();
+            });
+            modalBackdrop.addEventListener('click', function () {
+                hideModal();
+                resetFileInput();
+            });
+
+            fileInput.addEventListener('change', function () {
+                if (this.files && this.files.length > 0) {
+                    for (let file of this.files) {
+                        if (!validateFileSize(file)) {
+                            showFileError('File size exceeds the maximum limit of 25MB');
+                            return;
+                        }
+                    }
+                    // Add new files to selectedFiles, avoiding duplicates by name+size
+                    Array.from(this.files).forEach(file => {
+                        if (!selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
+                            selectedFiles.push(file);
+                        }
+                    });
+                    updateFileInputFiles();
+                    showFilePreview(selectedFiles);
+                }
+            });
+
+            filePreview.addEventListener('click', function (e) {
+                if (e.target.closest('.delete-file-btn')) {
+                    const idx = parseInt(e.target.closest('.delete-file-btn').getAttribute('data-idx'));
+                    selectedFiles.splice(idx, 1);
+                    updateFileInputFiles();
+                    if (selectedFiles.length > 0) {
+                        showFilePreview(selectedFiles);
+                    } else {
+                        hideFilePreview();
+                    }
+                }
+            });
+
+            removeFileBtn.addEventListener('click', hideFilePreview);
+            fileUploadBtn.addEventListener('click', (event) => {
+                event.stopPropagation(); // Prevent click from bubbling to dropZone
+                fileInput.click();
+            });
+            dropZone.addEventListener('click', () => fileInput.click());
+
+            // Drag and drop functionality
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
             }
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, highlight, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, unhighlight, false);
+            });
+
+            function highlight() {
+                dropZone.classList.add('border-primary');
+            }
+
+            function unhighlight() {
+                dropZone.classList.remove('border-primary');
+            }
+
+            dropZone.addEventListener('drop', handleDrop, false);
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files && files.length > 0) {
+                    for (let file of files) {
+                        if (!validateFileSize(file)) {
+                            showFileError('File size exceeds the maximum limit of 25MB');
+                            return;
+                        }
+                    }
+                    // Add dropped files to selectedFiles, avoiding duplicates
+                    Array.from(files).forEach(file => {
+                        if (!selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
+                            selectedFiles.push(file);
+                        }
+                    });
+                    updateFileInputFiles();
+                    showFilePreview(selectedFiles);
+                }
+            }
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                    hideModal();
+                }
+            });
         });
-    });
-</script>
-{% endblock %}
+    </script>
+    {% endblock %}

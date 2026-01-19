@@ -1,45 +1,49 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>The Manhattan Project - AI Agent Discovery Platform</title>
-    <meta name="description" content="The definitive hub for discovering, sharing, and demonstrating autonomous AI agents. Professional-grade platform combining community collaboration with powerful tools." />
-    <meta name="author" content="The Manhattan Project" />
 
-    <meta property="og:title" content="The Manhattan Project - AI Agent Discovery Platform" />
-    <meta property="og:description" content="Discover, test, and deploy powerful AI agents built by the community. Professional-grade platform for AI agent discovery and deployment." />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Manhattan Project - AI Agent Discovery Platform</title>
+  <meta name="description"
+    content="The definitive hub for discovering, sharing, and demonstrating autonomous AI agents. Professional-grade platform combining community collaboration with powerful tools." />
+  <meta name="author" content="The Manhattan Project" />
 
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@lovable_dev" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
-    <!-- Performance hints: preconnect fonts and preload hero image + module preload for dev/optimized builds -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="modulepreload" href="/src/main.tsx">
-    <link rel="preload" as="image" href="/src/assets/hero-image.jpg">
-  </head>
+  <meta property="og:title" content="The Manhattan Project - AI Agent Discovery Platform" />
+  <meta property="og:description"
+    content="Discover, test, and deploy powerful AI agents built by the community. Professional-grade platform for AI agent discovery and deployment." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="/creation-hands.png" />
 
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-    <script>
-      // Small runtime improvement: mark existing <img> elements lazy by default
-      (function(){
-        try {
-          if (typeof document !== 'undefined') {
-            document.addEventListener('DOMContentLoaded', function(){
-              document.querySelectorAll('img').forEach(function(img){
-                if (!img.hasAttribute('loading')) img.setAttribute('loading','lazy');
-              });
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@manhattan_proj" />
+  <meta name="twitter:image" content="/creation-hands.png" />
+  <!-- Performance hints: preconnect fonts and preload hero image + module preload for dev/optimized builds -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="modulepreload" href="/src/main.tsx">
+  <link rel="preload" as="image" href="/src/assets/hero-image.jpg">
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+  <script>
+    // Small runtime improvement: mark existing <img> elements lazy by default
+    (function () {
+      try {
+        if (typeof document !== 'undefined') {
+          document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('img').forEach(function (img) {
+              if (!img.hasAttribute('loading')) img.setAttribute('loading', 'lazy');
             });
-          }
-        } catch(e) {
-          // no-op
+          });
         }
-      })();
-    </script>
-  </body>
+      } catch (e) {
+        // no-op
+      }
+    })();
+  </script>
+</body>
+
 </html>

@@ -9,8 +9,8 @@ const Layout = () => {
 
   const navigation = [
     { name: "Explore", href: "/explore" },
+    { name: "Memory", href: "/memory" },
     { name: "Trending", href: "/trending" },
-    { name: "Categories", href: "/categories" },
     { name: "Creators", href: "/creators" },
   ];
 
@@ -35,8 +35,7 @@ const Layout = () => {
                   key={item.name}
                   to={item.href}
                   className={({ isActive }) =>
-                    `text-sm font-medium transition-colors hover:text-primary ${
-                      isActive ? "text-primary" : "text-muted-foreground"
+                    `text-sm font-medium transition-colors hover:text-primary ${isActive ? "text-primary" : "text-muted-foreground"
                     }`
                   }
                 >
@@ -82,8 +81,7 @@ const Layout = () => {
                     key={item.name}
                     to={item.href}
                     className={({ isActive }) =>
-                      `text-sm font-medium transition-colors hover:text-primary ${
-                        isActive ? "text-primary" : "text-muted-foreground"
+                      `text-sm font-medium transition-colors hover:text-primary ${isActive ? "text-primary" : "text-muted-foreground"
                       }`
                     }
                     onClick={() => setMobileMenuOpen(false)}
@@ -126,11 +124,11 @@ const Layout = () => {
                 <span className="text-lg font-semibold font-inter">The Manhattan Project</span>
               </div>
               <p className="text-muted-foreground text-sm max-w-md">
-                The definitive hub for discovering, sharing, and demonstrating autonomous AI agents. 
+                The definitive hub for discovering, sharing, and demonstrating autonomous AI agents.
                 Combining community collaboration with professional-grade tools.
               </p>
             </div>
-            
+
             <div>
               <h3 className="font-medium mb-4">Platform</h3>
               <div className="space-y-3 text-sm text-muted-foreground">
@@ -140,7 +138,7 @@ const Layout = () => {
                 <NavLink to="/api" className="block hover:text-primary transition-colors">API</NavLink>
               </div>
             </div>
-            
+
             <div>
               <h3 className="font-medium mb-4">Community</h3>
               <div className="space-y-3 text-sm text-muted-foreground">
@@ -151,9 +149,9 @@ const Layout = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="sketch-divider my-8"></div>
-          
+
           <div className="flex flex-col md:flex-row justify-between items-center text-sm text-muted-foreground">
             <p>&copy; 2024 The Manhattan Project. Built for the AI community.</p>
             <div className="flex space-x-6 mt-4 md:mt-0">
