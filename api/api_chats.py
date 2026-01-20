@@ -68,7 +68,7 @@ from SimpleMem.main import SimpleMemSystem
 # Initialize global components
 api = Blueprint("api", __name__)
 llm_enhanced_query_rewriter = LLMEnhancedRewriter()
-_executor = ThreadPoolExecutor(max_workers=10, thread_name_prefix="api_worker")
+_executor = ThreadPoolExecutor(max_workers=5, thread_name_prefix="api_worker")
 
 # Reusable constants and configurations
 class MessageType:
@@ -213,7 +213,7 @@ _simplemem_instances = {}
 def get_simplemem_instance(user_id: str, session_id: str) -> SimpleMemSystem:
     """Get or create SimpleMem instance for user/session"""
     global _simplemem_instances
-    instance_key = f"{user_id}"
+    instance_key = f"{session_id}"
     
     if instance_key not in _simplemem_instances:
         _simplemem_instances[instance_key] = SimpleMemSystem(
@@ -426,7 +426,11 @@ def create_session():
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         
-        thread_id_created = thread_id
+        thread_id_created = thread_id_created = loop.run_until_complete(
+            get_read_controller_chatH().create_session(
+                id=user_id, thread_id=thread_id, created=created
+            )
+        )
     except Exception as e:
         print(f"Error creating session: {e}")
         thread_id_created = thread_id
@@ -558,46 +562,55 @@ def chat_and_store():
     print(f"[CHAT] Total pre-LLM processing time: {time.time() - start_time:.2f}s")
     
     # Background storage function
+        
+    # ---------- Lane 1: DB (ordered) ----------
+    def store_db_ordered(full_text: str):
+        add_message(user_id, MessageType.HUMAN, user_msg, session_id=thread_id)
+        add_message(user_id, MessageType.LLM, full_text, session_id=thread_id)
+
+
+    # ---------- Lane 2: Cache (ordered) ----------
+    def store_cache_ordered(full_text: str):
+        ts = int(time.time())
+
+        chat_history_cache.append_message(user_id, thread_id, {
+            "role": "user",
+            "content": user_msg,
+            "timestamp": ts
+        })
+
+        chat_history_cache.append_message(user_id, thread_id, {
+            "role": "assistant",
+            "content": full_text,
+            "timestamp": ts
+        })
+
+
+    # ---------- Lane 3: SimpleMem (ordered) ----------
+    def store_simplemem_ordered(full_text: str):
+        now = datetime.now().isoformat()
+
+        simplemem.add_dialogue(
+            speaker="user",
+            content=user_msg,
+            timestamp=now
+        )
+
+        simplemem.add_dialogue(
+            speaker="assistant",
+            content=full_text,
+            timestamp=now
+        )
+
+        simplemem.finalize()
+
+
+    # ---------- Background entry point ----------
     def store_messages_background(full_text: str):
-        """Store messages in background thread"""
         try:
-            # Store user message
-            add_message(user_id, MessageType.HUMAN, user_msg, session_id=thread_id)
-            
-            # Cache user message
-            chat_history_cache.append_message(user_id, thread_id, {
-                "role": "user",
-                "content": user_msg,
-                "timestamp": int(time.time())
-            })
-            
-            # Store in SimpleMem using add_dialogue
-            simplemem.add_dialogue(
-                speaker="user",
-                content=user_msg,
-                timestamp=datetime.now().isoformat()
-            )
-            
-            # Store AI response (from LLM, not SimpleMem)
-            add_message(user_id, MessageType.LLM, full_text, session_id=thread_id)
-            
-            # Cache AI message
-            chat_history_cache.append_message(user_id, thread_id, {
-                "role": "assistant",
-                "content": full_text,
-                "timestamp": int(time.time())
-            })
-            
-            # Store AI response in SimpleMem
-            simplemem.add_dialogue(
-                speaker="assistant",
-                content=full_text,
-                timestamp=datetime.now().isoformat()
-            )
-            
-            # Finalize SimpleMem processing
-            simplemem.finalize()
-                
+            _executor.submit(store_db_ordered, full_text)
+            _executor.submit(store_cache_ordered, full_text)
+            _executor.submit(store_simplemem_ordered, full_text)
         except Exception as e:
             print(f"[BACKGROUND] Storage error: {e}")
     
@@ -798,17 +811,19 @@ def rag_search():
     if not user_id or not query:
         abort(400, "Missing user_id or query")
     
+    # Because every session has to independent, the main focus now is thread id as its the collection name to search from.
     rows = get_read_controller_chatH().fetch_related_to_query(
-        user_ID=user_id,
+        user_ID=thread_id,
         query=query,
         top_k=top_k
     )
     
-    if thread_id:
-        rows = [
-            r for r in rows
-            if (r.get("metadata") or {}).get("conversation_thread") == thread_id
-        ]
+    # Allow all to come, no metadata filter as now its different collection.
+    # if thread_id:
+    #     rows = [
+    #         r for r in rows
+    #         if (r.get("metadata") or {}).get("conversation_thread") == thread_id
+    #     ]
     
     # Convert to UI format
     q_terms = [t.lower() for t in query.split() if len(t) > 2]
