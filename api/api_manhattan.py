@@ -1283,7 +1283,7 @@ def agent_chat():
     try:
         # Check if agent_id exists in supabase api_agents table
         if _supabase_backend:
-            agent_check = _supabase_backend.table('api_agents').select('*').eq('id', agent_id).execute()
+            agent_check = _supabase_backend.table('api_agents').select('*').eq('agent_id', agent_id).execute()
             if not agent_check.data or len(agent_check.data) == 0:
                 return jsonify({'error': 'agent_not_found', 'agent_id': agent_id}), 404
             
