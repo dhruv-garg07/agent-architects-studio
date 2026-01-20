@@ -16,6 +16,18 @@ logging.basicConfig(level=logging.ERROR)
 # -------------------------------------------------
 # Remote Embedding Configuration
 # -------------------------------------------------
+from chromadb.api.types import EmbeddingFunction
+class DisabledEmbeddingFunction(EmbeddingFunction):
+    """
+    Hard-disable Chroma local embeddings.
+    If Chroma ever tries to embed, crash immediately.
+    """
+
+    def __call__(self, texts):
+        raise RuntimeError(
+            "❌ Local embeddings are disabled. "
+            "Remote embeddings must be provided explicitly."
+        )
 
 REMOTE_EMBEDDING_URL = os.getenv("REMOTE_EMBEDDING_URL")
 REMOTE_EMBEDDING_DIMENSION = int(os.getenv("REMOTE_EMBEDDING_DIMENSION", "768"))
@@ -118,15 +130,23 @@ class ChromaCollectionManager:
         self.database = database or os.getenv("CHROMA_DATABASE_CHAT_HISTORY")
         self.embedder = RemoteEmbeddingClient(REMOTE_EMBEDDING_URL)
 
+        # ✅ SINGLE shared disabled embedding function
+        self._disabled_ef = DisabledEmbeddingFunction()
+
     # -------------------------------------------------
     # Internal Helpers
     # -------------------------------------------------
+
 
     def _get_or_cache(self, collection_name: str):
         if collection_name not in self._collection_cache:
             col = self.client.get_or_create_collection(
                 name=collection_name,
-                embedding_function=None  # 🚫 NEVER let Chroma embed
+
+                # 🔥 CRITICAL FIX (never use None)
+                embedding_function=self._disabled_ef,
+
+                metadata={"embedding": "remote-only"},
             )
             self._collection_cache[collection_name] = col
         return self._collection_cache[collection_name]
@@ -148,6 +168,7 @@ class ChromaCollectionManager:
     def get_collection(self, collection_name: str):
         return self._get_or_cache(collection_name)
 
+    
     def create_collection(
         self,
         collection_name: str,
@@ -161,12 +182,20 @@ class ChromaCollectionManager:
 
         col = self.client.create_collection(
             name=collection_name,
-            embedding_function=None
+
+            # 🔥 SAME FIX HERE
+            embedding_function=self._disabled_ef,
+            metadata={"embedding": "remote-only"},
         )
         self._collection_cache[collection_name] = col
 
         if ids and documents:
-            embeddings = self.embedder.embed(documents)
+            embeddings = self.embedder.embed_remote(documents)
+
+            # ✅ SAFETY CHECK
+            if len(embeddings) != len(ids):
+                raise ValueError("Embedding count mismatch")
+
             col.add(
                 ids=ids,
                 documents=documents,
@@ -188,6 +217,12 @@ class ChromaCollectionManager:
         col = self._get_or_cache(collection_name)
         embeddings = self.embedder.embed_remote(documents)
 
+        # ✅ HARD VALIDATION (prevents silent bugs)
+        if len(embeddings) != len(ids):
+            raise ValueError(
+                f"Embedding count mismatch: {len(embeddings)} vs {len(ids)}"
+            )
+
         col.upsert(
             ids=ids,
             documents=documents,
@@ -197,6 +232,7 @@ class ChromaCollectionManager:
 
         return f"✅ Collection '{collection_name}' upserted ({len(ids)} items)."
 
+    
     def replace_collection(
         self,
         collection_name: str,
@@ -211,12 +247,19 @@ class ChromaCollectionManager:
 
         col = self.client.create_collection(
             name=collection_name,
-            embedding_function=None
+
+            # 🔥 SAME FIX
+            embedding_function=self._disabled_ef,
+            metadata={"embedding": "remote-only"},
         )
         self._collection_cache[collection_name] = col
 
         if ids and documents:
-            embeddings = self.embedder.embed(documents)
+            embeddings = self.embedder.embed_remote(documents)
+
+            if len(embeddings) != len(ids):
+                raise ValueError("Embedding count mismatch")
+
             col.add(
                 ids=ids,
                 documents=documents,
