@@ -25,9 +25,45 @@ from flask import Blueprint, request, jsonify, abort, Response
 from LLM_calls.context_manager import query_llm_with_history_stream
 from LLM_calls.intelligent_query_rewritten import LLMEnhancedRewriter
 from LLM_calls.together_get_response import clean_response
+from Octave_mem.SqlDB.sqlDbController import add_message, get_chat_history_by_session
 from Octave_mem.RAG_DB_CONTROLLER.write_data_RAG import RAG_DB_Controller_CHAT_HISTORY
 from Octave_mem.RAG_DB_CONTROLLER.read_data_RAG_all_DB import read_data_RAG
-from Octave_mem.SqlDB.sqlDbController import add_message, get_chat_history_by_session
+
+# Initialize controllers (singleton pattern)
+_write_controller = None
+_read_controller_chatH = None
+_read_controller_file_data = None
+
+def get_write_controller() -> RAG_DB_Controller_CHAT_HISTORY:
+    """Get or create write controller singleton"""
+    global _write_controller
+    if _write_controller is None:
+        _write_controller = RAG_DB_Controller_CHAT_HISTORY(
+            database=os.getenv("CHROMA_DATABASE_CHAT_HISTORY", "chroma_chat_history")
+        )
+    return _write_controller
+
+def get_read_controller_chatH() -> read_data_RAG:
+    """Get or create chat history read controller singleton"""
+    global _read_controller_chatH
+    if _read_controller_chatH is None:
+        _read_controller_chatH = read_data_RAG(
+            database=os.getenv("CHROMA_DATABASE_CHAT_HISTORY", "chroma_chat_history")
+        )
+    return _read_controller_chatH
+
+def get_read_controller_file_data() -> read_data_RAG:
+    """Get or create file data read controller singleton"""
+    global _read_controller_file_data
+    if _read_controller_file_data is None:
+        _read_controller_file_data = read_data_RAG(
+            database=os.getenv("CHROMA_DATABASE_FILE_DATA", "chroma_file_data")
+        )
+    return _read_controller_file_data
+
+
+# Import SimpleMem
+from SimpleMem.main import SimpleMemSystem
 
 # Initialize global components
 api = Blueprint("api", __name__)
@@ -171,37 +207,21 @@ class OptimizedChatHistoryCache:
 # Global cache instance
 chat_history_cache = OptimizedChatHistoryCache()
 
-# Initialize controllers (singleton pattern)
-_write_controller = None
-_read_controller_chatH = None
-_read_controller_file_data = None
+# SimpleMem instances cache
+_simplemem_instances = {}
 
-def get_write_controller() -> RAG_DB_Controller_CHAT_HISTORY:
-    """Get or create write controller singleton"""
-    global _write_controller
-    if _write_controller is None:
-        _write_controller = RAG_DB_Controller_CHAT_HISTORY(
-            database=os.getenv("CHROMA_DATABASE_CHAT_HISTORY", "chroma_chat_history")
+def get_simplemem_instance(user_id: str, session_id: str) -> SimpleMemSystem:
+    """Get or create SimpleMem instance for user/session"""
+    global _simplemem_instances
+    instance_key = f"{user_id}"
+    
+    if instance_key not in _simplemem_instances:
+        _simplemem_instances[instance_key] = SimpleMemSystem(
+            agent_id=instance_key,
+            clear_db=False
         )
-    return _write_controller
-
-def get_read_controller_chatH() -> read_data_RAG:
-    """Get or create chat history read controller singleton"""
-    global _read_controller_chatH
-    if _read_controller_chatH is None:
-        _read_controller_chatH = read_data_RAG(
-            database=os.getenv("CHROMA_DATABASE_CHAT_HISTORY", "chroma_chat_history")
-        )
-    return _read_controller_chatH
-
-def get_read_controller_file_data() -> read_data_RAG:
-    """Get or create file data read controller singleton"""
-    global _read_controller_file_data
-    if _read_controller_file_data is None:
-        _read_controller_file_data = read_data_RAG(
-            database=os.getenv("CHROMA_DATABASE_FILE_DATA", "chroma_file_data")
-        )
-    return _read_controller_file_data
+    
+    return _simplemem_instances[instance_key]
 
 # Reusable utility functions with caching
 @lru_cache(maxsize=1000)
@@ -388,6 +408,7 @@ def list_sessions():
     
     return jsonify(session_ids)
 
+
 @api.post("/web/create_session")
 def create_session():
     """Create new chat session"""
@@ -405,11 +426,7 @@ def create_session():
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         
-        thread_id_created = loop.run_until_complete(
-            get_read_controller_chatH().create_session(
-                id=user_id, thread_id=thread_id, created=created
-            )
-        )
+        thread_id_created = thread_id
     except Exception as e:
         print(f"Error creating session: {e}")
         thread_id_created = thread_id
@@ -444,7 +461,7 @@ def get_messages(thread_id: str):
 
 @api.post("/web/chat")
 def chat_and_store():
-    """Main chat endpoint with optimized RAG pipeline"""
+    """Main chat endpoint using SimpleMem"""
     # Start timing
     start_time = time.time()
     
@@ -510,148 +527,10 @@ def chat_and_store():
         # Not using API key; proceed without rate limiting here (web UI flows still apply)
         key_record = None
     
-    # Get top_k configuration for retrieval sizes and start fetch timer
-    top_k = TOP_K_CONFIG.get(conversation_mode, TOP_K_CONFIG[ConversationMode.BALANCED])
-    fetch_start = time.time()
-
-    all_rows = []
+    # Get SimpleMem instance
+    simplemem = get_simplemem_instance(user_id, thread_id)
     
-    try:
-        # Fetch chat history
-        chat_rows = get_read_controller_chatH().fetch_related_to_query(
-            user_ID=user_id,
-            query=user_msg,
-            top_k=top_k['chat']
-        )
-        print(f"[CHAT] Found {len(chat_rows)} chat results")
-        all_rows = chat_rows
-    except Exception as e:
-        print(f"[CHAT] Error fetching chat rows: {e}")
-    
-    
-    if use_file_rag:
-        try:
-            file_rows = get_read_controller_file_data().fetch_related_to_query(
-                user_ID=user_id,
-                query=user_msg,
-                top_k=top_k['file']
-            )
-            print(f"[CHAT] Found {len(file_rows)} file results")
-            all_rows = chat_rows + file_rows
-        except Exception as e:
-            print(f"[CHAT] Error fetching file rows: {e}")
-            # all_rows = chat_rows
-    
-    
-    # Score and sort
-    for row in all_rows:
-        row["relevance_score"] = calculate_relevance_score(user_msg, row.get("document", ""))
-    
-    all_rows.sort(key=lambda x: x.get("relevance_score", 0), reverse=True)
-    
-    print(f"[CHAT] RAG fetch completed in {time.time() - fetch_start:.2f}s")
-    
-    # Phase 2: Query rewriting (optional LLM-based)
-    print(f"[CHAT] Phase 2: Query rewriting (rewrite_llm={rewrite_llm})")
-
-    # Extract key concepts
-    key_concepts = []
-    for row in all_rows[:3]:
-        doc = row.get("document", "")
-        # Simple concept extraction
-        words = re.findall(r'\b[A-Z][a-z]+\b', doc[:200])
-        key_concepts.extend(words[:2])
-    
-    key_concepts = list(dict.fromkeys(key_concepts))[:3]
-    
-    # Intelligent query rewriting
-    rewritten_user_msg = user_msg  # Default to original
-    if rewrite_llm:
-        rewrite_start = time.time()
-        try:
-            rewritten_user_msg = llm_enhanced_query_rewriter.rewrite_with_llm(
-                query=user_msg,
-                context=all_rows[:5],
-                mode=conversation_mode
-            )
-        except Exception as e:
-            print(f"[CHAT] Error in query rewriting: {e}")
-
-        print(f"[CHAT] Query rewrite completed in {time.time() - rewrite_start:.2f}s")
-        print(f"[CHAT] Rewritten query: {rewritten_user_msg}")
-    else:
-        print(f"[CHAT] Skipping LLM-based query rewrite; using original message.")
-    
-    # Phase 3: Enhanced retrieval
-    print(f"[CHAT] Phase 3: Enhanced retrieval")
-    enhanced_start = time.time()
-    
-    hybrid_query = f"{user_msg} {rewritten_user_msg}"
-    hybrid_query = ' '.join(dict.fromkeys(hybrid_query.split()))
-    
-    enhanced_rows = []
-    try:
-        enhanced_chat = get_read_controller_chatH().fetch_related_to_query(
-            user_ID=user_id,
-            query=hybrid_query,
-            top_k= top_k['chat']
-        )
-        
-        enhanced_file = []
-        if use_file_rag:
-            enhanced_file = get_read_controller_file_data().fetch_related_to_query(
-                user_ID=user_id,
-                query=hybrid_query,
-                top_k=top_k['file']
-            )
-        
-        enhanced_rows = enhanced_chat + enhanced_file
-    except Exception as e:
-        print(f"[CHAT] Error in enhanced retrieval: {e}")
-    
-    # Combine and deduplicate
-    for row in enhanced_rows:
-        row["source"] = "enhanced"
-        row["relevance_score"] = calculate_relevance_score(hybrid_query, row.get("document", ""))
-    
-    for row in all_rows:
-        row["source"] = "initial"
-    
-    combined_rows = enhanced_rows + all_rows
-    combined_rows = deduplicate_results(combined_rows)
-    
-    # Final scoring
-    for row in combined_rows:
-        hybrid_score = calculate_relevance_score(hybrid_query, row.get("document", ""))
-        row["final_score"] = (hybrid_score * 0.7) + (row.get("relevance_score", 0) * 0.3)
-    
-    combined_rows.sort(key=lambda x: x.get("final_score", 0), reverse=True)
-    
-    # Select final rows based on mode
-    if conversation_mode == ConversationMode.PRECISE:
-        final_rows = combined_rows
-    elif conversation_mode == ConversationMode.CREATIVE:
-        final_rows = combined_rows
-    else:
-        final_rows = combined_rows
-    
-
-    print(f"[CHAT] Combined and scored {len(final_rows)} final rows\n\n")
-    print("Final Rows:", final_rows,"\n\n")
-
-    # Filter out near-identical documents
-    qn_norm = normalize_text(rewritten_user_msg)
-    filtered_rows = [
-        row for row in final_rows
-        if normalize_text(row.get("document", "")) != qn_norm
-    ]
-    
-    print("Filtered Rows:", len(filtered_rows),"\n\n")
-    print("Filtered Rows Sample", filtered_rows,"\n\n")
-
-    print(f"[CHAT] Enhanced retrieval completed in {time.time() - enhanced_start:.2f}s")
-    
-    # Phase 4: Get chat history
+    # Get chat history
     print(f"[CHAT] Phase 4: Chat history retrieval")
     history_start = time.time()
     
@@ -670,40 +549,11 @@ def chat_and_store():
     
     print(f"[CHAT] Retrieved {len(chat_history)} history messages in {time.time() - history_start:.2f}s")
     
-    # Phase 5: Prepare context
-    print(f"[CHAT] Phase 5: Context preparation")
-    rag_context = []
-    for i, row in enumerate(filtered_rows):
-        rag_context.append({
-            "id": row.get("id", f"ctx_{i}"),
-            "document": row.get("document", ""),
-            "score": row.get("final_score", 0),
-            "source": row.get("source", "unknown"),
-            "metadata": row.get("metadata", {})
-        })
-    
-    rag_context = rag_context[:20]  # Limit context size
-
-    print(f"[CHAT] Prepared {len(rag_context)} context entries\n\n\n")
-    print(f"Rag Context Sample:", rag_context,"\n\n")
     # System prompt
-    if use_file_rag and rag_context:
-        if conversation_mode == ConversationMode.PRECISE:
-            system_prompt = "Provide precise, factual answers based on context."
-        elif conversation_mode == ConversationMode.CREATIVE:
-            system_prompt = "Provide creative, synthesized answers based on context."
-        else:
-            system_prompt = "Provide helpful answers based on context."
-    else:
-        system_prompt = "Provide helpful answers based on your knowledge."
+    system_prompt = "Provide helpful answers based on your knowledge."
     
     # Prepare final query
     final_query = user_msg
-    if rewritten_user_msg != user_msg:
-        final_query = f"{user_msg} (interpreted as: {rewritten_user_msg})"
-    
-    if key_concepts:
-        final_query += f" [Concepts: {', '.join(key_concepts[:2])}]"
     
     print(f"[CHAT] Total pre-LLM processing time: {time.time() - start_time:.2f}s")
     
@@ -721,17 +571,14 @@ def chat_and_store():
                 "timestamp": int(time.time())
             })
             
-            # Store in RAG DB
-            for chunk in split_text_into_chunks(user_msg, 4, 1):
-                get_write_controller().send_data_to_rag_db(
-                    user_ID=user_id,
-                    content_data=chunk,
-                    is_reply_to=None,
-                    message_type=MessageType.HUMAN,
-                    conversation_thread=thread_id,
-                )
+            # Store in SimpleMem using add_dialogue
+            simplemem.add_dialogue(
+                speaker="user",
+                content=user_msg,
+                timestamp=datetime.now().isoformat()
+            )
             
-            # Store AI response
+            # Store AI response (from LLM, not SimpleMem)
             add_message(user_id, MessageType.LLM, full_text, session_id=thread_id)
             
             # Cache AI message
@@ -741,15 +588,15 @@ def chat_and_store():
                 "timestamp": int(time.time())
             })
             
-            # Store in RAG DB
-            for chunk in split_text_into_chunks(full_text, 4, 1):
-                get_write_controller().send_data_to_rag_db(
-                    user_ID=user_id,
-                    content_data=chunk,
-                    is_reply_to=None,
-                    message_type=MessageType.LLM,
-                    conversation_thread=thread_id,
-                )
+            # Store AI response in SimpleMem
+            simplemem.add_dialogue(
+                speaker="assistant",
+                content=full_text,
+                timestamp=datetime.now().isoformat()
+            )
+            
+            # Finalize SimpleMem processing
+            simplemem.finalize()
                 
         except Exception as e:
             print(f"[BACKGROUND] Storage error: {e}")
@@ -795,65 +642,72 @@ def chat_and_store():
             
             print(f"[STREAM] Starting LLM generation for query: {final_query}...")
             
-            # Send status: context prepared
-            yield f"data: {json.dumps({'type': 'loading', 'status': 'ready', 'message': 'Context prepared. Starting generation...', 'context_size': len(rag_context)})}\n\n"
-            
+            # Get answer from SimpleMem using ask() method
             llm_start = time.time()
             
-            # Call LLM - this is synchronous and returns a generator
+            # Get answer and context from SimpleMem
+            simplemem_answer = simplemem.ask(final_query)
+
+            # Convert SimpleMem answer to rag_context format for LLM
+            rag_context = [{
+                "id": "simplemem_context",
+                "document": simplemem_answer,
+                "score": 1.0,
+                "source": "simplemem",
+                "metadata": {}
+            }]
+
+            print(f"[CHAT] SimpleMem context retrieved: {simplemem_answer[:200]}...")
+            
+            # Call run_ai with SimpleMem context instead of direct answer
             reply_generator = run_ai(
                 message=final_query,
                 session_id=thread_id,
-                rag_context=rag_context,
+                rag_context=rag_context,  # Use SimpleMem answer as context
                 chat_history=chat_history,
                 system_prompt=system_prompt,
                 temperature=0.7 if conversation_mode == ConversationMode.CREATIVE else 0.3
             )
+                        
+            # For streaming, we'll simulate token generation from the answer
+            # In production, you might want to modify SimpleMem to support streaming
+            # tokens = answer.split()
+            # print(f"[STREAM] SimpleMem generated {len(tokens)} tokens")
             
-            # Send streaming started indicator
+            # Send status: streaming started
             yield f"data: {json.dumps({'type': 'loading', 'status': 'streaming', 'message': 'Generating response...'})}\n\n"
             
-            # Stream tokens with minimal cleaning
+            # Stream tokens (simulated from complete answer)
             for token in reply_generator:
                 token_count += 1
+                full_reply_text += token + ""
                 
-                # Always keep original unmodified for storage
-                full_reply_text += token
-                
-                # Clean the token (minimal - only remove markers and first-token leading space)
+                # Clean the token
                 cleaned_token = clean_token(token, is_first=(not first_token_sent))
                 
-                # Skip empty tokens or pure whitespace before first real token
                 if not first_token_sent:
-                    # Skip pure whitespace tokens at the start
                     if not cleaned_token or not cleaned_token.strip():
                         continue
-                    # First real token found
                     first_token_sent = True
-                    yield f"data: {json.dumps({'type': 'token', 'content': cleaned_token})}\n\n"
+                    yield f"data: {json.dumps({'type': 'token', 'content': cleaned_token + ''})}\n\n"
                 else:
-                    # After first token, send everything (preserves spaces)
-                    yield f"data: {json.dumps({'type': 'token', 'content': cleaned_token})}\n\n"
+                    yield f"data: {json.dumps({'type': 'token', 'content': token + ''})}\n\n"
+                
+                # Small delay for streaming effect
+                time.sleep(0.01)
             
             llm_time = time.time() - llm_start
-            print(f"[STREAM] LLM generation completed in {llm_time:.2f}s, {token_count} tokens")
+            print(f"[STREAM] SimpleMem generation completed in {llm_time:.2f}s, {token_count} tokens")
             
             # Send status: processing response
             yield f"data: {json.dumps({'type': 'loading', 'status': 'processing', 'message': 'Processing and finalizing response...', 'tokens': token_count})}\n\n"
             
             # Clean response
-            cleaned_response = clean_response(full_reply_text)
+            cleaned_response = clean_response(full_reply_text.strip())
             
             # Remove any remaining markers
             for marker in ["<|end|>", "[END FINAL RESPONSE]"]:
                 cleaned_response = cleaned_response.replace(marker, "")
-            
-            # Prepare RAG results for UI
-            q_terms = [t.lower() for t in rewritten_user_msg.split() if len(t) > 2]
-            rag_results = normalize_rag_rows(all_rows, q_terms)
-            
-            # Send RAG results
-            yield f"data: {json.dumps({'type': 'rag_results', 'content': rag_results})}\n\n"
             
             # Send completion signal
             yield f"data: {json.dumps({'type': 'done', 'full_response': cleaned_response.strip(), 'tokens_generated': token_count, 'processing_time': llm_time})}\n\n"
@@ -902,50 +756,66 @@ def chat_and_store():
                         print('[RATE] error releasing concurrency:', e)
             except Exception as e:
                 print('[STREAM-FINAL] unexpected error in finally block:', e)
+    
     return Response(generate_streaming_response(), mimetype='text/event-stream')
 
 @api.post("/web/notes")
 def store_note():
-    """Store a note"""
+    """Store a note using SimpleMem"""
     data = request.get_json(force=True) or {}
+    user_id = data.get("user_id", "user123")
+    thread_id = data.get("thread_id", "")
+    note_text = data.get("text", "")
     
-    result = get_write_controller().send_data_to_rag_db(
-        user_ID=data.get("user_id", "user123"),
-        content_data=data.get("text", ""),
-        is_reply_to=None,
-        message_type=MessageType.NOTE,
-        conversation_thread=data.get("thread_id", "")
+    if not user_id or not thread_id or not note_text:
+        abort(400, "Missing required fields")
+    
+    # Get SimpleMem instance
+    simplemem = get_simplemem_instance(user_id, thread_id)
+    
+    # Store note as dialogue
+    simplemem.add_dialogue(
+        speaker="note",
+        content=note_text,
+        timestamp=datetime.now().isoformat()
     )
     
-    return jsonify(result)
+    # Finalize
+    simplemem.finalize()
+    
+    return jsonify({"status": "success", "message": "Note stored"})
 
 @api.post("/web/rag")
 def rag_search():
-    """RAG search endpoint"""
+    """RAG search endpoint using SimpleMem"""
     data = request.get_json(force=True) or {}
     user_id = data.get("user_id")
     query = (data.get("query") or "").strip()
     thread_id = data.get("thread_id")
-    top_k = int(data.get("top_k", 5))
     
     if not user_id or not query:
         abort(400, "Missing user_id or query")
     
-    rows = get_read_controller_chatH().fetch_related_to_query(
-        user_ID=user_id,
-        query=query,
-        top_k=top_k
-    )
+    # Get SimpleMem instance
+    simplemem = get_simplemem_instance(user_id, thread_id or "default")
     
-    if thread_id:
-        rows = [
-            r for r in rows
-            if (r.get("metadata") or {}).get("conversation_thread") == thread_id
-        ]
+    # Get answer from SimpleMem
+    answer = simplemem.ask(query)
     
-    # Convert to UI format
+    # Create mock rows to match original format
+    mock_rows = [{
+        "id": "simplemem_search_result",
+        "document": answer,
+        "distance": 0.0,
+        "metadata": {
+            "source": "simplemem_search",
+            "timestamp": time.time()
+        }
+    }]
+    
+    # Use original format
     q_terms = [t.lower() for t in query.split() if len(t) > 2]
-    results = normalize_rag_rows(rows, q_terms)
+    results = normalize_rag_rows(mock_rows, q_terms)
     
     return jsonify({"results": results})
 
