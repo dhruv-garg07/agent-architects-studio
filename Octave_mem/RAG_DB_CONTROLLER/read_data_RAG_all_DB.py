@@ -123,7 +123,7 @@ class read_data_RAG:
             return []
 
         try:
-            results = collection.query(query_texts=[query], n_results=top_k)
+            results = self.manager.query_collection(query_texts=[query], n_results=top_k, collection_name=user_ID)
             # results like:
             # {'ids': [[...]], 'distances': [[...]], 'documents': [[...]], 'metadatas': [[...]] ...}
             ids        = results.get("ids", [[]])[0]
