@@ -2,15 +2,6 @@ import os
 from typing import List, Dict, Optional
 from dotenv import load_dotenv
 import chromadb
-import logging
-
-logging.basicConfig(level=logging.ERROR)
-logging.getLogger().setLevel(logging.ERROR)
-
-# Disable noisy loggers
-logging.getLogger("werkzeug").setLevel(logging.ERROR)
-logging.getLogger("httpx").setLevel(logging.ERROR)
-logging.getLogger("chromadb").setLevel(logging.ERROR)
 
 # Load environment variables
 load_dotenv()
