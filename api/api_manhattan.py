@@ -1330,16 +1330,16 @@ def agent_chat():
         
         # Store conversation in chat history (Agentic RAG)
         #Confirm if this is the correct way to store chat history
-        chat_agentic_rag.add_docs(
-            agent_ID=agent_id,
-            document_content=f"User: {user_message}\nAgent: {agent_response}",
-            document_id=str(uuid.uuid4()),
-            metadata={
-                'speaker': 'user',
-                'timestamp': timestamp,
-                'user_id': user_id
-            }
-        )
+        # chat_agentic_rag.add_docs(
+        #     agent_ID=agent_id,
+        #     document_content=f"User: {user_message}\nAgent: {agent_response}",
+        #     document_id=str(uuid.uuid4()),
+        #     metadata={
+        #         'speaker': 'user',
+        #         'timestamp': timestamp,
+        #         'user_id': user_id
+        #     }
+        # )
         
         return jsonify({
             'ok': True,
