@@ -115,7 +115,7 @@ class RAG_DB_Controller_FILE_DATA:
             Give the response in a few words only."""
         
         metadata_response = stream_chat_response(
-            model="meta-llama/Llama-3.3-70B-Instruct-Turbo-Free", 
+            model="ServiceNow-AI/Apriel-1.5-15b-Thinker", 
             max_tokens=20, 
             prompt=metadata_prompt, 
             temperature=0.3
