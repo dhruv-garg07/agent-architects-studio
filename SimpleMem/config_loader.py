@@ -73,7 +73,7 @@ def get_str(key: str, default: str = "") -> str:
 # ============================================================================
 OPENAI_API_KEY = get_str("OPENAI_API_KEY", "")
 OPENAI_BASE_URL = get_str("OPENAI_BASE_URL")
-LLM_MODEL = get_str("LLM_MODEL", "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo")
+LLM_MODEL = get_str("LLM_MODEL", "ServiceNow-AI/Apriel-1.5-15b-Thinker")
 TOGETHER_API_KEY = get_str("TOGETHER_API_KEY", "")
 
 # Embedding model (local, no API needed)
