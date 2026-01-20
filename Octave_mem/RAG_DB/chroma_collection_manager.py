@@ -35,7 +35,7 @@ class ChromaCollectionManager:
         """Get collection from cache or server."""
         if collection_name not in self._collection_cache:
             try:
-                col = self.client.get_or_create_collection(name=collection_name)
+                col = self.client.get_or_create_collection(name=collection_name, embedding_function=None)
                 self._collection_cache[collection_name] = col
             except Exception as e:
                 print(f"Error loading collection {collection_name}: {e}")
