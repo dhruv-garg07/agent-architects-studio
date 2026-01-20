@@ -293,7 +293,7 @@ class ChromaCollectionManager:
     ) -> Dict:
 
         col = self.get_collection(collection_name)
-        query_embeddings = self.embedder.embed(query_texts)
+        query_embeddings = self.embedder.embed_remote(query_texts)
 
         return col.query(
             query_embeddings=query_embeddings,
@@ -334,41 +334,78 @@ class ChromaCollectionManager:
 
         return data
 
+# import os
+# from dotenv import load_dotenv
+# import chromadb
 
-if __name__ == "__main__":
-    print("🚀 Running Chroma Remote Embedding Smoke Test")
+# # Load env
+# load_dotenv()
 
-    manager = ChromaCollectionManager()
+# client = chromadb.CloudClient(
+#     api_key=os.getenv("CHROMA_API_KEY"),
+#     tenant=os.getenv("CHROMA_TENANT"),
+#     database=os.getenv("CHROMA_DATABASE_CHAT_HISTORY"),
+# )
 
-    COLLECTION = "remote_embedding_test"
+# def delete_all_collections():
+#     collections = client.list_collections()
 
-    ids = ["doc1", "doc2"]
-    docs = [
-        "Chroma is a vector database for AI applications.",
-        "Remote embeddings allow scalable inference without local GPUs."
-    ]
-    metadatas = [
-        {"source": "test", "idx": 1},
-        {"source": "test", "idx": 2},
-    ]
+#     if not collections:
+#         print("✅ No collections found. Nothing to delete.")
+#         return
 
-    print("\n📦 Creating / Updating collection...")
-    print(
-        manager.create_or_update_collection(
-            collection_name=COLLECTION,
-            ids=ids,
-            documents=docs,
-            metadatas=metadatas,
-        )
-    )
+#     print(f"🔥 Deleting {len(collections)} collections...\n")
 
-    print("\n🔍 Verifying stored data...")
-    print(manager.verify_data_in_collection(COLLECTION, expected_ids=ids))
+#     for c in collections:
+#         try:
+#             print(f"🗑️ Deleting collection: {c.name}")
+#             client.delete_collection(c.name)
+#         except Exception as e:
+#             print(f"❌ Failed to delete {c.name}: {e}")
 
-    print("\n📊 Collection info...")
-    print(manager.get_collection_info(COLLECTION))
+#     print("\n✅ ALL collections deleted successfully.")
 
-    print("\n🧹 Cleaning up...")
-    print(manager.delete_collection(COLLECTION))
+# if __name__ == "__main__":
+#     confirm = input("⚠️ Type DELETE-ALL to confirm: ")
+#     if confirm == "DELETE-ALL":
+#         delete_all_collections()
+#     else:
+#         print("❌ Aborted. No collections were deleted.")
 
-    print("\n✅ Test completed successfully")
+# if __name__ == "__main__":
+#     print("🚀 Running Chroma Remote Embedding Smoke Test")
+
+#     manager = ChromaCollectionManager()
+
+#     COLLECTION = "remote_embedding_test"
+
+#     ids = ["doc1", "doc2"]
+#     docs = [
+#         "Chroma is a vector database for AI applications.",
+#         "Remote embeddings allow scalable inference without local GPUs."
+#     ]
+#     metadatas = [
+#         {"source": "test", "idx": 1},
+#         {"source": "test", "idx": 2},
+#     ]
+
+#     print("\n📦 Creating / Updating collection...")
+#     print(
+#         manager.create_or_update_collection(
+#             collection_name=COLLECTION,
+#             ids=ids,
+#             documents=docs,
+#             metadatas=metadatas,
+#         )
+#     )
+
+#     print("\n🔍 Verifying stored data...")
+#     print(manager.verify_data_in_collection(COLLECTION, expected_ids=ids))
+
+#     print("\n📊 Collection info...")
+#     print(manager.get_collection_info(COLLECTION))
+
+#     print("\n🧹 Cleaning up...")
+#     print(manager.delete_collection(COLLECTION))
+
+#     print("\n✅ Test completed successfully")
