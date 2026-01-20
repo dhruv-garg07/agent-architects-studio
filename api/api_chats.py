@@ -785,6 +785,7 @@ def store_note():
     
     return jsonify({"status": "success", "message": "Note stored"})
 
+# Will be implemented by Hybrid Search feature from Simplemem stack in future.
 @api.post("/web/rag")
 def rag_search():
     """RAG search endpoint"""
