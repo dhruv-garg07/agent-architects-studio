@@ -56,19 +56,28 @@ production use replace the storage layer with a secure database and rotate keys.
   
 """
 
-from flask import Blueprint, jsonify, request, g
-import time
-from datetime import datetime
-import uuid
-# API authentication helpers and endpoints
-import os
+# Standard library imports
 import json
-from supabase import create_client
-from key_utils import hash_key, parse_json_field
-from typing import Optional
+import os
+import sys
+import time
+import uuid
+from datetime import datetime
 from functools import wraps
-from flask import request, g
+from typing import Optional
+
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Third-party imports
+from flask import Blueprint, jsonify, request, g
+from supabase import create_client
 from werkzeug.exceptions import BadRequest
+
+# Local imports
+from key_utils import hash_key, parse_json_field
+from backend_examples.python.services.api_agents import ApiAgentsService
+from Octave_mem.RAG_DB_CONTROLLER_AGENTS.agent_RAG import Agentic_RAG
 
 # Create a server-side supabase client (service role) for validation and lookups
 _SUPABASE_URL = os.environ.get('SUPABASE_URL')
@@ -117,6 +126,8 @@ def validate_api_key_value(api_key_plain: str, permission: Optional[str] = None)
     hashed = hash_key(api_key_plain)
 
     if _supabase_backend is None:
+        print(f"Supabase backend not initialized.{_SUPABASE_URL}")
+        print(f"Supabase Key: {_SUPABASE_SERVICE_ROLE_KEY}")
         return False, 'supabase_unavailable'
 
     try:
@@ -145,7 +156,8 @@ def validate_api_key_value(api_key_plain: str, permission: Optional[str] = None)
         if permission:
             if not perms.get(permission, False):
                 return False, 'permission_denied'
-
+            
+        print(record)
         return True, record
     except Exception as e:
         return False, str(e)
@@ -206,8 +218,7 @@ One session ID will act as one agent.
 Chroma DB is used to store data for one agent and will act as its vector DB.
 The session_ids will be stored in a supabase table with user association in the field 
 """
-from backend_examples.python.services.api_agents import ApiAgentsService
-from Octave_mem.RAG_DB_CONTROLLER_AGENTS.agent_RAG import Agentic_RAG
+
 service = ApiAgentsService()
 chat_agentic_rag = Agentic_RAG(database=os.getenv("CHROMA_DATABASE_CHAT_HISTORY"))
 file_agentic_rag = Agentic_RAG(database=os.getenv("CHROMA_DATABASE_FILE_DATA")) 
@@ -1240,142 +1251,44 @@ def search_chat_history():
 # Simple demo chat endpoint for quick testing.
 @manhattan_api.route("/agent_chat", methods=["POST"])
 def agent_chat():
-    """Return demo replies based on example prompts.
-
-    Accepts JSON body with keys: 'agent_id', 'user_id', 'message', optional 'history'.
-    Behavior:
-    - If message contains 'hello' -> return reply for prompt 1
-    - If message contains 'how are you' -> return reply for prompt 2
-    - Otherwise return a default helpful reply
-    """
     data = request.get_json(silent=True) or {}
-    message = (data.get('message') or '').strip()
-    message_lower = message.lower()
-    prompt_id = data.get('prompt_id')
+    agent_id = data.get('agent_id')
+    user_message = data.get('message')
 
-    # Basic validation
-    if not message and not prompt_id:
-        return jsonify({'error': 'message or prompt_id is required', 'reply': '', 'conversation_id': None}), 400
+    if not agent_id or not user_message:
+        return jsonify({'error': 'agent_id and message are required'}), 400
+    
+    # Extract API key from Authorization header
+    auth_header = request.headers.get('Authorization') or request.headers.get('authorization')
+    api_key = None
+    
+    if auth_header and auth_header.lower().startswith('bearer '):
+        api_key = auth_header.split(None, 1)[1].strip()
+    
+    if not api_key:
+        return jsonify({'error': 'missing_api_key'}), 401
 
-    # Demo responses mapping (prompt_id -> reply)
-    demo_responses = {
-        'greeting': {
-            'example_triggers': ['hello', 'hi', 'hey'],
-            'reply': (
-                "Hello there! 🌟 I'm test-agent — your friendly, enthusiastic helper. "
-                "I’m thrilled to be here with you and ready to jump in however you like: whether you want a thoughtful explanation, a step-by-step walkthrough, a creative idea, or just a cheerful chat.\n\n"
-                "Tell me what you're working on or what you'd like to explore, and I'll respond with clear, patient, and helpful guidance. "
-                "If you prefer examples or code snippets, say the word and I'll show them; if you want high-level strategy, I’ll summarize the key points. "
-                "Think of me as a collaborator who cares about making things simple and delightful — let’s do something great together! ✨"
-            )
-        },
-        'status_check': {
-            'example_triggers': ['how are you', "how's it going"],
-            'reply': "I'm a demo agent running inside your app - feeling stateless and productive! Here's a cheerful status reply."
-        },
-        'inspire': {
-            'example_triggers': ['inspire me', 'motivate me', 'quote'],
-            'reply': "\"Dream big. Start small. Act now.\" - a short inspirational reply for the demo."
-        },
-        'joke': {
-            'example_triggers': ['joke', 'tell me a joke'],
-            'reply': "Why did the developer go broke? Because he used up all his cache. 😄 (Demo joke)"
-        },
-        'code_snippet': {
-            'example_triggers': ['example code', 'code snippet', 'show code'],
-            'reply': "Here's a tiny Python snippet:\n```python\nfor i in range(3):\n    print('demo', i)\n```\n(Example response.)"
-        },
-        'summary': {
-            'example_triggers': ['summarize', 'short summary'],
-            'reply': "Short summary (demo): This endpoint returns example replies for several prompts. Use it to prototype UI interactions."
-        }
-    }
+    # Validate API key
+    permission = data.get('permission')
+    ok, info = validate_api_key_value(api_key, permission)
 
-    # If a prompt_id was provided and exists in the mapping, use it directly
-    if prompt_id and prompt_id in demo_responses:
-        reply = demo_responses[prompt_id]['reply']
-    else:
-        # Try keyword matching on message
-        reply = None
-        for pid, info in demo_responses.items():
-            for trig in info.get('example_triggers', []):
-                if trig in message_lower:
-                    reply = info['reply']
-                    break
-            if reply:
-                break
+    print(f"API Key validation result: {ok}, info: {info}")
 
-        # Fallback default reply
-        if not reply:
-            reply = (
-                "Default reply. Try one of these demo prompts: 'hello', 'how are you', 'inspire me', 'joke', 'example code', 'summarize'."
-            )
+    if not ok:
+        return jsonify({'error': info, 'valid': False}), 401
 
-    # Stream the reply character-by-character so clients can render it progressively.
-    # Optional JSON field `delay_ms` controls an initial delay before sending the full reply.
-    delay_ms = data.get('delay_ms') or data.get('delay')
+    user_id = info.get('user_id')
+    g.api_key_record = info
+
     try:
-        # default delay: 3000 ms (3 seconds) before returning the reply if not provided
-        delay = float(delay_ms) / 1000.0 if delay_ms is not None else 3.0
-    except Exception:
-        delay = 3.0
-
-    # Sleep once, then return the complete reply as plain text (no per-character streaming).
-    time.sleep(delay)
-    return reply, 200, {'Content-Type': 'text/plain; charset=utf-8'}
+        # Add your chat logic here
+        # Example: chat_agentic_rag.search_agent_collection(agent_ID=agent_id, query=user_message)
+        return jsonify({'ok': True, 'agent_id': agent_id, 'message': user_message, 'user_id': user_id}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
-@manhattan_api.route('/agent_chat_demo', methods=['GET'])
-def agent_chat_demo():
-    """Return a small catalog of demo prompts and example replies for the frontend/demo pages."""
-    demos = []
-    # Build demo list from the same mapping so it's consistent
-    demo_mapping = {
-        'greeting': {
-            'prompt': 'Hello',
-            'description': 'Friendly greeting',
-            'example_reply': (
-                "Hello there! 🌟 I'm test-agent — your friendly, enthusiastic helper. "
-                "I’m thrilled to be here with you and ready to jump in however you like: whether you want a thoughtful explanation, a step-by-step walkthrough, a creative idea, or just a cheerful chat.\n\n"
-                "Tell me what you're working on or what you'd like to explore, and I'll respond with clear, patient, and helpful guidance. "
-                "If you prefer examples or code snippets, say the word and I'll show them; if you want high-level strategy, I’ll summarize the key points. "
-                "Think of me as a collaborator who cares about making things simple and delightful — let’s do something great together! ✨"
-            ),
-        },
-        'status_check': {
-            'prompt': 'How are you?',
-            'description': 'Agent status check',
-            'example_reply': "I'm a demo agent running inside your app - feeling stateless and productive! Here's a cheerful status reply.",
-        },
-        'inspire': {
-            'prompt': 'Inspire me',
-            'description': 'Short inspirational quote',
-            'example_reply': "\"Dream big. Start small. Act now.\" - a short inspirational reply for the demo.",
-        },
-        'joke': {
-            'prompt': 'Tell me a joke',
-            'description': 'Light-weight demo joke',
-            'example_reply': "Why did the developer go broke? Because he used up all his cache. 😄 (Demo joke)",
-        },
-        'code_snippet': {
-            'prompt': 'Show example code',
-            'description': 'Small code snippet',
-            'example_reply': "Here's a tiny Python snippet:\nfor i in range(3):\n    print('demo', i)",
-        },
-        'summary': {
-            'prompt': 'Summarize this',
-            'description': 'Short summary example',
-            'example_reply': "Short summary (demo): This endpoint returns example replies for several prompts. Use it to prototype UI interactions.",
-        }
-    }
-
-    for pid, meta in demo_mapping.items():
-        demos.append({
-            'id': pid,
-            'prompt': meta['prompt'],
-            'description': meta['description'],
-            'example_reply': meta['example_reply'],
-            'example_payload': { 'agent_id': 'demo-agent', 'user_id': 'demo-user', 'prompt_id': pid }
-        })
-
-    return jsonify({'demos': demos}), 200
+# Test validate_api_key_value function
+if __name__ == '__main__':
+    result = validate_api_key_value("sk-7YqMhfDW_2z25MPSFx84R-jqOZvhtg1qjjZf3PEZdZU", None)
+    print(f"Validation result: {result}")
