@@ -3,7 +3,7 @@ LLM Client - Handles all LLM interactions
 """
 import json
 from typing import List, Dict, Any, Optional
-from openai import OpenAI
+# from openai import OpenAI
 from SimpleMem.config_loader import TOGETHER_API_KEY, LLM_MODEL, OPENAI_BASE_URL, ENABLE_THINKING, USE_STREAMING
 from together import Together
 def extract_output_after_think(response: str) -> str:
