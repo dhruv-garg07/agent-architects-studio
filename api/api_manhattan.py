@@ -1281,10 +1281,78 @@ def agent_chat():
     g.api_key_record = info
 
     try:
-        # Add your chat logic here
-        # Example: chat_agentic_rag.search_agent_collection(agent_ID=agent_id, query=user_message)
-        return jsonify({'ok': True, 'agent_id': agent_id, 'message': user_message, 'user_id': user_id}), 200
+        # Check if agent_id exists in supabase api_agents table
+        if _supabase_backend:
+            agent_check = _supabase_backend.table('api_agents').select('*').eq('id', agent_id).execute()
+            if not agent_check.data or len(agent_check.data) == 0:
+                return jsonify({'error': 'agent_not_found', 'agent_id': agent_id}), 404
+            
+            # Verify the agent belongs to the authenticated user
+            agent_record = agent_check.data[0]
+            if agent_record.get('user_id') != user_id:
+                return jsonify({'error': 'unauthorized_agent_access'}), 403
+        else:
+            # Fallback: use service to check agent
+            agent = service.get_agent_by_id(agent_id=agent_id, user_id=user_id)
+            if not agent:
+                return jsonify({'error': 'agent_not_found', 'agent_id': agent_id}), 404
+        
+        # Import SimpleMem system
+        from SimpleMem.main import create_system
+        
+        # Create or retrieve SimpleMem system for this agent
+        # Agent-specific isolated memory system
+        memory_system = create_system(agent_id=agent_id, clear_db=False)
+        
+        # Add user message as dialogue to SimpleMem
+        # Using "user" as speaker and current timestamp
+        from datetime import datetime
+        timestamp = datetime.utcnow().isoformat()
+        memory_system.add_dialogue(
+            speaker="user",
+            content=user_message,
+            timestamp=timestamp
+        )
+        
+        # Finalize any pending dialogues in buffer
+        memory_system.finalize()
+        
+        # Ask SimpleMem system to generate response
+        agent_response = memory_system.ask(user_message)
+        
+        # Also store the response/agent message in the memory
+        memory_system.add_dialogue(
+            speaker="agent",
+            content=agent_response,
+            timestamp=datetime.utcnow().isoformat()
+        )
+        memory_system.finalize()
+        
+        # Store conversation in chat history (Agentic RAG)
+        #Confirm if this is the correct way to store chat history
+        chat_agentic_rag.add_docs(
+            agent_ID=agent_id,
+            document_content=f"User: {user_message}\nAgent: {agent_response}",
+            document_id=str(uuid.uuid4()),
+            metadata={
+                'speaker': 'user',
+                'timestamp': timestamp,
+                'user_id': user_id
+            }
+        )
+        
+        return jsonify({
+            'ok': True,
+            'agent_id': agent_id,
+            'user_message': user_message,
+            'agent_response': agent_response,
+            'user_id': user_id,
+            'timestamp': timestamp
+        }), 200
     except Exception as e:
+        print(f"Error in agent_chat: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 
