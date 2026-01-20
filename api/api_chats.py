@@ -787,35 +787,31 @@ def store_note():
 
 @api.post("/web/rag")
 def rag_search():
-    """RAG search endpoint using SimpleMem"""
+    """RAG search endpoint"""
     data = request.get_json(force=True) or {}
     user_id = data.get("user_id")
     query = (data.get("query") or "").strip()
     thread_id = data.get("thread_id")
+    top_k = int(data.get("top_k", 5))
     
     if not user_id or not query:
         abort(400, "Missing user_id or query")
     
-    # Get SimpleMem instance
-    simplemem = get_simplemem_instance(user_id, thread_id or "default")
+    rows = get_read_controller_chatH().fetch_related_to_query(
+        user_ID=user_id,
+        query=query,
+        top_k=top_k
+    )
     
-    # Get answer from SimpleMem
-    answer = simplemem.ask(query)
+    if thread_id:
+        rows = [
+            r for r in rows
+            if (r.get("metadata") or {}).get("conversation_thread") == thread_id
+        ]
     
-    # Create mock rows to match original format
-    mock_rows = [{
-        "id": "simplemem_search_result",
-        "document": answer,
-        "distance": 0.0,
-        "metadata": {
-            "source": "simplemem_search",
-            "timestamp": time.time()
-        }
-    }]
-    
-    # Use original format
+    # Convert to UI format
     q_terms = [t.lower() for t in query.split() if len(t) > 2]
-    results = normalize_rag_rows(mock_rows, q_terms)
+    results = normalize_rag_rows(rows, q_terms)
     
     return jsonify({"results": results})
 
