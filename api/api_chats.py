@@ -30,6 +30,7 @@ from Octave_mem.RAG_DB_CONTROLLER.write_data_RAG import RAG_DB_Controller_CHAT_H
 from Octave_mem.RAG_DB_CONTROLLER.read_data_RAG_all_DB import read_data_RAG
 
 # Initialize controllers (singleton pattern)
+#First commit
 _write_controller = None
 _read_controller_chatH = None
 _read_controller_file_data = None
