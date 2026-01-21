@@ -580,6 +580,183 @@
           }
         }
       ]
+    },
+    {
+      "name": "MCP Server (Claude Integration)",
+      "endpoints": [
+        {
+          "path": "mcp://create_memory",
+          "method": "MCP_TOOL",
+          "summary": "Initialize memory system (MCP)",
+          "description": "MCP Tool: Create/initialize a SimpleMem memory system for an agent. This creates a ChromaDB collection for storing memory entries.",
+          "request": {
+            "agent_id": "string",
+            "clear_db": false
+          },
+          "response": {
+            "ok": true,
+            "message": "string",
+            "agent_id": "string"
+          },
+          "code": {
+            "curl": "N/A - This is an MCP tool for Claude Desktop integration",
+            "python": "# MCP Tool - Called by Claude directly\n# To use, configure Claude Desktop with:\n# claude_desktop_config.json\n\n# Example invocation from Claude:\n# \"Create a memory system for agent 'my-agent'\"",
+            "javascript": "// MCP Tool - Called by Claude directly\n// Configure in Claude Desktop settings\n// See MCP_README.md for setup instructions"
+          }
+        },
+        {
+          "path": "mcp://process_raw_dialogues",
+          "method": "MCP_TOOL",
+          "summary": "Process dialogues via LLM (MCP)",
+          "description": "MCP Tool: Process raw dialogues through LLM to extract structured memory entries. Flow: ADD_DIALOGUE → LLM → JSON RESPONSE → N Memory units → Vector Store.",
+          "request": {
+            "agent_id": "string",
+            "dialogues": [
+              {
+                "speaker": "string",
+                "content": "string",
+                "timestamp": "string (optional)"
+              }
+            ]
+          },
+          "response": {
+            "ok": true,
+            "dialogues_processed": 0
+          },
+          "code": {
+            "curl": "N/A - MCP Tool",
+            "python": "# MCP Tool - Example Claude prompt:\n# \"Process these dialogues for agent 'my-agent':\n# - Alice: Meeting at 2pm tomorrow\n# - Bob: I'll bring the documents\"",
+            "javascript": "// MCP Tool - Invoked via Claude Desktop"
+          }
+        },
+        {
+          "path": "mcp://add_memory_direct",
+          "method": "MCP_TOOL",
+          "summary": "Direct memory save (MCP)",
+          "description": "MCP Tool: Directly save pre-structured memory entries without LLM processing. Use when you have pre-structured memory data.",
+          "request": {
+            "agent_id": "string",
+            "memories": [
+              {
+                "lossless_restatement": "string",
+                "keywords": [],
+                "persons": []
+              }
+            ]
+          },
+          "response": {
+            "ok": true,
+            "entries_added": 0,
+            "entry_ids": []
+          },
+          "code": {
+            "curl": "N/A - MCP Tool",
+            "python": "# MCP Tool - Example Claude prompt:\n# \"Add this memory for agent 'my-agent':\n# Alice scheduled a meeting with Bob at Starbucks\"",
+            "javascript": "// MCP Tool - Invoked via Claude Desktop"
+          }
+        },
+        {
+          "path": "mcp://search_memory",
+          "method": "MCP_TOOL",
+          "summary": "Hybrid search (MCP)",
+          "description": "MCP Tool: Search memories using hybrid retrieval combining semantic, keyword, and structured search.",
+          "request": {
+            "agent_id": "string",
+            "query": "string",
+            "top_k": 5,
+            "enable_reflection": false
+          },
+          "response": {
+            "ok": true,
+            "results": []
+          },
+          "code": {
+            "curl": "N/A - MCP Tool",
+            "python": "# MCP Tool - Example Claude prompt:\n# \"Search memories for 'my-agent' about meetings\"",
+            "javascript": "// MCP Tool - Invoked via Claude Desktop"
+          }
+        },
+        {
+          "path": "mcp://get_context_answer",
+          "method": "MCP_TOOL",
+          "summary": "Q&A with memory (MCP)",
+          "description": "MCP Tool: Get a context-aware answer using memory. Full Q&A flow: Query → HybridRetrieval → AnswerGenerator → Response.",
+          "request": {
+            "agent_id": "string",
+            "question": "string"
+          },
+          "response": {
+            "ok": true,
+            "answer": "string",
+            "contexts_used": []
+          },
+          "code": {
+            "curl": "N/A - MCP Tool",
+            "python": "# MCP Tool - Example Claude prompt:\n# \"For agent 'my-agent', answer: What did Alice discuss?\"",
+            "javascript": "// MCP Tool - Invoked via Claude Desktop"
+          }
+        },
+        {
+          "path": "mcp://update_memory_entry",
+          "method": "MCP_TOOL",
+          "summary": "Update memory (MCP)",
+          "description": "MCP Tool: Update an existing memory entry in ChromaDB.",
+          "request": {
+            "agent_id": "string",
+            "entry_id": "string",
+            "updates": {}
+          },
+          "response": {
+            "ok": true,
+            "message": "memory_updated"
+          },
+          "code": {
+            "curl": "N/A - MCP Tool",
+            "python": "# MCP Tool - Example Claude prompt:\n# \"Update memory entry XYZ for agent 'my-agent' with new topic\"",
+            "javascript": "// MCP Tool - Invoked via Claude Desktop"
+          }
+        },
+        {
+          "path": "mcp://delete_memory_entries",
+          "method": "MCP_TOOL",
+          "summary": "Delete memories (MCP)",
+          "description": "MCP Tool: Delete memory entries from ChromaDB by entry IDs.",
+          "request": {
+            "agent_id": "string",
+            "entry_ids": [
+              "string"
+            ]
+          },
+          "response": {
+            "ok": true,
+            "deleted_count": 0
+          },
+          "code": {
+            "curl": "N/A - MCP Tool",
+            "python": "# MCP Tool - Example Claude prompt:\n# \"Delete memory entry XYZ from agent 'my-agent'\"",
+            "javascript": "// MCP Tool - Invoked via Claude Desktop"
+          }
+        },
+        {
+          "path": "mcp://list_all_memories",
+          "method": "MCP_TOOL",
+          "summary": "List all memories (MCP)",
+          "description": "MCP Tool: List all memory entries for an agent.",
+          "request": {
+            "agent_id": "string",
+            "limit": 50
+          },
+          "response": {
+            "ok": true,
+            "memories": []
+          },
+          "code": {
+            "curl": "N/A - MCP Tool",
+            "python": "# MCP Tool - Example Claude prompt:\n# \"List all memories for agent 'my-agent'\"",
+            "javascript": "// MCP Tool - Invoked via Claude Desktop"
+          }
+        }
+      ]
     }
   ]
 }

@@ -1,0 +1,13 @@
+{
+    "mcpServers": {
+        "manhattan-memory": {
+            "command": "python",
+            "args": [
+                "c:/Desktop/python_workspace_311/PdM-main/PdM-main/agent-architects-studio/api/mcp_memory_server.py"
+            ],
+            "env": {
+                "PYTHONPATH": "c:/Desktop/python_workspace_311/PdM-main/PdM-main/agent-architects-studio"
+            }
+        }
+    }
+}
