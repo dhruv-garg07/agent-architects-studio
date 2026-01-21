@@ -1,196 +1,162 @@
 # Manhattan Memory MCP Server
 
-> 🧠 **Model Context Protocol (MCP) Server** for AI-powered memory management with ChromaDB vector storage.
-
-This MCP server enables **Claude Desktop**, **Claude Code (Antigravity)**, **Cursor**, **Windsurf**, and other AI coding agents to interact with your agent memory system through natural language.
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- **Python 3.11+**
-- **pip** or **uv** package manager
-- Valid **ChromaDB** credentials (see Environment Setup)
-
-### 1. Install Dependencies
-
-```bash
-# Clone the repository
-git clone https://github.com/your-username/agent-architects-studio.git
-cd agent-architects-studio
-
-# Install Python dependencies
-pip install mcp python-dotenv httpx chromadb
-
-# Or with uv
-uv add mcp python-dotenv httpx chromadb
-```
-
-### 2. Configure Environment
-
-Create a `.env` file in the project root:
-
-```env
-# ChromaDB Configuration
-CHROMA_API_KEY=your_chroma_api_key
-CHROMA_TENANT=your_tenant
-CHROMA_DATABASE_CHAT_HISTORY=your_database_name
-
-# Embedding Configuration
-REMOTE_EMBEDDING_URL=https://your-embedding-service.com/embed
-REMOTE_EMBEDDING_DIMENSION=768
-
-# Optional: OpenAI for LLM processing
-OPENAI_API_KEY=sk-your-openai-key
-```
-
-### 3. Test the Server
-
-```bash
-# From project root
-python api/mcp_memory_server.py
-
-# Expected output:
-# Starting Manhattan Memory MCP Server...
-# Tools available: create_memory, process_raw_dialogues, add_memory_direct...
-# Running on stdio transport...
-```
+> 🧠 **AI-powered memory management** for Claude, Cursor, and other AI coding agents.
+> 
+> **No setup required!** Use our hosted API - just download one file and add your API key.
 
 ---
 
-## 🔌 Integration Guide
+## 🚀 Quick Start (2 Minutes)
+
+### Option 1: Use Hosted API (Recommended)
+
+**No repository clone needed!** Just download one file and configure.
+
+#### Step 1: Download the MCP Client
+
+```bash
+# Download the single-file MCP client
+curl -O https://raw.githubusercontent.com/your-username/agent-architects-studio/main/api/mcp_memory_client.py
+
+# Or with wget
+wget https://raw.githubusercontent.com/your-username/agent-architects-studio/main/api/mcp_memory_client.py
+```
+
+Or simply copy `mcp_memory_client.py` from this repo.
+
+#### Step 2: Install Dependencies (2 packages)
+
+```bash
+pip install mcp httpx
+```
+
+#### Step 3: Get Your API Key
+
+1. Visit [Agent Architects Studio](https://agent-architects-studio.onrender.com)
+2. Sign up / Log in
+3. Go to Settings → API Keys
+4. Create a new key
+
+#### Step 4: Configure Claude Desktop
+
+Add to your Claude Desktop config file:
+
+**Windows** (`%APPDATA%\Claude\claude_desktop_config.json`):
+```json
+{
+  "mcpServers": {
+    "manhattan-memory": {
+      "command": "python",
+      "args": ["C:/path/to/mcp_memory_client.py"],
+      "env": {
+        "MANHATTAN_API_KEY": "your-api-key-here"
+      }
+    }
+  }
+}
+```
+
+**macOS** (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+```json
+{
+  "mcpServers": {
+    "manhattan-memory": {
+      "command": "python3",
+      "args": ["/path/to/mcp_memory_client.py"],
+      "env": {
+        "MANHATTAN_API_KEY": "your-api-key-here"
+      }
+    }
+  }
+}
+```
+
+**Linux** (`~/.config/Claude/claude_desktop_config.json`):
+```json
+{
+  "mcpServers": {
+    "manhattan-memory": {
+      "command": "python3",
+      "args": ["/path/to/mcp_memory_client.py"],
+      "env": {
+        "MANHATTAN_API_KEY": "your-api-key-here"
+      }
+    }
+  }
+}
+```
+
+#### Step 5: Restart Claude Desktop
+
+That's it! 🎉
+
+---
+
+### Option 2: Self-Hosted (Advanced)
+
+Clone the full repository and run your own server. See [SELF_HOSTED_SETUP.md](SELF_HOSTED_SETUP.md).
+
+---
+
+## 🔌 Integration Guides
 
 ### Claude Desktop
+See Quick Start above.
 
-**Config location:**
-- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
-- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- **Linux**: `~/.config/Claude/claude_desktop_config.json`
+### Claude Code (Antigravity / VS Code)
 
-**Add this configuration:**
-
-```json
-{
-  "mcpServers": {
-    "manhattan-memory": {
-      "command": "python",
-      "args": [
-        "/absolute/path/to/agent-architects-studio/api/mcp_memory_server.py"
-      ],
-      "env": {
-        "PYTHONPATH": "/absolute/path/to/agent-architects-studio"
-      }
-    }
-  }
-}
-```
-
-> ⚠️ **Important:** Replace `/absolute/path/to/` with your actual installation path.
-
-**Windows Example:**
-```json
-{
-  "mcpServers": {
-    "manhattan-memory": {
-      "command": "python",
-      "args": [
-        "C:/Projects/agent-architects-studio/api/mcp_memory_server.py"
-      ],
-      "env": {
-        "PYTHONPATH": "C:/Projects/agent-architects-studio"
-      }
-    }
-  }
-}
-```
-
----
-
-### Claude Code (Antigravity) / VS Code with Claude Extension
-
-For **Claude Code** (the AI coding agent in VS Code), add the MCP server to your workspace settings:
-
-**Option 1: Workspace Settings (`.vscode/settings.json`)**
-
+Add to your `.vscode/settings.json`:
 ```json
 {
   "claude.mcpServers": {
     "manhattan-memory": {
       "command": "python",
-      "args": ["${workspaceFolder}/api/mcp_memory_server.py"],
+      "args": ["${workspaceFolder}/mcp_memory_client.py"],
       "env": {
-        "PYTHONPATH": "${workspaceFolder}"
+        "MANHATTAN_API_KEY": "your-api-key-here"
       }
     }
   }
 }
 ```
-
-**Option 2: Add to `.gemini/settings.json`** (for Antigravity integration)
-
-Create or update `.gemini/settings.json` in your project root:
-
-```json
-{
-  "mcpServers": {
-    "manhattan-memory": {
-      "command": "python",
-      "args": ["api/mcp_memory_server.py"],
-      "cwd": "${workspaceFolder}",
-      "env": {
-        "PYTHONPATH": "${workspaceFolder}"
-      }
-    }
-  }
-}
-```
-
----
 
 ### Cursor IDE
 
-**Config location:** `~/.cursor/mcp.json`
-
+Add to `~/.cursor/mcp.json`:
 ```json
 {
   "mcpServers": {
     "manhattan-memory": {
       "command": "python",
-      "args": ["/path/to/agent-architects-studio/api/mcp_memory_server.py"],
+      "args": ["/path/to/mcp_memory_client.py"],
       "env": {
-        "PYTHONPATH": "/path/to/agent-architects-studio"
+        "MANHATTAN_API_KEY": "your-api-key-here"
       }
     }
   }
 }
 ```
-
----
 
 ### Windsurf IDE
 
-**Config location:** `~/.windsurf/mcp_config.json`
-
+Add to `~/.windsurf/mcp_config.json`:
 ```json
 {
   "mcpServers": {
     "manhattan-memory": {
       "command": "python",
-      "args": ["/path/to/agent-architects-studio/api/mcp_memory_server.py"],
+      "args": ["/path/to/mcp_memory_client.py"],
       "env": {
-        "PYTHONPATH": "/path/to/agent-architects-studio"
+        "MANHATTAN_API_KEY": "your-api-key-here"
       }
     }
   }
 }
 ```
 
----
+### Continue.dev
 
-### Continue.dev (VS Code Extension)
-
-Add to your `~/.continue/config.json`:
-
+Add to `~/.continue/config.json`:
 ```json
 {
   "experimental": {
@@ -199,9 +165,9 @@ Add to your `~/.continue/config.json`:
         "transport": {
           "type": "stdio",
           "command": "python",
-          "args": ["/path/to/agent-architects-studio/api/mcp_memory_server.py"],
+          "args": ["/path/to/mcp_memory_client.py"],
           "env": {
-            "PYTHONPATH": "/path/to/agent-architects-studio"
+            "MANHATTAN_API_KEY": "your-api-key-here"
           }
         }
       }
@@ -212,177 +178,140 @@ Add to your `~/.continue/config.json`:
 
 ---
 
-### Generic MCP Client (Programmatic)
-
-```python
-import asyncio
-from mcp import ClientSession, StdioServerParameters
-from mcp.client.stdio import stdio_client
-
-async def main():
-    server_params = StdioServerParameters(
-        command="python",
-        args=["api/mcp_memory_server.py"],
-        env={"PYTHONPATH": "/path/to/agent-architects-studio"}
-    )
-    
-    async with stdio_client(server_params) as (read, write):
-        async with ClientSession(read, write) as session:
-            # Initialize
-            await session.initialize()
-            
-            # List available tools
-            tools = await session.list_tools()
-            print("Available tools:", [t.name for t in tools.tools])
-            
-            # Call a tool
-            result = await session.call_tool(
-                "create_memory",
-                arguments={"agent_id": "my-agent", "clear_db": False}
-            )
-            print("Result:", result)
-
-asyncio.run(main())
-```
-
----
-
 ## 🛠️ Available Tools
 
-| Tool | Description | Parameters |
-|------|-------------|------------|
-| `create_memory` | Initialize memory system for an agent | `agent_id`, `clear_db` |
-| `process_raw_dialogues` | Process dialogues through LLM to extract memories | `agent_id`, `dialogues[]` |
-| `add_memory_direct` | Add pre-structured memories (no LLM) | `agent_id`, `memories[]` |
-| `search_memory` | Hybrid search (semantic + keyword) | `agent_id`, `query`, `top_k` |
-| `get_context_answer` | Q&A with memory context | `agent_id`, `question` |
-| `update_memory_entry` | Update existing memory | `agent_id`, `entry_id`, `updates` |
-| `delete_memory_entries` | Delete memories by ID | `agent_id`, `entry_ids[]` |
-| `list_all_memories` | List all memories for agent | `agent_id`, `limit` |
+Once configured, ask Claude to use these memory tools:
+
+| Tool | Description | Example Prompt |
+|------|-------------|----------------|
+| `create_memory` | Initialize memory for an agent | "Create a memory system for agent 'my-assistant'" |
+| `process_raw_dialogues` | Extract memories from conversations | "Process this dialogue for agent 'my-assistant': Alice said 'Meeting at 2pm'" |
+| `add_memory_direct` | Add structured memory (no AI) | "Add this fact to 'my-assistant': Project deadline is January 30" |
+| `search_memory` | Search memories | "Search 'my-assistant' memories for 'deadline'" |
+| `get_context_answer` | Q&A with memory | "For 'my-assistant', answer: When is the deadline?" |
+| `update_memory_entry` | Update existing memory | "Update memory entry XYZ with new deadline" |
+| `delete_memory_entries` | Delete memories | "Delete memory entry XYZ from 'my-assistant'" |
+| `chat_with_agent` | Chat with memory context | "Chat with 'my-assistant': What do you remember about the project?" |
 
 ---
 
-## 📝 Usage Examples
+## 💬 Usage Examples
 
-### With Claude Desktop
+### Create an agent memory
 
-Once configured, simply ask Claude:
+> **You:** "Create a memory system for agent 'project-helper'"
+> 
+> **Claude:** I'll create a memory system for your agent using the `create_memory` tool...
 
-```
-"Create a memory system for agent 'customer-support'"
+### Store important information
 
-"Process these dialogues for agent 'customer-support':
-- User: I need help with my order #12345
-- Agent: I'll look that up for you. What's the issue?"
+> **You:** "Add to 'project-helper' memory: The client deadline is February 15, 2025. The project budget is $50,000. Key stakeholders are John and Sarah."
+> 
+> **Claude:** I'll add these facts using `add_memory_direct`...
 
-"Search memories for 'customer-support' about order issues"
+### Recall information later
 
-"For agent 'customer-support', answer: What was the user's order number?"
-```
+> **You:** "Ask 'project-helper': What's the project budget?"
+> 
+> **Claude:** Using `get_context_answer`... The project budget is $50,000.
 
-### With Claude Code (Antigravity)
+### Search memories
 
-In your coding session:
-
-```
-"Create a memory for this agent to remember our conversation context"
-
-"Add to the agent's memory: We discussed implementing a REST API with Flask"
-
-"What do you remember about our previous discussions on APIs?"
-```
+> **You:** "Search 'project-helper' for anything about deadlines"
+> 
+> **Claude:** Using `search_memory`... Found 1 result: "The client deadline is February 15, 2025"
 
 ---
 
-## 📂 Memory Entry Schema
+## 🔐 Security & Privacy
 
-```json
-{
-  "entry_id": "uuid-string",
-  "lossless_restatement": "Self-contained fact: Alice scheduled a meeting with Bob at Starbucks on January 22, 2025 at 2pm",
-  "keywords": ["meeting", "Starbucks", "Alice", "Bob", "schedule"],
-  "timestamp": "2025-01-22T14:00:00",
-  "location": "Starbucks, NYC",
-  "persons": ["Alice", "Bob"],
-  "entities": ["Order #12345", "Project Alpha"],
-  "topic": "meeting scheduling"
-}
+- **Your data is isolated**: Each agent has its own private memory space
+- **API key authentication**: All requests require a valid API key
+- **Encrypted transmission**: All API calls use HTTPS
+- **No data sharing**: Your memories are never used to train models or shared with others
+
+---
+
+## 🌐 API Endpoints
+
+The MCP client connects to our hosted API at:
+
 ```
+https://agent-architects-studio.onrender.com/manhattan
+```
+
+Available endpoints (for direct API usage):
+- `POST /create_memory` - Initialize memory system
+- `POST /process_raw` - Process dialogues via LLM
+- `POST /add_memory` - Direct memory save
+- `POST /read_memory` - Hybrid search retrieval
+- `POST /get_context` - Q&A with memory
+- `POST /update_memory` - Update memory entry
+- `POST /delete_memory` - Delete memories
+- `POST /agent_chat` - Chat with agent
 
 ---
 
 ## 🔧 Troubleshooting
 
-### Server won't start
+### "API key not configured"
+
+Make sure `MANHATTAN_API_KEY` is set in your MCP config's `env` section.
+
+### "Connection refused" or timeout
+
+1. Check your internet connection
+2. Verify the API is up: https://agent-architects-studio.onrender.com/ping
+3. Note: First request may be slow (server cold start on Render free tier)
+
+### "mcp module not found"
 
 ```bash
-# Check Python version
-python --version  # Should be 3.11+
-
-# Verify MCP is installed
-pip show mcp
-
-# Check environment variables
-python -c "from dotenv import load_dotenv; load_dotenv(); import os; print(os.getenv('CHROMA_API_KEY'))"
+pip install mcp httpx
 ```
 
-### Claude can't find the server
+### Claude doesn't show memory tools
 
-1. **Check absolute paths** - Relative paths don't work in MCP configs
-2. **Verify Python is in PATH** - Run `where python` (Windows) or `which python` (Unix)
-3. **Check Claude logs** - Look for MCP connection errors in Claude Desktop logs
+1. Verify config file path is correct for your OS
+2. Check the Python path in your config
+3. Restart Claude Desktop after config changes
 
-### Import errors
+---
 
-```bash
-# Install all dependencies
-pip install mcp python-dotenv httpx chromadb openai pydantic
+## 📁 Files
 
-# Or from requirements.txt
-pip install -r requirements.txt
-```
-
-### Permission errors (Windows)
-
-Run PowerShell as Administrator:
-```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-```
+| File | Description |
+|------|-------------|
+| `mcp_memory_client.py` | **Standalone** MCP client - all you need! |
+| `mcp_memory_server.py` | Full server (for self-hosting) |
+| `claude_desktop_config.json` | Config template |
+| `setup_mcp.py` | Setup script (for self-hosting) |
 
 ---
 
 ## 🏗️ Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    AI Coding Agent                          │
-│         (Claude Desktop / Claude Code / Cursor)             │
-└────────────────────────┬────────────────────────────────────┘
-                         │ MCP Protocol (stdio)
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│              Manhattan Memory MCP Server                    │
-│                  (mcp_memory_server.py)                     │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
-│  │ create_     │  │ search_     │  │ get_context │         │
-│  │ memory      │  │ memory      │  │ _answer     │         │
-│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘         │
-└─────────┼────────────────┼────────────────┼─────────────────┘
-          │                │                │
-          ▼                ▼                ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    SimpleMem System                         │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
-│  │ Memory      │  │ Hybrid      │  │ Answer      │         │
-│  │ Builder     │  │ Retriever   │  │ Generator   │         │
-│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘         │
-└─────────┼────────────────┼────────────────┼─────────────────┘
-          │                │                │
-          ▼                ▼                ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   ChromaDB Vector Store                     │
-│           (Cloud-hosted with remote embeddings)             │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                Your AI Coding Agent                     │
+│     (Claude Desktop / Cursor / Windsurf / etc.)         │
+└─────────────────────────┬───────────────────────────────┘
+                          │ MCP Protocol (stdio)
+                          ▼
+┌─────────────────────────────────────────────────────────┐
+│              mcp_memory_client.py                       │
+│          (Lightweight - just HTTP calls)                │
+└─────────────────────────┬───────────────────────────────┘
+                          │ HTTPS
+                          ▼
+┌─────────────────────────────────────────────────────────┐
+│         Agent Architects Studio API                     │
+│        (Hosted on Render.com)                           │
+│   ┌──────────────────────────────────────────────┐      │
+│   │  SimpleMem System    │    ChromaDB Vector    │      │
+│   │  (AI Processing)     │    Store (Memory)     │      │
+│   └──────────────────────────────────────────────┘      │
+└─────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -395,19 +324,18 @@ MIT License - See [LICENSE](LICENSE) for details.
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/awesome-feature`
-3. Commit changes: `git commit -m 'Add awesome feature'`
-4. Push to branch: `git push origin feature/awesome-feature`
-5. Open a Pull Request
+Issues and PRs welcome! See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/your-username/agent-architects-studio/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-username/agent-architects-studio/discussions)
+- **GitHub Issues**: [Report a bug](https://github.com/your-username/agent-architects-studio/issues)
+- **Discord**: [Join our community](https://discord.gg/your-server)
+- **Email**: support@agent-architects.studio
 
 ---
 
-Made with ❤️ by Agent Architects Studio
+<p align="center">
+  Made with ❤️ by <a href="https://agent-architects.studio">Agent Architects Studio</a>
+</p>

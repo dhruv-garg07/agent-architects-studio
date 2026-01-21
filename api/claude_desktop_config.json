@@ -1,50 +1,19 @@
 {
-    "_comment": "Manhattan Memory MCP Server Configuration for Claude Desktop",
-    "_instructions": [
-        "1. Replace <YOUR_PROJECT_PATH> with your actual installation path",
-        "2. Copy this entire 'mcpServers' block to your Claude Desktop config",
-        "3. Windows: %APPDATA%\\Claude\\claude_desktop_config.json",
-        "4. macOS: ~/Library/Application Support/Claude/claude_desktop_config.json",
-        "5. Linux: ~/.config/Claude/claude_desktop_config.json",
-        "6. Restart Claude Desktop after saving"
-    ],
+    "_instructions": "Copy the 'mcpServers' section to your Claude Desktop config file",
+    "_config_locations": {
+        "windows": "%APPDATA%\\Claude\\claude_desktop_config.json",
+        "macos": "~/Library/Application Support/Claude/claude_desktop_config.json",
+        "linux": "~/.config/Claude/claude_desktop_config.json"
+    },
     "mcpServers": {
         "manhattan-memory": {
             "command": "python",
             "args": [
-                "<YOUR_PROJECT_PATH>/api/mcp_memory_server.py"
+                "<PATH_TO>/mcp_memory_client.py"
             ],
             "env": {
-                "PYTHONPATH": "<YOUR_PROJECT_PATH>"
-            }
-        }
-    },
-    "_examples": {
-        "windows": {
-            "command": "python",
-            "args": [
-                "C:/Projects/agent-architects-studio/api/mcp_memory_server.py"
-            ],
-            "env": {
-                "PYTHONPATH": "C:/Projects/agent-architects-studio"
-            }
-        },
-        "macos": {
-            "command": "python3",
-            "args": [
-                "/Users/yourname/Projects/agent-architects-studio/api/mcp_memory_server.py"
-            ],
-            "env": {
-                "PYTHONPATH": "/Users/yourname/Projects/agent-architects-studio"
-            }
-        },
-        "linux": {
-            "command": "python3",
-            "args": [
-                "/home/yourname/Projects/agent-architects-studio/api/mcp_memory_server.py"
-            ],
-            "env": {
-                "PYTHONPATH": "/home/yourname/Projects/agent-architects-studio"
+                "MANHATTAN_API_KEY": "<YOUR_API_KEY>",
+                "MANHATTAN_API_URL": "https://agent-architects-studio.onrender.com/manhattan"
             }
         }
     }
