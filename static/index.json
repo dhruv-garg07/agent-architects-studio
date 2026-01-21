@@ -8,8 +8,16 @@
           "method": "POST",
           "summary": "Create agent",
           "description": "Create a new agent. Authorization typically required in headers.",
-          "request": { "agent_name": "string", "agent_slug": "string", "permissions": {}, "limits": {}, "description": "string" },
-          "response": { "agent_id": "string" },
+          "request": {
+            "agent_name": "string",
+            "agent_slug": "string",
+            "permissions": {},
+            "limits": {},
+            "description": "string"
+          },
+          "response": {
+            "agent_id": "string"
+          },
           "code": {
             "curl": "curl -X POST '__BASE__/create_agent' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_name\":\"test-agent\",\"agent_slug\":\"test-agent\"}'",
             "python": "import requests\n\nurl = \"__BASE__/create_agent\"\npayload = { 'agent_name': 'test-agent', 'agent_slug': 'test-agent', 'permissions': { 'run': True }, 'limits': { 'rpm': 10 }, 'description': 'Created by script' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=15)\n\nprint(response.text)",
@@ -22,7 +30,9 @@
           "summary": "List agents (API key)",
           "description": "List agents available to the provided API key (Authorization header).",
           "request": null,
-          "response": { "agents": [] },
+          "response": {
+            "agents": []
+          },
           "code": {
             "curl": "curl -X GET '__BASE__/list_agents' -H 'Authorization: <API_KEY>'",
             "python": "import requests\n\nurl = \"__BASE__/list_agents\"\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.get(url, headers=headers, timeout=15)\n\nprint(response.text)",
@@ -34,8 +44,12 @@
           "method": "GET",
           "summary": "Get agent by id",
           "description": "Retrieve a single agent by ID. Example shows a GET with JSON payload as used in tests (some servers accept JSON body on GET).",
-          "request": { "agent_id": "string" },
-          "response": { "agent": {} },
+          "request": {
+            "agent_id": "string"
+          },
+          "response": {
+            "agent": {}
+          },
           "code": {
             "curl": "curl -X GET '__BASE__/get_agent' -H 'Authorization: <API_KEY>' -G --data-urlencode 'agent_id=<AGENT_ID>'",
             "python": "import requests\n\nurl = \"__BASE__/get_agent\"\nparams = { 'agent_id': '<AGENT_ID>' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.get(url, params=params, headers=headers, timeout=15)\n\nprint(response.text)",
@@ -47,8 +61,13 @@
           "method": "POST",
           "summary": "Update agent details",
           "description": "Update updatable fields for an agent. Authorization required.",
-          "request": { "agent_id": "string", "updates": {} },
-          "response": { "ok": true },
+          "request": {
+            "agent_id": "string",
+            "updates": {}
+          },
+          "response": {
+            "ok": true
+          },
           "code": {
             "curl": "curl -X POST '__BASE__/update_agent' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\", \"updates\": {\"description\": \"updated\"}}'",
             "python": "import requests\n\nurl = \"__BASE__/update_agent\"\npayload = { 'agent_id': '<ID>', 'updates': { 'description': 'updated' } }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=15)\n\nprint(response.text)",
@@ -60,8 +79,12 @@
           "method": "POST",
           "summary": "Disable agent",
           "description": "Disable an agent by id using Authorization header.",
-          "request": { "agent_id": "string" },
-          "response": { "ok": true },
+          "request": {
+            "agent_id": "string"
+          },
+          "response": {
+            "ok": true
+          },
           "code": {
             "curl": "curl -X POST '__BASE__/disable_agent' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\"}'",
             "python": "import requests\n\nurl = \"__BASE__/disable_agent\"\npayload = { 'agent_id': '<ID>' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=15)\n\nprint(response.text)",
@@ -73,8 +96,12 @@
           "method": "POST",
           "summary": "Enable agent",
           "description": "Enable an agent by id using Authorization header.",
-          "request": { "agent_id": "string" },
-          "response": { "ok": true },
+          "request": {
+            "agent_id": "string"
+          },
+          "response": {
+            "ok": true
+          },
           "code": {
             "curl": "curl -X POST '__BASE__/enable_agent' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\"}'",
             "python": "import requests\n\nurl = \"__BASE__/enable_agent\"\npayload = { 'agent_id': '<ID>' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=15)\n\nprint(response.text)",
@@ -86,22 +113,33 @@
           "method": "POST",
           "summary": "Delete agent (permanent)",
           "description": "Permanently delete an agent by id for the authenticated user. Will also attempt to remove associated vector DB collections.",
-          "request": { "agent_id": "string" },
-          "response": { "ok": true, "message": "agent_deleted" },
+          "request": {
+            "agent_id": "string"
+          },
+          "response": {
+            "ok": true,
+            "message": "agent_deleted"
+          },
           "code": {
             "curl": "curl -X POST '__BASE__/delete_agent' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\"}'",
             "python": "import requests\n\nurl = \"__BASE__/delete_agent\"\npayload = { 'agent_id': '<ID>' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=15)\n\nprint(response.text)",
             "javascript": "async function deleteAgent(baseUrl = '__BASE__', apiKey = null, agentId = null) {\n  baseUrl = baseUrl === '__BASE__' ? (typeof process !== 'undefined' && process.env && process.env.BASE_URL) : baseUrl;\n  if (!baseUrl || baseUrl === '__BASE__') throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = apiKey;\n  const res = await fetch(`${baseUrl}/delete_agent`, { method: 'POST', headers, body: JSON.stringify({ agent_id: agentId }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\ndeleteAgent().then(console.log).catch(console.error);"
           }
-        }
-        ,
+        },
         {
           "path": "/agent_chat",
           "method": "POST",
           "summary": "Chat with agent",
           "description": "Send a message to a specific agent and receive a reply from the agent. Provide 'agent_id' and 'message' (optional 'options').",
-          "request": { "agent_id": "string", "message": "string", "options": {} },
-          "response": { "reply": "string", "conversation_id": "string" },
+          "request": {
+            "agent_id": "string",
+            "message": "string",
+            "options": {}
+          },
+          "response": {
+            "reply": "string",
+            "conversation_id": "string"
+          },
           "code": {
             "curl": "curl -X POST '__BASE__/agent_chat' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"message\":\"Hello\"}'",
             "python": "import requests\n\nurl = \"__BASE__/agent_chat\"\npayload = { 'agent_id': '<AGENT_ID>', 'message': 'Hello' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=120)\n\nprint(response.text)",
@@ -118,8 +156,20 @@
           "method": "POST",
           "summary": "Add document(s) to agent",
           "description": "Add one or more documents to an agent's vector DB. Expects 'documents' array and matching 'ids' array of equal length.",
-          "request": { "agent_id": "string", "documents": ["string"], "ids": ["string"], "metadata": {} },
-          "response": { "ok": true, "message": "documents_added" },
+          "request": {
+            "agent_id": "string",
+            "documents": [
+              "string"
+            ],
+            "ids": [
+              "string"
+            ],
+            "metadata": {}
+          },
+          "response": {
+            "ok": true,
+            "message": "documents_added"
+          },
           "code": {
             "curl": "curl -X POST '__BASE__/add_document' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\",\"documents\":[\"doc 1 body\"],\"ids\":[\"doc-1\"],\"metadata\":{}}'",
             "python": "import requests\n\nurl = \"__BASE__/add_document\"\npayload = { 'agent_id': '<ID>', 'documents': ['doc 1 body'], 'ids': ['doc-1'], 'metadata': {} }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=20)\n\nprint(response.text)",
@@ -131,8 +181,20 @@
           "method": "POST",
           "summary": "Update existing document(s)",
           "description": "Update documents in an agent's vector DB by document id(s). Provide 'document_ids' and 'new_docs' fields.",
-          "request": { "agent_id": "string", "document_ids": ["string"], "new_docs": ["string"], "metadata": {} },
-          "response": { "ok": true, "message": "document_updated" },
+          "request": {
+            "agent_id": "string",
+            "document_ids": [
+              "string"
+            ],
+            "new_docs": [
+              "string"
+            ],
+            "metadata": {}
+          },
+          "response": {
+            "ok": true,
+            "message": "document_updated"
+          },
           "code": {
             "curl": "curl -X POST '__BASE__/update_document' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\",\"document_ids\":[\"doc-1\"],\"new_docs\":[\"updated body\"],\"metadata\":{}}'",
             "python": "import requests\n\nurl = \"__BASE__/update_document\"\npayload = { 'agent_id': '<ID>', 'document_ids': ['doc-1'], 'new_docs': ['updated body'], 'metadata': {} }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=20)\n\nprint(response.text)",
@@ -144,8 +206,15 @@
           "method": "POST",
           "summary": "Update document metadata",
           "description": "Update only the metadata for a given document id in an agent's vector DB.",
-          "request": { "agent_id": "string", "document_id": "string", "metadata": {} },
-          "response": { "ok": true, "message": "document_metadata_updated" },
+          "request": {
+            "agent_id": "string",
+            "document_id": "string",
+            "metadata": {}
+          },
+          "response": {
+            "ok": true,
+            "message": "document_metadata_updated"
+          },
           "code": {
             "curl": "curl -X POST '__BASE__/update_document_metadata' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\",\"document_id\":\"doc-1\",\"metadata\":{\"source\":\"upload\"}}'",
             "python": "import requests\n\nurl = \"__BASE__/update_document_metadata\"\npayload = { 'agent_id': '<ID>', 'document_id': 'doc-1', 'metadata': { 'source': 'upload' } }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=20)\n\nprint(response.text)",
@@ -157,12 +226,232 @@
           "method": "POST",
           "summary": "Search agent documents",
           "description": "Perform a vector/semantic search against an agent's document collection. Provide 'query' and optional 'top_k'.",
-          "request": { "agent_id": "string", "query": "string", "top_k": 5 },
-          "response": { "results": [] },
+          "request": {
+            "agent_id": "string",
+            "query": "string",
+            "top_k": 5
+          },
+          "response": {
+            "results": []
+          },
           "code": {
             "curl": "curl -X POST '__BASE__/search_documents' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\",\"query\":\"what is X\",\"top_k\":5 }'",
             "python": "import requests\n\nurl = \"__BASE__/search_documents\"\npayload = { 'agent_id': '<ID>', 'query': 'what is X', 'top_k': 5 }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=20)\n\nprint(response.text)",
             "javascript": "async function searchDocuments(baseUrl = '__BASE__', apiKey = null, agentId = null, query = 'what is X', topK = 5) {\n  baseUrl = baseUrl === '__BASE__' ? (typeof process !== 'undefined' && process.env && process.env.BASE_URL) : baseUrl;\n  if (!baseUrl || baseUrl === '__BASE__') throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = apiKey;\n  const res = await fetch(`${baseUrl}/search_documents`, { method: 'POST', headers, body: JSON.stringify({ agent_id: agentId, query, top_k: topK }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\nsearchDocuments().then(console.log).catch(console.error);"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Memory",
+      "endpoints": [
+        {
+          "path": "/create_memory",
+          "method": "POST",
+          "summary": "Initialize memory system",
+          "description": "Create/initialize a SimpleMem memory system for an agent. This creates a ChromaDB collection for storing memory entries. Set 'clear_db' to true to clear existing memories.",
+          "request": {
+            "agent_id": "string",
+            "clear_db": false
+          },
+          "response": {
+            "ok": true,
+            "message": "memory_system_initialized",
+            "agent_id": "string",
+            "cleared": false
+          },
+          "code": {
+            "curl": "curl -X POST '__BASE__/create_memory' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"clear_db\":false}'",
+            "python": "import requests\n\nurl = \"__BASE__/create_memory\"\npayload = { 'agent_id': '<AGENT_ID>', 'clear_db': False }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=30)\n\nprint(response.json())",
+            "javascript": "async function createMemory(baseUrl = '__BASE__', apiKey = null, agentId = null, clearDb = false) {\n  baseUrl = baseUrl === '__BASE__' ? (typeof process !== 'undefined' && process.env && process.env.BASE_URL) : baseUrl;\n  if (!baseUrl || baseUrl === '__BASE__') throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;\n  const res = await fetch(`${baseUrl}/create_memory`, { method: 'POST', headers, body: JSON.stringify({ agent_id: agentId, clear_db: clearDb }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\ncreateMemory().then(console.log).catch(console.error);"
+          }
+        },
+        {
+          "path": "/process_raw",
+          "method": "POST",
+          "summary": "Process dialogues via LLM",
+          "description": "Process raw dialogues through LLM to extract structured memory entries. Flow: ADD_DIALOGUE → LLM → JSON RESPONSE → N Memory units → Vector Store. Each dialogue is processed to extract facts, entities, timestamps, and keywords.",
+          "request": {
+            "agent_id": "string",
+            "dialogues": [
+              {
+                "speaker": "string",
+                "content": "string",
+                "timestamp": "ISO8601 string (optional)"
+              }
+            ]
+          },
+          "response": {
+            "ok": true,
+            "message": "dialogues_processed",
+            "agent_id": "string",
+            "dialogues_processed": 0
+          },
+          "code": {
+            "curl": "curl -X POST '__BASE__/process_raw' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"dialogues\":[{\"speaker\":\"Alice\",\"content\":\"Meeting at Starbucks tomorrow at 2pm\",\"timestamp\":\"2025-01-22T10:00:00\"}]}'",
+            "python": "import requests\n\nurl = \"__BASE__/process_raw\"\npayload = {\n    'agent_id': '<AGENT_ID>',\n    'dialogues': [\n        {'speaker': 'Alice', 'content': 'Meeting at Starbucks tomorrow at 2pm', 'timestamp': '2025-01-22T10:00:00'},\n        {'speaker': 'Bob', 'content': 'I will bring the documents', 'timestamp': '2025-01-22T10:01:00'}\n    ]\n}\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=120)\n\nprint(response.json())",
+            "javascript": "async function processRaw(baseUrl = '__BASE__', apiKey = null, agentId = null, dialogues = []) {\n  baseUrl = baseUrl === '__BASE__' ? (typeof process !== 'undefined' && process.env && process.env.BASE_URL) : baseUrl;\n  if (!baseUrl || baseUrl === '__BASE__') throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;\n  const res = await fetch(`${baseUrl}/process_raw`, { method: 'POST', headers, body: JSON.stringify({ agent_id: agentId, dialogues }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\nconst dialogues = [{ speaker: 'Alice', content: 'Meeting at 2pm', timestamp: new Date().toISOString() }];\nprocessRaw(null, null, '<AGENT_ID>', dialogues).then(console.log).catch(console.error);"
+          }
+        },
+        {
+          "path": "/add_memory",
+          "method": "POST",
+          "summary": "Direct memory save (no LLM)",
+          "description": "Directly save pre-structured memory entries without LLM processing. Use this when you already have structured memory data (lossless_restatement, keywords, etc.) and want to bypass the LLM extraction step.",
+          "request": {
+            "agent_id": "string",
+            "memories": [
+              {
+                "lossless_restatement": "string",
+                "keywords": [
+                  "string"
+                ],
+                "timestamp": "ISO8601 (optional)",
+                "location": "string (optional)",
+                "persons": [
+                  "string"
+                ],
+                "entities": [
+                  "string"
+                ],
+                "topic": "string (optional)"
+              }
+            ]
+          },
+          "response": {
+            "ok": true,
+            "message": "memories_added",
+            "agent_id": "string",
+            "entries_added": 0,
+            "entry_ids": []
+          },
+          "code": {
+            "curl": "curl -X POST '__BASE__/add_memory' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"memories\":[{\"lossless_restatement\":\"Alice scheduled a meeting with Bob at Starbucks on January 22, 2025 at 2pm\",\"keywords\":[\"meeting\",\"Starbucks\",\"Alice\",\"Bob\"],\"persons\":[\"Alice\",\"Bob\"],\"location\":\"Starbucks\",\"timestamp\":\"2025-01-22T14:00:00\",\"topic\":\"meeting scheduling\"}]}'",
+            "python": "import requests\n\nurl = \"__BASE__/add_memory\"\npayload = {\n    'agent_id': '<AGENT_ID>',\n    'memories': [\n        {\n            'lossless_restatement': 'Alice scheduled a meeting with Bob at Starbucks on January 22, 2025 at 2pm',\n            'keywords': ['meeting', 'Starbucks', 'Alice', 'Bob'],\n            'persons': ['Alice', 'Bob'],\n            'location': 'Starbucks',\n            'timestamp': '2025-01-22T14:00:00',\n            'topic': 'meeting scheduling'\n        }\n    ]\n}\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=30)\n\nprint(response.json())",
+            "javascript": "async function addMemory(baseUrl = '__BASE__', apiKey = null, agentId = null, memories = []) {\n  baseUrl = baseUrl === '__BASE__' ? (typeof process !== 'undefined' && process.env && process.env.BASE_URL) : baseUrl;\n  if (!baseUrl || baseUrl === '__BASE__') throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;\n  const res = await fetch(`${baseUrl}/add_memory`, { method: 'POST', headers, body: JSON.stringify({ agent_id: agentId, memories }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\nconst memories = [{ lossless_restatement: 'Example fact', keywords: ['example'], persons: [], entities: [] }];\naddMemory(null, null, '<AGENT_ID>', memories).then(console.log).catch(console.error);"
+          }
+        },
+        {
+          "path": "/read_memory",
+          "method": "POST",
+          "summary": "Hybrid search retrieval",
+          "description": "Search memories using hybrid retrieval combining semantic (vector similarity), keyword (BM25-style), and structured (metadata filtering) search. Optionally enable reflection for multi-round retrieval.",
+          "request": {
+            "agent_id": "string",
+            "query": "string",
+            "top_k": 5,
+            "enable_reflection": false
+          },
+          "response": {
+            "ok": true,
+            "agent_id": "string",
+            "query": "string",
+            "results_count": 0,
+            "results": [
+              {
+                "entry_id": "string",
+                "lossless_restatement": "string",
+                "keywords": [],
+                "timestamp": "string",
+                "location": "string",
+                "persons": [],
+                "entities": [],
+                "topic": "string"
+              }
+            ]
+          },
+          "code": {
+            "curl": "curl -X POST '__BASE__/read_memory' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"query\":\"When is the meeting with Bob?\",\"top_k\":5,\"enable_reflection\":false}'",
+            "python": "import requests\n\nurl = \"__BASE__/read_memory\"\npayload = {\n    'agent_id': '<AGENT_ID>',\n    'query': 'When is the meeting with Bob?',\n    'top_k': 5,\n    'enable_reflection': False\n}\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=60)\n\nprint(response.json())",
+            "javascript": "async function readMemory(baseUrl = '__BASE__', apiKey = null, agentId = null, query = '', topK = 5, enableReflection = false) {\n  baseUrl = baseUrl === '__BASE__' ? (typeof process !== 'undefined' && process.env && process.env.BASE_URL) : baseUrl;\n  if (!baseUrl || baseUrl === '__BASE__') throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;\n  const res = await fetch(`${baseUrl}/read_memory`, { method: 'POST', headers, body: JSON.stringify({ agent_id: agentId, query, top_k: topK, enable_reflection: enableReflection }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\nreadMemory(null, null, '<AGENT_ID>', 'When is the meeting?').then(console.log).catch(console.error);"
+          }
+        },
+        {
+          "path": "/get_context",
+          "method": "POST",
+          "summary": "Q&A with memory context",
+          "description": "Ask a question and get an LLM-generated answer using memory context. Full Q&A flow: Query → HybridRetrieval → AnswerGenerator → Response. Returns both the answer and the memory contexts used.",
+          "request": {
+            "agent_id": "string",
+            "question": "string"
+          },
+          "response": {
+            "ok": true,
+            "agent_id": "string",
+            "question": "string",
+            "answer": "string",
+            "contexts_used": [
+              {
+                "entry_id": "string",
+                "lossless_restatement": "string",
+                "topic": "string"
+              }
+            ]
+          },
+          "code": {
+            "curl": "curl -X POST '__BASE__/get_context' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"question\":\"What did Alice and Bob discuss about the meeting?\"}'",
+            "python": "import requests\n\nurl = \"__BASE__/get_context\"\npayload = {\n    'agent_id': '<AGENT_ID>',\n    'question': 'What did Alice and Bob discuss about the meeting?'\n}\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=120)\n\nresult = response.json()\nprint('Answer:', result.get('answer'))\nprint('Contexts used:', result.get('contexts_used'))",
+            "javascript": "async function getContext(baseUrl = '__BASE__', apiKey = null, agentId = null, question = '') {\n  baseUrl = baseUrl === '__BASE__' ? (typeof process !== 'undefined' && process.env && process.env.BASE_URL) : baseUrl;\n  if (!baseUrl || baseUrl === '__BASE__') throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;\n  const res = await fetch(`${baseUrl}/get_context`, { method: 'POST', headers, body: JSON.stringify({ agent_id: agentId, question }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\ngetContext(null, null, '<AGENT_ID>', 'What is the meeting about?').then(r => { console.log('Answer:', r.answer); console.log('Contexts:', r.contexts_used); }).catch(console.error);"
+          }
+        },
+        {
+          "path": "/update_memory",
+          "method": "POST",
+          "summary": "Update memory entry",
+          "description": "Update an existing memory entry in ChromaDB. You can update the lossless_restatement (document content) and/or metadata fields (timestamp, location, persons, entities, topic, keywords).",
+          "request": {
+            "agent_id": "string",
+            "entry_id": "string",
+            "updates": {
+              "lossless_restatement": "string (optional)",
+              "timestamp": "string (optional)",
+              "location": "string (optional)",
+              "persons": [
+                "string"
+              ],
+              "entities": [
+                "string"
+              ],
+              "topic": "string (optional)",
+              "keywords": [
+                "string"
+              ]
+            }
+          },
+          "response": {
+            "ok": true,
+            "message": "memory_updated",
+            "agent_id": "string",
+            "entry_id": "string"
+          },
+          "code": {
+            "curl": "curl -X POST '__BASE__/update_memory' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"entry_id\":\"<ENTRY_ID>\",\"updates\":{\"lossless_restatement\":\"Updated: Alice rescheduled the meeting to 3pm\",\"timestamp\":\"2025-01-22T15:00:00\"}}'",
+            "python": "import requests\n\nurl = \"__BASE__/update_memory\"\npayload = {\n    'agent_id': '<AGENT_ID>',\n    'entry_id': '<ENTRY_ID>',\n    'updates': {\n        'lossless_restatement': 'Updated: Alice rescheduled the meeting to 3pm',\n        'timestamp': '2025-01-22T15:00:00',\n        'topic': 'meeting rescheduling'\n    }\n}\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=30)\n\nprint(response.json())",
+            "javascript": "async function updateMemory(baseUrl = '__BASE__', apiKey = null, agentId = null, entryId = null, updates = {}) {\n  baseUrl = baseUrl === '__BASE__' ? (typeof process !== 'undefined' && process.env && process.env.BASE_URL) : baseUrl;\n  if (!baseUrl || baseUrl === '__BASE__') throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;\n  const res = await fetch(`${baseUrl}/update_memory`, { method: 'POST', headers, body: JSON.stringify({ agent_id: agentId, entry_id: entryId, updates }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\nupdateMemory(null, null, '<AGENT_ID>', '<ENTRY_ID>', { topic: 'updated topic' }).then(console.log).catch(console.error);"
+          }
+        },
+        {
+          "path": "/delete_memory",
+          "method": "POST",
+          "summary": "Delete memory entries",
+          "description": "Delete one or more memory entries from ChromaDB by their entry IDs. This permanently removes the memory entries from the agent's vector store.",
+          "request": {
+            "agent_id": "string",
+            "entry_ids": [
+              "string"
+            ]
+          },
+          "response": {
+            "ok": true,
+            "message": "memories_deleted",
+            "agent_id": "string",
+            "deleted_count": 0,
+            "entry_ids": []
+          },
+          "code": {
+            "curl": "curl -X POST '__BASE__/delete_memory' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"entry_ids\":[\"<ENTRY_ID_1>\",\"<ENTRY_ID_2>\"]}'",
+            "python": "import requests\n\nurl = \"__BASE__/delete_memory\"\npayload = {\n    'agent_id': '<AGENT_ID>',\n    'entry_ids': ['<ENTRY_ID_1>', '<ENTRY_ID_2>']\n}\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=30)\n\nprint(response.json())",
+            "javascript": "async function deleteMemory(baseUrl = '__BASE__', apiKey = null, agentId = null, entryIds = []) {\n  baseUrl = baseUrl === '__BASE__' ? (typeof process !== 'undefined' && process.env && process.env.BASE_URL) : baseUrl;\n  if (!baseUrl || baseUrl === '__BASE__') throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;\n  const res = await fetch(`${baseUrl}/delete_memory`, { method: 'POST', headers, body: JSON.stringify({ agent_id: agentId, entry_ids: entryIds }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\ndeleteMemory(null, null, '<AGENT_ID>', ['<ENTRY_ID>']).then(console.log).catch(console.error);"
           }
         }
       ]
@@ -176,7 +465,9 @@
           "summary": "Memory page (UI)",
           "description": "Returns the memory page (may redirect for unauthenticated users).",
           "request": null,
-          "response": { "html": "string" },
+          "response": {
+            "html": "string"
+          },
           "code": {
             "curl": "curl -X GET '__BASE__/memory' -v",
             "python": "import requests\n\nurl = \"__BASE__/memory\"\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.get(url, headers=headers, timeout=15)\n\nprint(response.text)",
@@ -188,8 +479,12 @@
           "method": "GET",
           "summary": "Get sessions (API)",
           "description": "GET sessions by id query parameter. Returns JSON list or object.",
-          "request": { "id": "uuid (query)" },
-          "response": { "sessions": [] },
+          "request": {
+            "id": "uuid (query)"
+          },
+          "response": {
+            "sessions": []
+          },
           "code": {
             "curl": "curl -G '__BASE__/web/get_sessions' --data-urlencode 'id=51ebe8c7-201b-4275-9bc5-44d7222f3509'",
             "python": "import requests\n\nurl = \"__BASE__/web/get_sessions\"\nparams = { 'id': '51ebe8c7-201b-4275-9bc5-44d7222f3509' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.get(url, params=params, headers=headers, timeout=15)\n\nprint(response.text)",
@@ -201,8 +496,14 @@
           "method": "POST",
           "summary": "RAG search",
           "description": "Run a RAG-style search (POST JSON).",
-          "request": { "user_id": "string", "query": "string", "top_k": 3 },
-          "response": { "results": [] },
+          "request": {
+            "user_id": "string",
+            "query": "string",
+            "top_k": 3
+          },
+          "response": {
+            "results": []
+          },
           "code": {
             "curl": "curl -X POST '__BASE__/web/rag' -H 'Content-Type: application/json' -d '{\"user_id\":\"51ebe8c7-201b-4275-9bc5-44d7222f3509\",\"query\":\"test query\",\"top_k\":3}'",
             "python": "import requests\n\nurl = \"__BASE__/web/rag\"\npayload = { 'user_id': '51ebe8c7-201b-4275-9bc5-44d7222f3509', 'query': 'test query', 'top_k': 3 }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=15)\n\nprint(response.text)",
@@ -214,8 +515,12 @@
           "method": "POST",
           "summary": "Validate API key",
           "description": "Validate API key. POST JSON {api_key: string}. Returns {valid: bool}.",
-          "request": { "api_key": "string" },
-          "response": { "valid": true },
+          "request": {
+            "api_key": "string"
+          },
+          "response": {
+            "valid": true
+          },
           "code": {
             "curl": "curl -X POST '__BASE__/validate_key' -H 'Content-Type: application/json' -d '{\"api_key\":\"sk-...\"}'",
             "python": "import requests\n\nurl = \"__BASE__/validate_key\"\npayload = { 'api_key': 'sk-...'}\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=10)\n\nprint(response.text)",
@@ -227,8 +532,12 @@
           "method": "POST",
           "summary": "Create chat session",
           "description": "Create a new chat session. Returns thread_id.",
-          "request": { "user_id": "string" },
-          "response": { "thread_id": "string" },
+          "request": {
+            "user_id": "string"
+          },
+          "response": {
+            "thread_id": "string"
+          },
           "code": {
             "curl": "curl -X POST '__BASE__/web/create_session' -H 'Content-Type: application/json' -d '{\"user_id\":\"51ebe8c7-201b-4275-9bc5-44d7222f3509\"}'",
             "python": "import requests\n\nurl = \"__BASE__/web/create_session\"\npayload = { 'user_id': '51ebe8c7-201b-4275-9bc5-44d7222f3509' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=10)\n\nprint(response.text)",
@@ -240,8 +549,15 @@
           "method": "POST",
           "summary": "Send chat message (streaming)",
           "description": "Send a chat message to the streaming chat endpoint. Example shows a simple non-streaming POST consumer.",
-          "request": { "thread_id": "string", "user_id": "string", "message": "string", "history": [] },
-          "response": { "reply": "string / stream" },
+          "request": {
+            "thread_id": "string",
+            "user_id": "string",
+            "message": "string",
+            "history": []
+          },
+          "response": {
+            "reply": "string / stream"
+          },
           "code": {
             "curl": "curl -X POST '__BASE__/web/chat' -H 'Content-Type: application/json' -d '{\"thread_id\":\"local_thread_123\",\"user_id\":\"51ebe8c7-201b-4275-9bc5-44d7222f3509\",\"message\":\"Hello\",\"history\":[]}'",
             "python": "import requests\n\nurl = \"__BASE__/web/chat\"\npayload = { 'thread_id': 'local_thread_123', 'user_id': '51ebe8c7-201b-4275-9bc5-44d7222f3509', 'message': 'Hello', 'history': [] }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=120)\n\nprint(response.text)",
@@ -254,7 +570,9 @@
           "summary": "Ping server",
           "description": "Simple health check for the running server.",
           "request": null,
-          "response": { "status": "string" },
+          "response": {
+            "status": "string"
+          },
           "code": {
             "curl": "curl -X GET '__BASE__/ping' -v",
             "python": "import requests\n\nurl = \"__BASE__/ping\"\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.get(url, headers=headers, timeout=10)\n\nprint(response.text)",
@@ -263,4 +581,5 @@
         }
       ]
     }
-  ]         }
+  ]
+}

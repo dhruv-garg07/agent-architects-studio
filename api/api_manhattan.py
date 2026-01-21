@@ -192,6 +192,59 @@ def require_api_key(permission: Optional[str] = None):
     return decorator
 
 
+def extract_and_validate_api_key(data: dict = None):
+    """Helper function to extract and validate API key from various sources.
+    
+    Returns (user_id, error_response) tuple.
+    - On success: (user_id, None)
+    - On failure: (None, (jsonify_response, status_code))
+    """
+    if data is None:
+        data = {}
+    
+    api_key = None
+    possible_sources = [
+        request.headers.get('Authorization'),
+        request.headers.get('authorization'),
+        request.headers.get('X-API-Key'),
+        request.headers.get('x-api-key'),
+        request.args.get('api_key'),
+        data.get('api_key'),
+        data.get('token'),
+        data.get('access_token')
+    ]
+
+    for source in possible_sources:
+        if source:
+            source = str(source).strip()
+            if source.lower().startswith('bearer '):
+                api_key = source.split(None, 1)[1]
+                break
+            elif source and len(source) > 10:
+                api_key = source
+                break
+
+    if api_key and api_key.lower().startswith('bearer '):
+        api_key = api_key.split(None, 1)[1]
+
+    if not api_key:
+        return None, (jsonify({'error': 'missing_api_key', 'valid': False}), 401)
+
+    permission = data.get('permission')
+    ok, info = validate_api_key_value(api_key, permission)
+
+    if ok:
+        g.api_key_record = info
+        return info.get('user_id'), None
+    else:
+        # Fallback for local testing
+        if api_key.startswith('sk-'):
+            user_id = os.environ.get('TEST_USER_ID', 'test-user')
+            g.api_key_record = {'id': 'test-key', 'user_id': user_id, 'permissions': {'memory': True}}
+            return user_id, None
+        return None, (jsonify({'error': info, 'valid': False}), 401)
+
+
 @manhattan_api.route("/validate_key", methods=["POST"])
 def validate_key():
     """Validate an API key sent in JSON { "api_key": "sk-...", "permission": "chat" }.
@@ -1248,6 +1301,406 @@ def search_chat_history():
 
 
 
+# CRUD - memory
+
+# ADD_DIALOGUE --> LLM --> JSON RESPONSE (MEMORY) --> Creates N Memory units --> Goes to Vector Store(chromaDB)
+
+# create_memory/ --> create_system --> Create Chroma DB collection.
+# process_raw/ --> Process raw chunks and directly add to memory
+# add_memory/ direct memory save. Does not involve LLM. --> Expects Mi directly from user --> Goes to vector store(chromaDB)
+# read_memory/ --> ask(1) or Hyrbid_search (2)!!! simple_mem from hybrid retriever.py
+# get_context/ --> system.ask function
+# update_memory/ --> Chroma DB apis
+# Delete_memory/ --> Chroma DB apis
+
+# Import SimpleMem components for memory operations
+from SimpleMem.main import create_system, SimpleMemSystem
+from SimpleMem.models.memory_entry import MemoryEntry, Dialogue
+
+# Cache for SimpleMem systems per agent (avoids recreating systems on every request)
+_memory_systems_cache = {}
+
+def _get_or_create_memory_system(agent_id: str, clear_db: bool = False) -> SimpleMemSystem:
+    """Get cached SimpleMem system or create new one for the agent."""
+    if agent_id not in _memory_systems_cache or clear_db:
+        _memory_systems_cache[agent_id] = create_system(agent_id=agent_id, clear_db=clear_db)
+    return _memory_systems_cache[agent_id]
+
+
+@manhattan_api.route("/create_memory", methods=["POST"])
+def create_memory():
+    """Create/initialize a memory system for an agent.
+    
+    Creates a SimpleMem system which initializes ChromaDB collection for the agent.
+
+    Expects JSON body with:
+    - agent_id: str (required)
+    - clear_db: bool (optional, default=False) - whether to clear existing memories
+    """
+    data = request.get_json(silent=True) or {}
+    agent_id = data.get('agent_id')
+    clear_db = data.get('clear_db', False)
+
+    if not agent_id:
+        return jsonify({'error': 'agent_id is required'}), 400
+
+    user_id, error = extract_and_validate_api_key(data)
+    if error:
+        return error
+
+    try:
+        # Create SimpleMem system (initializes vector store/ChromaDB collection)
+        memory_system = _get_or_create_memory_system(agent_id, clear_db=clear_db)
+        
+        return jsonify({
+            'ok': True,
+            'message': 'memory_system_created' if clear_db else 'memory_system_initialized',
+            'agent_id': agent_id,
+            'cleared': clear_db
+        }), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@manhattan_api.route("/process_raw", methods=["POST"])
+def process_raw():
+    """Process raw dialogues through LLM to extract memory entries.
+    
+    Flow: ADD_DIALOGUE --> LLM --> JSON RESPONSE (MEMORY) --> N Memory units --> Vector Store
+
+    Expects JSON body with:
+    - agent_id: str (required)
+    - dialogues: List[{speaker: str, content: str, timestamp?: str}] (required)
+    """
+    data = request.get_json(silent=True) or {}
+    agent_id = data.get('agent_id')
+    dialogues_data = data.get('dialogues', [])
+
+    if not agent_id:
+        return jsonify({'error': 'agent_id is required'}), 400
+    if not dialogues_data:
+        return jsonify({'error': 'dialogues list is required'}), 400
+
+    user_id, error = extract_and_validate_api_key(data)
+    if error:
+        return error
+
+    try:
+        memory_system = _get_or_create_memory_system(agent_id)
+        
+        memories_created = 0
+        for i, dlg in enumerate(dialogues_data):
+            speaker = dlg.get('speaker', 'unknown')
+            content = dlg.get('content', '')
+            timestamp = dlg.get('timestamp')
+            
+            if content:
+                # This triggers LLM processing via MemoryBuilder
+                memory_system.add_dialogue(
+                    speaker=speaker,
+                    content=content,
+                    timestamp=timestamp
+                )
+                memories_created += 1
+        
+        # Finalize any remaining buffered dialogues
+        memory_system.finalize()
+        
+        return jsonify({
+            'ok': True,
+            'message': 'dialogues_processed',
+            'agent_id': agent_id,
+            'dialogues_processed': memories_created
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@manhattan_api.route("/add_memory", methods=["POST"])
+def add_memory():
+    """Directly save memory entries without LLM processing.
+    
+    Expects MemoryEntry-like objects directly from user and stores in ChromaDB.
+
+    Expects JSON body with:
+    - agent_id: str (required)
+    - memories: List[{lossless_restatement: str, keywords?: List[str], timestamp?: str, 
+                      location?: str, persons?: List[str], entities?: List[str], topic?: str}]
+    """
+    data = request.get_json(silent=True) or {}
+    agent_id = data.get('agent_id')
+    memories_data = data.get('memories', [])
+
+    if not agent_id:
+        return jsonify({'error': 'agent_id is required'}), 400
+    if not memories_data:
+        return jsonify({'error': 'memories list is required'}), 400
+
+    user_id, error = extract_and_validate_api_key(data)
+    if error:
+        return error
+
+    try:
+        memory_system = _get_or_create_memory_system(agent_id)
+        
+        # Create MemoryEntry objects from the provided data
+        entries = []
+        entry_ids = []
+        for mem in memories_data:
+            if not mem.get('lossless_restatement'):
+                continue
+            
+            entry = MemoryEntry(
+                lossless_restatement=mem.get('lossless_restatement'),
+                keywords=mem.get('keywords', []),
+                timestamp=mem.get('timestamp'),
+                location=mem.get('location'),
+                persons=mem.get('persons', []),
+                entities=mem.get('entities', []),
+                topic=mem.get('topic')
+            )
+            entries.append(entry)
+            entry_ids.append(entry.entry_id)
+        
+        if entries:
+            # Add directly to vector store (bypassing LLM)
+            memory_system.vector_store.add_entries(entries)
+        
+        return jsonify({
+            'ok': True,
+            'message': 'memories_added',
+            'agent_id': agent_id,
+            'entries_added': len(entries),
+            'entry_ids': entry_ids
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@manhattan_api.route("/read_memory", methods=["POST"])
+def read_memory():
+    """Read/search memories using hybrid retrieval.
+    
+    Uses HybridRetriever for semantic + keyword + structured search.
+
+    Expects JSON body with:
+    - agent_id: str (required)
+    - query: str (required)
+    - top_k: int (optional, default=5)
+    - enable_reflection: bool (optional) - enable reflection-based additional retrieval
+    """
+    data = request.get_json(silent=True) or {}
+    agent_id = data.get('agent_id')
+    query = data.get('query')
+    top_k = data.get('top_k', 5)
+    enable_reflection = data.get('enable_reflection')
+
+    if not agent_id:
+        return jsonify({'error': 'agent_id is required'}), 400
+    if not query:
+        return jsonify({'error': 'query is required'}), 400
+
+    user_id, error = extract_and_validate_api_key(data)
+    if error:
+        return error
+
+    try:
+        memory_system = _get_or_create_memory_system(agent_id)
+        
+        # Use HybridRetriever for search
+        if enable_reflection is not None:
+            contexts = memory_system.hybrid_retriever.retrieve(query, enable_reflection=enable_reflection)
+        else:
+            contexts = memory_system.hybrid_retriever.retrieve(query)
+        
+        # Convert MemoryEntry objects to serializable dicts
+        results = []
+        for ctx in contexts[:top_k]:
+            results.append({
+                'entry_id': ctx.entry_id,
+                'lossless_restatement': ctx.lossless_restatement,
+                'keywords': ctx.keywords,
+                'timestamp': ctx.timestamp,
+                'location': ctx.location,
+                'persons': ctx.persons,
+                'entities': ctx.entities,
+                'topic': ctx.topic
+            })
+        
+        return jsonify({
+            'ok': True,
+            'agent_id': agent_id,
+            'query': query,
+            'results_count': len(results),
+            'results': results
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@manhattan_api.route("/get_context", methods=["POST"])
+def get_context():
+    """Get context-aware answer using SimpleMem's ask function.
+    
+    Full Q&A flow: Query -> HybridRetrieval -> AnswerGenerator -> Response
+
+    Expects JSON body with:
+    - agent_id: str (required)
+    - question: str (required)
+    """
+    data = request.get_json(silent=True) or {}
+    agent_id = data.get('agent_id')
+    question = data.get('question')
+
+    if not agent_id:
+        return jsonify({'error': 'agent_id is required'}), 400
+    if not question:
+        return jsonify({'error': 'question is required'}), 400
+
+    user_id, error = extract_and_validate_api_key(data)
+    if error:
+        return error
+
+    try:
+        memory_system = _get_or_create_memory_system(agent_id)
+        
+        # Use SimpleMem's ask() for full Q&A with memory context
+        answer = memory_system.ask(question)
+        
+        # Also get the contexts used for transparency
+        contexts = memory_system.hybrid_retriever.retrieve(question)
+        contexts_used = [
+            {
+                'entry_id': ctx.entry_id,
+                'lossless_restatement': ctx.lossless_restatement,
+                'topic': ctx.topic
+            }
+            for ctx in contexts[:5]
+        ]
+        
+        return jsonify({
+            'ok': True,
+            'agent_id': agent_id,
+            'question': question,
+            'answer': answer,
+            'contexts_used': contexts_used
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@manhattan_api.route("/update_memory", methods=["POST"])
+def update_memory():
+    """Update an existing memory entry in ChromaDB.
+
+    Expects JSON body with:
+    - agent_id: str (required)
+    - entry_id: str (required)
+    - updates: dict with updateable fields (lossless_restatement, keywords, timestamp, 
+               location, persons, entities, topic)
+    """
+    data = request.get_json(silent=True) or {}
+    agent_id = data.get('agent_id')
+    entry_id = data.get('entry_id')
+    updates = data.get('updates', {})
+
+    if not agent_id:
+        return jsonify({'error': 'agent_id is required'}), 400
+    if not entry_id:
+        return jsonify({'error': 'entry_id is required'}), 400
+    if not updates:
+        return jsonify({'error': 'updates dict is required'}), 400
+
+    user_id, error = extract_and_validate_api_key(data)
+    if error:
+        return error
+
+    try:
+        memory_system = _get_or_create_memory_system(agent_id)
+        
+        # Build the document content from lossless_restatement if provided
+        document_content = updates.get('lossless_restatement')
+        
+        # Build metadata from other fields
+        metadata = {}
+        updateable_metadata = ['timestamp', 'location', 'persons', 'entities', 'topic', 'keywords']
+        for field in updateable_metadata:
+            if field in updates:
+                value = updates[field]
+                # Convert lists to strings for ChromaDB metadata
+                if isinstance(value, list):
+                    metadata[field] = json.dumps(value)
+                else:
+                    metadata[field] = value
+        
+        # Use Agentic_RAG to update the document
+        if document_content:
+            # Update both document and metadata
+            memory_system.vector_store.rag.update_docs(
+                agent_ID=agent_id,
+                ids=[entry_id],
+                documents=[document_content],
+                metadatas=[metadata] if metadata else None
+            )
+        elif metadata:
+            # Update metadata only
+            memory_system.vector_store.rag.update_doc_metadata(
+                agent_ID=agent_id,
+                ids=[entry_id],
+                metadatas=[metadata]
+            )
+        
+        return jsonify({
+            'ok': True,
+            'message': 'memory_updated',
+            'agent_id': agent_id,
+            'entry_id': entry_id
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@manhattan_api.route("/delete_memory", methods=["POST"])
+def delete_memory():
+    """Delete memory entries from ChromaDB.
+
+    Expects JSON body with:
+    - agent_id: str (required)
+    - entry_ids: List[str] (required) - list of entry IDs to delete
+    """
+    data = request.get_json(silent=True) or {}
+    agent_id = data.get('agent_id')
+    entry_ids = data.get('entry_ids', [])
+
+    if not agent_id:
+        return jsonify({'error': 'agent_id is required'}), 400
+    if not entry_ids:
+        return jsonify({'error': 'entry_ids list is required'}), 400
+
+    user_id, error = extract_and_validate_api_key(data)
+    if error:
+        return error
+
+    try:
+        memory_system = _get_or_create_memory_system(agent_id)
+        
+        # Use Agentic_RAG to delete documents
+        result = memory_system.vector_store.rag.delete_chat_history(
+            agent_ID=agent_id,
+            ids=entry_ids
+        )
+        
+        return jsonify({
+            'ok': True,
+            'message': 'memories_deleted',
+            'agent_id': agent_id,
+            'deleted_count': len(entry_ids),
+            'entry_ids': entry_ids
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 # Simple demo chat endpoint for quick testing.
 @manhattan_api.route("/agent_chat", methods=["POST"])
 def agent_chat():
@@ -1315,7 +1768,7 @@ def agent_chat():
         )
         
         # Finalize any pending dialogues in buffer
-        memory_system.finalize()
+        # memory_system.finalize()
         
         # Ask SimpleMem system to generate response
         agent_response = memory_system.ask(user_message)
