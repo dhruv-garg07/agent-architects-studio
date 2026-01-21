@@ -1,0 +1,17 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "description": "MCP Server configuration for Antigravity (Claude Code) and other AI coding agents",
+    "mcpServers": {
+        "manhattan-memory": {
+            "command": "python",
+            "args": [
+                "api/mcp_memory_server.py"
+            ],
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "description": "Manhattan Memory MCP Server - AI-powered memory management with ChromaDB"
+        }
+    }
+}
