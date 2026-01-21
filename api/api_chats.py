@@ -554,7 +554,26 @@ def chat_and_store():
     print(f"[CHAT] Retrieved {len(chat_history)} history messages in {time.time() - history_start:.2f}s")
     
     # System prompt
-    system_prompt = "Provide helpful answers based on your knowledge."
+    system_prompt =  """You are a helpful AI assistant that provides well-formatted responses.
+Always format your responses using proper markdown-style formatting:
+
+1. Use **bold** for emphasis and important terms
+2. Use *italic* for subtle emphasis
+3. Use # for headers, ## for subheaders
+4. Use - or * for bullet points
+5. Use `inline code` for code snippets
+6. Use ```language for code blocks:
+
+```python
+def example():
+    print("This is a code block")
+Keep responses clear and well-structured
+
+Use proper spacing between sections
+
+Break down complex information into digestible chunks
+
+Respond helpfully and format your answers for maximum readability."""
     
     # Prepare final query
     final_query = user_msg
