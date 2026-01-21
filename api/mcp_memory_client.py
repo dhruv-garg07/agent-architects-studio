@@ -61,12 +61,12 @@ except ImportError:
 # Configuration
 # ============================================================================
 
-# Default API URL - your hosted render.com server
-DEFAULT_API_URL = "https://agent-architects-studio.onrender.com/manhattan"
+# Default API URL - hosted Manhattan Project API
+DEFAULT_API_URL = "https://www.themanhattanproject.ai"
 
 # Get configuration from environment
 API_URL = os.getenv("MANHATTAN_API_URL", DEFAULT_API_URL)
-API_KEY = os.getenv("MANHATTAN_API_KEY", "")
+API_KEY = os.getenv("MANHATTAN_API_KEY", "sk-tg5T-vIyYnuprwVPcgoHGfX37HBsfPwAvHkV3WFyhkE")
 
 # Timeout for API requests (seconds)
 REQUEST_TIMEOUT = 120.0

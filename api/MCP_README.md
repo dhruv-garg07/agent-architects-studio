@@ -237,7 +237,7 @@ Once configured, ask Claude to use these memory tools:
 The MCP client connects to our hosted API at:
 
 ```
-https://agent-architects-studio.onrender.com/manhattan
+https://www.themanhattanproject.ai
 ```
 
 Available endpoints (for direct API usage):

@@ -13,7 +13,7 @@
             ],
             "env": {
                 "MANHATTAN_API_KEY": "<YOUR_API_KEY>",
-                "MANHATTAN_API_URL": "https://agent-architects-studio.onrender.com/manhattan"
+                "MANHATTAN_API_URL": "https://www.themanhattanproject.ai"
             }
         }
     }
