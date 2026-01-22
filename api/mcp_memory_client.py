@@ -590,6 +590,230 @@ async def delete_agent(
 
 
 # ============================================================================
+# MCP TOOLS - Professional APIs (Analytics, Bulk Operations, Data Portability)
+# ============================================================================
+
+@mcp.tool()
+async def agent_stats(
+    agent_id: str
+) -> str:
+    """
+    Get comprehensive statistics for an agent.
+    
+    Returns detailed analytics including:
+    - Total memories and documents count
+    - Topic breakdown
+    - Unique persons and locations mentioned
+    - Agent status and timestamps
+    
+    Args:
+        agent_id: Unique identifier of the agent
+    
+    Returns:
+        JSON string with agent statistics
+    """
+    result = await call_api("agent_stats", {
+        "agent_id": agent_id
+    })
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+async def list_memories(
+    agent_id: str,
+    limit: int = 50,
+    offset: int = 0,
+    filter_topic: Optional[str] = None,
+    filter_person: Optional[str] = None
+) -> str:
+    """
+    List all memories for an agent with pagination.
+    
+    Supports filtering by topic or person mentioned.
+    Use offset for pagination through large memory sets.
+    
+    Args:
+        agent_id: Unique identifier of the agent
+        limit: Maximum memories to return (default: 50, max: 500)
+        offset: Number of memories to skip for pagination (default: 0)
+        filter_topic: Optional - filter by topic
+        filter_person: Optional - filter by person mentioned
+    
+    Returns:
+        JSON string with paginated memory list and metadata
+    """
+    payload = {
+        "agent_id": agent_id,
+        "limit": min(limit, 500),
+        "offset": offset
+    }
+    
+    if filter_topic:
+        payload["filter_topic"] = filter_topic
+    if filter_person:
+        payload["filter_person"] = filter_person
+    
+    result = await call_api("list_memories", payload)
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+async def bulk_add_memory(
+    agent_id: str,
+    memories: List[Dict[str, Any]]
+) -> str:
+    """
+    Bulk add multiple memories in a single request.
+    
+    Optimized for high-volume memory ingestion. Maximum 100 memories per request.
+    Returns individual success/error status for each memory.
+    
+    Args:
+        agent_id: Unique identifier of the agent
+        memories: List of memory objects, each with:
+                  - lossless_restatement: (required) The memory content
+                  - keywords: (optional) List of keywords
+                  - timestamp: (optional) ISO8601 timestamp
+                  - location: (optional) Location string
+                  - persons: (optional) List of person names
+                  - entities: (optional) List of entities
+                  - topic: (optional) Topic phrase
+    
+    Example:
+        bulk_add_memory(
+            agent_id="abc-123",
+            memories=[
+                {"lossless_restatement": "Alice prefers tea", "keywords": ["tea"], "persons": ["Alice"]},
+                {"lossless_restatement": "Bob likes coffee", "keywords": ["coffee"], "persons": ["Bob"]}
+            ]
+        )
+    
+    Returns:
+        JSON string with count of added memories and any errors
+    """
+    if len(memories) > 100:
+        return json.dumps({"ok": False, "error": "Maximum 100 memories per request"})
+    
+    result = await call_api("bulk_add_memory", {
+        "agent_id": agent_id,
+        "memories": memories
+    })
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+async def export_memories(
+    agent_id: str
+) -> str:
+    """
+    Export all memories for an agent as JSON backup.
+    
+    Returns a complete backup of all memories that can be:
+    - Saved for backup purposes
+    - Imported to another agent
+    - Used for analysis
+    
+    Args:
+        agent_id: Unique identifier of the agent to export
+    
+    Returns:
+        JSON string with complete memory backup including:
+        - Export metadata (version, timestamp)
+        - Agent information
+        - All memory entries with full metadata
+    """
+    result = await call_api("export_memories", {
+        "agent_id": agent_id
+    })
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+async def import_memories(
+    agent_id: str,
+    export_data: Dict[str, Any],
+    merge_mode: str = "append"
+) -> str:
+    """
+    Import memories from a previously exported backup.
+    
+    Supports two merge modes:
+    - 'append': Add imported memories to existing ones (default)
+    - 'replace': Clear existing memories before importing
+    
+    Args:
+        agent_id: Target agent to import memories into
+        export_data: The export object from export_memories containing:
+                     - version: Export format version
+                     - memories: List of memory objects to import
+        merge_mode: 'append' or 'replace' (default: 'append')
+    
+    Returns:
+        JSON string with import results including count and any errors
+    """
+    result = await call_api("import_memories", {
+        "agent_id": agent_id,
+        "export_data": export_data,
+        "merge_mode": merge_mode
+    })
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+async def memory_summary(
+    agent_id: str,
+    focus_topic: Optional[str] = None,
+    summary_length: str = "medium"
+) -> str:
+    """
+    Generate an AI-powered summary of the agent's memories.
+    
+    Uses LLM to analyze all stored memories and create a comprehensive
+    summary of key information, themes, and patterns.
+    
+    Args:
+        agent_id: Unique identifier of the agent
+        focus_topic: Optional - focus summary on a specific topic
+        summary_length: Length of summary - 'brief', 'medium', or 'detailed'
+                        - brief: 2-3 sentences
+                        - medium: 1-2 paragraphs (default)
+                        - detailed: 3-5 paragraphs with specific details
+    
+    Returns:
+        JSON string with AI-generated summary and metadata
+    """
+    payload = {
+        "agent_id": agent_id,
+        "summary_length": summary_length
+    }
+    
+    if focus_topic:
+        payload["focus_topic"] = focus_topic
+    
+    result = await call_api("memory_summary", payload)
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+async def api_usage() -> str:
+    """
+    Get API usage statistics for the authenticated user.
+    
+    Returns usage metrics including:
+    - Total agents (active/disabled)
+    - API call counts and limits
+    - Memory storage usage
+    - Rate limit information
+    - Current billing period
+    
+    Returns:
+        JSON string with usage statistics
+    """
+    result = await call_api("api_usage", {})
+    return json.dumps(result, indent=2)
+
+
+# ============================================================================
 # MCP RESOURCES - Information about the server
 # ============================================================================
 
@@ -598,27 +822,40 @@ async def get_server_info() -> str:
     """Get information about the MCP Memory Server."""
     return json.dumps({
         "name": "Manhattan Memory MCP Client",
-        "version": "1.0.0",
-        "description": "Lightweight MCP client for Manhattan Memory API",
+        "version": "2.0.0",
+        "description": "Production-ready MCP client for Manhattan Memory API",
         "api_url": API_URL,
         "authenticated": bool(API_KEY),
-        "available_tools": [
-            "create_memory",
-            "process_raw_dialogues",
-            "add_memory_direct",
-            "search_memory",
-            "get_context_answer",
-            "update_memory_entry",
-            "delete_memory_entries",
-            "chat_with_agent",
-            "create_agent",
-            "list_agents",
-            "get_agent",
-            "update_agent",
-            "disable_agent",
-            "enable_agent",
-            "delete_agent"
-        ]
+        "available_tools": {
+            "memory_operations": [
+                "create_memory",
+                "process_raw_dialogues",
+                "add_memory_direct",
+                "search_memory",
+                "get_context_answer",
+                "update_memory_entry",
+                "delete_memory_entries",
+                "chat_with_agent"
+            ],
+            "agent_crud": [
+                "create_agent",
+                "list_agents",
+                "get_agent",
+                "update_agent",
+                "disable_agent",
+                "enable_agent",
+                "delete_agent"
+            ],
+            "professional_apis": [
+                "agent_stats",
+                "list_memories",
+                "bulk_add_memory",
+                "export_memories",
+                "import_memories",
+                "memory_summary",
+                "api_usage"
+            ]
+        }
     }, indent=2)
 
 
@@ -628,7 +865,7 @@ async def check_health() -> str:
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             # Try to ping the server
-            response = await client.get(f"{API_URL.rsplit('/manhattan', 1)[0]}/ping")
+            response = await client.get(f"{API_URL}/ping")
             if response.status_code == 200:
                 return json.dumps({"status": "healthy", "api_url": API_URL})
             else:
@@ -644,12 +881,12 @@ async def check_health() -> str:
 def main():
     """Initialize and run the MCP server."""
     print("=" * 60)
-    print("  Manhattan Memory MCP Client")
+    print("  Manhattan Memory MCP Client v2.0")
     print("=" * 60)
     print(f"  API URL: {API_URL}")
     print(f"  API Key: {'✓ Configured' if API_KEY else '✗ Not set (set MANHATTAN_API_KEY)'}")
     print()
-    print("  Available Tools (Memory):")
+    print("  Memory Operations:")
     print("    • create_memory       - Initialize memory for an agent")
     print("    • process_raw_dialogues - Process dialogues via AI")
     print("    • add_memory_direct   - Direct memory save (no AI)")
@@ -659,7 +896,7 @@ def main():
     print("    • delete_memory_entries - Delete memories")
     print("    • chat_with_agent     - Chat with agent")
     print()
-    print("  Available Tools (Agent CRUD):")
+    print("  Agent CRUD:")
     print("    • create_agent        - Create a new agent")
     print("    • list_agents         - List all agents for user")
     print("    • get_agent           - Get agent by ID")
@@ -667,6 +904,15 @@ def main():
     print("    • disable_agent       - Soft delete (disable) agent")
     print("    • enable_agent        - Re-enable a disabled agent")
     print("    • delete_agent        - Permanently delete an agent")
+    print()
+    print("  Professional APIs:")
+    print("    • agent_stats         - Get agent analytics")
+    print("    • list_memories       - List memories (paginated)")
+    print("    • bulk_add_memory     - Bulk add up to 100 memories")
+    print("    • export_memories     - Export memories for backup")
+    print("    • import_memories     - Import from backup")
+    print("    • memory_summary      - AI-generated memory summary")
+    print("    • api_usage           - Get API usage statistics")
     print()
     print("  Running on stdio transport...")
     print("=" * 60)
@@ -676,3 +922,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
