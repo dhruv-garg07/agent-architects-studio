@@ -61,7 +61,38 @@ except ImportError as e:
     sys.exit(1)
 
 # Initialize FastMCP server
-mcp = FastMCP("manhattan-memory")
+mcp = FastMCP(
+    "manhattan-memory",
+    instructions="""
+You have access to a PERSISTENT MEMORY SYSTEM for storing and retrieving information.
+
+CRITICAL INSTRUCTIONS FOR AI AGENT:
+1. **USE MEMORY AUTOMATICALLY** - Do NOT ask the user if you should save or search. Just do it.
+2. **BE PROACTIVE** - If the user mentions a fact, deadline, or preference, save it immediately.
+3. **CHECK MEMORY FIRST** - Before answering questions about past context, potential deadlines, or details, search memory.
+
+🧠 WHEN TO USE THESE TOOLS:
+
+- **ALWAYS** check memory (`search_memory`) when the user asks about:
+  - Project details, deadlines, or status
+  - People, roles, or responsibilities
+  - Past decisions or discussions
+  - "What do you know about X?"
+
+- **ALWAYS** save to memory (`add_memory_direct` or `process_raw_dialogues`) when:
+  - User defines a new requirement or rule
+  - User shares a deadline or schedule
+  - User corrects you (save the correction)
+  - Key decisions are made
+
+⚙️ CONFIGURATION:
+- `agent_id`: This parameter is OPTIONAL.
+- **DEFAULT**: If you omit `agent_id`, it uses the enterprise agent (ID: `84aab1f8-3ea9-4c6a-aa3c-cd8eaa274a5e`).
+- **RECOMMENDATION**: Omit `agent_id` for 99% of requests. Only specify it if the user explicitly names a different agent.
+
+Your goal is to be a helpful, context-aware assistant that remembers everything without burdening the user.
+"""
+)
 
 # Cache for SimpleMem systems per agent
 _memory_systems_cache: Dict[str, SimpleMemSystem] = {}
