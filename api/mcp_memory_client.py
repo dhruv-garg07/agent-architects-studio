@@ -351,6 +351,245 @@ async def chat_with_agent(
 
 
 # ============================================================================
+# MCP TOOLS - Agent CRUD Operations (via Remote API)
+# ============================================================================
+
+async def call_api_get(endpoint: str, params: dict = None) -> dict:
+    """Make an authenticated GET request to the Manhattan API."""
+    url = f"{API_URL}/{endpoint}"
+    
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {API_KEY}"
+    }
+    
+    async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT) as client:
+        try:
+            response = await client.get(url, params=params, headers=headers)
+            response.raise_for_status()
+            return response.json()
+        except httpx.HTTPStatusError as e:
+            return {
+                "ok": False,
+                "error": f"HTTP {e.response.status_code}: {e.response.text}"
+            }
+        except httpx.RequestError as e:
+            return {
+                "ok": False,
+                "error": f"Request failed: {str(e)}"
+            }
+        except Exception as e:
+            return {
+                "ok": False,
+                "error": str(e)
+            }
+
+
+@mcp.tool()
+async def create_agent(
+    agent_name: str,
+    agent_slug: str,
+    permissions: Dict[str, Any] = None,
+    limits: Dict[str, Any] = None,
+    description: Optional[str] = None,
+    metadata: Optional[Dict[str, Any]] = None
+) -> str:
+    """
+    Create a new agent in the Manhattan system.
+    
+    Creates an agent record in Supabase and initializes ChromaDB collections
+    for storing chat history and file data.
+    
+    Args:
+        agent_name: Human-readable name for the agent (e.g., 'Customer Support Bot')
+        agent_slug: URL-friendly identifier (e.g., 'customer-support-bot')
+        permissions: Dict of permissions the agent has (default: {})
+        limits: Dict of rate limits/quotas for the agent (default: {})
+        description: Optional description of the agent's purpose
+        metadata: Optional additional metadata dictionary
+    
+    Returns:
+        JSON string with the created agent record including agent_id
+    
+    Example:
+        create_agent(
+            agent_name="My Assistant",
+            agent_slug="my-assistant",
+            permissions={"chat": True, "memory": True},
+            limits={"requests_per_day": 1000},
+            description="A helpful assistant for my project"
+        )
+    """
+    payload = {
+        "agent_name": agent_name,
+        "agent_slug": agent_slug,
+        "permissions": permissions or {},
+        "limits": limits or {},
+    }
+    
+    if description:
+        payload["description"] = description
+    if metadata:
+        payload["metadata"] = metadata
+    
+    result = await call_api("create_agent", payload)
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+async def list_agents(
+    status: Optional[str] = None
+) -> str:
+    """
+    List all agents owned by the authenticated user.
+    
+    Returns a list of all agents associated with your API key.
+    Optionally filter by status.
+    
+    Args:
+        status: Optional filter by status ('active', 'disabled', 'pending')
+    
+    Returns:
+        JSON string with list of agent records
+    """
+    params = {}
+    if status:
+        params["status"] = status
+    
+    result = await call_api_get("list_agents", params)
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+async def get_agent(
+    agent_id: str
+) -> str:
+    """
+    Get details of a specific agent by ID.
+    
+    Retrieves the full agent record including configuration,
+    status, and metadata.
+    
+    Args:
+        agent_id: Unique identifier of the agent to retrieve
+    
+    Returns:
+        JSON string with the agent record
+    """
+    # Note: The API expects agent_id in the request body for GET
+    result = await call_api("get_agent", {"agent_id": agent_id})
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+async def update_agent(
+    agent_id: str,
+    updates: Dict[str, Any]
+) -> str:
+    """
+    Update an existing agent's configuration.
+    
+    Only specific fields can be updated: agent_name, agent_slug, 
+    status, description, and metadata.
+    
+    Args:
+        agent_id: Unique identifier of the agent to update
+        updates: Dictionary of fields to update. Allowed fields:
+                 - agent_name: New name for the agent
+                 - agent_slug: New URL-friendly identifier
+                 - status: New status ('active', 'disabled', 'pending')
+                 - description: New description
+                 - metadata: New metadata dictionary
+    
+    Returns:
+        JSON string with the updated agent record
+    
+    Example:
+        update_agent(
+            agent_id="abc-123",
+            updates={
+                "agent_name": "Updated Assistant",
+                "description": "An improved version of my assistant"
+            }
+        )
+    """
+    result = await call_api("update_agent", {
+        "agent_id": agent_id,
+        "updates": updates
+    })
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+async def disable_agent(
+    agent_id: str
+) -> str:
+    """
+    Soft delete (disable) an agent.
+    
+    This sets the agent's status to 'disabled' without permanently
+    deleting it. The agent can be re-enabled later using enable_agent.
+    
+    Args:
+        agent_id: Unique identifier of the agent to disable
+    
+    Returns:
+        JSON string with success status
+    """
+    result = await call_api("disable_agent", {
+        "agent_id": agent_id
+    })
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+async def enable_agent(
+    agent_id: str
+) -> str:
+    """
+    Enable a previously disabled agent.
+    
+    Restores an agent's status to 'active' so it can be used again.
+    
+    Args:
+        agent_id: Unique identifier of the agent to enable
+    
+    Returns:
+        JSON string with success status
+    """
+    result = await call_api("enable_agent", {
+        "agent_id": agent_id
+    })
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+async def delete_agent(
+    agent_id: str
+) -> str:
+    """
+    Permanently delete an agent.
+    
+    WARNING: This action is irreversible! It will permanently delete:
+    - The agent record from the database
+    - All associated ChromaDB collections (chat history, file data)
+    - All stored memories for this agent
+    
+    Use disable_agent for a reversible soft-delete instead.
+    
+    Args:
+        agent_id: Unique identifier of the agent to delete
+    
+    Returns:
+        JSON string with deletion status
+    """
+    result = await call_api("delete_agent", {
+        "agent_id": agent_id
+    })
+    return json.dumps(result, indent=2)
+
+
+# ============================================================================
 # MCP RESOURCES - Information about the server
 # ============================================================================
 
@@ -371,7 +610,14 @@ async def get_server_info() -> str:
             "get_context_answer",
             "update_memory_entry",
             "delete_memory_entries",
-            "chat_with_agent"
+            "chat_with_agent",
+            "create_agent",
+            "list_agents",
+            "get_agent",
+            "update_agent",
+            "disable_agent",
+            "enable_agent",
+            "delete_agent"
         ]
     }, indent=2)
 
@@ -403,7 +649,7 @@ def main():
     print(f"  API URL: {API_URL}")
     print(f"  API Key: {'✓ Configured' if API_KEY else '✗ Not set (set MANHATTAN_API_KEY)'}")
     print()
-    print("  Available Tools:")
+    print("  Available Tools (Memory):")
     print("    • create_memory       - Initialize memory for an agent")
     print("    • process_raw_dialogues - Process dialogues via AI")
     print("    • add_memory_direct   - Direct memory save (no AI)")
@@ -412,6 +658,15 @@ def main():
     print("    • update_memory_entry - Update existing memory")
     print("    • delete_memory_entries - Delete memories")
     print("    • chat_with_agent     - Chat with agent")
+    print()
+    print("  Available Tools (Agent CRUD):")
+    print("    • create_agent        - Create a new agent")
+    print("    • list_agents         - List all agents for user")
+    print("    • get_agent           - Get agent by ID")
+    print("    • update_agent        - Update agent configuration")
+    print("    • disable_agent       - Soft delete (disable) agent")
+    print("    • enable_agent        - Re-enable a disabled agent")
+    print("    • delete_agent        - Permanently delete an agent")
     print()
     print("  Running on stdio transport...")
     print("=" * 60)
