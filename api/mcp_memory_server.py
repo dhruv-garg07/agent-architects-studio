@@ -66,12 +66,454 @@ mcp = FastMCP("manhattan-memory")
 # Cache for SimpleMem systems per agent
 _memory_systems_cache: Dict[str, SimpleMemSystem] = {}
 
+# Current agent context for this session
+_current_agent_id: Optional[str] = None
+
+
+# ============================================================================
+# MCP Agents Service - CRUD for managing agent_ids in Supabase
+# ============================================================================
+
+class McpAgentsService:
+    """
+    Service class for CRUD operations on the `mcp_agents` table.
+    Each agent represents a memory context that users can switch between.
+    """
+    
+    TABLE_NAME = "mcp_agents"
+    
+    def __init__(self):
+        from supabase import create_client
+        supabase_url = os.getenv("SUPABASE_URL")
+        supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+        
+        if not supabase_url or not supabase_key:
+            self.client = None
+            print("Warning: Supabase credentials not set. Agent management will work locally only.")
+        else:
+            self.client = create_client(supabase_url, supabase_key)
+    
+    def create_agent(
+        self,
+        user_id: str,
+        agent_id: str,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Create a new MCP agent."""
+        import uuid
+        from datetime import datetime
+        
+        record = {
+            "id": str(uuid.uuid4()),
+            "user_id": user_id,
+            "agent_id": agent_id,
+            "name": name or agent_id,
+            "description": description or "",
+            "metadata": json.dumps(metadata) if metadata else "{}",
+            "status": "active",
+            "is_current": False,
+            "created_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.utcnow().isoformat(),
+        }
+        
+        if self.client:
+            # Check if agent_id already exists for this user
+            existing = self.client.table(self.TABLE_NAME).select("id").eq("user_id", user_id).eq("agent_id", agent_id).execute()
+            if existing.data:
+                raise ValueError(f"Agent '{agent_id}' already exists for this user")
+            
+            res = self.client.table(self.TABLE_NAME).insert(record).execute()
+            if res.data:
+                return res.data[0]
+        
+        return record  # Fallback for local testing
+    
+    def get_agent(self, user_id: str, agent_id: str) -> Optional[Dict[str, Any]]:
+        """Get a specific agent by agent_id."""
+        if self.client:
+            res = self.client.table(self.TABLE_NAME).select("*").eq("user_id", user_id).eq("agent_id", agent_id).limit(1).execute()
+            if res.data:
+                agent = res.data[0]
+                if agent.get("metadata") and isinstance(agent["metadata"], str):
+                    try:
+                        agent["metadata"] = json.loads(agent["metadata"])
+                    except:
+                        pass
+                return agent
+        return None
+    
+    def list_agents(self, user_id: str, status: Optional[str] = None) -> List[Dict[str, Any]]:
+        """List all agents for a user."""
+        if self.client:
+            query = self.client.table(self.TABLE_NAME).select("*").eq("user_id", user_id)
+            if status:
+                query = query.eq("status", status)
+            res = query.order("created_at", desc=True).execute()
+            agents = res.data or []
+            for agent in agents:
+                if agent.get("metadata") and isinstance(agent["metadata"], str):
+                    try:
+                        agent["metadata"] = json.loads(agent["metadata"])
+                    except:
+                        pass
+            return agents
+        return []
+    
+    def update_agent(self, user_id: str, agent_id: str, updates: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Update an agent."""
+        from datetime import datetime
+        
+        if not updates:
+            raise ValueError("No updates provided")
+        
+        updates["updated_at"] = datetime.utcnow().isoformat()
+        
+        if "metadata" in updates and isinstance(updates["metadata"], dict):
+            updates["metadata"] = json.dumps(updates["metadata"])
+        
+        if self.client:
+            res = self.client.table(self.TABLE_NAME).update(updates).eq("user_id", user_id).eq("agent_id", agent_id).execute()
+            if res.data:
+                agent = res.data[0]
+                if agent.get("metadata") and isinstance(agent["metadata"], str):
+                    try:
+                        agent["metadata"] = json.loads(agent["metadata"])
+                    except:
+                        pass
+                return agent
+        return None
+    
+    def delete_agent(self, user_id: str, agent_id: str) -> bool:
+        """Delete an agent."""
+        if self.client:
+            res = self.client.table(self.TABLE_NAME).delete().eq("user_id", user_id).eq("agent_id", agent_id).execute()
+            return bool(res.data)
+        return False
+    
+    def set_current_agent(self, user_id: str, agent_id: str) -> bool:
+        """Set an agent as the current/default for the user."""
+        from datetime import datetime
+        
+        if self.client:
+            # Clear is_current from all agents
+            self.client.table(self.TABLE_NAME).update({"is_current": False}).eq("user_id", user_id).execute()
+            # Set is_current for this agent
+            res = self.client.table(self.TABLE_NAME).update({
+                "is_current": True, 
+                "updated_at": datetime.utcnow().isoformat()
+            }).eq("user_id", user_id).eq("agent_id", agent_id).execute()
+            return bool(res.data)
+        return False
+    
+    def get_current_agent(self, user_id: str) -> Optional[Dict[str, Any]]:
+        """Get the current/default agent for the user."""
+        if self.client:
+            # Try to get current agent
+            res = self.client.table(self.TABLE_NAME).select("*").eq("user_id", user_id).eq("is_current", True).limit(1).execute()
+            if res.data:
+                agent = res.data[0]
+            else:
+                # Fallback to most recent
+                res = self.client.table(self.TABLE_NAME).select("*").eq("user_id", user_id).order("created_at", desc=True).limit(1).execute()
+                if res.data:
+                    agent = res.data[0]
+                else:
+                    return None
+            
+            if agent.get("metadata") and isinstance(agent["metadata"], str):
+                try:
+                    agent["metadata"] = json.loads(agent["metadata"])
+                except:
+                    pass
+            return agent
+        return None
+
+
+# Initialize the agents service
+_agents_service = McpAgentsService()
+
+# Default user_id for MCP (can be overridden by environment variable)
+_default_user_id = os.getenv("MCP_USER_ID", "mcp-default-user")
+
 
 def _get_or_create_memory_system(agent_id: str, clear_db: bool = False) -> SimpleMemSystem:
     """Get cached SimpleMem system or create new one for the agent."""
     if agent_id not in _memory_systems_cache or clear_db:
         _memory_systems_cache[agent_id] = create_system(agent_id=agent_id, clear_db=clear_db)
     return _memory_systems_cache[agent_id]
+
+
+# ============================================================================
+# MCP TOOLS - Agent Management (CRUD for mcp_agents)
+# ============================================================================
+
+@mcp.tool()
+async def register_agent(
+    agent_id: str,
+    name: str = None,
+    description: str = ""
+) -> str:
+    """
+    Register a new memory agent in the system.
+    
+    Each agent has its own separate memory space. Use different agents
+    for different projects, contexts, or purposes.
+    
+    Args:
+        agent_id: Unique identifier (e.g., 'project-notes', 'daily-journal')
+                  Must contain only letters, numbers, hyphens, and underscores.
+        name: Human-readable name (optional, defaults to agent_id)
+        description: Description of the agent's purpose (optional)
+    
+    Returns:
+        JSON string with the created agent details
+    """
+    global _current_agent_id
+    
+    try:
+        import re
+        if not re.match(r'^[a-zA-Z0-9_-]+$', agent_id):
+            return json.dumps({
+                'ok': False, 
+                'error': 'agent_id must contain only alphanumeric characters, hyphens, and underscores'
+            })
+        
+        agent = _agents_service.create_agent(
+            user_id=_default_user_id,
+            agent_id=agent_id,
+            name=name or agent_id,
+            description=description
+        )
+        
+        # Set as current agent
+        _current_agent_id = agent_id
+        _agents_service.set_current_agent(_default_user_id, agent_id)
+        
+        # Also initialize the memory system
+        _get_or_create_memory_system(agent_id)
+        
+        return json.dumps({
+            'ok': True,
+            'message': 'agent_registered',
+            'agent': agent,
+            'current_agent': agent_id
+        })
+    except ValueError as e:
+        return json.dumps({'ok': False, 'error': str(e)})
+    except Exception as e:
+        return json.dumps({'ok': False, 'error': str(e)})
+
+
+@mcp.tool()
+async def list_my_agents() -> str:
+    """
+    List all your registered memory agents.
+    
+    Shows all agents you've created with their names, descriptions,
+    and status. Use this to see what memory contexts are available.
+    
+    Returns:
+        JSON string with list of all your agents
+    """
+    try:
+        agents = _agents_service.list_agents(user_id=_default_user_id)
+        return json.dumps({
+            'ok': True,
+            'agents': agents,
+            'count': len(agents),
+            'current_agent': _current_agent_id
+        })
+    except Exception as e:
+        return json.dumps({'ok': False, 'error': str(e)})
+
+
+@mcp.tool()
+async def get_agent_details(agent_id: str) -> str:
+    """
+    Get details about a specific memory agent.
+    
+    Args:
+        agent_id: The agent identifier to look up
+    
+    Returns:
+        JSON string with agent details (name, description, metadata, etc.)
+    """
+    try:
+        agent = _agents_service.get_agent(user_id=_default_user_id, agent_id=agent_id)
+        if agent:
+            return json.dumps({'ok': True, 'agent': agent})
+        return json.dumps({'ok': False, 'error': 'agent_not_found'})
+    except Exception as e:
+        return json.dumps({'ok': False, 'error': str(e)})
+
+
+@mcp.tool()
+async def update_agent_info(
+    agent_id: str,
+    name: str = None,
+    description: str = None
+) -> str:
+    """
+    Update a memory agent's details.
+    
+    Args:
+        agent_id: The agent to update
+        name: New name (optional)
+        description: New description (optional)
+    
+    Returns:
+        JSON string with updated agent details
+    """
+    try:
+        updates = {}
+        if name is not None:
+            updates["name"] = name
+        if description is not None:
+            updates["description"] = description
+        
+        if not updates:
+            return json.dumps({'ok': False, 'error': 'No updates provided'})
+        
+        agent = _agents_service.update_agent(
+            user_id=_default_user_id,
+            agent_id=agent_id,
+            updates=updates
+        )
+        
+        if agent:
+            return json.dumps({'ok': True, 'agent': agent})
+        return json.dumps({'ok': False, 'error': 'agent_not_found'})
+    except Exception as e:
+        return json.dumps({'ok': False, 'error': str(e)})
+
+
+@mcp.tool()
+async def remove_agent(agent_id: str, delete_memories: bool = False) -> str:
+    """
+    Remove a memory agent from the system.
+    
+    WARNING: This permanently removes the agent. Set delete_memories=True
+    to also delete all memories associated with this agent.
+    
+    Args:
+        agent_id: The agent to delete
+        delete_memories: Also delete all memories in this agent (default: False)
+    
+    Returns:
+        JSON string with deletion status
+    """
+    global _current_agent_id
+    
+    try:
+        # Delete from Supabase
+        deleted = _agents_service.delete_agent(user_id=_default_user_id, agent_id=agent_id)
+        
+        # Optionally delete ChromaDB collection
+        if delete_memories and agent_id in _memory_systems_cache:
+            try:
+                # Clear the memory system
+                del _memory_systems_cache[agent_id]
+            except:
+                pass
+        
+        # Clear current agent if deleted
+        if _current_agent_id == agent_id:
+            _current_agent_id = None
+        
+        return json.dumps({
+            'ok': True,
+            'message': 'agent_removed',
+            'agent_id': agent_id,
+            'memories_deleted': delete_memories,
+            'current_agent': _current_agent_id
+        })
+    except Exception as e:
+        return json.dumps({'ok': False, 'error': str(e)})
+
+
+@mcp.tool()
+async def switch_to_agent(agent_id: str) -> str:
+    """
+    Switch to a different memory agent context.
+    
+    After switching, subsequent memory operations will use this agent
+    by default when agent_id is not explicitly specified.
+    
+    Args:
+        agent_id: The agent to switch to
+    
+    Returns:
+        JSON string confirming the switch
+    """
+    global _current_agent_id
+    
+    try:
+        # Verify agent exists
+        agent = _agents_service.get_agent(user_id=_default_user_id, agent_id=agent_id)
+        
+        if agent:
+            _current_agent_id = agent_id
+            _agents_service.set_current_agent(_default_user_id, agent_id)
+            
+            # Initialize memory system if not already
+            _get_or_create_memory_system(agent_id)
+            
+            return json.dumps({
+                'ok': True,
+                'message': f'Switched to agent: {agent_id}',
+                'current_agent': agent_id,
+                'agent': agent
+            })
+        else:
+            return json.dumps({
+                'ok': False,
+                'error': f"Agent '{agent_id}' not found. Create it first with register_agent()",
+                'current_agent': _current_agent_id
+            })
+    except Exception as e:
+        return json.dumps({'ok': False, 'error': str(e)})
+
+
+@mcp.tool()
+async def current_agent() -> str:
+    """
+    Get the current/active memory agent context.
+    
+    Returns the agent that is currently being used for memory operations.
+    
+    Returns:
+        JSON string with current agent details
+    """
+    global _current_agent_id
+    
+    try:
+        if _current_agent_id:
+            agent = _agents_service.get_agent(user_id=_default_user_id, agent_id=_current_agent_id)
+            return json.dumps({
+                'ok': True,
+                'current_agent': _current_agent_id,
+                'agent': agent
+            })
+        
+        # Try to get from server
+        agent = _agents_service.get_current_agent(user_id=_default_user_id)
+        if agent:
+            _current_agent_id = agent.get('agent_id')
+            return json.dumps({
+                'ok': True,
+                'current_agent': _current_agent_id,
+                'agent': agent
+            })
+        
+        return json.dumps({
+            'ok': True,
+            'current_agent': None,
+            'message': 'No current agent set. Use switch_to_agent() or register_agent() first.'
+        })
+    except Exception as e:
+        return json.dumps({'ok': False, 'error': str(e)})
 
 
 # ============================================================================
@@ -485,18 +927,30 @@ async def get_server_info() -> str:
     """Get information about the MCP Memory Server."""
     return json.dumps({
         'name': 'Manhattan Memory MCP Server',
-        'version': '1.0.0',
-        'description': 'MCP server for Memory CRUD operations using SimpleMem and ChromaDB',
-        'available_tools': [
-            'create_memory',
-            'process_raw_dialogues',
-            'add_memory_direct',
-            'search_memory',
-            'get_context_answer',
-            'update_memory_entry',
-            'delete_memory_entries',
-            'list_all_memories'
-        ]
+        'version': '2.0.0',
+        'description': 'MCP server for Memory CRUD operations with agent management',
+        'current_agent': _current_agent_id,
+        'available_tools': {
+            'agent_management': [
+                'register_agent',
+                'list_my_agents',
+                'get_agent_details',
+                'update_agent_info',
+                'remove_agent',
+                'switch_to_agent',
+                'current_agent'
+            ],
+            'memory_operations': [
+                'create_memory',
+                'process_raw_dialogues',
+                'add_memory_direct',
+                'search_memory',
+                'get_context_answer',
+                'update_memory_entry',
+                'delete_memory_entries',
+                'list_all_memories'
+            ]
+        }
     })
 
 
@@ -506,11 +960,31 @@ async def get_server_info() -> str:
 
 def main():
     """Initialize and run the MCP server."""
-    print("Starting Manhattan Memory MCP Server...")
-    print("Tools available: create_memory, process_raw_dialogues, add_memory_direct,")
-    print("                 search_memory, get_context_answer, update_memory_entry,")
-    print("                 delete_memory_entries, list_all_memories")
-    print("\nRunning on stdio transport...")
+    print("=" * 60)
+    print("  Manhattan Memory MCP Server v2.0")
+    print("=" * 60)
+    print()
+    print("Agent Management Tools:")
+    print("  • register_agent       - Create a new memory agent")
+    print("  • list_my_agents       - List all your agents")
+    print("  • get_agent_details    - Get agent info")
+    print("  • update_agent_info    - Update agent details")
+    print("  • remove_agent         - Delete an agent")
+    print("  • switch_to_agent      - Switch context to an agent")
+    print("  • current_agent        - Get current agent")
+    print()
+    print("Memory Operations:")
+    print("  • create_memory        - Initialize memory system")
+    print("  • process_raw_dialogues - Process dialogues via LLM")
+    print("  • add_memory_direct    - Add memories directly")
+    print("  • search_memory        - Hybrid search")
+    print("  • get_context_answer   - Q&A with memory context")
+    print("  • update_memory_entry  - Update memory")
+    print("  • delete_memory_entries - Delete memories")
+    print("  • list_all_memories    - List all memories")
+    print()
+    print("Running on stdio transport...")
+    print("=" * 60)
     mcp.run(transport="stdio")
 
 
