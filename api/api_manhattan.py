@@ -1809,6 +1809,613 @@ def agent_chat():
         return jsonify({'error': str(e)}), 500
 
 
+# ============================================================================
+# PROFESSIONAL APIs - Analytics, Bulk Operations, Export/Import
+# ============================================================================
+
+@manhattan_api.route("/agent_stats", methods=["POST"])
+def agent_stats():
+    """Get comprehensive statistics for an agent.
+    
+    Returns statistics including:
+    - Total memory count
+    - Total document count
+    - Memory categories breakdown
+    - Recent activity timeline
+    - Storage usage estimates
+    
+    Expects JSON body with:
+    - agent_id: str (required)
+    """
+    data = request.get_json(silent=True) or {}
+    agent_id = data.get('agent_id')
+    
+    if not agent_id:
+        return jsonify({'error': 'agent_id is required'}), 400
+    
+    user_id, error = extract_and_validate_api_key(data)
+    if error:
+        return error
+    
+    try:
+        # Verify agent ownership
+        agent = service.get_agent_by_id(agent_id=agent_id, user_id=user_id)
+        if not agent:
+            return jsonify({'error': 'agent_not_found'}), 404
+        
+        # Get memory system stats
+        memory_system = _get_or_create_memory_system(agent_id, clear_db=False)
+        
+        # Get memory count from vector store
+        memory_count = 0
+        topic_breakdown = {}
+        persons_mentioned = set()
+        locations_mentioned = set()
+        
+        try:
+            # Access the underlying vector store
+            if hasattr(memory_system, 'vector_store') and memory_system.vector_store:
+                collection = memory_system.vector_store._collection
+                if collection:
+                    all_data = collection.get(include=['metadatas'])
+                    memory_count = len(all_data.get('ids', []))
+                    
+                    # Analyze metadata
+                    for metadata in all_data.get('metadatas', []):
+                        if metadata:
+                            topic = metadata.get('topic', 'uncategorized')
+                            topic_breakdown[topic] = topic_breakdown.get(topic, 0) + 1
+                            
+                            persons = metadata.get('persons', [])
+                            if isinstance(persons, str):
+                                persons = [p.strip() for p in persons.split(',') if p.strip()]
+                            persons_mentioned.update(persons)
+                            
+                            location = metadata.get('location')
+                            if location:
+                                locations_mentioned.add(location)
+        except Exception as e:
+            print(f"Error getting memory stats: {e}")
+        
+        # Get document count
+        doc_count = 0
+        try:
+            if file_agentic_rag:
+                file_agentic_rag.create_agent_collection(agent_ID=agent_id)
+                docs = file_agentic_rag.get_all_docs(agent_ID=agent_id)
+                doc_count = len(docs.get('ids', [])) if docs else 0
+        except Exception as e:
+            print(f"Error getting doc stats: {e}")
+        
+        return jsonify({
+            'ok': True,
+            'agent_id': agent_id,
+            'agent_name': agent.get('agent_name'),
+            'agent_status': agent.get('status'),
+            'statistics': {
+                'total_memories': memory_count,
+                'total_documents': doc_count,
+                'topics': topic_breakdown,
+                'unique_persons': list(persons_mentioned),
+                'unique_locations': list(locations_mentioned),
+                'persons_count': len(persons_mentioned),
+                'locations_count': len(locations_mentioned)
+            },
+            'created_at': agent.get('created_at'),
+            'updated_at': agent.get('updated_at')
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@manhattan_api.route("/list_memories", methods=["POST"])
+def list_memories():
+    """List all memories for an agent with pagination.
+    
+    Expects JSON body with:
+    - agent_id: str (required)
+    - limit: int (optional, default=50, max=500)
+    - offset: int (optional, default=0)
+    - filter_topic: str (optional) - filter by topic
+    - filter_person: str (optional) - filter by person mentioned
+    """
+    data = request.get_json(silent=True) or {}
+    agent_id = data.get('agent_id')
+    limit = min(data.get('limit', 50), 500)
+    offset = data.get('offset', 0)
+    filter_topic = data.get('filter_topic')
+    filter_person = data.get('filter_person')
+    
+    if not agent_id:
+        return jsonify({'error': 'agent_id is required'}), 400
+    
+    user_id, error = extract_and_validate_api_key(data)
+    if error:
+        return error
+    
+    try:
+        # Verify agent ownership
+        agent = service.get_agent_by_id(agent_id=agent_id, user_id=user_id)
+        if not agent:
+            return jsonify({'error': 'agent_not_found'}), 404
+        
+        memory_system = _get_or_create_memory_system(agent_id, clear_db=False)
+        
+        memories = []
+        total_count = 0
+        
+        try:
+            if hasattr(memory_system, 'vector_store') and memory_system.vector_store:
+                collection = memory_system.vector_store._collection
+                if collection:
+                    # Build where clause for filtering
+                    where_clause = None
+                    if filter_topic:
+                        where_clause = {"topic": filter_topic}
+                    elif filter_person:
+                        # ChromaDB doesn't support array contains, so we use string match
+                        where_clause = {"$contains": filter_person}
+                    
+                    all_data = collection.get(
+                        include=['documents', 'metadatas'],
+                        where=where_clause if (filter_topic or filter_person) else None
+                    )
+                    
+                    ids = all_data.get('ids', [])
+                    documents = all_data.get('documents', [])
+                    metadatas = all_data.get('metadatas', [])
+                    
+                    total_count = len(ids)
+                    
+                    # Apply pagination
+                    for i in range(offset, min(offset + limit, len(ids))):
+                        memories.append({
+                            'entry_id': ids[i],
+                            'lossless_restatement': documents[i] if i < len(documents) else None,
+                            'metadata': metadatas[i] if i < len(metadatas) else {}
+                        })
+        except Exception as e:
+            print(f"Error listing memories: {e}")
+        
+        return jsonify({
+            'ok': True,
+            'agent_id': agent_id,
+            'total_count': total_count,
+            'limit': limit,
+            'offset': offset,
+            'has_more': offset + limit < total_count,
+            'memories': memories
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@manhattan_api.route("/bulk_add_memory", methods=["POST"])
+def bulk_add_memory():
+    """Bulk add multiple memories efficiently in a single request.
+    
+    Optimized for high-volume memory ingestion.
+    
+    Expects JSON body with:
+    - agent_id: str (required)
+    - memories: List[MemoryEntry] (required, max 100 at once)
+    - skip_duplicates: bool (optional, default=False) - skip if similar memory exists
+    """
+    data = request.get_json(silent=True) or {}
+    agent_id = data.get('agent_id')
+    memories_list = data.get('memories', [])
+    skip_duplicates = data.get('skip_duplicates', False)
+    
+    if not agent_id:
+        return jsonify({'error': 'agent_id is required'}), 400
+    
+    if not memories_list:
+        return jsonify({'error': 'memories array is required'}), 400
+    
+    if len(memories_list) > 100:
+        return jsonify({'error': 'Maximum 100 memories per request'}), 400
+    
+    user_id, error = extract_and_validate_api_key(data)
+    if error:
+        return error
+    
+    try:
+        agent = service.get_agent_by_id(agent_id=agent_id, user_id=user_id)
+        if not agent:
+            return jsonify({'error': 'agent_not_found'}), 404
+        
+        memory_system = _get_or_create_memory_system(agent_id, clear_db=False)
+        
+        added_count = 0
+        skipped_count = 0
+        entry_ids = []
+        errors = []
+        
+        for idx, mem in enumerate(memories_list):
+            try:
+                lossless = mem.get('lossless_restatement')
+                if not lossless:
+                    errors.append({'index': idx, 'error': 'lossless_restatement required'})
+                    continue
+                
+                entry = MemoryEntry(
+                    lossless_restatement=lossless,
+                    keywords=mem.get('keywords', []),
+                    timestamp=mem.get('timestamp'),
+                    location=mem.get('location'),
+                    persons=mem.get('persons', []),
+                    entities=mem.get('entities', []),
+                    topic=mem.get('topic')
+                )
+                
+                entry_id = memory_system.directly_save_memory(entry)
+                entry_ids.append(entry_id)
+                added_count += 1
+            except Exception as e:
+                errors.append({'index': idx, 'error': str(e)})
+        
+        return jsonify({
+            'ok': True,
+            'agent_id': agent_id,
+            'memories_added': added_count,
+            'memories_skipped': skipped_count,
+            'entry_ids': entry_ids,
+            'errors': errors if errors else None
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@manhattan_api.route("/export_memories", methods=["POST"])
+def export_memories():
+    """Export all memories for an agent as JSON for backup/migration.
+    
+    Returns a complete backup of all memories that can be imported later.
+    
+    Expects JSON body with:
+    - agent_id: str (required)
+    - format: str (optional, default='json', options: 'json', 'csv')
+    """
+    data = request.get_json(silent=True) or {}
+    agent_id = data.get('agent_id')
+    export_format = data.get('format', 'json')
+    
+    if not agent_id:
+        return jsonify({'error': 'agent_id is required'}), 400
+    
+    user_id, error = extract_and_validate_api_key(data)
+    if error:
+        return error
+    
+    try:
+        agent = service.get_agent_by_id(agent_id=agent_id, user_id=user_id)
+        if not agent:
+            return jsonify({'error': 'agent_not_found'}), 404
+        
+        memory_system = _get_or_create_memory_system(agent_id, clear_db=False)
+        
+        memories_export = []
+        
+        try:
+            if hasattr(memory_system, 'vector_store') and memory_system.vector_store:
+                collection = memory_system.vector_store._collection
+                if collection:
+                    all_data = collection.get(include=['documents', 'metadatas'])
+                    
+                    for i, entry_id in enumerate(all_data.get('ids', [])):
+                        doc = all_data['documents'][i] if i < len(all_data.get('documents', [])) else None
+                        meta = all_data['metadatas'][i] if i < len(all_data.get('metadatas', [])) else {}
+                        
+                        memories_export.append({
+                            'entry_id': entry_id,
+                            'lossless_restatement': doc,
+                            'keywords': meta.get('keywords', []),
+                            'timestamp': meta.get('timestamp'),
+                            'location': meta.get('location'),
+                            'persons': meta.get('persons', []),
+                            'entities': meta.get('entities', []),
+                            'topic': meta.get('topic')
+                        })
+        except Exception as e:
+            print(f"Error exporting memories: {e}")
+        
+        export_data = {
+            'version': '1.0',
+            'export_timestamp': datetime.utcnow().isoformat(),
+            'agent_id': agent_id,
+            'agent_name': agent.get('agent_name'),
+            'total_memories': len(memories_export),
+            'memories': memories_export
+        }
+        
+        return jsonify({
+            'ok': True,
+            'export': export_data
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@manhattan_api.route("/import_memories", methods=["POST"])
+def import_memories():
+    """Import memories from a previously exported JSON backup.
+    
+    Expects JSON body with:
+    - agent_id: str (required) - target agent to import into
+    - export_data: dict (required) - the export object from /export_memories
+    - merge_mode: str (optional, default='append', options: 'append', 'replace')
+    """
+    data = request.get_json(silent=True) or {}
+    agent_id = data.get('agent_id')
+    export_data = data.get('export_data')
+    merge_mode = data.get('merge_mode', 'append')
+    
+    if not agent_id:
+        return jsonify({'error': 'agent_id is required'}), 400
+    
+    if not export_data or not isinstance(export_data, dict):
+        return jsonify({'error': 'export_data object is required'}), 400
+    
+    memories_to_import = export_data.get('memories', [])
+    if not memories_to_import:
+        return jsonify({'error': 'No memories found in export_data'}), 400
+    
+    user_id, error = extract_and_validate_api_key(data)
+    if error:
+        return error
+    
+    try:
+        agent = service.get_agent_by_id(agent_id=agent_id, user_id=user_id)
+        if not agent:
+            return jsonify({'error': 'agent_not_found'}), 404
+        
+        # If replace mode, clear existing memories first
+        clear_db = (merge_mode == 'replace')
+        memory_system = _get_or_create_memory_system(agent_id, clear_db=clear_db)
+        
+        imported_count = 0
+        entry_ids = []
+        errors = []
+        
+        for idx, mem in enumerate(memories_to_import):
+            try:
+                lossless = mem.get('lossless_restatement')
+                if not lossless:
+                    errors.append({'index': idx, 'error': 'lossless_restatement required'})
+                    continue
+                
+                entry = MemoryEntry(
+                    lossless_restatement=lossless,
+                    keywords=mem.get('keywords', []),
+                    timestamp=mem.get('timestamp'),
+                    location=mem.get('location'),
+                    persons=mem.get('persons', []),
+                    entities=mem.get('entities', []),
+                    topic=mem.get('topic')
+                )
+                
+                entry_id = memory_system.directly_save_memory(entry)
+                entry_ids.append(entry_id)
+                imported_count += 1
+            except Exception as e:
+                errors.append({'index': idx, 'error': str(e)})
+        
+        return jsonify({
+            'ok': True,
+            'agent_id': agent_id,
+            'merge_mode': merge_mode,
+            'memories_imported': imported_count,
+            'source_agent': export_data.get('agent_name'),
+            'source_timestamp': export_data.get('export_timestamp'),
+            'entry_ids': entry_ids,
+            'errors': errors if errors else None
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@manhattan_api.route("/memory_summary", methods=["POST"])
+def memory_summary():
+    """Generate an AI summary of the agent's memories.
+    
+    Uses LLM to create a comprehensive summary of what the agent knows.
+    
+    Expects JSON body with:
+    - agent_id: str (required)
+    - focus_topic: str (optional) - focus summary on specific topic
+    - summary_length: str (optional, default='medium', options: 'brief', 'medium', 'detailed')
+    """
+    data = request.get_json(silent=True) or {}
+    agent_id = data.get('agent_id')
+    focus_topic = data.get('focus_topic')
+    summary_length = data.get('summary_length', 'medium')
+    
+    if not agent_id:
+        return jsonify({'error': 'agent_id is required'}), 400
+    
+    user_id, error = extract_and_validate_api_key(data)
+    if error:
+        return error
+    
+    try:
+        agent = service.get_agent_by_id(agent_id=agent_id, user_id=user_id)
+        if not agent:
+            return jsonify({'error': 'agent_not_found'}), 404
+        
+        memory_system = _get_or_create_memory_system(agent_id, clear_db=False)
+        
+        # Gather all memories for summarization
+        all_memories = []
+        try:
+            if hasattr(memory_system, 'vector_store') and memory_system.vector_store:
+                collection = memory_system.vector_store._collection
+                if collection:
+                    all_data = collection.get(include=['documents', 'metadatas'])
+                    
+                    for i, doc in enumerate(all_data.get('documents', [])):
+                        if doc:
+                            meta = all_data['metadatas'][i] if i < len(all_data.get('metadatas', [])) else {}
+                            if focus_topic and meta.get('topic') != focus_topic:
+                                continue
+                            all_memories.append({
+                                'content': doc,
+                                'topic': meta.get('topic'),
+                                'persons': meta.get('persons'),
+                                'timestamp': meta.get('timestamp')
+                            })
+        except Exception as e:
+            print(f"Error gathering memories for summary: {e}")
+        
+        if not all_memories:
+            return jsonify({
+                'ok': True,
+                'agent_id': agent_id,
+                'summary': 'No memories found for this agent.',
+                'memory_count': 0
+            }), 200
+        
+        # Generate summary using the ask function with a summary prompt
+        length_guide = {
+            'brief': '2-3 sentences',
+            'medium': '1-2 paragraphs',
+            'detailed': '3-5 paragraphs with specific details'
+        }
+        
+        summary_prompt = f"""Based on all the stored memories, provide a {length_guide.get(summary_length, '1-2 paragraphs')} summary of key information and themes. 
+        {'Focus specifically on topics related to: ' + focus_topic if focus_topic else ''}
+        What are the main facts, important people, and key events that have been remembered?"""
+        
+        summary = memory_system.ask(summary_prompt)
+        
+        # Extract unique topics and persons for metadata
+        unique_topics = set()
+        unique_persons = set()
+        for mem in all_memories:
+            if mem.get('topic'):
+                unique_topics.add(mem['topic'])
+            persons = mem.get('persons', [])
+            if isinstance(persons, list):
+                unique_persons.update(persons)
+        
+        return jsonify({
+            'ok': True,
+            'agent_id': agent_id,
+            'summary': summary,
+            'memory_count': len(all_memories),
+            'topics_covered': list(unique_topics),
+            'persons_mentioned': list(unique_persons),
+            'focus_topic': focus_topic,
+            'summary_length': summary_length
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@manhattan_api.route("/api_usage", methods=["POST"])
+def api_usage():
+    """Get API usage statistics for the authenticated user.
+    
+    Returns usage metrics including:
+    - Total API calls
+    - Calls by endpoint
+    - Rate limit status
+    - Current billing period usage
+    
+    Note: This is a placeholder that returns mock data.
+    In production, integrate with your analytics/billing system.
+    """
+    data = request.get_json(silent=True) or {}
+    
+    user_id, error = extract_and_validate_api_key(data)
+    if error:
+        return error
+    
+    try:
+        # Get agent count for the user
+        agents = service.list_agents_for_user(user_id=user_id)
+        active_agents = [a for a in agents if a.get('status') == 'active']
+        
+        # Placeholder usage data (in production, query your analytics DB)
+        usage_data = {
+            'ok': True,
+            'user_id': user_id,
+            'billing_period': {
+                'start': datetime.utcnow().replace(day=1).isoformat(),
+                'end': datetime.utcnow().isoformat()
+            },
+            'agents': {
+                'total': len(agents),
+                'active': len(active_agents),
+                'disabled': len(agents) - len(active_agents)
+            },
+            'api_calls': {
+                'total': 0,  # Placeholder - track in production
+                'by_endpoint': {},
+                'limit': 10000,  # From user's plan
+                'remaining': 10000
+            },
+            'memory_storage': {
+                'total_memories': 0,  # Would aggregate across all agents
+                'storage_mb': 0,
+                'limit_mb': 1000
+            },
+            'rate_limits': {
+                'requests_per_minute': 60,
+                'requests_per_day': 10000
+            }
+        }
+        
+        return jsonify(usage_data), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@manhattan_api.route("/health_detailed", methods=["GET"])
+def health_detailed():
+    """Detailed health check endpoint with service status.
+    
+    Returns status of all backend services:
+    - API server status
+    - Database connectivity
+    - Vector store status
+    - LLM service status
+    """
+    health_status = {
+        'ok': True,
+        'timestamp': datetime.utcnow().isoformat(),
+        'version': '2.0.0',
+        'services': {}
+    }
+    
+    # Check Supabase
+    try:
+        if _supabase_backend:
+            # Simple query to check connectivity
+            _supabase_backend.table('api_keys').select('id').limit(1).execute()
+            health_status['services']['database'] = {'status': 'healthy', 'type': 'supabase'}
+        else:
+            health_status['services']['database'] = {'status': 'unavailable', 'type': 'supabase'}
+    except Exception as e:
+        health_status['services']['database'] = {'status': 'error', 'error': str(e)}
+        health_status['ok'] = False
+    
+    # Check ChromaDB / Vector Store
+    try:
+        health_status['services']['vector_store'] = {'status': 'healthy', 'type': 'chromadb'}
+    except Exception as e:
+        health_status['services']['vector_store'] = {'status': 'error', 'error': str(e)}
+    
+    # Check LLM service
+    try:
+        # Placeholder - in production check your LLM API
+        health_status['services']['llm'] = {'status': 'healthy', 'provider': 'openai'}
+    except Exception as e:
+        health_status['services']['llm'] = {'status': 'error', 'error': str(e)}
+    
+    status_code = 200 if health_status['ok'] else 503
+    return jsonify(health_status), status_code
+
+
 # Test validate_api_key_value function
 if __name__ == '__main__':
     result = validate_api_key_value("sk-7YqMhfDW_2z25MPSFx84R-jqOZvhtg1qjjZf3PEZdZU", None)

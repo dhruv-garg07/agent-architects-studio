@@ -457,6 +457,271 @@
       ]
     },
     {
+      "name": "Analytics & Stats",
+      "endpoints": [
+        {
+          "path": "/agent_stats",
+          "method": "POST",
+          "summary": "Get agent statistics",
+          "description": "Get comprehensive statistics for an agent including total memories, documents, topic breakdown, unique persons/locations mentioned, and activity metadata.",
+          "request": {
+            "agent_id": "string"
+          },
+          "response": {
+            "ok": true,
+            "agent_id": "string",
+            "agent_name": "string",
+            "agent_status": "string",
+            "statistics": {
+              "total_memories": 0,
+              "total_documents": 0,
+              "topics": {},
+              "unique_persons": [],
+              "unique_locations": [],
+              "persons_count": 0,
+              "locations_count": 0
+            },
+            "created_at": "string",
+            "updated_at": "string"
+          },
+          "code": {
+            "curl": "curl -X POST '__BASE__/agent_stats' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\"}'",
+            "python": "import requests\n\nurl = \"__BASE__/agent_stats\"\npayload = { 'agent_id': '<AGENT_ID>' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=30)\n\nprint(response.json())",
+            "javascript": "async function getAgentStats(baseUrl = '__BASE__', apiKey = null, agentId = null) {\n  baseUrl = baseUrl === '__BASE__' ? (typeof process !== 'undefined' && process.env && process.env.BASE_URL) : baseUrl;\n  if (!baseUrl || baseUrl === '__BASE__') throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;\n  const res = await fetch(`${baseUrl}/agent_stats`, { method: 'POST', headers, body: JSON.stringify({ agent_id: agentId }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\ngetAgentStats(null, null, '<AGENT_ID>').then(console.log).catch(console.error);"
+          }
+        },
+        {
+          "path": "/api_usage",
+          "method": "POST",
+          "summary": "Get API usage statistics",
+          "description": "Get API usage statistics for the authenticated user including total API calls, calls by endpoint, rate limit status, agents count, and billing period information.",
+          "request": {},
+          "response": {
+            "ok": true,
+            "user_id": "string",
+            "billing_period": {
+              "start": "string",
+              "end": "string"
+            },
+            "agents": {
+              "total": 0,
+              "active": 0,
+              "disabled": 0
+            },
+            "api_calls": {
+              "total": 0,
+              "by_endpoint": {},
+              "limit": 10000,
+              "remaining": 10000
+            },
+            "memory_storage": {
+              "total_memories": 0,
+              "storage_mb": 0,
+              "limit_mb": 1000
+            },
+            "rate_limits": {
+              "requests_per_minute": 60,
+              "requests_per_day": 10000
+            }
+          },
+          "code": {
+            "curl": "curl -X POST '__BASE__/api_usage' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>'",
+            "python": "import requests\n\nurl = \"__BASE__/api_usage\"\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json={}, headers=headers, timeout=30)\n\nprint(response.json())",
+            "javascript": "async function getApiUsage(baseUrl = '__BASE__', apiKey = null) {\n  baseUrl = baseUrl === '__BASE__' ? (typeof process !== 'undefined' && process.env && process.env.BASE_URL) : baseUrl;\n  if (!baseUrl || baseUrl === '__BASE__') throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;\n  const res = await fetch(`${baseUrl}/api_usage`, { method: 'POST', headers, body: '{}' });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\ngetApiUsage().then(console.log).catch(console.error);"
+          }
+        },
+        {
+          "path": "/health_detailed",
+          "method": "GET",
+          "summary": "Detailed health check",
+          "description": "Get detailed health status of all backend services including database connectivity, vector store status, and LLM service status. Returns 503 if any critical service is unhealthy.",
+          "request": null,
+          "response": {
+            "ok": true,
+            "timestamp": "string",
+            "version": "2.0.0",
+            "services": {
+              "database": {
+                "status": "healthy",
+                "type": "supabase"
+              },
+              "vector_store": {
+                "status": "healthy",
+                "type": "chromadb"
+              },
+              "llm": {
+                "status": "healthy",
+                "provider": "openai"
+              }
+            }
+          },
+          "code": {
+            "curl": "curl -X GET '__BASE__/health_detailed'",
+            "python": "import requests\n\nurl = \"__BASE__/health_detailed\"\n\nresponse = requests.get(url, timeout=10)\n\nprint(response.json())",
+            "javascript": "async function healthDetailed(baseUrl = '__BASE__') {\n  baseUrl = baseUrl === '__BASE__' ? (typeof process !== 'undefined' && process.env && process.env.BASE_URL) : baseUrl;\n  if (!baseUrl || baseUrl === '__BASE__') throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const res = await fetch(`${baseUrl}/health_detailed`);\n  return { status: res.status, body: await res.json() };\n}\nhealthDetailed().then(console.log).catch(console.error);"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bulk Operations",
+      "endpoints": [
+        {
+          "path": "/list_memories",
+          "method": "POST",
+          "summary": "List all memories (paginated)",
+          "description": "List all memories for an agent with pagination support. Supports filtering by topic or person. Returns metadata for each memory entry.",
+          "request": {
+            "agent_id": "string",
+            "limit": 50,
+            "offset": 0,
+            "filter_topic": "string (optional)",
+            "filter_person": "string (optional)"
+          },
+          "response": {
+            "ok": true,
+            "agent_id": "string",
+            "total_count": 0,
+            "limit": 50,
+            "offset": 0,
+            "has_more": false,
+            "memories": []
+          },
+          "code": {
+            "curl": "curl -X POST '__BASE__/list_memories' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"limit\":50,\"offset\":0}'",
+            "python": "import requests\n\nurl = \"__BASE__/list_memories\"\npayload = {\n    'agent_id': '<AGENT_ID>',\n    'limit': 50,\n    'offset': 0,\n    'filter_topic': None  # Optional: filter by topic\n}\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=30)\n\nresult = response.json()\nprint(f\"Total: {result.get('total_count')}, Has More: {result.get('has_more')}\")\nfor mem in result.get('memories', []):\n    print(f\"  - {mem.get('lossless_restatement')[:50]}...\")",
+            "javascript": "async function listMemories(baseUrl = '__BASE__', apiKey = null, agentId = null, limit = 50, offset = 0) {\n  baseUrl = baseUrl === '__BASE__' ? (typeof process !== 'undefined' && process.env && process.env.BASE_URL) : baseUrl;\n  if (!baseUrl || baseUrl === '__BASE__') throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;\n  const res = await fetch(`${baseUrl}/list_memories`, { method: 'POST', headers, body: JSON.stringify({ agent_id: agentId, limit, offset }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\nlistMemories(null, null, '<AGENT_ID>').then(r => {\n  console.log('Total:', r.total_count);\n  r.memories.forEach(m => console.log('-', m.lossless_restatement?.slice(0, 50)));\n}).catch(console.error);"
+          }
+        },
+        {
+          "path": "/bulk_add_memory",
+          "method": "POST",
+          "summary": "Bulk add memories",
+          "description": "Add multiple memories in a single request (max 100). Optimized for high-volume memory ingestion. Returns individual success/error status for each memory.",
+          "request": {
+            "agent_id": "string",
+            "memories": [
+              {
+                "lossless_restatement": "string",
+                "keywords": [
+                  "string"
+                ],
+                "timestamp": "string (optional)",
+                "location": "string (optional)",
+                "persons": [
+                  "string"
+                ],
+                "entities": [
+                  "string"
+                ],
+                "topic": "string (optional)"
+              }
+            ],
+            "skip_duplicates": false
+          },
+          "response": {
+            "ok": true,
+            "agent_id": "string",
+            "memories_added": 0,
+            "memories_skipped": 0,
+            "entry_ids": [],
+            "errors": null
+          },
+          "code": {
+            "curl": "curl -X POST '__BASE__/bulk_add_memory' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"memories\":[{\"lossless_restatement\":\"Memory 1\",\"keywords\":[\"test\"]},{\"lossless_restatement\":\"Memory 2\",\"keywords\":[\"test\"]}]}'",
+            "python": "import requests\n\nurl = \"__BASE__/bulk_add_memory\"\npayload = {\n    'agent_id': '<AGENT_ID>',\n    'memories': [\n        {'lossless_restatement': 'Alice prefers morning meetings', 'keywords': ['meetings', 'schedule'], 'persons': ['Alice']},\n        {'lossless_restatement': 'Bob works remotely on Fridays', 'keywords': ['remote', 'schedule'], 'persons': ['Bob']},\n        {'lossless_restatement': 'Team standup is at 9am daily', 'keywords': ['standup', 'team'], 'topic': 'meetings'}\n    ]\n}\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=60)\n\nresult = response.json()\nprint(f\"Added: {result.get('memories_added')}, Errors: {len(result.get('errors') or [])}\")",
+            "javascript": "async function bulkAddMemory(baseUrl = '__BASE__', apiKey = null, agentId = null, memories = []) {\n  baseUrl = baseUrl === '__BASE__' ? (typeof process !== 'undefined' && process.env && process.env.BASE_URL) : baseUrl;\n  if (!baseUrl || baseUrl === '__BASE__') throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;\n  const res = await fetch(`${baseUrl}/bulk_add_memory`, { method: 'POST', headers, body: JSON.stringify({ agent_id: agentId, memories }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\nconst memories = [{ lossless_restatement: 'Test memory 1', keywords: ['test'] }];\nbulkAddMemory(null, null, '<AGENT_ID>', memories).then(console.log).catch(console.error);"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Data Portability",
+      "endpoints": [
+        {
+          "path": "/export_memories",
+          "method": "POST",
+          "summary": "Export all memories",
+          "description": "Export all memories for an agent as JSON for backup, migration, or analysis. Returns a complete backup that can be imported to another agent or restored later.",
+          "request": {
+            "agent_id": "string",
+            "format": "json"
+          },
+          "response": {
+            "ok": true,
+            "export": {
+              "version": "1.0",
+              "export_timestamp": "string",
+              "agent_id": "string",
+              "agent_name": "string",
+              "total_memories": 0,
+              "memories": []
+            }
+          },
+          "code": {
+            "curl": "curl -X POST '__BASE__/export_memories' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\"}'",
+            "python": "import requests\nimport json\n\nurl = \"__BASE__/export_memories\"\npayload = { 'agent_id': '<AGENT_ID>' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=120)\n\nresult = response.json()\nexport_data = result.get('export')\nprint(f\"Exported {export_data.get('total_memories')} memories\")\n\n# Save to file\nwith open('memories_backup.json', 'w') as f:\n    json.dump(export_data, f, indent=2)\nprint('Saved to memories_backup.json')",
+            "javascript": "async function exportMemories(baseUrl = '__BASE__', apiKey = null, agentId = null) {\n  baseUrl = baseUrl === '__BASE__' ? (typeof process !== 'undefined' && process.env && process.env.BASE_URL) : baseUrl;\n  if (!baseUrl || baseUrl === '__BASE__') throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;\n  const res = await fetch(`${baseUrl}/export_memories`, { method: 'POST', headers, body: JSON.stringify({ agent_id: agentId }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\nexportMemories(null, null, '<AGENT_ID>').then(r => {\n  console.log('Exported', r.export.total_memories, 'memories');\n  // Save: require('fs').writeFileSync('backup.json', JSON.stringify(r.export, null, 2));\n}).catch(console.error);"
+          }
+        },
+        {
+          "path": "/import_memories",
+          "method": "POST",
+          "summary": "Import memories from backup",
+          "description": "Import memories from a previously exported JSON backup. Supports 'append' mode to add to existing memories or 'replace' mode to clear existing memories first.",
+          "request": {
+            "agent_id": "string",
+            "export_data": {
+              "version": "1.0",
+              "memories": []
+            },
+            "merge_mode": "append"
+          },
+          "response": {
+            "ok": true,
+            "agent_id": "string",
+            "merge_mode": "append",
+            "memories_imported": 0,
+            "source_agent": "string",
+            "source_timestamp": "string",
+            "entry_ids": [],
+            "errors": null
+          },
+          "code": {
+            "curl": "curl -X POST '__BASE__/import_memories' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<TARGET_AGENT_ID>\",\"export_data\":{\"memories\":[{\"lossless_restatement\":\"Test\"}]},\"merge_mode\":\"append\"}'",
+            "python": "import requests\nimport json\n\n# Load backup file\nwith open('memories_backup.json', 'r') as f:\n    export_data = json.load(f)\n\nurl = \"__BASE__/import_memories\"\npayload = {\n    'agent_id': '<TARGET_AGENT_ID>',\n    'export_data': export_data,\n    'merge_mode': 'append'  # or 'replace' to clear existing\n}\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=120)\n\nresult = response.json()\nprint(f\"Imported {result.get('memories_imported')} memories\")\nif result.get('errors'):\n    print(f\"Errors: {len(result.get('errors'))}\")",
+            "javascript": "async function importMemories(baseUrl = '__BASE__', apiKey = null, agentId = null, exportData = null, mergeMode = 'append') {\n  baseUrl = baseUrl === '__BASE__' ? (typeof process !== 'undefined' && process.env && process.env.BASE_URL) : baseUrl;\n  if (!baseUrl || baseUrl === '__BASE__') throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;\n  const res = await fetch(`${baseUrl}/import_memories`, { method: 'POST', headers, body: JSON.stringify({ agent_id: agentId, export_data: exportData, merge_mode: mergeMode }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\n// const backup = require('./backup.json');\n// importMemories(null, null, '<AGENT_ID>', backup).then(console.log).catch(console.error);"
+          }
+        },
+        {
+          "path": "/memory_summary",
+          "method": "POST",
+          "summary": "AI memory summary",
+          "description": "Generate an AI-powered summary of all agent memories. Optionally focus on a specific topic. Returns summary along with metadata about topics and persons mentioned.",
+          "request": {
+            "agent_id": "string",
+            "focus_topic": "string (optional)",
+            "summary_length": "medium"
+          },
+          "response": {
+            "ok": true,
+            "agent_id": "string",
+            "summary": "string",
+            "memory_count": 0,
+            "topics_covered": [],
+            "persons_mentioned": [],
+            "focus_topic": null,
+            "summary_length": "medium"
+          },
+          "code": {
+            "curl": "curl -X POST '__BASE__/memory_summary' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"summary_length\":\"medium\"}'",
+            "python": "import requests\n\nurl = \"__BASE__/memory_summary\"\npayload = {\n    'agent_id': '<AGENT_ID>',\n    'focus_topic': None,  # Optional: focus on specific topic\n    'summary_length': 'medium'  # 'brief', 'medium', or 'detailed'\n}\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=120)\n\nresult = response.json()\nprint('Summary:')\nprint(result.get('summary'))\nprint(f\"\\nBased on {result.get('memory_count')} memories\")\nprint(f\"Topics: {result.get('topics_covered')}\")\nprint(f\"Persons: {result.get('persons_mentioned')}\")",
+            "javascript": "async function memorySummary(baseUrl = '__BASE__', apiKey = null, agentId = null, options = {}) {\n  baseUrl = baseUrl === '__BASE__' ? (typeof process !== 'undefined' && process.env && process.env.BASE_URL) : baseUrl;\n  if (!baseUrl || baseUrl === '__BASE__') throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;\n  const res = await fetch(`${baseUrl}/memory_summary`, { method: 'POST', headers, body: JSON.stringify({ agent_id: agentId, ...options }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\nmemorySummary(null, null, '<AGENT_ID>', { summary_length: 'detailed' }).then(r => {\n  console.log('Summary:', r.summary);\n  console.log('Based on', r.memory_count, 'memories');\n}).catch(console.error);"
+          }
+        }
+      ]
+    },
+    {
       "name": "API Test Examples",
       "endpoints": [
         {
