@@ -78,41 +78,33 @@ DEFAULT_AGENT_ID = "84aab1f8-3ea9-4c6a-aa3c-cd8eaa274a5e"
 mcp = FastMCP(
     "manhattan-memory-client",
     instructions="""
-You have access to a PERSISTENT MEMORY SYSTEM for storing and retrieving information across conversations.
+You have access to a PERSISTENT MEMORY SYSTEM for storing and retrieving information.
 
-🧠 WHEN TO USE THESE MEMORY TOOLS:
+CRITICAL INSTRUCTIONS FOR AI AGENT:
+1. **USE MEMORY AUTOMATICALLY** - Do NOT ask the user if you should save or search. Just do it.
+2. **BE PROACTIVE** - If the user mentions a fact, deadline, or preference, save it immediately.
+3. **CHECK MEMORY FIRST** - Before answering questions about past context, potential deadlines, or details, search memory.
 
-1. **STORING INFORMATION** - Use these tools when the user:
-   - Asks you to "remember" or "save" something
-   - Shares important facts, deadlines, preferences, or decisions
-   - Mentions people, meetings, projects, or events worth tracking
-   - Provides context they might want you to recall later
-   → Use: add_memory_direct (for structured facts) or process_raw_dialogues (for conversations)
+🧠 WHEN TO USE THESE TOOLS:
 
-2. **RETRIEVING INFORMATION** - Use these tools when the user:
-   - Asks "what do you know/remember about..."
-   - Wants to recall past conversations or decisions
-   - Asks about deadlines, meetings, people, or events
-   - Needs context from previous interactions
-   → Use: search_memory (for finding) or get_context_answer (for Q&A)
+- **ALWAYS** check memory (`search_memory`) when the user asks about:
+  - Project details, deadlines, or status
+  - People, roles, or responsibilities
+  - Past decisions or discussions
+  - "What do you know about X?"
 
-3. **PROACTIVE USE** - Consider using memory tools when:
-   - The user mentions something important that should be saved for later
-   - You need context to answer a question better
-   - The conversation contains actionable items or key decisions
+- **ALWAYS** save to memory (`add_memory_direct` or `process_raw_dialogues`) when:
+  - User defines a new requirement or rule
+  - User shares a deadline or schedule
+  - User corrects you (save the correction)
+  - Key decisions are made
 
-⚙️ DEFAULT CONFIGURATION:
-- agent_id: Use "enterprise" as the default agent ID for all operations
-- The enterprise agent is automatically created if it doesn't exist
-- You don't need to ask the user for an agent_id unless they want to use a different one
+⚙️ CONFIGURATION:
+- `agent_id`: This parameter is OPTIONAL.
+- **DEFAULT**: If you omit `agent_id`, it uses the enterprise agent (ID: `84aab1f8-3ea9-4c6a-aa3c-cd8eaa274a5e`).
+- **RECOMMENDATION**: Omit `agent_id` for 99% of requests. Only specify it if the user explicitly names a different agent.
 
-📋 QUICK REFERENCE:
-- add_memory_direct: Store facts directly (fast, structured)
-- search_memory: Find relevant memories by query
-- get_context_answer: Ask questions and get AI-powered answers using memory
-- process_raw_dialogues: Extract memories from conversation text
-- list_memories: Browse all stored memories
-- memory_summary: Get AI-generated summary of memories
+Your goal is to be a helpful, context-aware assistant that remembers everything without burdening the user.
 """
 )
 
