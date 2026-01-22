@@ -71,8 +71,50 @@ API_KEY = os.getenv("MANHATTAN_API_KEY", "sk-tg5T-vIyYnuprwVPcgoHGfX37HBsfPwAvHk
 # Timeout for API requests (seconds)
 REQUEST_TIMEOUT = 120.0
 
-# Initialize FastMCP server
-mcp = FastMCP("manhattan-memory-client")
+# Default agent ID for enterprise use
+DEFAULT_AGENT_ID = "84aab1f8-3ea9-4c6a-aa3c-cd8eaa274a5e"
+
+# Initialize FastMCP server with instructions for AI agents
+mcp = FastMCP(
+    "manhattan-memory-client",
+    instructions="""
+You have access to a PERSISTENT MEMORY SYSTEM for storing and retrieving information across conversations.
+
+🧠 WHEN TO USE THESE MEMORY TOOLS:
+
+1. **STORING INFORMATION** - Use these tools when the user:
+   - Asks you to "remember" or "save" something
+   - Shares important facts, deadlines, preferences, or decisions
+   - Mentions people, meetings, projects, or events worth tracking
+   - Provides context they might want you to recall later
+   → Use: add_memory_direct (for structured facts) or process_raw_dialogues (for conversations)
+
+2. **RETRIEVING INFORMATION** - Use these tools when the user:
+   - Asks "what do you know/remember about..."
+   - Wants to recall past conversations or decisions
+   - Asks about deadlines, meetings, people, or events
+   - Needs context from previous interactions
+   → Use: search_memory (for finding) or get_context_answer (for Q&A)
+
+3. **PROACTIVE USE** - Consider using memory tools when:
+   - The user mentions something important that should be saved for later
+   - You need context to answer a question better
+   - The conversation contains actionable items or key decisions
+
+⚙️ DEFAULT CONFIGURATION:
+- agent_id: Use "enterprise" as the default agent ID for all operations
+- The enterprise agent is automatically created if it doesn't exist
+- You don't need to ask the user for an agent_id unless they want to use a different one
+
+📋 QUICK REFERENCE:
+- add_memory_direct: Store facts directly (fast, structured)
+- search_memory: Find relevant memories by query
+- get_context_answer: Ask questions and get AI-powered answers using memory
+- process_raw_dialogues: Extract memories from conversation text
+- list_memories: Browse all stored memories
+- memory_summary: Get AI-generated summary of memories
+"""
+)
 
 
 # ============================================================================
@@ -108,6 +150,50 @@ async def call_api(endpoint: str, payload: dict) -> dict:
                 "ok": False,
                 "error": str(e)
             }
+
+
+# Track if enterprise agent has been verified this session
+_enterprise_agent_verified = False
+
+
+async def ensure_enterprise_agent() -> bool:
+    """
+    Ensure the enterprise agent exists, creating it if needed.
+    
+    This is called automatically when using agent_id='enterprise'.
+    The check is cached for the session to avoid repeated API calls.
+    
+    Returns:
+        True if enterprise agent exists or was created successfully
+    """
+    global _enterprise_agent_verified
+    
+    if _enterprise_agent_verified:
+        return True
+    
+    # Try to get the enterprise agent
+    result = await call_api("get_agent", {"agent_id": DEFAULT_AGENT_ID})
+    
+    if result.get("ok") or result.get("agent_id") == DEFAULT_AGENT_ID:
+        _enterprise_agent_verified = True
+        return True
+    
+    # Agent doesn't exist, create it
+    create_result = await call_api("create_agent", {
+        "agent_name": "Enterprise Agent",
+        "agent_slug": "enterprise",
+        "permissions": {"chat": True, "memory": True},
+        "limits": {},
+        "description": "Default enterprise agent for memory operations"
+    })
+    
+    if create_result.get("ok") or create_result.get("agent_id"):
+        _enterprise_agent_verified = True
+        # Also initialize memory for the agent
+        await call_api("create_memory", {"agent_id": DEFAULT_AGENT_ID, "clear_db": False})
+        return True
+    
+    return False
 
 
 # ============================================================================
