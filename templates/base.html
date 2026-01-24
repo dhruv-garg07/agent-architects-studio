@@ -399,76 +399,88 @@
 
 <body class="min-h-full">
     <!-- Navigation -->
-    <nav class="bg-[#1a1a1a] border-b border-[#2d2d2d] sticky top-0 z-50">
-        <div class="px-10">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <!-- Logo -->
-                    <a href="{{ url_for('homepage') }}" class="flex items-center space-x-2">
-                        <i data-lucide="brain-circuit" class="h-8 w-8 text-primary"></i>
-                        <span class="font-bold text-xl text-foreground">AI Agents</span>
+    <nav class="bg-[#1a1a1a] border-b border-[#2d2d2d] sticky top-0 z-50 w-full">
+        <!-- Main container with consistent max-width and padding -->
+        <div class="px-6 w-full">
+            <div class="flex justify-between items-center h-14">
+
+                <!-- Brand / Logo Section -->
+                <div class="flex items-center gap-6">
+                    <a href="{{ url_for('homepage') }}" class="flex items-center gap-2 group">
+                        <div
+                            class="flex items-center justify-center p-1.5 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                            <i data-lucide="brain-circuit" class="h-5 w-5 text-primary"></i>
+                        </div>
+                        <span
+                            class="font-semibold text-lg tracking-tight text-gray-100 group-hover:text-white transition-colors">AI
+                            Agents</span>
                     </a>
 
-                    <!-- Navigation Links -->
-                    <div class="hidden md:ml-8 md:flex md:space-x-8">
-                        <!-- Explore & Creators links commented out per request -->
-                        <!--
-                        <a href="{{ url_for('explore') }}"
-                            class="text-muted-foreground hover:text-primary px-3 py-2 text-sm font-medium transition-colors">
-                            Explore
-                        </a>
-                        <a href="{{ url_for('creators') }}"
-                            class="text-muted-foreground hover:text-primary px-3 py-2 text-sm font-medium transition-colors">
-                            Creators
-                        </a>
+                    <!-- Navigation Links (Placeholder/Commented) -->
+                    <div class="hidden md:flex ml-4 space-x-1">
+                        <!-- 
+                        <a href="{{ url_for('explore') }}" class="px-3 py-1.5 text-sm font-medium text-gray-400 hover:text-white rounded-md hover:bg-white/5 transition-all">Explore</a>
                         -->
-                        <!-- <a href="{{ url_for('trending') }}"
-                            class="text-muted-foreground hover:text-primary px-3 py-2 text-sm font-medium transition-colors">
-                            Trending
-                        </a>
-                        <a href="{{ url_for('categories') }}"
-                            class="text-muted-foreground hover:text-primary px-3 py-2 text-sm font-medium transition-colors">
-                            Categories
-                        </a> -->
                     </div>
                 </div>
 
-                <!-- Right side -->
-                <div class="flex items-center space-x-4">
+                <!-- Actions Section -->
+                <div class="flex items-center gap-3">
                     {% if current_user.is_authenticated %}
-                    <!-- {# Commented out temporary - Memory, Dashboard and Submit Agent links not needed for now #} -->
-                    <a href="{{ url_for('memory') }}" class="btn-primary">
-                        Memory
-                    </a>
 
-                    <a href="{{ url_for('dashboard') }}" class="btn-dashboard">
-                        <i data-lucide="layout-dashboard" class="w-4 h-4 mr-2"></i>
-                        Dashboard
-                    </a>
+                    <!-- Unified Secondary Navigation (Ghost Buttons) -->
+                    <div class="hidden md:flex items-center gap-1 mr-2">
+                        <a href="{{ url_for('dashboard') }}"
+                            class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-all group">
+                            <i data-lucide="layout-dashboard"
+                                class="w-4 h-4 text-gray-500 group-hover:text-white transition-colors"></i>
+                            Dashboard
+                        </a>
+                        <a href="{{ url_for('api_docs') }}"
+                            class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-all group">
+                            <i data-lucide="book-open"
+                                class="w-4 h-4 text-gray-500 group-hover:text-white transition-colors"></i>
+                            API Docs
+                        </a>
+                        <a href="{{ url_for('memory') }}"
+                            class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-all group">
+                            <i data-lucide="zap"
+                                class="w-4 h-4 text-gray-500 group-hover:text-white transition-colors"></i>
+                            Playground
+                        </a>
+                        <a href="/gitmem"
+                            class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-all group">
+                            <i data-lucide="git-branch"
+                                class="w-4 h-4 text-gray-500 group-hover:text-white transition-colors"></i>
+                            GitMem
+                        </a>
+                    </div>
 
-                    <a href="{{ url_for('api_docs') }}" class="btn-dashboard">
-                        <i data-lucide="book-open" class="w-4 h-4 mr-2"></i>
-                        API Docs
-                    </a>
-
-                    <!-- User Dropdown -->
-                    <div class="relative inline-block text-left">
+                    <!-- User Profile -->
+                    <div class="relative ml-2">
                         <button id="user-menu-button" type="button"
-                            class="w-10 h-10 rounded-full flex items-center justify-center bg-secondary text-secondary-foreground hover:bg-secondary/80 shadow"
+                            class="w-8 h-8 rounded-full flex items-center justify-center bg-[#2d2d2d] text-gray-300 hover:text-white hover:bg-[#383838] border border-[#3d3d3d] transition-all focus:ring-2 focus:ring-primary/50"
                             aria-expanded="false" aria-haspopup="true"
                             onclick="document.getElementById('user-dropdown').classList.toggle('hidden')">
-                            <i data-lucide="user" class="w-5 h-5"></i>
+                            <i data-lucide="user" class="w-4 h-4"></i>
                         </button>
 
                         <div id="user-dropdown"
-                            class="hidden absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-card ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+                            class="hidden absolute right-0 mt-2 w-48 rounded-lg shadow-xl bg-[#1e1e1e] border border-[#333] z-50 transform origin-top-right transition-all">
                             <div class="py-1">
+                                <div class="px-4 py-2 border-b border-[#333] mb-1">
+                                    <p class="text-xs text-gray-500">Signed in as</p>
+                                    <p class="text-sm font-medium text-white truncate">{{ current_user.email }}</p>
+                                </div>
                                 <a href="/profile"
-                                    class="block px-4 py-2 text-sm text-secondary-foreground hover:bg-secondary hover:text-primary">Profile</a>
+                                    class="block px-4 py-2 text-sm text-gray-400 hover:bg-[#2d2d2d] hover:text-white transition-colors">Profile</a>
                                 <a href="/"
-                                    class="block px-4 py-2 text-sm text-secondary-foreground hover:bg-secondary hover:text-primary">Settings</a>
-                                <a href="{{ url_for('logout') }}"
-                                    class="block px-4 py-2 text-sm text-secondary-foreground hover:bg-secondary hover:text-primary">Logout</a>
+                                    class="block px-4 py-2 text-sm text-gray-400 hover:bg-[#2d2d2d] hover:text-white transition-colors">Settings</a>
+                                <div class="border-t border-[#333] mt-1 pt-1">
+                                    <a href="{{ url_for('logout') }}"
+                                        class="block px-4 py-2 text-sm text-red-400 hover:bg-[#2d2d2d] hover:text-red-300 transition-colors">Sign
+                                        out</a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -476,15 +488,18 @@
                     <script>
                         // Close dropdown when clicking outside
                         document.addEventListener('click', function (event) {
-                            var dropdown = document.getElementById('user-dropdown');
-                            var button = document.getElementById('user-menu-button');
+                            const dropdown = document.getElementById('user-dropdown');
+                            const button = document.getElementById('user-menu-button');
                             if (dropdown && !dropdown.contains(event.target) && !button.contains(event.target)) {
                                 dropdown.classList.add('hidden');
                             }
                         });
                     </script>
+
                     {% else %}
-                    <a href="{{ url_for('auth') }}" class="btn-primary">
+                    <a href="{{ url_for('auth') }}"
+                        class="text-sm font-medium text-gray-400 hover:text-white px-2 transition-colors">Log In</a>
+                    <a href="{{ url_for('auth') }}" class="btn-primary ml-2 px-4 py-1.5 h-8 text-sm flex items-center">
                         Sign In
                     </a>
                     {% endif %}

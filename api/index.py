@@ -349,7 +349,25 @@ def auth():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    return render_template('dashboard.html')
+    try:
+        profile_res = supabase.table('profiles').select('*').eq('id', current_user.id).execute()
+        if not profile_res.data:
+            # Fallback for sync issues
+            current_profile = {
+                "full_name": current_user.email,
+                "username": current_user.email.split('@')[0],
+                "user_role": "user",
+                "email": current_user.email,
+                "created_at": datetime.utcnow().isoformat()
+            }
+        else:
+            current_profile = profile_res.data[0]
+            
+        return render_template('dashboard.html', profile=current_profile, is_own_profile=True)
+    except Exception as e:
+        print(f"Error loading dashboard: {e}")
+        flash(f"Error loading dashboard: {e}", "error")
+        return redirect(url_for('homepage'))
 
 
 def _clean_email(v: str) -> str:

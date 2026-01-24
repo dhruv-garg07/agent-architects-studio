@@ -1,134 +1,384 @@
 {% extends "base.html" %}
 
-{% block title %}{{ profile.full_name }}'s Profile{% endblock %}
+{% block title %}{{ profile.full_name }} - Profile{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-background py-8">
-    <div class="container mx-auto max-w-4xl p-4 sm:p-6 lg:p-8">
-        <!-- Profile Card with Technical Aesthetic -->
-        <div class="card card-elevated overflow-hidden">
-            <div class="p-8 md:p-12">
-                <div class="md:flex md:items-start md:justify-between">
-                    <!-- Main Profile Info -->
-                    <div class="flex items-start space-x-6">
-                        <!-- Avatar -->
-                        <div class="flex-shrink-0">
-                            <div class="w-24 h-24 rounded-full bg-secondary flex items-center justify-center border-2 border-primary/20">
-                                <i data-lucide="user" class="w-12 h-12 text-muted-foreground"></i>
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <h1 class="text-3xl font-bold text-foreground">{{ profile.full_name }}</h1>
-                            <p class="text-lg mt-1 text-muted-foreground">@{{ profile.username }}</p>
-                            
-                            <span class="mt-4 inline-block text-sm font-semibold px-3 py-1 rounded-full badge 
-                                {% if profile.user_role == 'creator' %} badge-ai-1 {% else %} badge-ai-2 {% endif %}">
-                                {{ profile.user_role | capitalize }}
-                            </span>
-                        </div>
-                    </div>
+<div class="flex min-h-screen relative">
 
-                    <!-- Edit Profile Button (Conditional) -->
+    <!-- Sidebar (Profile Context) -->
+    <div
+        class="w-64 backdrop-blur-xl bg-black/40 border-r border-[#2d2d2d] fixed left-0 top-14 bottom-0 overflow-y-auto hidden md:block">
+        <nav class="p-4 mt-8">
+            <div class="mb-6">
+                <!-- User Info Summary in Sidebar -->
+                <div class="flex items-center gap-3 mb-8 px-2">
+                    <div
+                        class="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center border border-primary/20">
+                        <span class="font-bold text-primary">{{ profile.full_name[:1] }}</span>
+                    </div>
+                    <div class="overflow-hidden">
+                        <p class="text-sm font-medium text-white truncate">{{ profile.full_name }}</p>
+                        <p class="text-xs text-gray-500 truncate">@{{ profile.username }}</p>
+                    </div>
+                </div>
+
+                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-2">Profile Menu</h3>
+                <ul class="space-y-1">
+                    <li>
+                        <a href="#overview"
+                            class="nav-item active flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-white/5 hover:text-white transition-all group">
+                            <i data-lucide="user"
+                                class="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors"></i>
+                            Overview
+                        </a>
+                    </li>
                     {% if is_own_profile %}
-                    <div class="mt-6 md:mt-0">
-                        <a href="{{ url_for('edit_profile') }}" class="btn-primary inline-flex items-center">
-                            <i data-lucide="edit-3" class="w-4 h-4 mr-2"></i>
+                    <li>
+                        <a href="#settings"
+                            class="nav-item flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-white/5 hover:text-white transition-all group">
+                            <i data-lucide="settings"
+                                class="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors"></i>
                             Edit Profile
                         </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="md:ml-64 flex-1 overflow-auto">
+        <div class="max-w-4xl mx-auto p-6 md:p-12">
+
+            <!-- Overview Section -->
+            <section id="overview-content" class="content-section active animate-fade-in">
+                <!-- Header Banner similar to GitHub profile -->
+                <div class="relative mb-12">
+                    <div
+                        class="h-32 w-full bg-gradient-to-r from-primary/10 via-purple-500/5 to-blue-500/10 rounded-xl border border-white/5">
+                    </div>
+                    <div class="absolute -bottom-10 left-8 flex items-end">
+                        <div class="w-24 h-24 rounded-full bg-[#111] p-1 border border-white/10">
+                            <div
+                                class="w-full h-full rounded-full bg-secondary flex items-center justify-center overflow-hidden">
+                                <i data-lucide="user" class="w-10 h-10 text-gray-400"></i>
+                            </div>
+                        </div>
+                        <div class="ml-4 mb-2">
+                            <h1 class="text-2xl font-bold text-white">{{ profile.full_name }}</h1>
+                            <p class="text-gray-400 text-sm">@{{ profile.username }}</p>
+                        </div>
+                    </div>
+                    {% if is_own_profile %}
+                    <div class="absolute -bottom-0 right-4">
+                        <button onclick="document.querySelector('a[href=\'#settings\']').click()"
+                            class="btn-secondary text-xs h-8">
+                            <i data-lucide="edit-2" class="w-3 h-3 mr-2"></i>
+                            Edit Profile
+                        </button>
                     </div>
                     {% endif %}
                 </div>
 
-                <div class="data-line my-8"></div>
+                <div class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- Left Column: Details -->
+                    <div class="md:col-span-1 space-y-6">
+                        <div class="p-6 rounded-xl bg-[#161616] border border-[#2d2d2d]">
+                            <h3 class="text-sm font-semibold text-gray-300 mb-4 uppercase tracking-wide">About</h3>
 
-                <!-- Role-Specific Information -->
-                <div class="space-y-6">
-                    <!-- Creator-Specific Fields -->
-                    {% if profile.user_role == 'creator' %}
-                        {% if profile.portfolio_url %}
-                        <div class="flex items-start measurement">
-                            <i data-lucide="link" class="w-5 h-5 text-primary mr-4 flex-shrink-0 mt-0.5"></i>
-                            <div>
-                                <h3 class="text-sm font-medium text-muted-foreground">Portfolio / Website</h3>
-                                <a href="{{ profile.portfolio_url }}" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline break-all">
-                                    {{ profile.portfolio_url }}
-                                </a>
+                            <div class="space-y-4">
+                                <div>
+                                    <span class="text-xs text-gray-500 block mb-1">Role</span>
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                    {% if profile.user_role == 'creator' %} bg-pink-500/10 text-pink-500 border border-pink-500/20 
+                                    {% else %} bg-blue-500/10 text-blue-500 border border-blue-500/20 {% endif %}">
+                                        {{ profile.user_role | capitalize }}
+                                    </span>
+                                </div>
+
+                                <div>
+                                    <span class="text-xs text-gray-500 block mb-1">Joined</span>
+                                    <div class="flex items-center text-sm text-gray-300">
+                                        <i data-lucide="calendar" class="w-3 h-3 mr-2 text-gray-500"></i>
+                                        {{ profile.created_at.split('T')[0] }}
+                                    </div>
+                                </div>
+
+                                {% if profile.user_role == 'creator' and profile.portfolio_url %}
+                                <div>
+                                    <span class="text-xs text-gray-500 block mb-1">Portfolio</span>
+                                    <a href="{{ profile.portfolio_url }}" target="_blank"
+                                        class="flex items-center text-sm text-primary hover:underline truncate">
+                                        <i data-lucide="link" class="w-3 h-3 mr-2"></i>
+                                        Website
+                                    </a>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {% if profile.user_role == 'creator' %}
+                        <!-- Creator Stats (Vertical) -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="p-4 rounded-xl bg-[#161616] border border-[#2d2d2d] text-center">
+                                <div class="text-2xl font-bold text-white">12</div>
+                                <div class="text-xs text-gray-500 mt-1">Agents</div>
+                            </div>
+                            <div class="p-4 rounded-xl bg-[#161616] border border-[#2d2d2d] text-center">
+                                <div class="text-2xl font-bold text-emerald-400">4.8</div>
+                                <div class="text-xs text-gray-500 mt-1">Rating</div>
                             </div>
                         </div>
                         {% endif %}
+                    </div>
 
-                        {% if profile.expertise %}
-                        <div class="flex items-start measurement">
-                            <i data-lucide="award" class="w-5 h-5 text-primary mr-4 flex-shrink-0 mt-0.5"></i>
-                            <div>
-                                <h3 class="text-sm font-medium text-muted-foreground">Areas of Expertise</h3>
-                                <p class="text-foreground">{{ profile.expertise }}</p>
+                    <!-- Right Column: Main Content -->
+                    <div class="md:col-span-2 space-y-6">
+                        <!-- Expertise / Bio Card -->
+                        <div class="p-6 rounded-xl bg-[#161616] border border-[#2d2d2d]">
+                            <h3 class="text-sm font-semibold text-gray-300 mb-4">
+                                {% if profile.user_role == 'creator' %}Areas of Expertise{% else %}Interests{% endif %}
+                            </h3>
+                            {% if profile.user_role == 'creator' and profile.expertise %}
+                            <div class="flex flex-wrap gap-2">
+                                {% for item in profile.expertise.split(',') %}
+                                <span
+                                    class="px-3 py-1 bg-white/5 border border-white/10 rounded-md text-sm text-gray-300">
+                                    {{ item.strip() }}
+                                </span>
+                                {% endfor %}
                             </div>
-                        </div>
-                        {% endif %}
-                    {% endif %}
-
-                    <!-- User-Specific Fields -->
-                    {% if profile.user_role == 'user' %}
-                        {% if profile.primary_interest %}
-                        <div class="flex items-start measurement">
-                            <i data-lucide="star" class="w-5 h-5 text-primary mr-4 flex-shrink-0 mt-0.5"></i>
-                            <div>
-                                <h3 class="text-sm font-medium text-muted-foreground">Primary Interest</h3>
-                                <p class="text-foreground capitalize">{{ profile.primary_interest.replace('_', ' ') }}</p>
+                            {% elif profile.user_role == 'user' and profile.primary_interest %}
+                            <div class="flex items-center gap-2 text-sm text-gray-300">
+                                <i data-lucide="star" class="w-4 h-4 text-yellow-500"></i>
+                                {{ profile.primary_interest.replace('_', ' ') | capitalize }}
                             </div>
+                            {% else %}
+                            <p class="text-sm text-gray-500 italic">No additional information added yet.</p>
+                            {% endif %}
                         </div>
-                        {% endif %}
-                    {% endif %}
 
-                    <!-- Common Fields -->
-                    <div class="flex items-start measurement">
-                        <i data-lucide="calendar" class="w-5 h-5 text-primary mr-4 flex-shrink-0 mt-0.5"></i>
-                        <div>
-                            <h3 class="text-sm font-medium text-muted-foreground">Member Since</h3>
-                            <p class="text-foreground">{{ profile.created_at.split('T')[0] }}</p>
+                        <!-- Activity Placeholder (Graph-like) -->
+                        <div class="p-6 rounded-xl bg-[#161616] border border-[#2d2d2d]">
+                            <div class="flex items-center justify-between mb-6">
+                                <h3 class="text-sm font-semibold text-gray-300">Recent Activity</h3>
+                                <span class="text-xs text-gray-500">Last 30 Days</span>
+                            </div>
+
+                            <!-- Static Activity Graph Visualization (CSS only) -->
+                            <div class="flex items-end justify-between h-24 gap-1">
+                                {% for i in range(20) %}
+                                <div class="w-full bg-primary/20 hover:bg-primary/40 rounded-sm transition-colors"
+                                    style="height: {{ range(10, 100) | random }}%"></div>
+                                {% endfor %}
+                            </div>
+                            <div class="mt-4 text-xs text-center text-gray-500">
+                                Activity monitoring is active
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
+            </section>
 
-        <!-- Additional Stats Section (if creator) -->
-        {% if profile.user_role == 'creator' %}
-        <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- Agents Card -->
-            <div class="card p-6 text-center ai-connection">
-                <div class="text-3xl font-bold text-ai-1">12</div>
-                <div class="text-muted-foreground mt-2">Agents Created</div>
-            </div>
-            
-            <!-- Reputation Card -->
-            <div class="card p-6 text-center ai-connection">
-                <div class="text-3xl font-bold text-ai-2">4.8</div>
-                <div class="text-muted-foreground mt-2">Avg Rating</div>
-            </div>
-            
-            <!-- Runs Card -->
-            <div class="card p-6 text-center ai-connection">
-                <div class="text-3xl font-bold text-ai-3">1.2K</div>
-                <div class="text-muted-foreground mt-2">Total Runs</div>
-            </div>
+            <!-- Settings / Edit Section -->
+            {% if is_own_profile %}
+            <section id="settings-content" class="content-section hidden animate-fade-in">
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold text-white tracking-tight">Edit Profile</h2>
+                    <p class="text-gray-400">Update your personal information and public profile settings.</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Form Container -->
+                    <div class="lg:col-span-2">
+                        <div class="p-6 rounded-xl bg-[#161616] border border-[#2d2d2d]">
+                            <form action="{{ url_for('edit_profile') }}" method="POST" class="space-y-6">
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-400 mb-2">Full Name</label>
+                                        <input type="text" name="full_name" value="{{ profile.full_name or '' }}"
+                                            required
+                                            class="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-400 mb-2">Username</label>
+                                        <input type="text" name="username" value="{{ profile.username or '' }}" required
+                                            class="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all">
+                                    </div>
+                                </div>
+
+                                <!-- Role Specifics -->
+                                {% if profile.user_role == 'creator' %}
+                                <div class="space-y-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-400 mb-2">Portfolio
+                                            URL</label>
+                                        <div class="relative">
+                                            <span class="absolute left-4 top-3 text-gray-500">
+                                                <i data-lucide="link" class="w-4 h-4"></i>
+                                            </span>
+                                            <input type="url" name="portfolio_url"
+                                                value="{{ profile.portfolio_url or '' }}" placeholder="https://..."
+                                                class="w-full bg-[#0a0a0a] border border-[#333] rounded-lg pl-10 pr-4 py-2.5 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-400 mb-2">Areas of
+                                            Expertise</label>
+                                        <input type="text" name="expertise" value="{{ profile.expertise or '' }}"
+                                            placeholder="e.g. NLP, Computer Vision (comma separated)"
+                                            class="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all">
+                                    </div>
+                                </div>
+                                {% elif profile.user_role == 'user' %}
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-400 mb-2">Primary Interest</label>
+                                    <select name="primary_interest"
+                                        class="w-full bg-[#0a0a0a] border border-[#333] rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all">
+                                        <option value="business" {% if profile.primary_interest=='business' %}selected{%
+                                            endif %}>For Business / Work</option>
+                                        <option value="personal" {% if profile.primary_interest=='personal' %}selected{%
+                                            endif %}>Personal Projects</option>
+                                        <option value="research" {% if profile.primary_interest=='research' %}selected{%
+                                            endif %}>Academic Research</option>
+                                        <option value="browsing" {% if profile.primary_interest=='browsing' %}selected{%
+                                            endif %}>Just Browsing</option>
+                                    </select>
+                                </div>
+                                {% endif %}
+
+                                <div class="pt-6 border-t border-[#333] flex items-center justify-end gap-3">
+                                    <button type="button"
+                                        onclick="document.querySelector('a[href=\'#overview\']').click()"
+                                        class="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors">
+                                        Cancel
+                                    </button>
+                                    <button type="submit" class="btn-primary flex items-center">
+                                        <i data-lucide="save" class="w-4 h-4 mr-2"></i>
+                                        Save Changes
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Side Helper/Tips -->
+                    <div class="lg:col-span-1">
+                        <div class="p-6 rounded-xl bg-primary/5 border border-primary/20">
+                            <h4 class="text-sm font-semibold text-primary mb-2 flex items-center">
+                                <i data-lucide="info" class="w-4 h-4 mr-2"></i>
+                                Pro Tip
+                            </h4>
+                            <p class="text-sm text-gray-400 leading-relaxed">
+                                Completing your profile helps agents understant your context better. Creators with
+                                detailed profiles get 40% more visibility in the marketplace.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            {% endif %}
+
         </div>
-        
-        <!-- View Agents Button -->
-        <div class="mt-8 text-center">
-            <a href="/creators?search={{profile.fullname}}&sort_by=reputation" class="btn-secondary inline-flex items-center">
-                <i data-lucide="eye" class="w-4 h-4 mr-2"></i>
-                View Agents
-            </a>
-        </div>
-        {% endif %}
     </div>
 </div>
 
-<!-- Initialize Lucide Icons -->
+<style>
+    /* Custom Scrollbar for this page */
+    ::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: #0a0a0a;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: #333;
+        border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: #444;
+    }
+
+    .animate-fade-in {
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(5px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .nav-item.active {
+        background-color: rgba(255, 255, 255, 0.08);
+        /* White/8 roughly */
+        color: #fff;
+        border-left: 2px solid hsl(var(--primary));
+    }
+</style>
+
 <script>
-    lucide.createIcons();
+    document.addEventListener('DOMContentLoaded', function () {
+        // Tab Switching Logic
+        const navItems = document.querySelectorAll('.nav-item');
+        const contentSections = document.querySelectorAll('.content-section');
+
+        function switchContent(targetId) {
+            // Remove hash from targetId for selection
+            const id = targetId.replace('#', '');
+
+            // Update Nav States
+            navItems.forEach(item => {
+                if (item.getAttribute('href') === '#' + id) {
+                    item.classList.add('active');
+                    item.classList.remove('text-gray-300');
+                    item.classList.add('text-white');
+                } else {
+                    item.classList.remove('active');
+                    item.classList.add('text-gray-300');
+                    item.classList.remove('text-white');
+                }
+            });
+
+            // Update Content States
+            contentSections.forEach(section => {
+                if (section.id === id + '-content') {
+                    section.classList.remove('hidden');
+                } else {
+                    section.classList.add('hidden');
+                }
+            });
+        }
+
+        // Click Handlers
+        navItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const target = item.getAttribute('href');
+                switchContent(target);
+                // Optionally update URL hash without jump
+                history.pushState(null, null, target);
+            });
+        });
+
+        // Initialize based on URL hash or default to overview
+        if (window.location.hash) {
+            switchContent(window.location.hash);
+        }
+
+        lucide.createIcons();
+    });
 </script>
+
 {% endblock %}
