@@ -254,6 +254,14 @@ def harshit_page():
         # If template missing or render fails, return a simple fallback
         return f"<h1>Harshit</h1><p>Unable to render page: {e}</p>", 500
 
+@app.route('/ranaji')
+def ranaji_page():
+    """Rana Ji Ka Rishta page."""
+    try:
+        return render_template('ranaji.html')
+    except Exception as e:
+        return f"<h1>Rana Ji</h1><p>Unable to render page: {e}</p>", 500
+
 @app.route('/submit')
 @login_required
 def creator_studio():

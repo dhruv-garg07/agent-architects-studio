@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>❤️ RANA JI KA RISHTA ❤️</title>
+    <style>
+        body {
+            background-color: #ffff00;
+            /* Bright Yellow */
+            background-image: url('https://media.giphy.com/media/26brv0coVfD7L85SU/giphy.gif');
+            /* 90s sparkle bg */
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            color: #ff0000;
+            text-align: center;
+            overflow-x: hidden;
+        }
+
+        .container {
+            border: 10px dashed #0000ff;
+            background-color: #00ff00;
+            /* Lime Green */
+            width: 80%;
+            margin: 20px auto;
+            padding: 20px;
+            box-shadow: 10px 10px 0px #ff00ff;
+        }
+
+        h1 {
+            font-size: 3em;
+            text-shadow: 3px 3px 0px #000000;
+            animation: blink 1s infinite;
+        }
+
+        .profile-pic {
+            border: 5px solid #ff00ff;
+            width: 300px;
+            height: auto;
+            border-radius: 50%;
+            animation: spin 10s linear infinite;
+        }
+
+        .marquee-container {
+            background-color: #ff0000;
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 1.5em;
+            padding: 10px;
+            border: 3px solid #ffff00;
+        }
+
+        .details {
+            background-color: #00ffff;
+            padding: 20px;
+            border: 5px dotted #ff0000;
+            margin: 20px;
+            font-size: 1.2em;
+            color: #000080;
+        }
+
+        .cta-button {
+            background-color: #ff0000;
+            color: #ffff00;
+            font-size: 2em;
+            padding: 20px;
+            border: 5px outset #ffffff;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 20px;
+            animation: pulse 1s infinite;
+        }
+
+        .cta-button:hover {
+            background-color: #ffff00;
+            color: #ff0000;
+            border: 5px inset #ff0000;
+        }
+
+        @keyframes blink {
+            0% {
+                opacity: 1;
+                color: #ff0000;
+            }
+
+            50% {
+                opacity: 0;
+                color: #0000ff;
+            }
+
+            100% {
+                opacity: 1;
+                color: #ff0000;
+            }
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            25% {
+                transform: rotate(10deg);
+            }
+
+            50% {
+                transform: rotate(0deg);
+            }
+
+            75% {
+                transform: rotate(-10deg);
+            }
+
+            100% {
+                transform: rotate(0deg);
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .flashing-text {
+            animation: rainbow 2s linear infinite;
+        }
+
+        @keyframes rainbow {
+            0% {
+                color: red;
+            }
+
+            20% {
+                color: orange;
+            }
+
+            40% {
+                color: yellow;
+            }
+
+            60% {
+                color: green;
+            }
+
+            80% {
+                color: blue;
+            }
+
+            100% {
+                color: violet;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="marquee-container">
+        <marquee scrollamount="15" direction="left">🔥🔥 URGENT: RANA JI KO LADKI CHAHIYE!!! 🔥🔥 SHAADI KE LIYE SAMPARK
+            KAREIN!!! 🔥🔥 NO DAHEJ (ONLY THAR)!!! 🔥🔥</marquee>
+    </div>
+
+    <div class="container">
+        <h1>🌹 RANA JI KA RISHTA 🌹</h1>
+
+        <img src="{{ url_for('static', filename='ranaji.jpg') }}" alt="Harshit Rana - The Man, The Myth, The Legend"
+            class="profile-pic" onclick="alert('Kyu, pasand aa gaya na?')">
+
+        <div class="details">
+            <h2>✨ ABOUT THE BOY ✨</h2>
+            <ul style="list-style-type: square; text-align: left; display: inline-block;">
+                <li>👦 <strong>Name:</strong> Harshit Rana (AKA 'Rana Ji')</li>
+                <li>💪 <strong>Gotra:</strong> Jat (Pure Desi)</li>
+                <li>💼 <strong>Occupation:</strong> Sarkari naukri wala attitude, private sector salary</li>
+                <li>🏋️ <strong>Hobbies:</strong> Gym, driving Thar, respecting elders</li>
+                <li>🚫 <strong>Requirement:</strong> No 'Papa ki Pari' pls</li>
+                <li>💰 <strong>Demand:</strong> Dahej FREE (Bas Thar chaiye)</li>
+            </ul>
+        </div>
+
+        <h2 class="flashing-text">💘 HINDU LADKI CHAIYE JAT GOTRA SE 💘</h2>
+
+        <a href="https://wa.me/918461975580?text=Hi%20Rana%20Ji,%20I%20am%20interested%20in%20your%20rishta!%20%F0%9F%98%8D"
+            class="cta-button">
+            📞 CALL NOW / WHATSAPP <br>
+            +91 84619 75580
+        </a>
+
+        <br><br>
+        <marquee scrollamount="20" direction="right" style="color: blue; font-size: 20px;">HURRY UP!!! OFFER VALID TILL
+            STOCK LASTS!!!</marquee>
+    </div>
+
+    <script>
+        // Add some random music or sound effect on click if permitted, but keeping it simple visual flashy for now.
+        // Let's add a trailing cursor effect for extra cheesy 90s feel
+
+        const emoji = "❤️";
+        const cursorValues = [];
+
+        document.addEventListener('mousemove', (e) => {
+            const span = document.createElement('span');
+            span.innerText = emoji;
+            span.style.position = 'absolute';
+            span.style.left = e.pageX + 'px';
+            span.style.top = e.pageY + 'px';
+            span.style.pointerEvents = 'none';
+            span.style.fontSize = '20px';
+            document.body.appendChild(span);
+
+            setTimeout(() => {
+                span.remove();
+            }, 500);
+        });
+    </script>
+
+</body>
+
+</html>
