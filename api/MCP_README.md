@@ -103,15 +103,21 @@ Clone the full repository and run your own server. See [SELF_HOSTED_SETUP.md](SE
 ### Claude Desktop
 See Quick Start above.
 
-### Claude Code (Antigravity / VS Code)
+### VS Code (GitHub Copilot)
 
-Add to your `.vscode/settings.json`:
+1. **Install the MCP Extension**
+   - Install the "MCP Server" extension for VS Code if available, or use the "MCP: Add Server" command from the Command Palette (`Cmd+Shift+P`).
+
+2. **Configure via `mcp.json`**
+   - Run **"MCP: Open User Configuration"** from Command Palette to open your `mcp.json`.
+   - Add the server configuration:
+
 ```json
 {
-  "claude.mcpServers": {
+  "mcpServers": {
     "manhattan-memory": {
       "command": "python",
-      "args": ["${workspaceFolder}/mcp_memory_client.py"],
+      "args": ["${workspaceFolder}/api/mcp_memory_client.py"],
       "env": {
         "MANHATTAN_API_KEY": "your-api-key-here"
       }
@@ -128,7 +134,7 @@ Add to `~/.cursor/mcp.json`:
   "mcpServers": {
     "manhattan-memory": {
       "command": "python",
-      "args": ["/path/to/mcp_memory_client.py"],
+      "args": ["/absolute/path/to/mcp_memory_client.py"],
       "env": {
         "MANHATTAN_API_KEY": "your-api-key-here"
       }
@@ -145,7 +151,7 @@ Add to `~/.windsurf/mcp_config.json`:
   "mcpServers": {
     "manhattan-memory": {
       "command": "python",
-      "args": ["/path/to/mcp_memory_client.py"],
+      "args": ["/absolute/path/to/mcp_memory_client.py"],
       "env": {
         "MANHATTAN_API_KEY": "your-api-key-here"
       }
@@ -165,7 +171,7 @@ Add to `~/.continue/config.json`:
         "transport": {
           "type": "stdio",
           "command": "python",
-          "args": ["/path/to/mcp_memory_client.py"],
+          "args": ["/absolute/path/to/mcp_memory_client.py"],
           "env": {
             "MANHATTAN_API_KEY": "your-api-key-here"
           }
@@ -180,18 +186,38 @@ Add to `~/.continue/config.json`:
 
 ## 🛠️ Available Tools
 
-Once configured, ask Claude to use these memory tools:
+Once configured, ask your AI assistant to use these tools.
 
+### 🧠 Memory Operations
 | Tool | Description | Example Prompt |
 |------|-------------|----------------|
-| `create_memory` | Initialize memory for an agent | "Create a memory system for agent 'my-assistant'" |
-| `process_raw_dialogues` | Extract memories from conversations | "Process this dialogue for agent 'my-assistant': Alice said 'Meeting at 2pm'" |
-| `add_memory_direct` | Add structured memory (no AI) | "Add this fact to 'my-assistant': Project deadline is January 30" |
-| `search_memory` | Search memories | "Search 'my-assistant' memories for 'deadline'" |
-| `get_context_answer` | Q&A with memory | "For 'my-assistant', answer: When is the deadline?" |
-| `update_memory_entry` | Update existing memory | "Update memory entry XYZ with new deadline" |
-| `delete_memory_entries` | Delete memories | "Delete memory entry XYZ from 'my-assistant'" |
-| `chat_with_agent` | Chat with memory context | "Chat with 'my-assistant': What do you remember about the project?" |
+| `create_memory` | Initialize memory system for an agent | "Create a memory system for agent 'my-assistant'" |
+| `process_raw_dialogues` | Extract memories from conversations | "Process this dialogue: Alice said 'Meeting at 2pm'" |
+| `add_memory_direct` | Add structured memory (no AI) | "Add fact: Project deadline is Jan 30" |
+| `search_memory` | Search memories | "Search 'my-assistant' for 'deadline'" |
+| `get_context_answer` | Q&A with memory | "When is the deadline?" |
+| `update_memory_entry` | Update existing memory | "Update memory XYZ with new deadline" |
+| `delete_memory_entries` | Delete memories | "Delete memory entry XYZ" |
+| `chat_with_agent` | Chat with agent context | "Chat with 'my-assistant': What do you recall?" |
+
+### 🤖 Agent Management
+| Tool | Description | Example Prompt |
+|------|-------------|----------------|
+| `create_agent` | Create a new agent | "Create agent 'research-bot'" |
+| `list_agents` | List your agents | "List my agents" |
+| `get_agent` | Get agent details | "Get details for 'research-bot'" |
+| `update_agent` | Update agent config | "Update 'research-bot' description" |
+| `disable_agent` | Disable an agent | "Disable 'research-bot'" |
+| `enable_agent` | Enable a disabled agent | "Enable 'research-bot'" |
+| `delete_agent` | Permanently delete agent | "Delete agent 'research-bot'" |
+
+### 📊 Professional Tools
+| Tool | Description | Example Prompt |
+|------|-------------|----------------|
+| `agent_stats` | Get usage statistics | "Show stats for 'research-bot'" |
+| `list_memories` | List all memories (paginated) | "List all memories for 'research-bot'" |
+| `bulk_add_memory` | Bulk import memories | "Import these 50 facts..." |
+| `export_memories` | Export full backup | "Export all memories for 'research-bot'" |
 
 ---
 
