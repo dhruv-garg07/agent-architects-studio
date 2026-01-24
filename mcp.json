@@ -6,7 +6,16 @@
                 "C:/Desktop/python_workspace_311/PdM-main/PdM-main/agent-architects-studio/api/mcp_memory_client.py"
             ],
             "env": {
-                "MANHATTAN_API_KEY": "<ENTER-YOUR-API-KEY>"
+                "MANHATTAN_API_KEY": "sk-tg5T-vIyYnuprwVPcgoHGfX37HBsfPwAvHkV3WFyhkE"
+            }
+        },
+        "themanhattan": {
+            "command": "python",
+            "args": [
+                "C:/Desktop/python_workspace_311/PdM-main/PdM-main/agent-architects-studio/api/mcp_memory_client.py"
+            ],
+            "env": {
+                "MANHATTAN_API_KEY": "sk-tg5T-vIyYnuprwVPcgoHGfX37HBsfPwAvHkV3WFyhkE"
             }
         }
     }

@@ -233,7 +233,7 @@ async def ensure_enterprise_agent() -> bool:
 # MCP TOOLS - Memory CRUD Operations (via Remote API)
 # ============================================================================
 
-@mcp.tool()
+@mcp.tool() 
 async def create_memory(agent_id: str, clear_db: bool = False) -> str:
     """
     Create/initialize a memory system for an agent.
@@ -247,7 +247,6 @@ async def create_memory(agent_id: str, clear_db: bool = False) -> str:
     
     Returns:
         JSON string with creation status
-    """
     """
     if agent_id in ["default", "agent", "user", "global", None, ""]:
         agent_id = TARGET_AGENT_ID
@@ -286,7 +285,7 @@ async def process_raw_dialogues(
     Returns:
         JSON string with processing status and count of memories created
     """
-    """
+
     if agent_id in ["default", "agent", "user", "global", None, ""]:
         agent_id = TARGET_AGENT_ID
         
@@ -339,7 +338,7 @@ async def add_memory_direct(
     Returns:
         JSON string with entry IDs - save these for future updates!
     """
-    """
+    
     if agent_id in ["default", "agent", "user", "global", None, ""]:
         agent_id = TARGET_AGENT_ID
         
@@ -386,7 +385,7 @@ async def search_memory(
     Returns:
         JSON string with search results - USE THESE IN YOUR RESPONSE!
     """
-    """
+    
     if agent_id in ["default", "agent", "user", "global", None, ""]:
         agent_id = TARGET_AGENT_ID
         
@@ -429,7 +428,7 @@ async def get_context_answer(
     Returns:
         JSON with AI-generated answer and the memories used as context
     """
-    """
+    
     if agent_id in ["default", "agent", "user", "global", None, ""]:
         agent_id = TARGET_AGENT_ID
         
@@ -466,7 +465,7 @@ async def update_memory_entry(
     Returns:
         JSON string with update status
     """
-    """
+    
     if agent_id in ["default", "agent", "user", "global", None, ""]:
         agent_id = TARGET_AGENT_ID
         
@@ -495,7 +494,7 @@ async def delete_memory_entries(
     Returns:
         JSON string with deletion status
     """
-    """
+    
     if agent_id in ["default", "agent", "user", "global", None, ""]:
         agent_id = TARGET_AGENT_ID
         
@@ -524,7 +523,7 @@ async def chat_with_agent(
     Returns:
         JSON string with the agent's response
     """
-    """
+    
     if agent_id in ["default", "agent", "user", "global", None, ""]:
         agent_id = TARGET_AGENT_ID
         

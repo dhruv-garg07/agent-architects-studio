@@ -10,6 +10,17 @@
                 "MANHATTAN_API_URL": "https://www.themanhattanproject.ai",
                 "MANHATTAN_API_KEY": "sk-tg5T-vIyYnuprwVPcgoHGfX37HBsfPwAvHkV3WFyhkE"
             }
+        },
+        "themanhattan": {
+            "command": "c:/users/dellg/appdata/local/programs/python/python311/python.exe",
+            "args": [
+                "c:/Desktop/python_workspace_311/PdM-main/PdM-main/agent-architects-studio/api/mcp_memory_client.py"
+            ],
+            "env": {
+                "PYTHONPATH": "c:/Desktop/python_workspace_311/PdM-main/PdM-main/agent-architects-studio",
+                "MANHATTAN_API_URL": "https://www.themanhattanproject.ai",
+                "MANHATTAN_API_KEY": "sk-tg5T-vIyYnuprwVPcgoHGfX37HBsfPwAvHkV3WFyhkE"
+            }
         }
     }
 }
