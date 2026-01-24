@@ -95,8 +95,8 @@ try:
     # Try importing from root (parent_dir)
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
     from mcp_compat_shim import mcp_compat_bp
-    app.register_blueprint(mcp_compat_bp)
-    print("[MOCK] MCP Shim registered (root)")
+    app.register_blueprint(mcp_compat_bp, url_prefix='/mcp')
+    print("[MOCK] MCP Shim registered (root) at /mcp")
 except ImportError as e:
     print(f"Shim import failed: {e}")
     # Fallback to local (if moved) or skip
