@@ -36,7 +36,7 @@ Setup:
 Configuration:
     Set these environment variables:
     - MANHATTAN_API_KEY: Your API key for authentication
-    - MANHATTAN_API_URL: API base URL (default: https://www.themanhattanproject.ai)
+    - MANHATTAN_API_URL: API base URL (default: https://www.themanhattanproject.ai/mcp)
 
 Usage:
     python mcp_memory_client.py
@@ -108,7 +108,7 @@ except ImportError:
 # ============================================================================
 
 # Default API URL - hosted Manhattan Project API
-DEFAULT_API_URL = "https://www.themanhattanproject.ai"
+DEFAULT_API_URL = "https://themanhattanproject.ai/mcp"
 
 # Get configuration from environment
 API_URL = os.getenv("MANHATTAN_API_URL", DEFAULT_API_URL)
@@ -1227,8 +1227,8 @@ async def check_session_status() -> str:
         check_result = enforce_session_initialization()
         # Add strong warnings
         if check_result.get("status") != "OK":
-            check_result["⚠️_WARNING"] = "YOU CANNOT PROVIDE A GOOD RESPONSE WITHOUT COMPLETING THESE STEPS!"
-            check_result["🛑_STOP"] = "Do NOT respond to the user until session is initialized!"
+            check_result["WARNING"] = "YOU CANNOT PROVIDE A GOOD RESPONSE WITHOUT COMPLETING THESE STEPS!"
+            check_result["STOP"] = "Do NOT respond to the user until session is initialized!"
         return json.dumps(check_result, indent=2)
     else:
         return json.dumps({
@@ -1236,7 +1236,7 @@ async def check_session_status() -> str:
             "session_enforcement": False,
             "message": "Session enforcement not enabled. Using default agent.",
             "default_agent_id": DEFAULT_AGENT_ID,
-            "⚠️_RECOMMENDATION": "Even without enforcement, you SHOULD use memory tools!"
+            "RECOMMENDATION": "Even without enforcement, you SHOULD use memory tools!"
         }, indent=2)
 
 
@@ -2207,57 +2207,38 @@ async def check_health() -> str:
 
 def main():
     """Initialize and run the MCP server."""
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='Manhattan Memory MCP Client')
+    parser.add_argument('--transport', default='sse', choices=['stdio', 'sse'],
+                      help='Transport protocol to use (default: sse)')
+    parser.add_argument('--host', default='0.0.0.0',
+                      help='Host to bind to for SSE (default: 0.0.0.0)')
+    parser.add_argument('--port', type=int, default=8000,
+                      help='Port to listen on for SSE (default: 8000)')
+    
+    args = parser.parse_args()
+
     print("=" * 70, file=sys.stderr)
     print("  Manhattan Memory MCP Client v3.0 - Session Enforced Edition", file=sys.stderr)
     print("=" * 70, file=sys.stderr)
-    print(f"  API URL: {API_URL}", file=sys.stderr)
-    print(f"  API Key: {'Configured' if API_KEY else 'Not set (set MANHATTAN_API_KEY)'}", file=sys.stderr)
-    print(f"  Session Enforcement: {'ENABLED' if SESSION_ENFORCEMENT_ENABLED else 'Disabled'}", file=sys.stderr)
-    print(file=sys.stderr)
-    print("  MANDATORY STARTUP FOR AI AGENTS:", file=sys.stderr)
-    print("     1. Call check_session_status FIRST", file=sys.stderr)
-    print("     2. If no agent_id, call request_agent_id and ASK USER", file=sys.stderr)
-    print("     3. Call session_start to load context", file=sys.stderr)
-    print("     4. USE context in all responses", file=sys.stderr)
-    print(file=sys.stderr)
-    print("  Session Management (NEW - MUST USE!):", file=sys.stderr)
-    print("    * check_session_status   - Check if session is initialized", file=sys.stderr)
-    print("    * session_start          - Initialize session and load context", file=sys.stderr)
-    print("    * session_end            - End session and sync memories", file=sys.stderr)
-    print("    * pull_context           - Pull all relevant context", file=sys.stderr)
-    print("    * push_memories          - Push memories to cloud", file=sys.stderr)
-    print("    * request_agent_id       - Get prompts to ask user for agent_id", file=sys.stderr)
-    print("    * get_startup_instructions - Get mandatory startup guide", file=sys.stderr)
-    print(file=sys.stderr)
-    print("  Memory Operations:", file=sys.stderr)
-    print("    * create_memory         - Initialize memory for an agent", file=sys.stderr)
-    print("    * process_raw_dialogues - Process dialogues via AI", file=sys.stderr)
-    print("    * add_memory_direct     - Store user info (USE FREQUENTLY!)", file=sys.stderr)
-    print("    * search_memory         - Check memories (ALWAYS FIRST!)", file=sys.stderr)
-    print("    * get_context_answer    - Q&A with memory context", file=sys.stderr)
-    print("    * update_memory_entry   - Update existing memory", file=sys.stderr)
-    print("    * delete_memory_entries - Delete memories", file=sys.stderr)
-    print("    * chat_with_agent       - Chat with agent", file=sys.stderr)
-    print(file=sys.stderr)
-    print("  Proactive Engagement:", file=sys.stderr)
-    print("    * auto_remember         - Auto-capture from user messages", file=sys.stderr)
-    print("    * should_remember       - Guidance on what to store", file=sys.stderr)
-    print("    * get_memory_hints      - Suggestions for memory use", file=sys.stderr)
-    print("    * conversation_checkpoint - Save conversation state", file=sys.stderr)
-    print(file=sys.stderr)
-    print("  Agent CRUD:", file=sys.stderr)
-    print("    * create_agent / list_agents / get_agent", file=sys.stderr)
-    print("    * update_agent / disable_agent / enable_agent / delete_agent", file=sys.stderr)
-    print(file=sys.stderr)
-    print("  Professional APIs:", file=sys.stderr)
-    print("    * agent_stats / list_memories / bulk_add_memory", file=sys.stderr)
-    print("    * export_memories / import_memories / memory_summary / api_usage", file=sys.stderr)
-    print(file=sys.stderr)
-    print("  Running on stdio transport...", file=sys.stderr)
-    print("=" * 70, file=sys.stderr)
-
     
-    mcp.run(transport="stdio")
+    if args.transport == 'sse':
+        print(f"  Starting Remote HTTP Server on http://{args.host}:{args.port} (SSE)", file=sys.stderr)
+        print(f"  API URL: {API_URL}", file=sys.stderr)
+        print(f"  API Key: {'Configured' if API_KEY else 'Not set (set MANHATTAN_API_KEY)'}", file=sys.stderr)
+        print("  Client-side file NOT required for users. Share the SSE URL!", file=sys.stderr)
+        print("=" * 70, file=sys.stderr)
+        
+        mcp.settings.port = args.port
+        mcp.settings.host = args.host
+        mcp.run(transport="sse")
+    else:
+        print(f"  API URL: {API_URL}", file=sys.stderr)
+        print(f"  API Key: {'Configured' if API_KEY else 'Not set (set MANHATTAN_API_KEY)'}", file=sys.stderr)
+        print("  Running on stdio transport...", file=sys.stderr)
+        print("=" * 70, file=sys.stderr)
+        mcp.run(transport="stdio")
 
 
 if __name__ == "__main__":

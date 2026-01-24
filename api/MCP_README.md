@@ -96,6 +96,14 @@ That's it! 🎉
 
 Clone the full repository and run your own server. See [SELF_HOSTED_SETUP.md](SELF_HOSTED_SETUP.md).
 
+### Option 3: Remote HTTP Server (SSE)
+
+Run the server as a remote HTTP service that other MCP clients can connect to directly via Server-Sent Events (SSE).
+
+```bash
+python api/mcp_memory_server.py --transport sse --host 0.0.0.0 --port 8000
+```
+
 ---
 
 ## 🔌 Integration Guides

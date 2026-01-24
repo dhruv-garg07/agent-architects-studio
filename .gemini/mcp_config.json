@@ -1,0 +1,15 @@
+{
+    "mcpServers": {
+        "manhattan-memory": {
+            "command": "C:/Users/Dellg/AppData/Local/Programs/Python/Python311/python.exe",
+            "args": [
+                "C:/Desktop/python_workspace_311/PdM-main/PdM-main/agent-architects-studio/api/mcp_memory_client.py"
+            ],
+            "env": {
+                "MANHATTAN_API_URL": "https://www.themanhattanproject.ai",
+                "MANHATTAN_API_KEY": "sk-tg5T-vIyYnuprwVPcgoHGfX37HBsfPwAvHkV3WFyhkE",
+                "PYTHONPATH": "C:/Desktop/python_workspace_311/PdM-main/PdM-main/agent-architects-studio"
+            }
+        }
+    }
+}

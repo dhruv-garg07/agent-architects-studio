@@ -1003,11 +1003,35 @@ def main():
     print("  * delete_memory_entries - Delete memories", file=sys.stderr)
     print("  * list_all_memories    - List all memories", file=sys.stderr)
     print(file=sys.stderr)
-    print("Running on stdio transport...", file=sys.stderr)
-    print("=" * 60, file=sys.stderr)
-
-    mcp.run(transport="stdio")
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='Manhattan Memory MCP Server')
+    parser.add_argument('--transport', default='stdio', choices=['stdio', 'sse'],
+                      help='Transport protocol to use (default: stdio)')
+    parser.add_argument('--host', default='0.0.0.0',
+                      help='Host to bind to for SSE (default: 0.0.0.0)')
+    parser.add_argument('--port', type=int, default=8000,
+                      help='Port to listen on for SSE (default: 8000)')
+    
+    args = parser.parse_args()
+    
+    if args.transport == 'sse':
+        print(f"Starting Manhattan Memory MCP Server on http://{args.host}:{args.port} (SSE)", file=sys.stderr)
+        print("Local resource access enabled.", file=sys.stderr)
+        mcp.settings.port = args.port
+        mcp.settings.host = args.host
+        mcp.run(transport="sse")
+    else:
+        # Check standard input/output for stdio
+        print("Running on stdio transport...", file=sys.stderr)
+        print("=" * 60, file=sys.stderr)
+        mcp.run(transport="stdio")
 
 
 if __name__ == "__main__":
+    # Ensure all required environment variables are set or warn
+    if not os.getenv("MANHATTAN_API_KEY") and not os.getenv("SUPABASE_URL"):
+        print("Warning: MANHATTAN_API_KEY or SUPABASE credentials not found in environment.", file=sys.stderr)
+        print("Agent management and some features may be limited.", file=sys.stderr)
+        
     main()
