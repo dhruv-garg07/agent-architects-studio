@@ -52,8 +52,8 @@ load_dotenv()
 try:
     from mcp.server.fastmcp import FastMCP
 except ImportError:
-    print("Error: mcp package not installed. Install with: pip install mcp")
-    print("Or: uv add mcp")
+    print("Error: mcp package not installed. Install with: pip install mcp", file=sys.stderr)
+    print("Or: uv add mcp", file=sys.stderr)
     sys.exit(1)
 
 # Import SimpleMem components
@@ -61,8 +61,8 @@ try:
     from SimpleMem.main import create_system, SimpleMemSystem
     from SimpleMem.models.memory_entry import MemoryEntry, Dialogue
 except ImportError as e:
-    print(f"Error importing SimpleMem: {e}")
-    print("Make sure SimpleMem module is available in the path")
+    print(f"Error importing SimpleMem: {e}", file=sys.stderr)
+    print("Make sure SimpleMem module is available in the path", file=sys.stderr)
     sys.exit(1)
 
 # Initialize FastMCP server
@@ -70,32 +70,16 @@ mcp = FastMCP(
     "manhattan-memory",
     instructions="""
 You have access to a PERSISTENT MEMORY SYSTEM for storing and retrieving information.
+This allows you to provide a more personalized and consistent experience.
 
-CRITICAL INSTRUCTIONS FOR AI AGENT:
-1. **USE MEMORY AUTOMATICALLY** - Do NOT ask the user if you should save or search. Just do it.
-2. **BE PROACTIVE** - If the user mentions a fact, deadline, or preference, save it immediately.
-3. **CHECK MEMORY FIRST** - Before answering questions about past context, potential deadlines, or details, search memory.
+PROACTIVE MEMORY USAGE:
+1.  **SAVE IMPORTANT INFO**: If the user shares facts, preferences, or project details, store them.
+2.  **CHECK CONTEXT**: Before answering context-heavy questions, check if you already know the answer.
 
-🧠 WHEN TO USE THESE TOOLS:
-
-- **ALWAYS** check memory (`search_memory`) when the user asks about:
-  - Project details, deadlines, or status
-  - People, roles, or responsibilities
-  - Past decisions or discussions
-  - "What do you know about X?"
-
-- **ALWAYS** save to memory (`add_memory_direct` or `process_raw_dialogues`) when:
-  - User defines a new requirement or rule
-  - User shares a deadline or schedule
-  - User corrects you (save the correction)
-  - Key decisions are made
+This system is designed to HELP you, not to block you. Use it when it improves your response quality.
 
 ⚙️ CONFIGURATION:
-- `agent_id`: This parameter is OPTIONAL.
-- **DEFAULT**: If you omit `agent_id`, it uses the enterprise agent (ID: `84aab1f8-3ea9-4c6a-aa3c-cd8eaa274a5e`).
-- **RECOMMENDATION**: Omit `agent_id` for 99% of requests. Only specify it if the user explicitly names a different agent.
-
-Your goal is to be a helpful, context-aware assistant that remembers everything without burdening the user.
+-   `agent_id`: Optional. defaults to the enterprise agent (ID: `84aab1f8-3ea9-4c6a-aa3c-cd8eaa274a5e`) if not specified.
 """
 )
 
@@ -125,7 +109,7 @@ class McpAgentsService:
         
         if not supabase_url or not supabase_key:
             self.client = None
-            print("Warning: Supabase credentials not set. Agent management will work locally only.")
+            print("Warning: Supabase credentials not set. Agent management will work locally only.", file=sys.stderr)
         else:
             self.client = create_client(supabase_url, supabase_key)
     
