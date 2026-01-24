@@ -262,14 +262,6 @@ def ranaji_page():
     except Exception as e:
         return f"<h1>Rana Ji</h1><p>Unable to render page: {e}</p>", 500
 
-@app.route('/dhruv')
-def dhruv_page():
-    """Dhruv Garg Page."""
-    try:
-        return render_template('dhruv.html')
-    except Exception as e:
-        return f"<h1>Dhruv Garg</h1><p>Unable to render page: {e}</p>", 500
-
 @app.route('/submit')
 @login_required
 def creator_studio():
