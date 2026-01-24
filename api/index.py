@@ -95,8 +95,8 @@ try:
     # Try importing from root (parent_dir)
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
     from mcp_compat_shim import mcp_compat_bp
-    app.register_blueprint(mcp_compat_bp, url_prefix='/mcp')
-    print("[MOCK] MCP Shim registered (root) at /mcp")
+    app.register_blueprint(mcp_compat_bp)
+    print("[MOCK] MCP Shim registered (root)")
 except ImportError as e:
     print(f"Shim import failed: {e}")
     # Fallback to local (if moved) or skip
@@ -1488,7 +1488,18 @@ def api_docs():
     # Pass serialized JSON (or null) to the template. The template will use this as INITIAL_DOCS.
     return render_template('api_docs.html', docs_json=json.dumps(docs_json) if docs_json is not None else None)
 
+# IMPORT MCP from your blueprint file
+from mcp_memory_client import mcp
+
+def run_mcp():
+    print("🚀 Starting Manhattan Memory MCP Server...", file=sys.stderr)
+    try:
+        mcp.run(transport="http", host="0.0.0.0", port=3333)
+    except Exception as e:
+        print(f"❌ MCP Server crashed: {e}", file=sys.stderr)
+
 if __name__ == '__main__':
+    threading.Thread(target=run_mcp, daemon=True).start()
     if socketio:
         # Run with SocketIO for WebSocket support
         print("[STARTUP] Running with Flask-SocketIO (WebSocket enabled)")
