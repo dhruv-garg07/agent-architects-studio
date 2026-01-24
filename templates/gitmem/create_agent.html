@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Create New Agent Repository{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-background text-foreground font-inter">
+    <div class="max-w-2xl mx-auto px-6 py-12">
+
+        <!-- Header -->
+        <div class="mb-8">
+            <a href="{{ url_for('gitmem.landing') }}"
+                class="text-muted-foreground hover:text-foreground flex items-center gap-2 mb-4">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                Back to repositories
+            </a>
+            <h1 class="text-3xl font-bold">Create New Agent Repository</h1>
+            <p class="text-muted-foreground mt-2">Initialize a new memory context for an AI agent</p>
+        </div>
+
+        <!-- Form -->
+        <form action="{{ url_for('gitmem.api_create_agent') }}" method="POST" class="space-y-6">
+
+            <!-- Agent ID -->
+            <div class="card p-6">
+                <h2 class="font-semibold mb-4 flex items-center gap-2">
+                    <i data-lucide="hash" class="w-5 h-5 text-primary"></i>
+                    Agent Identifier
+                </h2>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Agent ID *</label>
+                        <input type="text" name="agent_id" required pattern="^[a-z0-9\-_\.]+$"
+                            placeholder="e.g., claude-assistant, agent-007, research-bot" class="w-full bg-secondary/50 border border-border rounded-lg p-3 text-sm 
+                                   focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary">
+                        <p class="text-xs text-muted-foreground mt-1">
+                            Unique identifier for the agent. Use lowercase letters, numbers, hyphens, underscores, and
+                            dots.
+                        </p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Display Name</label>
+                        <input type="text" name="name" placeholder="e.g., Claude Research Assistant" class="w-full bg-secondary/50 border border-border rounded-lg p-3 text-sm 
+                                   focus:outline-none focus:ring-2 focus:ring-primary/50">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div class="card p-6">
+                <h2 class="font-semibold mb-4 flex items-center gap-2">
+                    <i data-lucide="file-text" class="w-5 h-5 text-primary"></i>
+                    Description
+                </h2>
+
+                <textarea name="description" rows="4"
+                    placeholder="Describe the purpose and capabilities of this agent..." class="w-full bg-secondary/50 border border-border rounded-lg p-3 text-sm 
+                           focus:outline-none focus:ring-2 focus:ring-primary/50"></textarea>
+            </div>
+
+            <!-- Data Sources -->
+            <div class="card p-6">
+                <h2 class="font-semibold mb-4 flex items-center gap-2">
+                    <i data-lucide="cloud" class="w-5 h-5 text-primary"></i>
+                    Data Sources
+                </h2>
+                <p class="text-sm text-muted-foreground mb-4">
+                    Select which data sources to enable for this agent
+                </p>
+
+                <div class="space-y-3">
+                    <label
+                        class="flex items-center gap-3 p-3 rounded-lg bg-secondary/30 hover:bg-secondary/50 cursor-pointer transition-colors">
+                        <input type="checkbox" name="source_local" checked class="accent-primary">
+                        <i data-lucide="hard-drive" class="w-5 h-5 text-orange-400"></i>
+                        <div>
+                            <div class="font-medium">Local Storage</div>
+                            <div class="text-xs text-muted-foreground">Store memories in local filesystem</div>
+                        </div>
+                    </label>
+
+                    <label
+                        class="flex items-center gap-3 p-3 rounded-lg bg-secondary/30 hover:bg-secondary/50 cursor-pointer transition-colors">
+                        <input type="checkbox" name="source_supabase" class="accent-primary">
+                        <i data-lucide="database" class="w-5 h-5 text-green-400"></i>
+                        <div>
+                            <div class="font-medium">Supabase Cloud</div>
+                            <div class="text-xs text-muted-foreground">Sync memories to PostgreSQL cloud database</div>
+                        </div>
+                    </label>
+
+                    <label
+                        class="flex items-center gap-3 p-3 rounded-lg bg-secondary/30 hover:bg-secondary/50 cursor-pointer transition-colors">
+                        <input type="checkbox" name="source_chromadb" checked class="accent-primary">
+                        <i data-lucide="hexagon" class="w-5 h-5 text-purple-400"></i>
+                        <div>
+                            <div class="font-medium">ChromaDB Vectors</div>
+                            <div class="text-xs text-muted-foreground">Enable semantic search with embeddings</div>
+                        </div>
+                    </label>
+
+                    <label
+                        class="flex items-center gap-3 p-3 rounded-lg bg-secondary/30 hover:bg-secondary/50 cursor-pointer transition-colors">
+                        <input type="checkbox" name="source_mcp" class="accent-primary">
+                        <i data-lucide="plug" class="w-5 h-5 text-blue-400"></i>
+                        <div>
+                            <div class="font-medium">MCP Server</div>
+                            <div class="text-xs text-muted-foreground">Connect to Model Context Protocol for Claude
+                                Desktop</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Initial Memory -->
+            <div class="card p-6">
+                <h2 class="font-semibold mb-4 flex items-center gap-2">
+                    <i data-lucide="brain" class="w-5 h-5 text-primary"></i>
+                    Initial Memory (Optional)
+                </h2>
+
+                <textarea name="initial_memory" rows="3"
+                    placeholder="Add an initial memory or system prompt for this agent..." class="w-full bg-secondary/50 border border-border rounded-lg p-3 text-sm 
+                           focus:outline-none focus:ring-2 focus:ring-primary/50"></textarea>
+                <p class="text-xs text-muted-foreground mt-1">
+                    This will be added as a semantic memory with high importance.
+                </p>
+            </div>
+
+            <!-- Submit -->
+            <div class="flex items-center gap-4">
+                <button type="submit"
+                    class="btn-primary px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium flex items-center gap-2">
+                    <i data-lucide="plus" class="w-5 h-5"></i>
+                    Create Repository
+                </button>
+                <a href="{{ url_for('gitmem.landing') }}" class="text-muted-foreground hover:text-foreground">
+                    Cancel
+                </a>
+            </div>
+
+        </form>
+
+    </div>
+</div>
+{% endblock %}

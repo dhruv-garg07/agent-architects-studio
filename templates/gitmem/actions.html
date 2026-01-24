@@ -1,0 +1,51 @@
+{% extends "gitmem/base.html" %}
+{% set active_page = "actions" %}
+
+{% block repo_content %}
+<div class="grid grid-cols-12 gap-6">
+    <!-- Sidebar -->
+    <div class="col-span-3">
+        <div class="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Workflows</div>
+        <nav class="space-y-1">
+            <a href="#"
+                class="flex items-center gap-2 px-3 py-2 bg-secondary/50 text-foreground text-sm font-medium rounded-md border-l-2 border-primary">
+                Memory Indexing
+            </a>
+            <a href="#"
+                class="flex items-center gap-2 px-3 py-2 text-muted-foreground hover:bg-secondary/30 hover:text-foreground text-sm font-medium rounded-md">
+                Pruning (GC)
+            </a>
+            <a href="#"
+                class="flex items-center gap-2 px-3 py-2 text-muted-foreground hover:bg-secondary/30 hover:text-foreground text-sm font-medium rounded-md">
+                Vector Optimization
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-span-9 space-y-4">
+        <div class="card border border-border/50 overflow-hidden">
+            <div class="bg-secondary/30 p-3 border-b border-border/50 flex justify-between items-center">
+                <h3 class="font-semibold text-sm">All Action Runs</h3>
+            </div>
+            <div class="divide-y divide-border/30">
+                {% for i in range(5) %}
+                <div class="p-3 flex items-center justify-between hover:bg-secondary/20">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="check-circle-2" class="w-4 h-4 text-green-500"></i>
+                        <div>
+                            <div class="text-sm font-medium text-foreground">Re-index vector store</div>
+                            <div class="text-xs text-muted-foreground">master branch</div>
+                        </div>
+                    </div>
+                    <div class="text-xs text-muted-foreground flex gap-4">
+                        <span>3m 45s</span>
+                        <span>2 hours ago</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

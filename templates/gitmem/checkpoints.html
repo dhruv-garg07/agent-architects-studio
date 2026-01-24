@@ -1,0 +1,261 @@
+{% extends "gitmem/base.html" %}
+
+{% block title %}GitMem - Checkpoints - {{ agent.name if agent else 'Agent' }}{% endblock %}
+
+{% block repo_content %}
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <!-- Main Content -->
+    <div class="lg:col-span-3 space-y-6">
+        <!-- Page Header -->
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <a href="{{ url_for('gitmem.agent_dashboard', agent_id=agent.id if agent else '') }}"
+                    class="text-muted-foreground hover:text-foreground">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                </a>
+                <h2 class="text-xl font-semibold">Checkpoints</h2>
+                <span class="px-2 py-0.5 text-xs bg-secondary rounded-full">{{ checkpoints|length }} saved</span>
+            </div>
+            <button onclick="createCheckpoint()" class="btn-primary flex items-center gap-2">
+                <i data-lucide="save" class="w-4 h-4"></i>
+                Create Checkpoint
+            </button>
+        </div>
+
+        <!-- Type Tabs -->
+        <div class="flex gap-2 border-b border-border pb-2">
+            {% for t, icon, label in [('snapshot', 'camera', 'Snapshots'), ('session', 'clock', 'Sessions'),
+            ('recovery', 'shield', 'Recovery')] %}
+            <a href="?type={{ t }}"
+                class="px-4 py-2 rounded-t-lg text-sm font-medium transition-colors
+                      {{ 'bg-primary/10 text-primary border-b-2 border-primary' if checkpoint_type == t else 'text-muted-foreground hover:text-foreground hover:bg-secondary/50' }}">
+                <i data-lucide="{{ icon }}" class="w-4 h-4 inline-block mr-1"></i>
+                {{ label }}
+            </a>
+            {% endfor %}
+            <a href="{{ url_for('gitmem.agent_checkpoints', agent_id=agent.id if agent else '') }}"
+                class="px-4 py-2 rounded-t-lg text-sm font-medium transition-colors
+                      {{ 'bg-primary/10 text-primary border-b-2 border-primary' if not checkpoint_type else 'text-muted-foreground hover:text-foreground hover:bg-secondary/50' }}">
+                <i data-lucide="layers" class="w-4 h-4 inline-block mr-1"></i>
+                All
+            </a>
+        </div>
+
+        <!-- Checkpoints Timeline -->
+        <div class="card">
+            {% if checkpoints %}
+            <div class="divide-y divide-border">
+                {% for cp in checkpoints %}
+                <div class="p-4 hover:bg-secondary/30 transition-colors">
+                    <div class="flex items-start gap-4">
+                        <!-- Timeline Dot -->
+                        <div class="relative">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center
+                                        {{ 'bg-blue-500/10 text-blue-400' if cp.checkpoint_type == 'snapshot' else 
+                                           'bg-green-500/10 text-green-400' if cp.checkpoint_type == 'session' else 
+                                           'bg-yellow-500/10 text-yellow-400' }}">
+                                <i data-lucide="{{ 'camera' if cp.checkpoint_type == 'snapshot' else 
+                                                   'clock' if cp.checkpoint_type == 'session' else 'shield' }}"
+                                    class="w-5 h-5"></i>
+                            </div>
+                            {% if not loop.last %}
+                            <div class="absolute top-10 left-1/2 -translate-x-1/2 w-0.5 h-full bg-border"></div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Content -->
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-1">
+                                <h4 class="font-semibold">{{ cp.name or 'Checkpoint' }}</h4>
+                                <span class="px-2 py-0.5 text-xs rounded-full bg-secondary text-muted-foreground">
+                                    {{ cp.checkpoint_type }}
+                                </span>
+                            </div>
+
+                            {% if cp.description %}
+                            <p class="text-sm text-muted-foreground mb-2">{{ cp.description }}</p>
+                            {% endif %}
+
+                            <!-- Memory Counts -->
+                            {% if cp.memory_counts %}
+                            <div class="flex flex-wrap gap-2 mb-2">
+                                {% for type, count in cp.memory_counts.items() %}
+                                <span class="px-2 py-0.5 text-xs rounded-full bg-secondary/50 flex items-center gap-1">
+                                    <i data-lucide="{{ 'clock' if type == 'episodic' else 
+                                                       'book-open' if type == 'semantic' else 
+                                                       'cog' if type == 'procedural' else 'brain' }}"
+                                        class="w-3 h-3"></i>
+                                    {{ type }}: {{ count }}
+                                </span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+
+                            <div class="flex items-center gap-4 text-xs text-muted-foreground">
+                                <span class="flex items-center gap-1">
+                                    <i data-lucide="git-commit" class="w-3 h-3"></i>
+                                    {{ (cp.commit_hash or 'no commit')[:7] }}
+                                </span>
+                                <span>{{ cp.created_at }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="flex items-center gap-2">
+                            <button onclick="restoreCheckpoint('{{ cp.id }}')"
+                                class="btn-secondary px-3 py-1.5 text-xs flex items-center gap-1">
+                                <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                                Restore
+                            </button>
+                            <button onclick="viewCheckpoint('{{ cp.id }}')" class="btn-secondary px-3 py-1.5 text-xs">
+                                <i data-lucide="eye" class="w-3 h-3"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="p-12 text-center text-muted-foreground">
+                <i data-lucide="save" class="w-12 h-12 mx-auto mb-4 opacity-30"></i>
+                <p class="text-lg mb-2">No checkpoints yet</p>
+                <p class="text-sm mb-4">Create your first checkpoint to save the agent's memory state</p>
+                <button onclick="createCheckpoint()" class="btn-primary">
+                    Create Checkpoint
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="space-y-4">
+        <!-- Checkpoint Info -->
+        <div class="card p-4">
+            <h3 class="text-sm font-semibold mb-3 flex items-center gap-2">
+                <i data-lucide="info" class="w-4 h-4 text-primary"></i>
+                About Checkpoints
+            </h3>
+            <div class="space-y-3 text-sm text-muted-foreground">
+                <div class="flex items-start gap-2">
+                    <i data-lucide="camera" class="w-4 h-4 text-blue-400 mt-0.5"></i>
+                    <div>
+                        <p class="font-medium text-foreground">Snapshots</p>
+                        <p class="text-xs">Manual full-state backups</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-2">
+                    <i data-lucide="clock" class="w-4 h-4 text-green-400 mt-0.5"></i>
+                    <div>
+                        <p class="font-medium text-foreground">Sessions</p>
+                        <p class="text-xs">Auto-saved at session end</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-2">
+                    <i data-lucide="shield" class="w-4 h-4 text-yellow-400 mt-0.5"></i>
+                    <div>
+                        <p class="font-medium text-foreground">Recovery</p>
+                        <p class="text-xs">System recovery points</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="card p-4">
+            <h3 class="text-sm font-semibold mb-3">Statistics</h3>
+            <div class="space-y-2 text-sm">
+                <div class="flex justify-between">
+                    <span class="text-muted-foreground">Total Checkpoints</span>
+                    <span class="font-medium">{{ checkpoints|length }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-muted-foreground">Latest</span>
+                    <span class="font-medium text-xs">
+                        {{ checkpoints[0].created_at if checkpoints else 'None' }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Checkpoint Modal -->
+<div id="create-modal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="toggleCreateModal()"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg">
+        <div class="card p-6">
+            <h3 class="text-lg font-semibold mb-4">Create Checkpoint</h3>
+            <form id="create-form" class="space-y-4">
+                <div>
+                    <label class="text-sm font-medium text-muted-foreground">Name</label>
+                    <input type="text" name="name" placeholder="e.g., Before major update"
+                        class="w-full mt-1 p-2 bg-secondary border border-border rounded-lg">
+                </div>
+                <div>
+                    <label class="text-sm font-medium text-muted-foreground">Type</label>
+                    <select name="type" class="w-full mt-1 p-2 bg-secondary border border-border rounded-lg">
+                        <option value="snapshot">Snapshot</option>
+                        <option value="session">Session</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-sm font-medium text-muted-foreground">Description (optional)</label>
+                    <textarea name="description" rows="2"
+                        class="w-full mt-1 p-2 bg-secondary border border-border rounded-lg"></textarea>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button type="button" onclick="toggleCreateModal()" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn-primary">Create Checkpoint</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function createCheckpoint() {
+        toggleCreateModal();
+    }
+
+    function toggleCreateModal() {
+        document.getElementById('create-modal').classList.toggle('hidden');
+    }
+
+    document.getElementById('create-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+
+        try {
+            const resp = await fetch('/gitmem/api/checkpoints/{{ agent.id if agent else "" }}/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: formData.get('name'),
+                    type: formData.get('type'),
+                    description: formData.get('description')
+                })
+            });
+            const data = await resp.json();
+            if (data.status === 'created') {
+                window.location.reload();
+            } else {
+                alert('Failed to create checkpoint: ' + (data.error || 'Unknown error'));
+            }
+        } catch (err) {
+            alert('Error: ' + err.message);
+        }
+    });
+
+    async function restoreCheckpoint(cpId) {
+        if (!confirm('Are you sure you want to restore to this checkpoint? Current state will be preserved as a recovery point.')) {
+            return;
+        }
+        alert('Checkpoint restore coming soon!');
+    }
+
+    function viewCheckpoint(cpId) {
+        window.location.href = `/gitmem/api/checkpoints/{{ agent.id if agent else "" }}/${cpId}`;
+    }
+</script>
+{% endblock %}

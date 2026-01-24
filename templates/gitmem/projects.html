@@ -1,0 +1,55 @@
+{% extends "gitmem/base.html" %}
+{% set active_page = "projects" %}
+
+{% block repo_content %}
+<div class="max-w-5xl mx-auto">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h2 class="text-lg font-medium text-gray-200">Memory Projects</h2>
+            <p class="text-xs text-gray-500 mt-1">Organize long-term memory consolidation tasks</p>
+        </div>
+        <button
+            class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors shadow-lg shadow-blue-500/20">
+            <i data-lucide="plus" class="w-3 h-3 inline-block mr-1"></i>
+            New Project
+        </button>
+    </div>
+
+    <!-- Empty State / Content -->
+    <div class="glass-panel rounded-lg p-12 text-center border border-dashed border-gray-700/50">
+        <div
+            class="w-12 h-12 rounded-full bg-[#1c1f24] flex items-center justify-center mx-auto mb-4 border border-border">
+            <i data-lucide="kanban" class="w-5 h-5 text-gray-400"></i>
+        </div>
+        <h3 class="text-sm font-medium text-gray-300 mb-1">No active projects</h3>
+        <p class="text-xs text-gray-500 max-w-sm mx-auto mb-6">
+            Projects help you group memory consolidation efforts, training runs, and context refactoring into manageable
+            boards.
+        </p>
+        <button class="text-blue-400 hover:text-blue-300 text-xs font-medium">Learn more about Memory Management
+            &rarr;</button>
+    </div>
+
+    <!-- Mockup of a project item (hidden for now, just showing structure) -->
+    <!-- 
+    <div class="grid grid-cols-3 gap-6 mt-8">
+        <div class="glass-panel p-4 rounded-lg">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Backlog</span>
+                <span class="text-xs text-gray-600">3</span>
+            </div>
+            <div class="space-y-2">
+                <div class="p-2 bg-[#0f0f12] rounded border border-border cursor-pointer hover:border-gray-600 transition-colors">
+                    <div class="text-xs text-gray-300 mb-1">Index Wikipedia Dump</div>
+                    <div class="flex items-center gap-2">
+                         <span class="w-2 h-2 rounded-full bg-orange-400"></span>
+                         <span class="text-[10px] text-gray-500">High Priority</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> 
+    -->
+</div>
+{% endblock %}

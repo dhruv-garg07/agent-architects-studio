@@ -1,0 +1,37 @@
+{% extends "gitmem/base.html" %}
+
+{% block title %}Agent: {{ agent_id }}{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex items-center gap-4">
+    <div class="w-16 h-16 rounded-full bg-slate-200 flex items-center justify-center text-2xl">🤖</div>
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">{{ agent_id }}</h1>
+        <div class="flex gap-2 mt-1">
+            <span class="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">Active</span>
+            <span class="px-2 py-0.5 bg-gray-100 text-gray-700 text-xs font-medium rounded-full">Episodic Memory</span>
+        </div>
+    </div>
+</div>
+
+<div class="bg-white rounded-lg shadow-sm border border-gray-200">
+    <div class="p-4 border-b border-gray-100">
+        <h3 class="font-medium text-gray-900">Recent Memories</h3>
+    </div>
+    <div class="divide-y divide-gray-100">
+        {% for mem in memories %}
+        <div class="p-4 hover:bg-gray-50 group">
+            <p class="text-gray-800 text-sm mb-1">{{ mem.content }}</p>
+            <div class="flex items-center gap-2 text-xs text-gray-500">
+                <span>{{ mem.created_at.strftime('%Y-%m-%d %H:%M') if mem.created_at else 'Just now' }}</span>
+                <span>•</span>
+                <span class="font-mono">{{ mem.id[:8] }}</span>
+                <button class="ml-auto text-brand-600 opacity-0 group-hover:opacity-100">Details</button>
+            </div>
+        </div>
+        {% else %}
+        <div class="p-8 text-center text-gray-500">No memories found.</div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

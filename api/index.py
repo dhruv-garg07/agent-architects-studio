@@ -6,7 +6,7 @@ import sys
 # import sys, os
 sys.path.append(os.path.dirname(__file__))
 # Get the current file's directory
-current_dir = os.path.dirname(__file__)
+current_dir = os.path.abspath(os.path.dirname(__file__))
 
 # Get the parent directory (one level up)
 parent_dir = os.path.abspath(os.path.join(current_dir, os.pardir))
@@ -20,6 +20,10 @@ current_dir = os.path.dirname(__file__)
 
 # Go two levels up
 grandparent_dir = os.path.abspath(os.path.join(current_dir, os.pardir, os.pardir))
+
+# Add lib directory to sys.path
+lib_dir = os.path.abspath(os.path.join(parent_dir, 'lib'))
+sys.path.insert(0, lib_dir)
 
 # Add to sys.path
 sys.path.insert(0, grandparent_dir)
@@ -67,6 +71,38 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 STATIC_DIR = os.path.join(PROJECT_ROOT, 'static')
 TEMPLATES_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../templates'))
 app = Flask(__name__, static_folder=STATIC_DIR, template_folder=TEMPLATES_DIR)
+
+# --- Flask-SocketIO for Real-Time Updates ---
+try:
+    from flask_socketio import SocketIO
+    socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+    
+    # Initialize GitMem WebSocket handlers
+    from gitmem.api.websocket_events import init_websocket
+    init_websocket(socketio)
+    print("[STARTUP] Flask-SocketIO initialized for real-time updates")
+except ImportError as e:
+    print(f"[STARTUP] Flask-SocketIO not available: {e}")
+    socketio = None
+
+# --- GitMem Integration ---
+from gitmem.api.routes import gitmem_bp
+app.register_blueprint(gitmem_bp)
+
+# --- MCP Client Compatibility ---
+
+try:
+    # Try importing from root (parent_dir)
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+    from mcp_compat_shim import mcp_compat_bp
+    app.register_blueprint(mcp_compat_bp)
+    print("[MOCK] MCP Shim registered (root)")
+except ImportError as e:
+    print(f"Shim import failed: {e}")
+    # Fallback to local (if moved) or skip
+    pass
+# ------------------------------
+# ------------------------------
 
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
@@ -1427,4 +1463,11 @@ def api_docs():
     return render_template('api_docs.html', docs_json=json.dumps(docs_json) if docs_json is not None else None)
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=1078)
+    if socketio:
+        # Run with SocketIO for WebSocket support
+        print("[STARTUP] Running with Flask-SocketIO (WebSocket enabled)")
+        socketio.run(app, debug=True, host='0.0.0.0', port=1078, allow_unsafe_werkzeug=True)
+    else:
+        # Fallback to standard Flask
+        print("[STARTUP] Running with standard Flask (no WebSocket)")
+        app.run(debug=True, host='0.0.0.0', port=1078)

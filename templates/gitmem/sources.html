@@ -1,0 +1,245 @@
+{% extends "gitmem/base.html" %}
+
+{% block title %}GitMem - Data Sources - {{ agent.name if agent else 'Agent' }}{% endblock %}
+
+{% block repo_content %}
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <!-- Main Content -->
+    <div class="lg:col-span-3 space-y-6">
+        <!-- Page Header -->
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <a href="{{ url_for('gitmem.agent_dashboard', agent_id=agent.id if agent else '') }}"
+                    class="text-muted-foreground hover:text-foreground">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                </a>
+                <h2 class="text-xl font-semibold">Data Sources</h2>
+            </div>
+        </div>
+
+        <!-- Source Type Tabs -->
+        <div class="flex gap-2 border-b border-border pb-2">
+            {% for t, icon, label in [('api', 'globe', 'API Calls'), ('mcp', 'server', 'MCP Inputs'), ('webhooks',
+            'webhook', 'Webhooks')] %}
+            <a href="?type={{ t }}"
+                class="px-4 py-2 rounded-t-lg text-sm font-medium transition-colors
+                      {{ 'bg-primary/10 text-primary border-b-2 border-primary' if source_type == t else 'text-muted-foreground hover:text-foreground hover:bg-secondary/50' }}">
+                <i data-lucide="{{ icon }}" class="w-4 h-4 inline-block mr-1"></i>
+                {{ label }}
+            </a>
+            {% endfor %}
+        </div>
+
+        <!-- Content Based on Source Type -->
+        <div class="card">
+            {% if source_type == 'api' %}
+            <!-- API Logs -->
+            {% if data.logs %}
+            <div class="divide-y divide-border">
+                {% for log in data.logs %}
+                <div class="p-4 hover:bg-secondary/30 transition-colors">
+                    <div class="flex items-start gap-3">
+                        <div
+                            class="w-10 h-10 rounded-lg flex items-center justify-center
+                                        {{ 'bg-green-500/10' if log.response_status and log.response_status < 400 else 'bg-red-500/10' }}">
+                            <span
+                                class="text-xs font-mono font-bold
+                                             {{ 'text-green-400' if log.response_status and log.response_status < 400 else 'text-red-400' }}">
+                                {{ log.response_status or '???' }}
+                            </span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="px-2 py-0.5 text-xs font-mono bg-secondary rounded">
+                                    {{ log.method or 'GET' }}
+                                </span>
+                                <span class="font-medium truncate">{{ log.endpoint }}</span>
+                            </div>
+                            <div class="flex items-center gap-4 text-xs text-muted-foreground">
+                                <span>{{ log.duration_ms or 0 }}ms</span>
+                                {% if log.cached %}
+                                <span class="text-blue-400">cached</span>
+                                {% endif %}
+                                <span>{{ log.created_at }}</span>
+                            </div>
+                        </div>
+                        <button onclick="viewLog('{{ log.id }}')" class="btn-secondary px-3 py-1.5 text-xs">
+                            <i data-lucide="eye" class="w-3 h-3"></i>
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="p-12 text-center text-muted-foreground">
+                <i data-lucide="globe" class="w-12 h-12 mx-auto mb-4 opacity-30"></i>
+                <p class="text-lg mb-2">No API calls logged</p>
+                <p class="text-sm">API calls made by the agent will appear here</p>
+            </div>
+            {% endif %}
+
+            {% elif source_type == 'mcp' %}
+            <!-- MCP Inputs -->
+            {% if data.inputs %}
+            <div class="divide-y divide-border">
+                {% for inp in data.inputs %}
+                <div class="p-4 hover:bg-secondary/30 transition-colors">
+                    <div class="flex items-start gap-3">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center
+                                        {{ 'bg-green-500/10' if inp.success else 'bg-red-500/10' }}">
+                            <i data-lucide="{{ 'check' if inp.success else 'x' }}"
+                                class="w-5 h-5 {{ 'text-green-400' if inp.success else 'text-red-400' }}"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="font-medium">{{ inp.tool_name }}</span>
+                                {% if inp.tool_description %}
+                                <span class="text-xs text-muted-foreground truncate">
+                                    {{ inp.tool_description[:50] }}...
+                                </span>
+                                {% endif %}
+                            </div>
+                            <div class="flex items-center gap-4 text-xs text-muted-foreground">
+                                <span>{{ inp.duration_ms or 0 }}ms</span>
+                                {% if inp.session_id %}
+                                <span>Session: {{ inp.session_id[:8] }}...</span>
+                                {% endif %}
+                                <span>{{ inp.created_at }}</span>
+                            </div>
+                            {% if inp.error_message %}
+                            <p class="text-xs text-red-400 mt-1">{{ inp.error_message }}</p>
+                            {% endif %}
+                        </div>
+                        <button onclick="viewMCPInput('{{ inp.id }}')" class="btn-secondary px-3 py-1.5 text-xs">
+                            <i data-lucide="eye" class="w-3 h-3"></i>
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="p-12 text-center text-muted-foreground">
+                <i data-lucide="server" class="w-12 h-12 mx-auto mb-4 opacity-30"></i>
+                <p class="text-lg mb-2">No MCP inputs logged</p>
+                <p class="text-sm">MCP server tool calls will appear here</p>
+            </div>
+            {% endif %}
+
+            {% elif source_type == 'webhooks' %}
+            <!-- Webhooks -->
+            {% if data.webhooks %}
+            <div class="divide-y divide-border">
+                {% for wh in data.webhooks %}
+                <div class="p-4 hover:bg-secondary/30 transition-colors">
+                    <div class="flex items-start gap-3">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-purple-500/10">
+                            <i data-lucide="webhook" class="w-5 h-5 text-purple-400"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="font-medium">{{ wh.source }}</span>
+                                {% if wh.event_type %}
+                                <span class="px-2 py-0.5 text-xs bg-secondary rounded">
+                                    {{ wh.event_type }}
+                                </span>
+                                {% endif %}
+                                {% if wh.processed %}
+                                <span class="px-2 py-0.5 text-xs bg-green-500/10 text-green-400 rounded">
+                                    processed
+                                </span>
+                                {% else %}
+                                <span class="px-2 py-0.5 text-xs bg-yellow-500/10 text-yellow-400 rounded">
+                                    pending
+                                </span>
+                                {% endif %}
+                            </div>
+                            <div class="flex items-center gap-4 text-xs text-muted-foreground">
+                                <span>{{ wh.created_at }}</span>
+                                {% if wh.processed_at %}
+                                <span>Processed: {{ wh.processed_at }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <button onclick="viewWebhook('{{ wh.id }}')" class="btn-secondary px-3 py-1.5 text-xs">
+                            <i data-lucide="eye" class="w-3 h-3"></i>
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="p-12 text-center text-muted-foreground">
+                <i data-lucide="webhook" class="w-12 h-12 mx-auto mb-4 opacity-30"></i>
+                <p class="text-lg mb-2">No webhooks received</p>
+                <p class="text-sm">Incoming webhooks will appear here</p>
+            </div>
+            {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="space-y-4">
+        <!-- Source Stats -->
+        <div class="card p-4">
+            <h3 class="text-sm font-semibold mb-3 flex items-center gap-2">
+                <i data-lucide="bar-chart-2" class="w-4 h-4 text-primary"></i>
+                Source Statistics
+            </h3>
+            <div class="space-y-2 text-sm">
+                <div class="flex justify-between items-center">
+                    <span class="flex items-center gap-2 text-muted-foreground">
+                        <i data-lucide="globe" class="w-4 h-4"></i>
+                        API Calls
+                    </span>
+                    <span class="font-medium">{{ data.logs|length if data.logs else 0 }}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="flex items-center gap-2 text-muted-foreground">
+                        <i data-lucide="server" class="w-4 h-4"></i>
+                        MCP Inputs
+                    </span>
+                    <span class="font-medium">{{ data.inputs|length if data.inputs else 0 }}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="flex items-center gap-2 text-muted-foreground">
+                        <i data-lucide="webhook" class="w-4 h-4"></i>
+                        Webhooks
+                    </span>
+                    <span class="font-medium">{{ data.webhooks|length if data.webhooks else 0 }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Webhook URL -->
+        <div class="card p-4">
+            <h3 class="text-sm font-semibold mb-3">Webhook Endpoint</h3>
+            <div class="p-2 bg-secondary rounded-lg">
+                <code class="text-xs text-primary break-all">
+                    POST /gitmem/api/webhook/{{ agent.id if agent else '{agent_id}' }}
+                </code>
+            </div>
+            <p class="text-xs text-muted-foreground mt-2">
+                Send webhook data to this endpoint to log events
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+    function viewLog(logId) {
+        // TODO: Implement log viewer modal
+        alert('Log viewer coming soon!');
+    }
+
+    function viewMCPInput(inputId) {
+        // TODO: Implement MCP input viewer modal
+        alert('MCP input viewer coming soon!');
+    }
+
+    function viewWebhook(whId) {
+        // TODO: Implement webhook viewer modal
+        alert('Webhook viewer coming soon!');
+    }
+</script>
+{% endblock %}

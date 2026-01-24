@@ -1,0 +1,394 @@
+{% extends "layouts/github_shell.html" %}
+
+{% block title %}Dashboard - {{ agent.name or agent.id }} | GitMem{% endblock %}
+
+{% block repo_content %}
+<!-- Main Container -->
+<!-- Main Container -->
+<div class="relative z-10">
+
+    <!-- Navigation Pill (Root) -->
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
+        {% set virtual_path = "" %}
+        {% include "components/file_navigation_pill.html" %}
+    </div>
+
+
+
+    <!-- Latest Commit Banner -->
+    {% if latest_commit %}
+    <div
+        class="backdrop-blur-xl bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-xl p-3 mb-6 flex items-center gap-3 text-sm text-gray-300 shadow-sm">
+        <div class="w-8 h-8 rounded-full bg-[rgba(59,130,246,0.2)] flex items-center justify-center flex-shrink-0">
+            <i data-lucide="git-commit" class="w-4 h-4 text-[#93c5fd]"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+            <span class="font-mono text-[#93c5fd] mr-2 bg-[rgba(59,130,246,0.1)] px-1.5 py-0.5 rounded text-xs">{{
+                latest_commit.hash[:7] }}</span>
+            <span class="truncate">{{ latest_commit.message }}</span>
+        </div>
+        <span class="text-xs text-gray-500 whitespace-nowrap">{{ latest_commit.timestamp }}</span>
+    </div>
+    {% endif %}
+
+    <!-- Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+        <!-- LEFT COLUMN: File System / Context Tree -->
+        <div class="lg:col-span-8 space-y-6">
+
+            <!-- File System Card -->
+            <div
+                class="backdrop-blur-xl bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.1)] rounded-2xl overflow-hidden shadow-xl">
+                <div
+                    class="px-6 py-4 border-b border-[rgba(255,255,255,0.03)] flex items-center justify-between bg-[rgba(255,255,255,0.05)]">
+                    <h3 class="font-semibold text-white flex items-center gap-2">
+                        <i data-lucide="folder-tree" class="w-5 h-5 text-primary"></i>
+                        FileSystem
+                    </h3>
+                    <span class="text-xs font-medium px-2 py-1 rounded-md bg-[rgba(255,255,255,0.1)] text-gray-400">{{
+                        context_sources|length }} Sources</span>
+                </div>
+
+                <div class="divide-y divide-[rgba(255,255,255,0.03)]">
+                    <!-- Context Store -->
+                    <div class="group">
+                        <div class="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-[rgba(255,255,255,0.05)] transition-colors"
+                            onclick="toggleFolderGroup('context')">
+                            <div class="flex items-center gap-3">
+                                <i data-lucide="chevron-right"
+                                    class="w-4 h-4 text-gray-500 transition-transform rotate-90"
+                                    id="context-toggle"></i>
+                                <div class="p-1.5 rounded-lg bg-primary/20 text-primary">
+                                    <i data-lucide="folder-open" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <div
+                                        class="text-sm font-medium text-gray-200 group-hover:text-white transition-colors">
+                                        Context Store</div>
+                                    <div class="text-xs text-gray-500">Memory Bins</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="context-folders" class="bg-[rgba(0,0,0,0.3)]">
+                            {% for key, item in folder_structure.context.items() %}
+                            <a href="{{ url_for('gitmem.agent_fs_view', agent_id=agent.id, virtual_path='context/' + key) }}"
+                                class="flex items-center justify-between px-4 py-2 pl-14 hover:bg-[rgba(255,255,255,0.05)] transition-colors group/subitem">
+                                <div class="flex items-center gap-3">
+                                    <i data-lucide="folder"
+                                        class="w-4 h-4 text-gray-600 group-hover/subitem:text-[#93c5fd] transition-colors"></i>
+                                    <span class="text-sm text-gray-400 group-hover/subitem:text-gray-200">{{ key
+                                        }}</span>
+                                </div>
+                                <span class="text-xs text-gray-600">{{ item.count }}</span>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Documents -->
+                    <div class="group">
+                        <div class="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-[rgba(255,255,255,0.05)] transition-colors"
+                            onclick="toggleFolderGroup('documents')">
+                            <div class="flex items-center gap-3">
+                                <i data-lucide="chevron-right" class="w-4 h-4 text-gray-500 transition-transform"
+                                    id="documents-toggle"></i>
+                                <div class="p-1.5 rounded-lg bg-primary/20 text-primary">
+                                    <i data-lucide="file-text" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <div
+                                        class="text-sm font-medium text-gray-200 group-hover:text-white transition-colors">
+                                        Documents</div>
+                                    <div class="text-xs text-gray-500">Knowledge Base</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="documents-folders" class="bg-[rgba(0,0,0,0.3)] hidden">
+                            {% for key, item in folder_structure.documents.items() %}
+                            <a href="{{ url_for('gitmem.agent_fs_view', agent_id=agent.id, virtual_path='docs/' + key) }}"
+                                class="flex items-center justify-between px-4 py-2 pl-14 hover:bg-[rgba(255,255,255,0.05)] transition-colors group/subitem">
+                                <div class="flex items-center gap-3">
+                                    <i data-lucide="folder"
+                                        class="w-4 h-4 text-gray-600 group-hover/subitem:text-[#93c5fd] transition-colors"></i>
+                                    <span class="text-sm text-gray-400 group-hover/subitem:text-gray-200">{{ key
+                                        }}</span>
+                                </div>
+                                <span class="text-xs text-gray-600">{{ item.count }}</span>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Vectors -->
+                    <div class="group">
+                        <div class="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-[rgba(255,255,255,0.05)] transition-colors"
+                            onclick="toggleFolderGroup('vectors')">
+                            <div class="flex items-center gap-3">
+                                <i data-lucide="chevron-right" class="w-4 h-4 text-gray-500 transition-transform"
+                                    id="vectors-toggle"></i>
+                                <div class="p-1.5 rounded-lg bg-[rgba(139,92,246,0.2)] text-[#a78bfa]">
+                                    <i data-lucide="database-zap" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <div
+                                        class="text-sm font-medium text-gray-200 group-hover:text-white transition-colors">
+                                        Vectors</div>
+                                    <div class="text-xs text-gray-500">Chroma DB</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="vectors-folders" class="bg-[rgba(0,0,0,0.3)] hidden">
+                            {% for key, item in folder_structure.vectors.items() %}
+                            <a href="{{ url_for('gitmem.agent_fs_view', agent_id=agent.id, virtual_path='vectors/' + key) }}"
+                                class="flex items-center justify-between px-4 py-2 pl-14 hover:bg-[rgba(255,255,255,0.05)] transition-colors group/subitem">
+                                <div class="flex items-center gap-3">
+                                    <i data-lucide="folder"
+                                        class="w-4 h-4 text-gray-600 group-hover/subitem:text-[#a78bfa] transition-colors"></i>
+                                    <span class="text-sm text-gray-400 group-hover/subitem:text-gray-200">{{ key
+                                        }}</span>
+                                </div>
+                                <span class="text-xs text-gray-600">{{ item.count }}</span>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Checkpoints -->
+                    <div class="group">
+                        <div class="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-[rgba(255,255,255,0.05)] transition-colors"
+                            onclick="toggleFolderGroup('checkpoints')">
+                            <div class="flex items-center gap-3">
+                                <i data-lucide="chevron-right" class="w-4 h-4 text-gray-500 transition-transform"
+                                    id="checkpoints-toggle"></i>
+                                <div class="p-1.5 rounded-lg bg-[rgba(16,185,129,0.2)] text-[#34d399]">
+                                    <i data-lucide="save" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <div
+                                        class="text-sm font-medium text-gray-200 group-hover:text-white transition-colors">
+                                        Checkpoints</div>
+                                    <div class="text-xs text-gray-500">State History</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="checkpoints-folders" class="bg-[rgba(0,0,0,0.3)] hidden">
+                            {% for key, item in folder_structure.checkpoints.items() %}
+                            <a href="{{ url_for('gitmem.agent_fs_view', agent_id=agent.id, virtual_path='checkpoints/' + key) }}"
+                                class="flex items-center justify-between px-4 py-2 pl-14 hover:bg-[rgba(255,255,255,0.05)] transition-colors group/subitem">
+                                <div class="flex items-center gap-3">
+                                    <i data-lucide="folder"
+                                        class="w-4 h-4 text-gray-600 group-hover/subitem:text-[#34d399] transition-colors"></i>
+                                    <span class="text-sm text-gray-400 group-hover/subitem:text-gray-200">{{ key
+                                        }}</span>
+                                </div>
+                                <span class="text-xs text-gray-600">{{ item.count }}</span>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Activity Logs -->
+                    <div class="group">
+                        <div class="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-[rgba(255,255,255,0.05)] transition-colors"
+                            onclick="toggleFolderGroup('logs')">
+                            <div class="flex items-center gap-3">
+                                <i data-lucide="chevron-right" class="w-4 h-4 text-gray-500 transition-transform"
+                                    id="logs-toggle"></i>
+                                <div class="p-1.5 rounded-lg bg-[rgba(245,158,11,0.2)] text-[#fbbf24]">
+                                    <i data-lucide="scroll-text" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <div
+                                        class="text-sm font-medium text-gray-200 group-hover:text-white transition-colors">
+                                        Activity Logs</div>
+                                    <div class="text-xs text-gray-500">System Events</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="logs-folders" class="bg-[rgba(0,0,0,0.3)] hidden">
+                            {% for key, item in folder_structure.logs.items() %}
+                            <a href="{{ url_for('gitmem.agent_fs_view', agent_id=agent.id, virtual_path='logs/' + key) }}"
+                                class="flex items-center justify-between px-4 py-2 pl-14 hover:bg-[rgba(255,255,255,0.05)] transition-colors group/subitem">
+                                <div class="flex items-center gap-3">
+                                    <i data-lucide="folder"
+                                        class="w-4 h-4 text-gray-600 group-hover/subitem:text-[#fbbf24] transition-colors"></i>
+                                    <span class="text-sm text-gray-400 group-hover/subitem:text-gray-200">{{ key
+                                        }}</span>
+                                </div>
+                                <span class="text-xs text-gray-600">{{ item.count }}</span>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Context -->
+            <div
+                class="backdrop-blur-xl bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-2xl p-6">
+                <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <i data-lucide="clock" class="w-5 h-5 text-primary"></i>
+                    Recent Memories
+                </h3>
+                <div class="space-y-3">
+                    {% for item in recent_context %}
+                    <div
+                        class="p-4 rounded-xl bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.05)] hover:border-[rgba(6,182,212,0.3)] transition-all cursor-default group">
+                        <div class="flex items-start justify-between mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full 
+                                        {% if item.type == 'episodic' %}bg-[rgba(59,130,246,0.1)] text-[#93c5fd] border border-[rgba(59,130,246,0.2)]
+                                        {% elif item.type == 'semantic' %}bg-[rgba(139,92,246,0.1)] text-[#a78bfa] border border-[rgba(139,92,246,0.2)]
+                                        {% elif item.type == 'procedural' %}bg-[rgba(16,185,129,0.1)] text-[#34d399] border border-[rgba(16,185,129,0.2)]
+                                        {% else %}bg-[rgba(107,114,128,0.1)] text-gray-400{% endif %}">
+                                    {{ item.type }}
+                                </span>
+                                <span class="text-xs font-mono text-gray-500">{{ item.id[:8] }}</span>
+                            </div>
+                            <span class="text-xs text-gray-500">{{ item.created_at }}</span>
+                        </div>
+                        <p class="text-sm text-gray-300 leading-relaxed group-hover:text-white transition-colors">
+                            {{ item.content }}
+                        </p>
+                        {% if item.importance > 0.7 %}
+                        <div class="mt-2 flex items-center gap-1.5 text-xs text-[#f59e0b]">
+                            <i data-lucide="star" class="w-3 h-3 fill-current"></i>
+                            <span>High Importance</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-10">
+                        <i data-lucide="inbox" class="w-10 h-10 text-gray-600 mx-auto mb-3"></i>
+                        <p class="text-gray-500 text-sm">No recent memories found.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Stats & Widgets -->
+        <div class="lg:col-span-4 space-y-6">
+
+            <!-- About Card -->
+            <div
+                class="backdrop-blur-xl bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-2xl p-6">
+                <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <i data-lucide="info" class="w-4 h-4"></i> About
+                </h3>
+                <p class="text-sm text-gray-300 leading-relaxed mb-4">
+                    {{ agent.description or 'No description provided.' }}
+                </p>
+                <div class="flex flex-wrap gap-2">
+                    <span
+                        class="px-2 py-1 rounded bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] text-xs text-gray-400">ai-memory</span>
+                    <span
+                        class="px-2 py-1 rounded bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] text-xs text-gray-400">knowledge-graph</span>
+                    <span
+                        class="px-2 py-1 rounded bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] text-xs text-gray-400">context-aware</span>
+                </div>
+            </div>
+
+            <!-- Index Stats -->
+            <div
+                class="backdrop-blur-xl bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-2xl p-6">
+                <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <i data-lucide="bar-chart-2" class="w-4 h-4"></i> Index
+                </h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center pb-3 border-b border-[rgba(255,255,255,0.03)]">
+                        <span class="text-sm text-gray-400">Embeddings</span>
+                        <span class="font-mono text-white text-lg">{{ index_stats.embeddings }}</span>
+                    </div>
+                    <div class="flex justify-between items-center pb-3 border-b border-[rgba(255,255,255,0.03)]">
+                        <span class="text-sm text-gray-400">Latency</span>
+                        <span class="font-mono text-[#34d399]">{{ index_stats.latency }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-400">Health</span>
+                        <span
+                            class="text-xs px-2 py-1 rounded bg-[rgba(16,185,129,0.1)] text-[#34d399] border border-[rgba(16,185,129,0.2)]">Optimal</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Sources -->
+            <div
+                class="backdrop-blur-xl bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-2xl p-6">
+                <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <i data-lucide="link" class="w-4 h-4"></i> Sources
+                </h3>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between p-2 rounded-lg bg-[rgba(255,255,255,0.05)]">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="hard-drive" class="w-4 h-4 text-primary"></i>
+                            <span class="text-sm text-gray-300">Local FS</span>
+                        </div>
+                        <span class="w-2 h-2 rounded-full bg-[#10b981] shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
+                    </div>
+                    <div class="flex items-center justify-between p-2 rounded-lg bg-[rgba(255,255,255,0.05)]">
+                        <div class="flex items-center gap-3">
+                            <div class="w-4 h-4 flex items-center justify-center">
+                                <i data-lucide="database" class="w-4 h-4 text-[#10b981]"></i>
+                            </div>
+                            <span class="text-sm text-gray-300">Supabase</span>
+                        </div>
+                        <span
+                            class="w-2 h-2 rounded-full {{ 'bg-[#10b981] shadow-[0_0_8px_rgba(16,185,129,0.5)]' if sources.supabase else 'bg-[#ef4444]' }}"></span>
+                    </div>
+                    <div class="flex items-center justify-between p-2 rounded-lg bg-[rgba(255,255,255,0.05)]">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="hexagon" class="w-4 h-4 text-[#a78bfa]"></i>
+                            <span class="text-sm text-gray-300">ChromaDB</span>
+                        </div>
+                        <span
+                            class="w-2 h-2 rounded-full {{ 'bg-[#10b981] shadow-[0_0_8px_rgba(16,185,129,0.5)]' if sources.chromadb else 'bg-[#ef4444]' }}"></span>
+                    </div>
+                    <div class="flex items-center justify-between p-2 rounded-lg bg-[rgba(255,255,255,0.05)]">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="plug" class="w-4 h-4 text-[#f59e0b]"></i>
+                            <span class="text-sm text-gray-300">MCP Server</span>
+                        </div>
+                        <span
+                            class="w-2 h-2 rounded-full {{ 'bg-[#10b981] shadow-[0_0_8px_rgba(16,185,129,0.5)]' if sources.mcp else 'bg-[#ef4444]' }}"></span>
+                    </div>
+                </div>
+                <button onclick="syncAgent()"
+                    class="w-full mt-4 py-2 rounded-lg bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] border border-[rgba(255,255,255,0.1)] transition-colors text-sm text-gray-300 flex items-center justify-center gap-2 group">
+                    <i data-lucide="refresh-cw"
+                        class="w-4 h-4 group-hover:rotate-180 transition-transform duration-500"></i>
+                    Sync Sources
+                </button>
+            </div>
+
+            <!-- Activity Feed -->
+            <div
+                class="backdrop-blur-xl bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-2xl p-6">
+                <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <i data-lucide="activity" class="w-4 h-4"></i> Live Activity
+                </h3>
+                <div class="relative pl-2 border-l border-[rgba(255,255,255,0.1)] space-y-6">
+                    {% for event in activity_feed[:4] %}
+                    <div class="relative pl-4">
+                        <!-- Dot -->
+                        <div
+                            class="absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full bg-[#1a1a1a] border border-[#3b82f6] box-content">
+                        </div>
+                        <p class="text-sm text-gray-300 mb-1">{{ event.content }}</p>
+                        <div class="flex items-center gap-2 text-xs text-gray-500">
+                            <i data-lucide="{{ event.icon or 'circle' }}" class="w-3 h-3"></i>
+                            <span>{{ event.timestamp }}</span>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-xs text-gray-500 pl-4">No recent activity</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}

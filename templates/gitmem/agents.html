@@ -1,0 +1,249 @@
+{% extends "gitmem/base.html" %}
+{% set active_page = "agents" %}
+
+{% block repo_content %}
+<div class="space-y-6">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold flex items-center gap-3">
+                <i data-lucide="bot" class="w-7 h-7 text-primary"></i>
+                Active Agents
+            </h1>
+            <p class="text-muted-foreground mt-1">Real-time monitoring of connected AI agents</p>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-green-500/10 border border-green-500/20">
+                <span id="ws-status-agents" class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                <span class="text-sm text-green-400 font-medium">Live</span>
+            </div>
+            <button onclick="refreshAgents()" class="btn-secondary h-9 text-sm flex items-center gap-2">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="card p-4 bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                    <i data-lucide="users" class="w-5 h-5 text-blue-400"></i>
+                </div>
+                <div>
+                    <div class="text-2xl font-bold" id="total-agents">{{ agents|length }}</div>
+                    <div class="text-xs text-muted-foreground">Active Agents</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-4 bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
+                    <i data-lucide="activity" class="w-5 h-5 text-green-400"></i>
+                </div>
+                <div>
+                    <div class="text-2xl font-bold text-green-400" id="online-count">{{ agents|length }}</div>
+                    <div class="text-xs text-muted-foreground">Online Now</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-4 bg-gradient-to-br from-orange-500/10 to-amber-500/10 border border-orange-500/20">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center">
+                    <i data-lucide="brain" class="w-5 h-5 text-orange-400"></i>
+                </div>
+                <div>
+                    <div class="text-2xl font-bold" id="memory-total">{{ total_memories }}</div>
+                    <div class="text-xs text-muted-foreground">Total Memories</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-4 bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                    <i data-lucide="git-commit" class="w-5 h-5 text-purple-400"></i>
+                </div>
+                <div>
+                    <div class="text-2xl font-bold" id="commits-total">{{ commits_count }}</div>
+                    <div class="text-xs text-muted-foreground">Total Commits</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Agents Table -->
+    <div class="card overflow-hidden border border-border/50">
+        <div class="bg-secondary/30 p-4 border-b border-border/50">
+            <h2 class="font-semibold flex items-center gap-2">
+                <i data-lucide="radio" class="w-4 h-4 text-primary"></i>
+                Connected Agents
+            </h2>
+        </div>
+
+        <div id="agents-list" class="divide-y divide-border/30">
+            {% if agents %}
+            {% for agent in agents %}
+            <div class="p-4 hover:bg-secondary/20 transition-colors flex items-center justify-between agent-row"
+                data-agent-id="{{ agent.agent_id }}">
+                <div class="flex items-center gap-4">
+                    <!-- Avatar -->
+                    <div
+                        class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white font-bold shadow-lg shadow-primary/20">
+                        {{ agent.agent_id[:2]|upper }}
+                    </div>
+
+                    <!-- Info -->
+                    <div>
+                        <div class="font-medium text-foreground flex items-center gap-2">
+                            {{ agent.agent_id }}
+                            <span
+                                class="px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 text-[10px] font-medium border border-green-500/20">
+                                Online
+                            </span>
+                        </div>
+                        <div class="text-xs text-muted-foreground flex items-center gap-3 mt-1">
+                            <span class="flex items-center gap-1">
+                                <i data-lucide="cpu" class="w-3 h-3"></i>
+                                {{ agent.model }}
+                            </span>
+                            <span class="flex items-center gap-1">
+                                <i data-lucide="clock" class="w-3 h-3"></i>
+                                {{ agent.last_active }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center gap-2">
+                    <button class="btn-secondary h-8 text-xs px-3" onclick="viewAgentMemories('{{ agent.agent_id }}')">
+                        <i data-lucide="database" class="w-3.5 h-3.5 mr-1"></i>
+                        Memories
+                    </button>
+                    <button class="btn-secondary h-8 text-xs px-3" onclick="viewAgentCommits('{{ agent.agent_id }}')">
+                        <i data-lucide="git-commit" class="w-3.5 h-3.5 mr-1"></i>
+                        Commits
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="p-8 text-center">
+                <div class="w-16 h-16 rounded-full bg-secondary/50 flex items-center justify-center mx-auto mb-4">
+                    <i data-lucide="bot" class="w-8 h-8 text-muted-foreground"></i>
+                </div>
+                <h3 class="font-medium text-foreground mb-2">No Agents Online</h3>
+                <p class="text-sm text-muted-foreground mb-4">
+                    Start an agent to see it appear here in real-time.
+                </p>
+                <div class="bg-secondary/50 rounded-lg p-4 text-left max-w-md mx-auto">
+                    <div class="text-xs text-muted-foreground mb-2">Run this command:</div>
+                    <code class="text-sm text-primary font-mono">
+                            python gitmem/examples/simulate_agent.py agent-007
+                        </code>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // Real-time agent updates
+    async function refreshAgents() {
+        try {
+            const resp = await fetch('/gitmem/api/agents/active');
+            const data = await resp.json();
+
+            document.getElementById('total-agents').textContent = data.count;
+            document.getElementById('online-count').textContent = data.count;
+
+            if (data.agents && data.agents.length > 0) {
+                updateAgentsList(data.agents);
+            }
+        } catch (e) {
+            console.error('Failed to refresh agents:', e);
+        }
+    }
+
+    function updateAgentsList(agents) {
+        const container = document.getElementById('agents-list');
+        if (!container) return;
+
+        if (agents.length === 0) {
+            container.innerHTML = `
+                <div class="p-8 text-center">
+                    <div class="w-16 h-16 rounded-full bg-secondary/50 flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="bot" class="w-8 h-8 text-muted-foreground"></i>
+                    </div>
+                    <h3 class="font-medium text-foreground mb-2">No Agents Online</h3>
+                    <p class="text-sm text-muted-foreground">Start an agent to see it appear here.</p>
+                </div>
+            `;
+            if (window.lucide) lucide.createIcons();
+            return;
+        }
+
+        container.innerHTML = agents.map(agent => `
+            <div class="p-4 hover:bg-secondary/20 transition-colors flex items-center justify-between agent-row animate-fadeIn" data-agent-id="${agent.agent_id}">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white font-bold shadow-lg shadow-primary/20">
+                        ${agent.agent_id.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div>
+                        <div class="font-medium text-foreground flex items-center gap-2">
+                            ${agent.agent_id}
+                            <span class="px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 text-[10px] font-medium border border-green-500/20">
+                                Online
+                            </span>
+                        </div>
+                        <div class="text-xs text-muted-foreground flex items-center gap-3 mt-1">
+                            <span class="flex items-center gap-1">
+                                <i data-lucide="cpu" class="w-3 h-3"></i>
+                                ${agent.model}
+                            </span>
+                            <span class="flex items-center gap-1">
+                                <i data-lucide="clock" class="w-3 h-3"></i>
+                                ${agent.last_active}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button class="btn-secondary h-8 text-xs px-3" onclick="viewAgentMemories('${agent.agent_id}')">
+                        <i data-lucide="database" class="w-3.5 h-3.5 mr-1"></i>
+                        Memories
+                    </button>
+                    <button class="btn-secondary h-8 text-xs px-3" onclick="viewAgentCommits('${agent.agent_id}')">
+                        <i data-lucide="git-commit" class="w-3.5 h-3.5 mr-1"></i>
+                        Commits
+                    </button>
+                </div>
+            </div>
+        `).join('');
+
+        if (window.lucide) lucide.createIcons();
+    }
+
+    function viewAgentMemories(agentId) {
+        window.location.href = `/gitmem/agents/${agentId}`;
+    }
+
+    function viewAgentCommits(agentId) {
+        window.location.href = `/gitmem/commits?agent=${agentId}`;
+    }
+
+    // Auto-refresh every 5 seconds
+    setInterval(refreshAgents, 5000);
+
+    // Initial refresh
+    refreshAgents();
+</script>
+{% endblock %}

@@ -1,0 +1,14 @@
+{
+  "name": "memory-store",
+  "description": "Central memory repository for AI agents",
+  "owner": "system",
+  "visibility": "public",
+  "created_at": "2026-01-23T05:18:31.064694",
+  "star_count": 0,
+  "fork_count": 0,
+  "watcher_count": 0,
+  "default_branch": "main",
+  "branches": {
+    "main": "HEAD"
+  }
+}

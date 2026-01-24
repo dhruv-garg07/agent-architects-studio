@@ -55,10 +55,10 @@
     --ring: 222 18% 18%;
 
     /* Design System Variables */
-  /* slightly larger radius for smoother, more oval UI */
-  --radius: 0.9rem;
-  --shadow-soft: 0 8px 22px -10px hsl(222 20% 12% / 0.10);
-  --shadow-elevated: 0 20px 48px -18px hsl(222 20% 12% / 0.12);
+    /* slightly larger radius for smoother, more oval UI */
+    --radius: 0.9rem;
+    --shadow-soft: 0 8px 22px -10px hsl(222 20% 12% / 0.10);
+    --shadow-elevated: 0 20px 48px -18px hsl(222 20% 12% / 0.12);
     --transition-smooth: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-spring: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 
@@ -128,25 +128,30 @@
     background: linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--secondary)) 100%);
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-inter;
   }
 }
 
 @layer components {
+
   /* Elegant hand-drawn style elements */
   .sketch-divider {
     position: relative;
     height: 2px;
-    background: linear-gradient(90deg, 
-      transparent 0%, 
-      hsl(var(--border)) 20%, 
-      hsl(var(--border)) 80%, 
-      transparent 100%
-    );
+    background: linear-gradient(90deg,
+        transparent 0%,
+        hsl(var(--border)) 20%,
+        hsl(var(--border)) 80%,
+        transparent 100%);
     border-radius: 1px;
   }
-  
+
   .sketch-divider::before {
     content: '';
     position: absolute;

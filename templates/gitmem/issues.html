@@ -1,0 +1,41 @@
+{% extends "gitmem/base.html" %}
+
+{% block title %}Issues - {{ agent.name or agent.id if agent else 'GitMem' }} | GitMem{% endblock %}
+
+{% block repo_content %}
+<!-- Main Content -->
+<div class="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+    <div class="bg-white/5 p-4 flex justify-between items-center border-b border-white/5">
+        <div class="flex items-center gap-4">
+            <button class="flex items-center gap-2 font-semibold text-white">
+                <i data-lucide="circle-dot" class="w-4 h-4 text-green-400"></i>
+                0 Open
+            </button>
+            <button class="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
+                <i data-lucide="check" class="w-4 h-4"></i>
+                0 Closed
+            </button>
+        </div>
+        <div class="flex gap-4 text-xs text-gray-500">
+            <span class="hover:text-white cursor-pointer">Author <i data-lucide="chevron-down"
+                    class="w-3 h-3 inline"></i></span>
+            <span class="hover:text-white cursor-pointer">Label <i data-lucide="chevron-down"
+                    class="w-3 h-3 inline"></i></span>
+            <span class="hover:text-white cursor-pointer">Sort <i data-lucide="chevron-down"
+                    class="w-3 h-3 inline"></i></span>
+        </div>
+    </div>
+
+    <div class="divide-y divide-white/5">
+        <div class="p-16 text-center">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-green-500/10 rounded-2xl mb-4">
+                <i data-lucide="check-circle" class="w-8 h-8 text-green-400"></i>
+            </div>
+            <h3 class="text-xl font-semibold text-white mb-2">No Issues</h3>
+            <p class="text-gray-400 max-w-md mx-auto">
+                Issues track memory inconsistencies, hallucination reports, and agent behavior anomalies.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

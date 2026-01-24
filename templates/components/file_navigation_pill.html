@@ -1,0 +1,36 @@
+<div class="flex items-center gap-2 text-sm">
+    <div
+        class="flex items-center bg-[rgba(255,255,255,0.02)] backdrop-blur-md border border-[rgba(255,255,255,0.1)] rounded-full px-1 py-1 pr-4 shadow-lg shadow-[rgba(0,0,0,0.4)]">
+        <div
+            class="px-3 py-1 rounded-full bg-primary/20 border border-primary/30 text-primary font-bold tracking-tight flex items-center gap-2">
+            <i data-lucide="database" class="w-3.5 h-3.5"></i>
+            {{ agent.slug or agent.name or agent.id[:8] }}
+        </div>
+
+        <span class="text-[rgba(255,255,255,0.3)] mx-2">/</span>
+
+        <div class="flex items-center text-gray-400 font-medium">
+            {% if virtual_path %}
+            {% set parts = virtual_path.split('/') %}
+            {% set accumulated_path = '' %}
+            {% for part in parts %}
+            {% if part %}
+            {% if not loop.last %}
+            {% set accumulated_path = accumulated_path + part + '/' %}
+            <a href="{{ url_for('gitmem.agent_fs_view', agent_id=agent.id, virtual_path=accumulated_path.rstrip('/')) }}"
+                class="hover:text-white transition-colors">{{ part }}</a>
+            <span class="mx-2 text-[rgba(255,255,255,0.3)]">/</span>
+            {% else %}
+            <span class="text-white font-bold">{{ part }}</span>
+            {% endif %}
+            {% endif %}
+            {% endfor %}
+            {% else %}
+            <span class="text-gray-500 flex items-center gap-2">
+                <i data-lucide="home" class="w-3.5 h-3.5 opacity-50"></i>
+                Root
+            </span>
+            {% endif %}
+        </div>
+    </div>
+</div>

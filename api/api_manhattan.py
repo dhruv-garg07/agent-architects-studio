@@ -67,7 +67,10 @@ from functools import wraps
 from typing import Optional
 
 # Add parent directory to path for imports
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add parent directory to path for imports
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, project_root)
+sys.path.insert(0, os.path.join(project_root, 'lib'))
 
 # Third-party imports
 from flask import Blueprint, jsonify, request, g
@@ -1457,7 +1460,8 @@ def add_memory():
                 location=mem.get('location'),
                 persons=mem.get('persons', []),
                 entities=mem.get('entities', []),
-                topic=mem.get('topic')
+                topic=mem.get('topic'),
+                memory_type=mem.get('memory_type', 'episodic') # Extract type or default
             )
             entries.append(entry)
             entry_ids.append(entry.entry_id)
@@ -1524,7 +1528,8 @@ def read_memory():
                 'location': ctx.location,
                 'persons': ctx.persons,
                 'entities': ctx.entities,
-                'topic': ctx.topic
+                'topic': ctx.topic,
+                'memory_type': ctx.memory_type  # Include memory bin type
             })
         
         return jsonify({
@@ -1534,6 +1539,82 @@ def read_memory():
             'results_count': len(results),
             'results': results
         }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@manhattan_api.route("/get_memories_by_bin", methods=["POST"])
+def get_memories_by_bin():
+    """Get memories filtered by memory bin type (episodic, semantic, procedural, working).
+    
+    Expects JSON body with:
+    - agent_id: str (required)
+    - memory_type: str (required) - one of: episodic, semantic, procedural, working
+    - limit: int (optional, default=50)
+    """
+    data = request.get_json(silent=True) or {}
+    agent_id = data.get('agent_id')
+    memory_type = data.get('memory_type', 'episodic')
+    limit = data.get('limit', 50)
+
+    if not agent_id:
+        return jsonify({'error': 'agent_id is required'}), 400
+    
+    valid_types = ['episodic', 'semantic', 'procedural', 'working']
+    if memory_type.lower() not in valid_types:
+        return jsonify({
+            'error': f'Invalid memory_type. Must be one of: {", ".join(valid_types)}'
+        }), 400
+
+    user_id, error = extract_and_validate_api_key(data)
+    if error:
+        return error
+
+    try:
+        memory_system = _get_or_create_memory_system(agent_id)
+        
+        if hasattr(memory_system.vector_store, 'agentic_RAG'):
+            rag = memory_system.vector_store.agentic_RAG
+            
+            results = rag.fetch_with_filter(
+                agent_ID=agent_id,
+                filter_metadata={"memory_type": memory_type.lower()},
+                top_k=limit
+            )
+            
+            memories = []
+            for r in results:
+                metadata = r.get('metadata', {})
+                document = r.get('document', '')
+                
+                keywords = metadata.get('keywords', [])
+                if isinstance(keywords, str):
+                    try:
+                        keywords = json.loads(keywords)
+                    except:
+                        keywords = []
+                
+                memories.append({
+                    'entry_id': r.get('id', metadata.get('entry_id')),
+                    'content': document,
+                    'lossless_restatement': document,
+                    'keywords': keywords,
+                    'timestamp': metadata.get('timestamp'),
+                    'location': metadata.get('location'),
+                    'topic': metadata.get('topic'),
+                    'memory_type': metadata.get('memory_type', memory_type)
+                })
+            
+            return jsonify({
+                'ok': True,
+                'agent_id': agent_id,
+                'memory_type': memory_type,
+                'count': len(memories),
+                'memories': memories
+            }), 200
+        else:
+            return jsonify({'error': 'Vector store not available'}), 500
+            
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

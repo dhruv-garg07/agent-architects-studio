@@ -18,8 +18,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.abspath(os.path.join(current_dir, os.pardir))
 grandparent_dir = os.path.abspath(os.path.join(current_dir, os.pardir, os.pardir))
+lib_dir = os.path.join(parent_dir, 'lib')
 
-sys.path[:0] = [grandparent_dir, parent_dir, current_dir]
+sys.path[:0] = [grandparent_dir, lib_dir, parent_dir, current_dir]
 
 from flask import Blueprint, request, jsonify, abort, Response
 from LLM_calls.context_manager import query_llm_with_history_stream

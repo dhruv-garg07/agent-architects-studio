@@ -1,0 +1,226 @@
+{% extends "layouts/github_shell.html" %}
+{% set active_page = "code" %}
+
+{% block repo_content %}
+<!-- Mesh Gradients Background (Updated to match base.html AI palette) -->
+<div class="fixed inset-0 pointer-events-none z-0">
+    <div class="absolute top-0 left-1/4 w-96 h-96 bg-[hsla(340,82%,52%,0.1)] rounded-full blur-3xl"></div>
+    <div class="absolute bottom-0 right-1/4 w-80 h-80 bg-[hsla(171,77%,64%,0.1)] rounded-full blur-3xl"></div>
+    <div class="absolute top-1/2 right-1/3 w-64 h-64 bg-[hsla(45,93%,47%,0.05)] rounded-full blur-3xl"></div>
+</div>
+
+<div class="relative z-10">
+    <!-- Breadcrumbs & Navigation Header (Updated for compactness) -->
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
+        {% set virtual_path = current_path %}
+        {% include "components/file_navigation_pill.html" %}
+
+        <div class="flex items-center gap-3">
+            <div
+                class="flex items-center gap-2 px-4 py-2 rounded-xl bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] text-xs text-gray-400 backdrop-blur-md">
+                <i data-lucide="search" class="w-4 h-4 text-[#93c5fd]/70"></i>
+                <span class="hidden sm:inline">Go to file</span>
+                <kbd
+                    class="text-[10px] bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] px-1.5 py-0.5 rounded text-gray-500">⌘T</kbd>
+            </div>
+            <button
+                class="px-4 py-2 rounded-xl bg-gradient-to-r from-primary to-primary-hover border border-primary/30 text-xs font-bold text-white shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-2">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                Add File
+            </button>
+        </div>
+    </div>
+
+    <!-- Virtual Filesystem Container (Updated to match API docs card patterns) -->
+    <div
+        class="backdrop-blur-xl bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.1)] rounded-2xl overflow-hidden shadow-xl transition-all duration-300">
+
+        <!-- Browser Header -->
+        <div
+            class="px-6 py-4 border-b border-[rgba(255,255,255,0.03)] bg-[rgba(255,255,255,0.02)] flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 border border-[rgba(255,255,255,0.1)] flex items-center justify-center shadow-inner">
+                    <i data-lucide="user" class="w-5 h-5 text-gray-400"></i>
+                </div>
+                <div>
+                    <div class="text-sm font-bold text-white tracking-wide">{{ agent.name or agent.id }}</div>
+                    <div class="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-bold">Browsing Virtual
+                        Explorer</div>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <div
+                    class="flex items-center gap-2 px-3 py-1 rounded-lg bg-[rgba(0,0,0,0.3)] border border-[rgba(255,255,255,0.05)] text-[11px] font-mono text-gray-400">
+                    <span class="w-1.5 h-1.5 rounded-full bg-[#3b82f6]/60"></span>
+                    main
+                </div>
+                <i data-lucide="cloud" class="w-4 h-4 text-[#93c5fd]"></i>
+            </div>
+        </div>
+
+        <!-- File Explorer List -->
+        <div class="divide-y divide-[rgba(255,255,255,0.03)]">
+
+            <!-- Parent Directory Link -->
+            {% if current_path %}
+            <div class="group hover:bg-[rgba(59,130,246,0.03)] transition-colors">
+                {% set parent_path = current_path.rsplit('/', 1)[0] if '/' in current_path else '' %}
+                {% if parent_path %}
+                <a href="{{ url_for('gitmem.agent_fs_view', agent_id=agent.id, virtual_path=parent_path) }}"
+                    class="flex items-center gap-4 px-6 py-4 text-sm text-gray-500 group-hover:text-[#93c5fd] transition-colors">
+                    <i data-lucide="corner-left-up"
+                        class="w-4 h-4 opacity-40 group-hover:opacity-100 transition-opacity"></i>
+                    <span class="font-mono font-bold">..</span>
+                    <span
+                        class="text-[10px] uppercase tracking-widest ml-auto opacity-0 group-hover:opacity-100 transition-opacity">Parent
+                        directory</span>
+                </a>
+                {% else %}
+                <a href="{{ url_for('gitmem.agent_dashboard', agent_id=agent.id) }}"
+                    class="flex items-center gap-4 px-6 py-4 text-sm text-gray-500 group-hover:text-[#93c5fd] transition-colors">
+                    <i data-lucide="layout-dashboard"
+                        class="w-4 h-4 opacity-40 group-hover:opacity-100 transition-opacity"></i>
+                    <span class="font-mono font-bold">..</span>
+                    <span
+                        class="text-[10px] uppercase tracking-widest ml-auto opacity-0 group-hover:opacity-100 transition-opacity">Back
+                        to Dashboard</span>
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            {% for item in items %}
+            {# Define Semantic Branding based on Folder Path #}
+            {% set is_checkpoints = item.path.startswith('checkpoints') %}
+            {% set is_logs = item.path.startswith('logs') %}
+            {% set is_vectors = item.path.startswith('vectors') %}
+            {% set is_context = item.path and (item.path.startswith('context') or item.path.startswith('docs') or
+            item.path.startswith('documents')) %}
+
+            {# Default / Context Theme (Blue) #}
+            {% set theme_color = 'text-primary' %}
+            {% set theme_bg = 'bg-primary/10' %}
+            {% set theme_hover_bg = 'group-hover:bg-primary/20' %}
+            {% set theme_hover_border = 'group-hover:border-primary/30' %}
+            {% set file_icon = 'file-code-2' %}
+            {% set folder_icon = 'folder' %}
+
+            {% if is_checkpoints %}
+            {# Checkpoints Theme (Emerald Green) #}
+            {% set theme_color = 'text-[#34d399]' %}
+            {% set theme_bg = 'bg-[rgba(16,185,129,0.1)]' %}
+            {% set theme_hover_bg = 'group-hover:bg-[rgba(16,185,129,0.2)]' %}
+            {% set theme_hover_border = 'group-hover:border-[rgba(16,185,129,0.3)]' %}
+            {% set file_icon = 'save' %}
+            {% set folder_icon = 'save' %}
+            {% elif is_vectors %}
+            {# Vectors Theme (Purple) #}
+            {% set theme_color = 'text-[#a78bfa]' %}
+            {% set theme_bg = 'bg-[rgba(139,92,246,0.1)]' %}
+            {% set theme_hover_bg = 'group-hover:bg-[rgba(139,92,246,0.2)]' %}
+            {% set theme_hover_border = 'group-hover:border-[rgba(139,92,246,0.3)]' %}
+            {% set file_icon = 'database-zap' %}
+            {% set folder_icon = 'database-zap' %}
+            {% elif is_logs %}
+            {# Logs Theme (Amber/Warning) #}
+            {% set theme_color = 'text-[#fbbf24]' %}
+            {% set theme_bg = 'bg-[rgba(245,158,11,0.1)]' %}
+            {% set theme_hover_bg = 'group-hover:bg-[rgba(245,158,11,0.2)]' %}
+            {% set theme_hover_border = 'group-hover:border-[rgba(245,158,11,0.3)]' %}
+            {% set file_icon = 'scroll-text' %}
+            {% set folder_icon = 'scroll-text' %}
+            {% endif %}
+
+            <div
+                class="group flex items-center justify-between px-6 py-4 hover:bg-[rgba(255,255,255,0.02)] transition-all duration-200">
+                <div class="flex items-center gap-4 w-5/12">
+                    <div class="flex-shrink-0">
+                        {% if item.type == 'directory' %}
+                        <!-- Directory Icon with Semantic Theme -->
+                        <div
+                            class="p-2 rounded-lg {{ theme_bg }} {{ theme_color }} {{ theme_hover_bg }} transition-all border border-transparent {{ theme_hover_border }}">
+                            <i data-lucide="{{ folder_icon if (is_logs or is_checkpoints) else 'folder' }}"
+                                class="w-4 h-4 {% if not (is_logs or is_checkpoints) %}fill-current opacity-80{% endif %}"></i>
+                        </div>
+                        {% else %}
+                        <!-- File Icon with Hover Theme -->
+                        <div
+                            class="p-2 rounded-lg bg-[rgba(255,255,255,0.05)] text-gray-500 group-hover:text-gray-200 transition-all border border-transparent {{ theme_hover_border }} {{ theme_hover_bg }}">
+                            <i data-lucide="{{ file_icon }}"
+                                class="w-4 h-4 {{ 'text-gray-400 group-hover:' + theme_color if not (is_logs or is_checkpoints) else '' }}"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% if item.type == 'directory' %}
+                    <a href="{{ url_for('gitmem.agent_fs_view', agent_id=agent.id, virtual_path=item.path) }}"
+                        class="text-sm font-bold text-gray-300 group-hover:text-white transition-colors truncate">
+                        {{ item.name }}
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('gitmem.agent_file_view', agent_id=agent.id, virtual_path=item.path) }}"
+                        class="text-sm font-bold text-gray-300 group-hover:text-white transition-colors truncate">
+                        {{ item.name }}
+                    </a>
+                    {% endif %}
+                </div>
+
+                <div
+                    class="flex-1 px-4 text-[10px] text-gray-600 font-mono truncate opacity-30 group-hover:opacity-60 transition-opacity">
+                    virtual://{{ item.path }}
+                </div>
+
+                <div class="flex items-center gap-12">
+                    <div
+                        class="hidden lg:block text-[10px] text-gray-500 font-bold uppercase tracking-widest text-right w-32">
+                        {{ item.last_modified[:10] if item.last_modified else '2026-01-24' }}
+                    </div>
+                    <div class="w-6 text-right">
+                        <button
+                            class="p-1 rounded-md text-gray-700 hover:text-white hover:bg-[rgba(255,255,255,0.05)] opacity-0 group-hover:opacity-100 transition-all">
+                            <i data-lucide="more-horizontal" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <!-- Empty State -->
+            <div class="py-32 text-center">
+                <div
+                    class="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] mb-8 relative group">
+                    <div
+                        class="absolute inset-0 bg-[rgba(59,130,246,0.1)] rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity">
+                    </div>
+                    <i data-lucide="folder-open" class="w-12 h-12 text-gray-700 relative z-10"></i>
+                </div>
+                <h4 class="text-2xl font-bold text-white mb-3">Empty Repository</h4>
+                <p class="text-gray-500 text-sm max-w-sm mx-auto leading-relaxed">
+                    This virtual directory doesn't contain any entries yet. Push memories or document nodes to populate
+                    this space.
+                </p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Footer / Summary -->
+        <div
+            class="px-8 py-4 border-t border-[rgba(255,255,255,0.03)] bg-[rgba(0,0,0,0.2)] flex items-center justify-between text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em]">
+            <div class="flex items-center gap-6">
+                <span class="flex items-center gap-2">
+                    <span class="text-white">{{ items|length }}</span> Items Total
+                </span>
+                <span class="w-1 h-1 rounded-full bg-[rgba(255,255,255,0.1)]"></span>
+                <span>Virtual Storage Layer</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="text-[#93c5fd]/80">Live Sync Active</span>
+                <div class="relative w-2 h-2">
+                    <div class="absolute inset-0 rounded-full bg-[rgba(16,185,129,0.4)] animate-ping"></div>
+                    <div class="relative w-2 h-2 rounded-full bg-[#10b981]"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

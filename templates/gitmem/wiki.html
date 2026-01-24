@@ -1,0 +1,36 @@
+{% extends "gitmem/base.html" %}
+{% set active_page = "wiki" %}
+
+{% block repo_content %}
+<div class="grid grid-cols-12 gap-8">
+    <div class="col-span-9 prose prose-invert max-w-none">
+        <h1>Memory Schema Documentation</h1>
+        <p>This wiki documents the standard schema for GITMEM items.</p>
+
+        <h3>Core Types</h3>
+        <ul>
+            <li><strong>Episodic</strong>: Time-bound events.</li>
+            <li><strong>Semantic</strong>: Fact-based knowledge.</li>
+        </ul>
+
+        <div class="p-4 bg-secondary/30 rounded border border-border/50">
+            <code>
+                {
+                    "content": "User prefers dark mode",
+                    "type": "semantic",
+                    "confidence": 0.95
+                }
+            </code>
+        </div>
+    </div>
+
+    <div class="col-span-3 space-y-4">
+        <div class="text-sm font-bold text-foreground">Pages</div>
+        <nav class="space-y-1 text-sm text-muted-foreground">
+            <a href="#" class="block hover:text-primary hover:underline">Home</a>
+            <a href="#" class="block hover:text-primary hover:underline">Schema V1</a>
+            <a href="#" class="block hover:text-primary hover:underline">Integration Guide</a>
+        </nav>
+    </div>
+</div>
+{% endblock %}

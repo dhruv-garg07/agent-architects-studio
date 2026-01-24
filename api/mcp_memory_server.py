@@ -39,6 +39,11 @@ if parent_dir not in sys.path:
 if current_dir not in sys.path:
     sys.path.insert(0, current_dir)
 
+# Add lib directory
+lib_dir = os.path.join(parent_dir, 'lib')
+if lib_dir not in sys.path:
+    sys.path.insert(0, lib_dir)
+
 # Load environment variables
 from dotenv import load_dotenv
 load_dotenv()

@@ -1,0 +1,228 @@
+{% extends "gitmem/base.html" %}
+
+{% block title %}GitMem - Activity Logs - {{ agent.name if agent else 'Agent' }}{% endblock %}
+
+{% block repo_content %}
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <!-- Main Content -->
+    <div class="lg:col-span-3 space-y-6">
+        <!-- Page Header -->
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <a href="{{ url_for('gitmem.agent_dashboard', agent_id=agent.id if agent else '') }}"
+                    class="text-muted-foreground hover:text-foreground">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                </a>
+                <h2 class="text-xl font-semibold">Activity Logs</h2>
+                <span class="px-2 py-0.5 text-xs bg-secondary rounded-full">{{ logs|length }} events</span>
+            </div>
+            <button onclick="exportLogs()" class="btn-secondary flex items-center gap-2">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                Export
+            </button>
+        </div>
+
+        <!-- Log Type Tabs -->
+        <div class="flex gap-2 border-b border-border pb-2">
+            <a href="{{ url_for('gitmem.agent_logs', agent_id=agent.id if agent else '') }}"
+                class="px-4 py-2 rounded-t-lg text-sm font-medium transition-colors
+                      {{ 'bg-primary/10 text-primary border-b-2 border-primary' if not log_type else 'text-muted-foreground hover:text-foreground hover:bg-secondary/50' }}">
+                <i data-lucide="list" class="w-4 h-4 inline-block mr-1"></i>
+                All
+            </a>
+            {% for t, icon, label, color in [
+            ('access', 'eye', 'Access', 'blue'),
+            ('mutation', 'edit', 'Mutations', 'green'),
+            ('error', 'alert-circle', 'Errors', 'red'),
+            ('system', 'settings', 'System', 'gray')
+            ] %}
+            <a href="?type={{ t }}"
+                class="px-4 py-2 rounded-t-lg text-sm font-medium transition-colors
+                      {{ 'bg-primary/10 text-primary border-b-2 border-primary' if log_type == t else 'text-muted-foreground hover:text-foreground hover:bg-secondary/50' }}">
+                <i data-lucide="{{ icon }}" class="w-4 h-4 inline-block mr-1"></i>
+                {{ label }}
+            </a>
+            {% endfor %}
+        </div>
+
+        <!-- Logs List -->
+        <div class="card">
+            {% if logs %}
+            <div class="divide-y divide-border">
+                {% for log in logs %}
+                <div class="p-4 hover:bg-secondary/30 transition-colors">
+                    <div class="flex items-start gap-3">
+                        <!-- Icon -->
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center
+                                    {{ 'bg-blue-500/10' if log.log_type == 'access' else 
+                                       'bg-green-500/10' if log.log_type == 'mutation' else 
+                                       'bg-red-500/10' if log.log_type == 'error' else 
+                                       'bg-gray-500/10' }}">
+                            <i data-lucide="{{ 'eye' if log.log_type == 'access' else 
+                                               'edit' if log.log_type == 'mutation' else 
+                                               'alert-circle' if log.log_type == 'error' else 'settings' }}" class="w-4 h-4 {{ 'text-blue-400' if log.log_type == 'access' else 
+                                                 'text-green-400' if log.log_type == 'mutation' else 
+                                                 'text-red-400' if log.log_type == 'error' else 
+                                                 'text-gray-400' }}"></i>
+                        </div>
+
+                        <!-- Content -->
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="font-medium">{{ log.action }}</span>
+                                <span class="px-2 py-0.5 text-xs bg-secondary rounded">
+                                    {{ log.resource_type or 'unknown' }}
+                                </span>
+                                <span class="px-2 py-0.5 text-xs rounded
+                                             {{ 'bg-blue-500/10 text-blue-400' if log.log_type == 'access' else 
+                                                'bg-green-500/10 text-green-400' if log.log_type == 'mutation' else 
+                                                'bg-red-500/10 text-red-400' if log.log_type == 'error' else 
+                                                'bg-gray-500/10 text-gray-400' }}">
+                                    {{ log.log_type }}
+                                </span>
+                            </div>
+
+                            <div class="flex items-center gap-4 text-xs text-muted-foreground">
+                                <span class="flex items-center gap-1">
+                                    <i data-lucide="{{ 'user' if log.actor_type == 'user' else 
+                                                       'bot' if log.actor_type == 'agent' else 'server' }}"
+                                        class="w-3 h-3"></i>
+                                    {{ log.actor_type or 'system' }}: {{ log.actor_id or 'unknown' }}
+                                </span>
+                                {% if log.resource_id %}
+                                <span>ID: {{ log.resource_id[:8] }}...</span>
+                                {% endif %}
+                                <span>{{ log.created_at }}</span>
+                            </div>
+
+                            {% if log.details %}
+                            <div class="mt-2 p-2 bg-secondary/50 rounded text-xs font-mono overflow-x-auto">
+                                {{ log.details | tojson }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="p-12 text-center text-muted-foreground">
+                <i data-lucide="file-text" class="w-12 h-12 mx-auto mb-4 opacity-30"></i>
+                <p class="text-lg mb-2">No activity logs</p>
+                <p class="text-sm">Activity will be logged as you use the system</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="space-y-4">
+        <!-- Log Type Legend -->
+        <div class="card p-4">
+            <h3 class="text-sm font-semibold mb-3 flex items-center gap-2">
+                <i data-lucide="info" class="w-4 h-4 text-primary"></i>
+                Log Types
+            </h3>
+            <div class="space-y-3 text-sm">
+                <div class="flex items-start gap-2">
+                    <i data-lucide="eye" class="w-4 h-4 text-blue-400 mt-0.5"></i>
+                    <div>
+                        <p class="font-medium text-foreground">Access</p>
+                        <p class="text-xs text-muted-foreground">Read operations</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-2">
+                    <i data-lucide="edit" class="w-4 h-4 text-green-400 mt-0.5"></i>
+                    <div>
+                        <p class="font-medium text-foreground">Mutation</p>
+                        <p class="text-xs text-muted-foreground">Create/Update/Delete</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-2">
+                    <i data-lucide="alert-circle" class="w-4 h-4 text-red-400 mt-0.5"></i>
+                    <div>
+                        <p class="font-medium text-foreground">Error</p>
+                        <p class="text-xs text-muted-foreground">Failed operations</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-2">
+                    <i data-lucide="settings" class="w-4 h-4 text-gray-400 mt-0.5"></i>
+                    <div>
+                        <p class="font-medium text-foreground">System</p>
+                        <p class="text-xs text-muted-foreground">Internal events</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="card p-4">
+            <h3 class="text-sm font-semibold mb-3">Statistics</h3>
+            <div class="space-y-2 text-sm">
+                <div class="flex justify-between">
+                    <span class="text-muted-foreground">Total Events</span>
+                    <span class="font-medium">{{ logs|length }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-muted-foreground">Errors</span>
+                    <span class="font-medium text-red-400">
+                        {{ logs|selectattr('log_type', 'equalto', 'error')|list|length }}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Retention Info -->
+        <div class="card p-4">
+            <h3 class="text-sm font-semibold mb-3">Retention Policy</h3>
+            <p class="text-xs text-muted-foreground">
+                Logs are retained for 30 days. Critical errors are kept indefinitely.
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const agentId = "{{ agent.id if agent else 'system' }}";
+
+    async function exportLogs() {
+        const btn = event.target;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Exporting...';
+        btn.disabled = true;
+
+        try {
+            const resp = await fetch(`/gitmem/api/logs/${agentId}?limit=1000`);
+            const data = await resp.json();
+
+            // Create and download JSON file
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${agentId}-activity-logs-${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            btn.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> Exported!';
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                if (window.lucide) lucide.createIcons();
+            }, 2000);
+        } catch (e) {
+            console.error('Export failed:', e);
+            btn.innerHTML = '<i data-lucide="x" class="w-4 h-4"></i> Failed';
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                if (window.lucide) lucide.createIcons();
+            }, 2000);
+        }
+
+        if (window.lucide) lucide.createIcons();
+    }
+</script>
+{% endblock %}

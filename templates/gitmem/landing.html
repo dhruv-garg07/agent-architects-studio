@@ -1,0 +1,312 @@
+{% extends "base.html" %}
+
+{% block title %}GitMem - Agent Memory Repositories{% endblock %}
+
+{% block content %}
+<div class="relative min-h-screen bg-transparent overflow-hidden">
+    <!-- Mesh Gradients Background -->
+    <div class="absolute inset-0 pointer-events-none">
+        <div class="absolute top-0 left-1/4 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-0 right-1/4 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute top-1/2 right-1/3 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl"></div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative z-10">
+
+        <!-- Header Section -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
+            <div>
+                <h1 class="text-3xl md:text-5xl font-bold text-white tracking-tight mb-3">
+                    <span
+                        class="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent">GitMem</span>
+                    Repositories
+                </h1>
+                <p class="text-gray-400 text-lg max-w-2xl leading-relaxed">
+                    Persistent memory contexts for your AI agents. Version controlled, searchable, and synced across
+                    your entire infrastructure.
+                </p>
+            </div>
+            <div class="flex items-center gap-4">
+                <!-- Quick Stats -->
+                <div class="hidden lg:flex items-center gap-8 mr-4 border-r border-white/10 pr-8">
+                    <div class="text-right">
+                        <div class="text-2xl font-bold text-white font-mono">{{ stats.active_agents }}</div>
+                        <div class="text-xs text-gray-500 uppercase tracking-widest font-semibold">Active</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-2xl font-bold text-white font-mono">{{ stats.total_memories }}</div>
+                        <div class="text-xs text-gray-500 uppercase tracking-widest font-semibold">Memories</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-2xl font-bold text-white font-mono">{{ stats.total_commits }}</div>
+                        <div class="text-xs text-gray-500 uppercase tracking-widest font-semibold">Commits</div>
+                    </div>
+                </div>
+
+                <a href="{{ url_for('gitmem.create_agent_form') }}"
+                    class="btn-primary flex items-center gap-2 px-5 py-3 rounded-xl shadow-lg shadow-violet-500/20 hover:scale-105 transition-transform">
+                    <i data-lucide="plus" class="w-5 h-5"></i>
+                    <span class="font-semibold">New Repository</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Search & Toolbar -->
+        <div
+            class="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-2 mb-10 flex flex-col md:flex-row gap-4 items-center justify-between shadow-xl shadow-black/20">
+            <div class="relative flex-1 w-full md:w-auto">
+                <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"></i>
+                <input type="text" id="search-agents" placeholder="Search repositories by name, ID, or description..."
+                    class="w-full bg-transparent border-none text-white pl-12 py-3 focus:ring-0 placeholder-gray-500 text-sm md:text-base">
+            </div>
+
+            <div
+                class="flex items-center gap-3 border-t md:border-t-0 md:border-l border-white/10 pt-3 md:pt-0 md:pl-3 w-full md:w-auto px-3 pb-1 md:pb-0">
+                <div class="relative">
+                    <select
+                        class="appearance-none bg-white/5 border border-white/10 text-sm text-gray-300 rounded-lg pl-3 pr-8 py-2 focus:ring-1 focus:ring-violet-500 focus:outline-none cursor-pointer hover:bg-white/10 transition-colors">
+                        <option>All Sources</option>
+                        <option>Supabase</option>
+                        <option>Local</option>
+                        <option>MCP Server</option>
+                    </select>
+                    <i data-lucide="chevron-down"
+                        class="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none"></i>
+                </div>
+
+                <button onclick="syncAllSources()" id="sync-btn"
+                    class="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all text-sm font-medium">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    <span>Sync</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Repositories Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
+            {% for agent in agents %}
+            <a href="{{ url_for('gitmem.agent_dashboard', agent_id=agent.id) }}" class="group block h-full">
+                <div
+                    class="h-full backdrop-blur-md bg-[#1a1a1a]/60 border border-white/5 rounded-2xl p-6 hover:border-violet-500/40 transition-all duration-300 hover:shadow-2xl hover:shadow-violet-500/10 hover:-translate-y-1 relative overflow-hidden flex flex-col">
+
+                    <!-- Hover Gradient Effect -->
+                    <div
+                        class="absolute inset-0 bg-gradient-to-br from-violet-500/5 to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                    </div>
+
+                    <!-- Header -->
+                    <div class="flex justify-between items-start mb-4 relative z-10">
+                        <div class="flex items-center gap-4">
+                            <div
+                                class="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 border border-white/10 flex items-center justify-center text-lg font-bold text-gray-300 group-hover:text-white group-hover:border-violet-500/30 transition-all shadow-inner">
+                                {{ agent.name[:2]|upper if agent.name else agent.id[:2]|upper }}
+                            </div>
+                            <div>
+                                <h3
+                                    class="font-bold text-white text-lg leading-tight group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-violet-400 group-hover:to-cyan-400 transition-all">
+                                    {{ agent.name or agent.id }}
+                                </h3>
+                                <div class="text-xs font-mono text-gray-500 mt-0.5 flex items-center gap-1">
+                                    <i data-lucide="hash" class="w-3 h-3"></i>
+                                    {{ agent.id[:8] }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Status Badge -->
+                        <div>
+                            {% if agent.status == 'online' %}
+                            <div
+                                class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-[10px] font-semibold uppercase tracking-wider">
+                                <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                                Online
+                            </div>
+                            {% else %}
+                            <div
+                                class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-500/10 border border-gray-500/20 text-gray-400 text-[10px] font-semibold uppercase tracking-wider">
+                                <span class="w-1.5 h-1.5 rounded-full bg-gray-500"></span>
+                                Offline
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="mb-6 flex-grow relative z-10">
+                        <p class="text-sm text-gray-400 leading-relaxed line-clamp-2">
+                            {{ agent.description or 'No description provided for this memory repository.' }}
+                        </p>
+                    </div>
+
+                    <!-- Footer / Metrics -->
+                    <div
+                        class="mt-auto border-t border-white/5 pt-4 flex items-center justify-between text-xs text-gray-500 relative z-10">
+                        <div class="flex items-center gap-4">
+                            <span class="flex items-center gap-1.5 group-hover:text-gray-300 transition-colors">
+                                <i data-lucide="brain-circuit" class="w-4 h-4"></i>
+                                {{ agent.memory_count or 0 }}
+                            </span>
+                            <span class="flex items-center gap-1.5 group-hover:text-gray-300 transition-colors">
+                                <i data-lucide="git-commit" class="w-4 h-4"></i>
+                                {{ agent.commit_count or 0 }}
+                            </span>
+                        </div>
+
+                        <div class="flex items-center gap-1.5">
+                            {% if agent.source == 'Supabase' %}
+                            <i data-lucide="database" class="w-3.5 h-3.5 text-green-400"></i>
+                            {% elif agent.source == 'Local' %}
+                            <i data-lucide="hard-drive" class="w-3.5 h-3.5 text-blue-400"></i>
+                            {% elif agent.source == 'MCP' %}
+                            <i data-lucide="server" class="w-3.5 h-3.5 text-amber-400"></i>
+                            {% else %}
+                            <i data-lucide="cloud" class="w-3.5 h-3.5 text-gray-400"></i>
+                            {% endif %}
+                            <span class="opacity-60">{{ agent.source }}</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+            {% else %}
+            <!-- Empty State -->
+            <div class="col-span-full py-24 text-center backdrop-blur-xl bg-white/5 border border-white/10 rounded-3xl">
+                <div
+                    class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 rounded-2xl mb-6 shadow-lg shadow-violet-500/5">
+                    <i data-lucide="database" class="w-10 h-10 text-violet-400"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-3">No Repositories Found</h3>
+                <p class="text-gray-400 max-w-md mx-auto mb-8 text-lg">
+                    Create your first agent memory repository to start syncing context across your infrastructure.
+                </p>
+                <div class="flex items-center justify-center gap-4">
+                    <a href="{{ url_for('gitmem.create_agent_form') }}"
+                        class="btn-primary px-6 py-3 rounded-xl font-semibold flex items-center gap-2">
+                        <i data-lucide="plus" class="w-5 h-5"></i>
+                        Create Repository
+                    </a>
+                    <button onclick="syncAllSources()"
+                        class="px-6 py-3 rounded-xl border border-white/10 hover:bg-white/5 text-white font-medium transition-colors flex items-center gap-2">
+                        <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                        Sync Cloud
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Infrastructure Status Section -->
+        <div class="border-t border-white/10 pt-10">
+            <h2 class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-6 flex items-center gap-2">
+                <i data-lucide="network" class="w-4 h-4"></i>
+                Connected Infrastructure
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Supabase -->
+                <div
+                    class="bg-[#1a1a1a]/40 border {{ 'border-green-500/30 bg-green-500/5' if sources.supabase else 'border-white/5' }} rounded-xl p-4 flex items-center gap-4 transition-colors">
+                    <div
+                        class="w-10 h-10 rounded-lg {{ 'bg-green-500/20' if sources.supabase else 'bg-gray-800' }} flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="database"
+                            class="w-5 h-5 {{ 'text-green-400' if sources.supabase else 'text-gray-500' }}"></i>
+                    </div>
+                    <div>
+                        <div class="font-semibold text-white text-sm">Supabase</div>
+                        <div class="text-xs {{ 'text-green-400' if sources.supabase else 'text-gray-500' }}">
+                            {{ 'Connected' if sources.supabase else 'Disconnected' }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ChromaDB -->
+                <div class="bg-[#1a1a1a]/40 border border-white/5 rounded-xl p-4 flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-lg bg-indigo-500/20 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="layers" class="w-5 h-5 text-indigo-400"></i>
+                    </div>
+                    <div>
+                        <div class="font-semibold text-white text-sm">ChromaDB</div>
+                        <div class="text-xs text-indigo-300">
+                            {{ sources.chromadb_count or 0 }} Vectors
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MCP Server -->
+                <div
+                    class="bg-[#1a1a1a]/40 border {{ 'border-amber-500/30 bg-amber-500/5' if sources.mcp else 'border-white/5' }} rounded-xl p-4 flex items-center gap-4 transition-colors">
+                    <div
+                        class="w-10 h-10 rounded-lg {{ 'bg-amber-500/20' if sources.mcp else 'bg-gray-800' }} flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="server"
+                            class="w-5 h-5 {{ 'text-amber-400' if sources.mcp else 'text-gray-500' }}"></i>
+                    </div>
+                    <div>
+                        <div class="font-semibold text-white text-sm">MCP Server</div>
+                        <div class="text-xs {{ 'text-amber-400' if sources.mcp else 'text-gray-500' }}">
+                            {{ 'Active' if sources.mcp else 'Inactive' }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cloud Storage -->
+                <div class="bg-[#1a1a1a]/40 border border-white/5 rounded-xl p-4 flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="cloud" class="w-5 h-5 text-blue-400"></i>
+                    </div>
+                    <div>
+                        <div class="font-semibold text-white text-sm">Cloud Persistence</div>
+                        <div class="text-xs text-blue-300">
+                            {{ sources.local_count or 0 }} Records
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // Live Search
+    document.getElementById('search-agents').addEventListener('input', function (e) {
+        const query = e.target.value.toLowerCase();
+        document.querySelectorAll('.group.block').forEach(card => {
+            const name = card.querySelector('h3').textContent.toLowerCase();
+            const desc = card.querySelector('p').textContent.toLowerCase();
+            if (name.includes(query) || desc.includes(query)) {
+                card.classList.remove('hidden');
+            } else {
+                card.classList.add('hidden');
+            }
+        });
+    });
+
+    // Sync Sources
+    async function syncAllSources() {
+        const btn = document.getElementById('sync-btn');
+        const icon = btn.querySelector('i');
+        const text = btn.querySelector('span');
+
+        btn.disabled = true;
+        btn.classList.add('opacity-75', 'cursor-wait');
+        icon.classList.add('animate-spin');
+        text.textContent = 'Syncing...';
+
+        try {
+            await fetch('/gitmem/api/sync-sources', { method: 'POST' });
+            window.location.reload();
+        } catch (e) {
+            console.error('Sync failed:', e);
+            alert('Failed to sync. Check console for details.');
+
+            // Reset button state
+            btn.disabled = false;
+            btn.classList.remove('opacity-75', 'cursor-wait');
+            icon.classList.remove('animate-spin');
+            text.textContent = 'Sync';
+        }
+    }
+
+    // Auto-sync logic removed to prevent reload loops.
+    // User can manually sync via the 'Sync Cloud' button.
+</script>
+{% endblock %}

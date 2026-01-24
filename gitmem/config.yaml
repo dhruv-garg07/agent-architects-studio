@@ -1,0 +1,14 @@
+# GITMEM Configuration
+
+storage:
+  root_path: "./gitmem_data"
+  type: "filesystem"
+
+vector_db:
+  provider: "chromadb"
+  path: "./gitmem_data/indexes"
+  collection_name: "gitmem_global"
+
+server:
+  host: "0.0.0.0"
+  port: 8000

@@ -1,0 +1,13 @@
+{
+    "mcpServers": {
+        "memory": {
+            "command": "python",
+            "args": [
+                "api/mcp_memory_client.py"
+            ],
+            "env": {
+                "MANHATTAN_API_URL": "http://127.0.0.1:1078"
+            }
+        }
+    }
+}

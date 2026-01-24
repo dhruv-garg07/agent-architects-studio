@@ -1,0 +1,32 @@
+{% extends "gitmem/base.html" %}
+{% set active_page = "insights" %}
+
+{% block repo_content %}
+<div class="space-y-8">
+    <div class="grid grid-cols-4 gap-4">
+        {% for label, val, trend in [
+        ('Total Memories', '12,403', '+12%'),
+        ('Vector Space', '1.2 GB', '+5%'),
+        ('Queries / Day', '843', '+23%'),
+        ('Avg Latency', '45ms', '-2ms')
+        ] %}
+        <div class="p-4 rounded-lg bg-card border border-border shadow-sm">
+            <div class="text-xs text-muted-foreground uppercase font-medium">{{ label }}</div>
+            <div class="text-2xl font-bold text-foreground mt-1">{{ val }}</div>
+            <div class="text-xs text-green-500 mt-1">{{ trend }} this week</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Charts Placeholder -->
+    <div
+        class="border border-border/50 bg-secondary/10 h-64 rounded-lg flex items-center justify-center relative overflow-hidden">
+        <div class="absolute inset-x-0 bottom-0 h-40 flex items-end justify-between px-4 opacity-50">
+            {% for h in [20, 45, 30, 60, 55, 78, 40, 50, 60, 80, 70, 45, 30, 60, 50, 75, 60, 90, 85, 60] %}
+            <div class="w-full bg-primary mx-0.5 rounded-t-sm" style="height: {{ h }}%"></div>
+            {% endfor %}
+        </div>
+        <div class="z-10 text-muted-foreground font-medium">Memory Ingestion Rate (Last 30 Days)</div>
+    </div>
+</div>
+{% endblock %}

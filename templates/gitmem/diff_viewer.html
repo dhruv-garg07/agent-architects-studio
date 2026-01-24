@@ -1,0 +1,354 @@
+{% extends "gitmem/base.html" %}
+{% set active_page = "insights" %}
+
+{% block repo_content %}
+<div class="space-y-6">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold flex items-center gap-3">
+                <i data-lucide="git-compare" class="w-7 h-7 text-primary"></i>
+                Cognitive Diff Viewer
+            </h1>
+            <p class="text-muted-foreground mt-1">Compare mental states between commits</p>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <button onclick="swapCommits()" class="btn-secondary h-9 text-sm flex items-center gap-2">
+                <i data-lucide="arrow-left-right" class="w-4 h-4"></i>
+                Swap
+            </button>
+        </div>
+    </div>
+
+    <!-- Commit Selector -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Base Commit (A) -->
+        <div class="card p-4 border-red-500/30 bg-red-500/5">
+            <div class="flex items-center gap-2 mb-3">
+                <span class="px-2 py-0.5 rounded bg-red-500/20 text-red-400 text-xs font-medium">BASE</span>
+                <span class="text-sm text-muted-foreground">Previous State</span>
+            </div>
+            <select id="commit-a" onchange="computeDiff()"
+                class="w-full bg-secondary/50 border border-border rounded-lg p-2 text-sm text-foreground">
+                <option value="">Select commit...</option>
+                {% for commit in commits %}
+                <option value="{{ commit.sha }}" {{ 'selected' if loop.index==2 }}>
+                    {{ commit.sha[:7] }} - {{ commit.message[:40] }}
+                </option>
+                {% endfor %}
+            </select>
+            <div id="commit-a-details" class="mt-3 text-xs text-muted-foreground hidden">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="user" class="w-3 h-3"></i>
+                    <span id="commit-a-author">-</span>
+                </div>
+                <div class="flex items-center gap-2 mt-1">
+                    <i data-lucide="clock" class="w-3 h-3"></i>
+                    <span id="commit-a-time">-</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Head Commit (B) -->
+        <div class="card p-4 border-green-500/30 bg-green-500/5">
+            <div class="flex items-center gap-2 mb-3">
+                <span class="px-2 py-0.5 rounded bg-green-500/20 text-green-400 text-xs font-medium">HEAD</span>
+                <span class="text-sm text-muted-foreground">Current State</span>
+            </div>
+            <select id="commit-b" onchange="computeDiff()"
+                class="w-full bg-secondary/50 border border-border rounded-lg p-2 text-sm text-foreground">
+                <option value="">Select commit...</option>
+                {% for commit in commits %}
+                <option value="{{ commit.sha }}" {{ 'selected' if loop.index==1 }}>
+                    {{ commit.sha[:7] }} - {{ commit.message[:40] }}
+                </option>
+                {% endfor %}
+            </select>
+            <div id="commit-b-details" class="mt-3 text-xs text-muted-foreground hidden">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="user" class="w-3 h-3"></i>
+                    <span id="commit-b-author">-</span>
+                </div>
+                <div class="flex items-center gap-2 mt-1">
+                    <i data-lucide="clock" class="w-3 h-3"></i>
+                    <span id="commit-b-time">-</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Diff Stats Summary -->
+    <div id="diff-summary" class="card p-4 hidden">
+        <div class="flex items-center justify-between">
+            <h3 class="font-semibold flex items-center gap-2">
+                <i data-lucide="bar-chart-2" class="w-4 h-4 text-primary"></i>
+                Cognitive Delta
+            </h3>
+            <div class="flex items-center gap-4 text-sm">
+                <span class="flex items-center gap-1 text-green-400">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span id="stats-added">0</span> added
+                </span>
+                <span class="flex items-center gap-1 text-red-400">
+                    <i data-lucide="minus" class="w-4 h-4"></i>
+                    <span id="stats-removed">0</span> removed
+                </span>
+            </div>
+        </div>
+
+        <!-- Change Meter -->
+        <div class="mt-4">
+            <div class="flex gap-1 h-2 rounded-full overflow-hidden bg-secondary">
+                <div id="meter-added" class="h-full bg-green-500 transition-all duration-500" style="width: 0%"></div>
+                <div id="meter-removed" class="h-full bg-red-500 transition-all duration-500" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Diff View Tabs -->
+    <div class="card overflow-hidden">
+        <div class="flex border-b border-border">
+            <button onclick="setDiffView('unified')" id="tab-unified"
+                class="px-4 py-3 text-sm font-medium border-b-2 border-primary text-foreground flex items-center gap-2">
+                <i data-lucide="list" class="w-4 h-4"></i>
+                Unified
+            </button>
+            <button onclick="setDiffView('split')" id="tab-split"
+                class="px-4 py-3 text-sm font-medium border-b-2 border-transparent text-muted-foreground hover:text-foreground flex items-center gap-2">
+                <i data-lucide="columns" class="w-4 h-4"></i>
+                Split
+            </button>
+            <button onclick="setDiffView('graph')" id="tab-graph"
+                class="px-4 py-3 text-sm font-medium border-b-2 border-transparent text-muted-foreground hover:text-foreground flex items-center gap-2">
+                <i data-lucide="share-2" class="w-4 h-4"></i>
+                Graph
+            </button>
+        </div>
+
+        <!-- Unified Diff View -->
+        <div id="view-unified" class="p-4 space-y-3">
+            <div id="diff-content" class="space-y-2">
+                <div class="text-center py-8 text-muted-foreground">
+                    <i data-lucide="git-compare" class="w-12 h-12 mx-auto mb-3 opacity-50"></i>
+                    <p>Select two commits to compare cognitive states</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Split View -->
+        <div id="view-split" class="hidden grid grid-cols-2 divide-x divide-border">
+            <div class="p-4">
+                <h4 class="font-medium text-red-400 mb-3 flex items-center gap-2">
+                    <i data-lucide="minus-circle" class="w-4 h-4"></i>
+                    Removed
+                </h4>
+                <div id="split-removed" class="space-y-2"></div>
+            </div>
+            <div class="p-4">
+                <h4 class="font-medium text-green-400 mb-3 flex items-center gap-2">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    Added
+                </h4>
+                <div id="split-added" class="space-y-2"></div>
+            </div>
+        </div>
+
+        <!-- Graph View -->
+        <div id="view-graph" class="hidden p-4">
+            <div id="knowledge-graph" class="h-96 bg-secondary/20 rounded-lg flex items-center justify-center">
+                <div class="text-center text-muted-foreground">
+                    <i data-lucide="share-2" class="w-12 h-12 mx-auto mb-3 opacity-50"></i>
+                    <p>Knowledge graph visualization</p>
+                    <p class="text-xs">Coming soon...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Time Travel Slider -->
+    <div class="card p-4">
+        <h3 class="font-semibold mb-4 flex items-center gap-2">
+            <i data-lucide="clock" class="w-4 h-4 text-primary"></i>
+            Cognitive Timeline
+        </h3>
+        <div class="relative">
+            <input type="range" id="timeline-slider" min="0" max="{{ commits|length - 1 }}" value="0"
+                class="w-full accent-primary" oninput="timeTravel(this.value)">
+            <div class="flex justify-between text-xs text-muted-foreground mt-2">
+                <span>Oldest</span>
+                <span id="timeline-commit" class="font-mono text-foreground">-</span>
+                <span>Latest</span>
+            </div>
+        </div>
+
+        <!-- Commit dots -->
+        <div class="flex justify-between mt-4 px-1">
+            {% for commit in commits %}
+            <div class="group relative cursor-pointer" onclick="selectCommitFromTimeline('{{ commit.sha }}')">
+                <div class="w-3 h-3 rounded-full {{ 'bg-primary' if loop.index == 1 else 'bg-secondary border border-border' }} 
+                    group-hover:bg-primary transition-colors"></div>
+                <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity
+                    bg-card border border-border rounded p-2 text-xs whitespace-nowrap z-10 shadow-xl">
+                    <div class="font-mono text-primary">{{ commit.sha[:7] }}</div>
+                    <div class="text-muted-foreground">{{ commit.message[:30] }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // Commit data from server
+    const commits = {{ commits_json| safe }};
+    let currentDiff = null;
+
+    // Diff view management
+    function setDiffView(view) {
+        ['unified', 'split', 'graph'].forEach(v => {
+            document.getElementById(`view-${v}`).classList.toggle('hidden', v !== view);
+            document.getElementById(`tab-${v}`).classList.toggle('border-primary', v === view);
+            document.getElementById(`tab-${v}`).classList.toggle('border-transparent', v !== view);
+            document.getElementById(`tab-${v}`).classList.toggle('text-foreground', v === view);
+            document.getElementById(`tab-${v}`).classList.toggle('text-muted-foreground', v !== view);
+        });
+
+        if (currentDiff) renderDiff(currentDiff, view);
+    }
+
+    // Swap commits
+    function swapCommits() {
+        const a = document.getElementById('commit-a');
+        const b = document.getElementById('commit-b');
+        const temp = a.value;
+        a.value = b.value;
+        b.value = temp;
+        computeDiff();
+    }
+
+    // Compute diff between selected commits
+    async function computeDiff() {
+        const shaA = document.getElementById('commit-a').value;
+        const shaB = document.getElementById('commit-b').value;
+
+        if (!shaA || !shaB) {
+            document.getElementById('diff-summary').classList.add('hidden');
+            return;
+        }
+
+        try {
+            const resp = await fetch(`/gitmem/api/diff?from=${shaA}&to=${shaB}`);
+            const diff = await resp.json();
+            currentDiff = diff;
+
+            // Show summary
+            document.getElementById('diff-summary').classList.remove('hidden');
+            document.getElementById('stats-added').textContent = diff.summary.added;
+            document.getElementById('stats-removed').textContent = diff.summary.removed;
+
+            // Update meter
+            const total = Math.max(diff.summary.added + diff.summary.removed, 1);
+            document.getElementById('meter-added').style.width = (diff.summary.added / total * 100) + '%';
+            document.getElementById('meter-removed').style.width = (diff.summary.removed / total * 100) + '%';
+
+            // Render diff
+            const viewType = document.getElementById('view-unified').classList.contains('hidden')
+                ? (document.getElementById('view-split').classList.contains('hidden') ? 'graph' : 'split')
+                : 'unified';
+            renderDiff(diff, viewType);
+
+        } catch (e) {
+            console.error('Diff failed:', e);
+        }
+    }
+
+    // Render diff content
+    function renderDiff(diff, viewType) {
+        if (viewType === 'unified') {
+            const container = document.getElementById('diff-content');
+            let html = '';
+
+            // Added memories
+            for (const mem of diff.added || []) {
+                html += `
+                    <div class="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i data-lucide="plus" class="w-4 h-4 text-green-400"></i>
+                            <span class="text-xs px-2 py-0.5 rounded bg-green-500/20 text-green-400">${mem.type}</span>
+                            <span class="text-xs text-muted-foreground font-mono">${mem.sha.slice(0, 8)}</span>
+                        </div>
+                        <p class="text-sm text-green-300">${escapeHtml(mem.content)}</p>
+                    </div>
+                `;
+            }
+
+            // Removed memories
+            for (const mem of diff.removed || []) {
+                html += `
+                    <div class="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i data-lucide="minus" class="w-4 h-4 text-red-400"></i>
+                            <span class="text-xs px-2 py-0.5 rounded bg-red-500/20 text-red-400">${mem.type}</span>
+                            <span class="text-xs text-muted-foreground font-mono">${mem.sha.slice(0, 8)}</span>
+                        </div>
+                        <p class="text-sm text-red-300 line-through opacity-70">${escapeHtml(mem.content)}</p>
+                    </div>
+                `;
+            }
+
+            if (!html) {
+                html = '<div class="text-center py-8 text-muted-foreground">No changes between these commits</div>';
+            }
+
+            container.innerHTML = html;
+            if (window.lucide) lucide.createIcons();
+
+        } else if (viewType === 'split') {
+            const addedContainer = document.getElementById('split-added');
+            const removedContainer = document.getElementById('split-removed');
+
+            addedContainer.innerHTML = (diff.added || []).map(mem => `
+                <div class="p-2 rounded bg-green-500/10 border border-green-500/20 text-sm">
+                    <div class="font-mono text-xs text-green-400 mb-1">${mem.sha.slice(0, 8)}</div>
+                    <p class="text-green-300">${escapeHtml(mem.content)}</p>
+                </div>
+            `).join('') || '<div class="text-muted-foreground text-sm">No additions</div>';
+
+            removedContainer.innerHTML = (diff.removed || []).map(mem => `
+                <div class="p-2 rounded bg-red-500/10 border border-red-500/20 text-sm">
+                    <div class="font-mono text-xs text-red-400 mb-1">${mem.sha.slice(0, 8)}</div>
+                    <p class="text-red-300 line-through">${escapeHtml(mem.content)}</p>
+                </div>
+            `).join('') || '<div class="text-muted-foreground text-sm">No removals</div>';
+        }
+    }
+
+    // Time travel via slider
+    function timeTravel(index) {
+        const commit = commits[parseInt(index)];
+        if (commit) {
+            document.getElementById('timeline-commit').textContent = commit.sha.slice(0, 7) + ' - ' + commit.message.slice(0, 30);
+        }
+    }
+
+    function selectCommitFromTimeline(sha) {
+        document.getElementById('commit-b').value = sha;
+        computeDiff();
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+        computeDiff();
+        timeTravel(0);
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,240 @@
+{% extends "gitmem/base.html" %}
+{% set active_page = "code" %}
+
+{% block repo_content %}
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-4">
+
+    <!-- Main Column: File Explorer & README (GitHub Style: 9 cols) -->
+    <div class="lg:col-span-9 space-y-4">
+
+        <!-- Top Controls: Branch | Add File -->
+        <div class="flex items-center justify-between">
+            <button class="btn-gh text-sm h-8">
+                <i data-lucide="git-branch" class="w-4 h-4 text-muted"></i>
+                <span class="font-medium">root</span>
+                <i data-lucide="chevron-down" class="w-3 h-3 text-muted ml-1"></i>
+            </button>
+
+            <div class="flex items-center gap-2">
+                <div class="text-sm font-medium text-white px-2">
+                    <span class="text-muted">Agent status:</span>
+                    <span class="text-green-400">Online</span>
+                </div>
+                <button class="btn-gh text-sm h-8 bg-[#238636] text-white border-0 hover:bg-[#2ea043]">
+                    Code <i data-lucide="chevron-down" class="w-4 h-4 ml-1"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- File Table Container (The "Box") -->
+        <div class="gh-box">
+            <!-- Header Row: Last Commit -->
+            <div
+                class="gh-box-header py-3 px-4 bg-[var(--bg-subtle)] border-b border-[var(--border-default)] flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <img src="https://github.com/github.png" class="w-5 h-5 rounded-full grayscale opacity-70">
+                    <span class="text-sm font-semibold hover:underline cursor-pointer">{{ agent.name if agent else
+                        'system-agent' }}</span>
+                    <span class="text-xs text-muted truncate max-w-md hover:text-blue-400 cursor-pointer">
+                        {{ commits[0].message if commits else 'Initial commit for memory store' }}
+                    </span>
+                </div>
+                <div class="flex items-center gap-4 text-xs text-muted">
+                    <span>{{ commits[0].hash[:7] if commits else 'init' }}</span>
+                    <span>{{ commits[0].time if commits else '2 hours ago' }}</span>
+                    <div class="flex items-center gap-1 font-semibold hover:text-blue-400 cursor-pointer">
+                        <i data-lucide="history" class="w-3 h-3"></i>
+                        <span>{{ commits|length }}</span>
+                        <span class="font-normal text-muted">commits</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- File Rows -->
+            <div class="bg-canvas">
+                <!-- Directories (Manual or from backend) -->
+                {% set dirs = [
+                ('context-store', 'Episodic & Semantic memory bins'),
+                ('checkpoints', 'Agent state snapshots'),
+                ('knowledge-graph', 'Graph relationships'),
+                ('logs', 'Activity logs')
+                ] %}
+
+                {% for name, msg in dirs %}
+                <div
+                    class="gh-box-row hover:bg-[var(--bg-subtle)] py-2 px-4 border-t border-[var(--border-muted)] flex items-center gap-3 group cursor-pointer">
+                    <i data-lucide="folder-fill" class="w-4 h-4 icon-folder"></i>
+                    <div class="min-w-[180px]">
+                        <a href="#" class="text-sm text-fg hover:text-link hover:underline">{{ name }}</a>
+                    </div>
+                    <div class="flex-1">
+                        <span class="text-xs text-muted group-hover:text-fg transition-colors">{{ msg }}</span>
+                    </div>
+                    <div class="text-xs text-muted text-right w-20">4 days ago</div>
+                </div>
+                {% endfor %}
+
+                <!-- Files (Backend 'file_list' if available) -->
+                {% for item in file_list if item.type != 'dir' %}
+                <div
+                    class="gh-box-row hover:bg-[var(--bg-subtle)] py-2 px-4 border-t border-[var(--border-muted)] flex items-center gap-3 group cursor-pointer">
+                    <i data-lucide="file" class="w-4 h-4 icon-file"></i>
+                    <div class="min-w-[180px]">
+                        <a href="{{ url_for('gitmem.file_browser', subpath=item.name) }}"
+                            class="text-sm text-fg hover:text-link hover:underline">{{ item.name }}</a>
+                    </div>
+                    <div class="flex-1">
+                        <span class="text-xs text-muted group-hover:text-fg transition-colors">{{ item.message }}</span>
+                    </div>
+                    <div class="text-xs text-muted text-right w-20">{{ item.time }}</div>
+                </div>
+                {% endfor %}
+
+                <!-- Hardcoded Files just for the Visual (if backend empty) -->
+                {% if not file_list %}
+                <div
+                    class="gh-box-row hover:bg-[var(--bg-subtle)] py-2 px-4 border-t border-[var(--border-muted)] flex items-center gap-3 group cursor-pointer">
+                    <i data-lucide="file-text" class="w-4 h-4 icon-file"></i>
+                    <div class="min-w-[180px]">
+                        <a href="#" class="text-sm text-fg hover:text-link hover:underline">README.md</a>
+                    </div>
+                    <div class="flex-1">
+                        <span class="text-xs text-muted group-hover:text-fg transition-colors">Update
+                            documentation</span>
+                    </div>
+                    <div class="text-xs text-muted text-right w-20">yesterday</div>
+                </div>
+                <div
+                    class="gh-box-row hover:bg-[var(--bg-subtle)] py-2 px-4 border-t border-[var(--border-muted)] flex items-center gap-3 group cursor-pointer">
+                    <i data-lucide="settings" class="w-4 h-4 icon-file"></i>
+                    <div class="min-w-[180px]">
+                        <a href="#" class="text-sm text-fg hover:text-link hover:underline">config.yaml</a>
+                    </div>
+                    <div class="flex-1">
+                        <span class="text-xs text-muted group-hover:text-fg transition-colors">Initial
+                            configuration</span>
+                    </div>
+                    <div class="text-xs text-muted text-right w-20">last week</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- README Viewer -->
+        <div class="gh-box mt-6">
+            <div class="gh-box-header px-4 py-3 bg-[var(--bg-canvas)] sticky top-0 z-10">
+                <div class="flex items-center gap-2 font-semibold text-sm">
+                    <i data-lucide="list" class="w-4 h-4"></i>
+                    README.md
+                </div>
+                <div class="flex items-center gap-2">
+                    <button class="p-1 hover:bg-[#161b22] rounded"><i data-lucide="pencil"
+                            class="w-4 h-4 text-muted"></i></button>
+                    <button class="p-1 hover:bg-[#161b22] rounded"><i data-lucide="monitor"
+                            class="w-4 h-4 text-muted"></i></button>
+                </div>
+            </div>
+            <div
+                class="p-8 prose prose-invert max-w-none prose-headings:border-b prose-headings:border-border prose-headings:pb-2 prose-a:text-link prose-pre:bg-[#161b22] border-t border-border">
+                <h1>GitMem</h1>
+                <p>
+                    GitMem acts as a persistent, versioned storage layer for AI cognition.
+                    It bridges the gap between ephemeral context windows and long-term storage, allowing your agents to
+                    remember, share, and evolve.
+                </p>
+                <br />
+                <h3>Features</h3>
+                <ul>
+                    <li><strong>Multi-Layered Memory</strong>: Stores episodic, semantic, and procedural memories in
+                        structured formats.</li>
+                    <li><strong>Version Controlled</strong>: Every thought and memory is committed, diffable, and
+                        reversible.</li>
+                    <li><strong>Universal Access</strong>: Connected via stdio/mcp to any LLM agent.</li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Right Column: Sidebar (About, etc) -->
+    <div class="lg:col-span-3 space-y-6">
+
+        <div class="border-b border-[var(--border-default)] pb-6">
+            <h3 class="font-semibold text-base mb-4">About</h3>
+            <p class="text-sm text-fg mb-4">
+                Enterprise-grade memory management for Agent Architects Studio.
+            </p>
+
+            <div class="flex flex-wrap gap-2 mb-4">
+                <span
+                    class="px-2 py-0.5 rounded-full bg-[#1f6feb26] text-[#58a6ff] text-xs font-medium border border-[#1f6feb66]">ai-memory</span>
+                <span
+                    class="px-2 py-0.5 rounded-full bg-[#1f6feb26] text-[#58a6ff] text-xs font-medium border border-[#1f6feb66]">vector-store</span>
+                <span
+                    class="px-2 py-0.5 rounded-full bg-[#1f6feb26] text-[#58a6ff] text-xs font-medium border border-[#1f6feb66]">mcp-server</span>
+            </div>
+
+            <div class="space-y-3 text-sm text-muted">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="book" class="w-4 h-4"></i>
+                    Readme
+                </div>
+                <div class="flex items-center gap-2">
+                    <i data-lucide="activity" class="w-4 h-4"></i>
+                    Activity
+                </div>
+                <div class="flex items-center gap-2">
+                    <i data-lucide="star" class="w-4 h-4"></i>
+                    <strong>{{ repo.star_count }}</strong> stars
+                </div>
+                <div class="flex items-center gap-2">
+                    <i data-lucide="eye" class="w-4 h-4"></i>
+                    <strong>{{ repo.watcher_count }}</strong> watching
+                </div>
+                <div class="flex items-center gap-2">
+                    <i data-lucide="git-fork" class="w-4 h-4"></i>
+                    <strong>{{ repo.fork_count }}</strong> forks
+                </div>
+            </div>
+        </div>
+
+        <div class="border-b border-[var(--border-default)] pb-6">
+            <h3 class="font-semibold text-base mb-4">Releases <span
+                    class="ml-1 bg-[#6e768166] text-xs rounded-full px-2 py-0.5 text-muted">1</span></h3>
+            <div class="flex items-start gap-3">
+                <i data-lucide="tag" class="w-4 h-4 text-[#3fb950] mt-1"></i>
+                <div>
+                    <div class="text-sm font-semibold text-fg">v0.1.0-alpha <span
+                            class="ml-2 text-[#3fb950] border border-[#3fb950] rounded-full px-2 text-[10px] uppercase">Latest</span>
+                    </div>
+                    <div class="text-xs text-muted mt-1">on Jan 12</div>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h3 class="font-semibold text-base mb-4">Languages</h3>
+            <div class="mb-2 w-full flex h-2 rounded-full overflow-hidden bg-[#30363d]">
+                <div class="bg-[#3572A5] w-[65%]"></div>
+                <div class="bg-[#f1e05a] w-[25%]"></div>
+                <div class="bg-[#89e051] w-[10%]"></div>
+            </div>
+            <div class="flex flex-wrap gap-4 text-xs">
+                <div class="flex items-center gap-1.5 font-medium">
+                    <div class="w-2 h-2 rounded-full bg-[#3572A5]"></div>
+                    <span>Python</span> <span class="text-muted">65.0%</span>
+                </div>
+                <div class="flex items-center gap-1.5 font-medium">
+                    <div class="w-2 h-2 rounded-full bg-[#f1e05a]"></div>
+                    <span>JavaScript</span> <span class="text-muted">25.0%</span>
+                </div>
+                <div class="flex items-center gap-1.5 font-medium">
+                    <div class="w-2 h-2 rounded-full bg-[#89e051]"></div>
+                    <span>Shell</span> <span class="text-muted">10.0%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

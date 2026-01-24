@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitMem Sidebar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        :root {
+            --background: 0 0% 10%;
+            --foreground: 0 0% 91%;
+            --card: 0 0% 18%;
+            --card-foreground: 0 0% 91%;
+            --border: 0 0% 24%;
+            --primary: 217 91% 60%;
+            --primary-foreground: 0 0% 100%;
+            --secondary: 0 0% 22%;
+            --secondary-foreground: 0 0% 91%;
+            --muted: 0 0% 15%;
+            --muted-foreground: 0 0% 64%;
+            --radius: 0.5rem;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: hsl(var(--background));
+            color: hsl(var(--foreground));
+        }
+
+        /* Compact adjustments for sidebar */
+        .btn-secondary {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+        }
+
+        .card {
+            border: 1px solid hsl(var(--border));
+            background: hsl(var(--card));
+            border-radius: var(--radius);
+        }
+
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: hsl(var(--border));
+            border-radius: 2px;
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        background: 'hsl(var(--background))',
+                        foreground: 'hsl(var(--foreground))',
+                        card: 'hsl(var(--card))',
+                        border: 'hsl(var(--border))',
+                        primary: 'hsl(var(--primary))',
+                        secondary: 'hsl(var(--secondary))',
+                        muted: 'hsl(var(--muted))'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="p-2">
+    {% block content %}
+    <!-- This block mimics the structure of base.html's content block 
+         so that gitmem/base.html (which extends this or base.html) works. -->
+    {% endblock %}
+    <script>lucide.createIcons();</script>
+</body>
+
+</html>
