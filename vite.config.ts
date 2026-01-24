@@ -61,6 +61,10 @@ export default defineConfig(({ mode }) => ({
         target: 'http://localhost:5000',
         changeOrigin: true,
       },
+      '/dhruv': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
       '/static': {
         target: 'http://localhost:5000',
         changeOrigin: true,
