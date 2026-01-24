@@ -1,12 +1,12 @@
 {
-    "mcpServers": {
-        "memory": {
+    "servers": {
+        "manhattan-memory": {
             "command": "python",
             "args": [
-                "api/mcp_memory_client.py"
+                "C:/Desktop/python_workspace_311/PdM-main/PdM-main/agent-architects-studio/api/mcp_memory_client.py"
             ],
             "env": {
-                "MANHATTAN_API_URL": "http://127.0.0.1:1078"
+                "MANHATTAN_API_KEY": "<ENTER-YOUR-API-KEY>"
             }
         }
     }

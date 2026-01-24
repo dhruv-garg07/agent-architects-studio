@@ -52,8 +52,9 @@ load_dotenv()
 try:
     from mcp.server.fastmcp import FastMCP
 except ImportError:
-    print("Error: mcp package not installed. Install with: pip install mcp")
-    print("Or: uv add mcp")
+    print("Error: mcp package not installed. Install with: pip install mcp", file=sys.stderr)
+    print("Or: uv add mcp", file=sys.stderr)
+
     sys.exit(1)
 
 # Import SimpleMem components
@@ -61,8 +62,9 @@ try:
     from SimpleMem.main import create_system, SimpleMemSystem
     from SimpleMem.models.memory_entry import MemoryEntry, Dialogue
 except ImportError as e:
-    print(f"Error importing SimpleMem: {e}")
-    print("Make sure SimpleMem module is available in the path")
+    print(f"Error importing SimpleMem: {e}", file=sys.stderr)
+    print("Make sure SimpleMem module is available in the path", file=sys.stderr)
+
     sys.exit(1)
 
 # Initialize FastMCP server
@@ -125,7 +127,8 @@ class McpAgentsService:
         
         if not supabase_url or not supabase_key:
             self.client = None
-            print("Warning: Supabase credentials not set. Agent management will work locally only.")
+            print("Warning: Supabase credentials not set. Agent management will work locally only.", file=sys.stderr)
+
         else:
             self.client = create_client(supabase_url, supabase_key)
     
@@ -996,31 +999,32 @@ async def get_server_info() -> str:
 
 def main():
     """Initialize and run the MCP server."""
-    print("=" * 60)
-    print("  Manhattan Memory MCP Server v2.0")
-    print("=" * 60)
-    print()
-    print("Agent Management Tools:")
-    print("  • register_agent       - Create a new memory agent")
-    print("  • list_my_agents       - List all your agents")
-    print("  • get_agent_details    - Get agent info")
-    print("  • update_agent_info    - Update agent details")
-    print("  • remove_agent         - Delete an agent")
-    print("  • switch_to_agent      - Switch context to an agent")
-    print("  • current_agent        - Get current agent")
-    print()
-    print("Memory Operations:")
-    print("  • create_memory        - Initialize memory system")
-    print("  • process_raw_dialogues - Process dialogues via LLM")
-    print("  • add_memory_direct    - Add memories directly")
-    print("  • search_memory        - Hybrid search")
-    print("  • get_context_answer   - Q&A with memory context")
-    print("  • update_memory_entry  - Update memory")
-    print("  • delete_memory_entries - Delete memories")
-    print("  • list_all_memories    - List all memories")
-    print()
-    print("Running on stdio transport...")
-    print("=" * 60)
+    print("=" * 60, file=sys.stderr)
+    print("  Manhattan Memory MCP Server v2.0", file=sys.stderr)
+    print("=" * 60, file=sys.stderr)
+    print(file=sys.stderr)
+    print("Agent Management Tools:", file=sys.stderr)
+    print("  * register_agent       - Create a new memory agent", file=sys.stderr)
+    print("  * list_my_agents       - List all your agents", file=sys.stderr)
+    print("  * get_agent_details    - Get agent info", file=sys.stderr)
+    print("  * update_agent_info    - Update agent details", file=sys.stderr)
+    print("  * remove_agent         - Delete an agent", file=sys.stderr)
+    print("  * switch_to_agent      - Switch context to an agent", file=sys.stderr)
+    print("  * current_agent        - Get current agent", file=sys.stderr)
+    print(file=sys.stderr)
+    print("Memory Operations:", file=sys.stderr)
+    print("  * create_memory        - Initialize memory system", file=sys.stderr)
+    print("  * process_raw_dialogues - Process dialogues via LLM", file=sys.stderr)
+    print("  * add_memory_direct    - Add memories directly", file=sys.stderr)
+    print("  * search_memory        - Hybrid search", file=sys.stderr)
+    print("  * get_context_answer   - Q&A with memory context", file=sys.stderr)
+    print("  * update_memory_entry  - Update memory", file=sys.stderr)
+    print("  * delete_memory_entries - Delete memories", file=sys.stderr)
+    print("  * list_all_memories    - List all memories", file=sys.stderr)
+    print(file=sys.stderr)
+    print("Running on stdio transport...", file=sys.stderr)
+    print("=" * 60, file=sys.stderr)
+
     mcp.run(transport="stdio")
 
 

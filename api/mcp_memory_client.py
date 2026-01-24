@@ -63,20 +63,22 @@ except ImportError:
 try:
     from mcp.server.fastmcp import FastMCP
 except ImportError:
-    print("=" * 50)
-    print("ERROR: MCP package not installed!")
-    print("Install with: pip install mcp")
-    print("=" * 50)
+    print("=" * 50, file=sys.stderr)
+    print("ERROR: MCP package not installed!", file=sys.stderr)
+    print("Install with: pip install mcp", file=sys.stderr)
+    print("=" * 50, file=sys.stderr)
+
     sys.exit(1)
 
 # Import HTTP client
 try:
     import httpx
 except ImportError:
-    print("=" * 50)
-    print("ERROR: httpx package not installed!")
-    print("Install with: pip install httpx")
-    print("=" * 50)
+    print("=" * 50, file=sys.stderr)
+    print("ERROR: httpx package not installed!", file=sys.stderr)
+    print("Install with: pip install httpx", file=sys.stderr)
+    print("=" * 50, file=sys.stderr)
+
     sys.exit(1)
 
 # Import Session Enforcer for mandatory memory engagement
@@ -93,10 +95,12 @@ try:
         end_session
     )
     SESSION_ENFORCEMENT_ENABLED = True
-    print("[MCP] Session enforcement module loaded - agents MUST use memory system")
+    print("[MCP] Session enforcement module loaded - agents MUST use memory system", file=sys.stderr)
+
 except ImportError:
     SESSION_ENFORCEMENT_ENABLED = False
-    print("[MCP] Session enforcement not available - running without mandatory checks")
+    print("[MCP] Session enforcement not available - running without mandatory checks", file=sys.stderr)
+
 
 
 # ============================================================================
@@ -2245,54 +2249,55 @@ async def check_health() -> str:
 
 def main():
     """Initialize and run the MCP server."""
-    print("=" * 70)
-    print("  🧠 Manhattan Memory MCP Client v3.0 - Session Enforced Edition")
-    print("=" * 70)
-    print(f"  API URL: {API_URL}")
-    print(f"  API Key: {'✓ Configured' if API_KEY else '✗ Not set (set MANHATTAN_API_KEY)'}")
-    print(f"  Session Enforcement: {'✓ ENABLED' if SESSION_ENFORCEMENT_ENABLED else '✗ Disabled'}")
-    print()
-    print("  🚨 MANDATORY STARTUP FOR AI AGENTS:")
-    print("     1. Call check_session_status FIRST")
-    print("     2. If no agent_id, call request_agent_id and ASK USER")
-    print("     3. Call session_start to load context")
-    print("     4. USE context in all responses")
-    print()
-    print("  📋 Session Management (NEW - MUST USE!):")
-    print("    • check_session_status   - 🚨 Check if session is initialized")
-    print("    • session_start          - 🚀 Initialize session and load context")
-    print("    • session_end            - 🏁 End session and sync memories")
-    print("    • pull_context           - 📥 Pull all relevant context")
-    print("    • push_memories          - 📤 Push memories to cloud")
-    print("    • request_agent_id       - 🔑 Get prompts to ask user for agent_id")
-    print("    • get_startup_instructions - 📋 Get mandatory startup guide")
-    print()
-    print("  Memory Operations:")
-    print("    • create_memory         - Initialize memory for an agent")
-    print("    • process_raw_dialogues - Process dialogues via AI")
-    print("    • add_memory_direct     - 💾 Store user info (USE FREQUENTLY!)")
-    print("    • search_memory         - 🔍 Check memories (ALWAYS FIRST!)")
-    print("    • get_context_answer    - 🤖 Q&A with memory context")
-    print("    • update_memory_entry   - Update existing memory")
-    print("    • delete_memory_entries - Delete memories")
-    print("    • chat_with_agent       - Chat with agent")
-    print()
-    print("  Proactive Engagement:")
-    print("    • auto_remember         - 🧠 Auto-capture from user messages")
-    print("    • should_remember       - 🤔 Guidance on what to store")
-    print("    • get_memory_hints      - 💡 Suggestions for memory use")
-    print("    • conversation_checkpoint - 📍 Save conversation state")
-    print()
-    print("  Agent CRUD:")
-    print("    • create_agent / list_agents / get_agent")
-    print("    • update_agent / disable_agent / enable_agent / delete_agent")
-    print()
-    print("  Professional APIs:")
-    print("    • agent_stats / list_memories / bulk_add_memory")
-    print("    • export_memories / import_memories / memory_summary / api_usage")
-    print()
-    print("  Running on stdio transport...")
-    print("=" * 70)
+    print("=" * 70, file=sys.stderr)
+    print("  Manhattan Memory MCP Client v3.0 - Session Enforced Edition", file=sys.stderr)
+    print("=" * 70, file=sys.stderr)
+    print(f"  API URL: {API_URL}", file=sys.stderr)
+    print(f"  API Key: {'Configured' if API_KEY else 'Not set (set MANHATTAN_API_KEY)'}", file=sys.stderr)
+    print(f"  Session Enforcement: {'ENABLED' if SESSION_ENFORCEMENT_ENABLED else 'Disabled'}", file=sys.stderr)
+    print(file=sys.stderr)
+    print("  MANDATORY STARTUP FOR AI AGENTS:", file=sys.stderr)
+    print("     1. Call check_session_status FIRST", file=sys.stderr)
+    print("     2. If no agent_id, call request_agent_id and ASK USER", file=sys.stderr)
+    print("     3. Call session_start to load context", file=sys.stderr)
+    print("     4. USE context in all responses", file=sys.stderr)
+    print(file=sys.stderr)
+    print("  Session Management (NEW - MUST USE!):", file=sys.stderr)
+    print("    * check_session_status   - Check if session is initialized", file=sys.stderr)
+    print("    * session_start          - Initialize session and load context", file=sys.stderr)
+    print("    * session_end            - End session and sync memories", file=sys.stderr)
+    print("    * pull_context           - Pull all relevant context", file=sys.stderr)
+    print("    * push_memories          - Push memories to cloud", file=sys.stderr)
+    print("    * request_agent_id       - Get prompts to ask user for agent_id", file=sys.stderr)
+    print("    * get_startup_instructions - Get mandatory startup guide", file=sys.stderr)
+    print(file=sys.stderr)
+    print("  Memory Operations:", file=sys.stderr)
+    print("    * create_memory         - Initialize memory for an agent", file=sys.stderr)
+    print("    * process_raw_dialogues - Process dialogues via AI", file=sys.stderr)
+    print("    * add_memory_direct     - Store user info (USE FREQUENTLY!)", file=sys.stderr)
+    print("    * search_memory         - Check memories (ALWAYS FIRST!)", file=sys.stderr)
+    print("    * get_context_answer    - Q&A with memory context", file=sys.stderr)
+    print("    * update_memory_entry   - Update existing memory", file=sys.stderr)
+    print("    * delete_memory_entries - Delete memories", file=sys.stderr)
+    print("    * chat_with_agent       - Chat with agent", file=sys.stderr)
+    print(file=sys.stderr)
+    print("  Proactive Engagement:", file=sys.stderr)
+    print("    * auto_remember         - Auto-capture from user messages", file=sys.stderr)
+    print("    * should_remember       - Guidance on what to store", file=sys.stderr)
+    print("    * get_memory_hints      - Suggestions for memory use", file=sys.stderr)
+    print("    * conversation_checkpoint - Save conversation state", file=sys.stderr)
+    print(file=sys.stderr)
+    print("  Agent CRUD:", file=sys.stderr)
+    print("    * create_agent / list_agents / get_agent", file=sys.stderr)
+    print("    * update_agent / disable_agent / enable_agent / delete_agent", file=sys.stderr)
+    print(file=sys.stderr)
+    print("  Professional APIs:", file=sys.stderr)
+    print("    * agent_stats / list_memories / bulk_add_memory", file=sys.stderr)
+    print("    * export_memories / import_memories / memory_summary / api_usage", file=sys.stderr)
+    print(file=sys.stderr)
+    print("  Running on stdio transport...", file=sys.stderr)
+    print("=" * 70, file=sys.stderr)
+
     
     mcp.run(transport="stdio")
 
