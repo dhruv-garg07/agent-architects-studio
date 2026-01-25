@@ -388,6 +388,57 @@ def handle_messages():
         return str(e), 500
 
 
+@mcp_bp.route("/mcp/<tool_name>", methods=["POST"])
+def handle_tool_rest(tool_name):
+    """
+    REST Endpoint for direct tool execution (used by mcp_memory_client.py).
+    Matches POST /mcp/auto_remember, /mcp/search_memory, etc.
+    """
+    # Skip reserved routes
+    if tool_name in ["sse", "messages", "search_tool"]: # Add any other reserved names
+        return jsonify({"error": "Reserved endpoint"}), 404
+
+    # Auth check
+    auth_header = request.headers.get("Authorization")
+    api_key = None
+    if auth_header and auth_header.startswith("Bearer "):
+        api_key = auth_header.split(" ")[1]
+    
+    # Fallback to query param or body
+    if not api_key:
+        api_key = request.args.get("api_key") or (request.json and request.json.get("api_key"))
+
+    auth = verify_api_key(api_key)
+    if not auth["ok"]:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    try:
+        arguments = request.json or {}
+        # Remove auth args if present to avoid passing to tool
+        if "api_key" in arguments:
+            del arguments["api_key"]
+            
+        print(f"[MCP REST] Executing tool: {tool_name}")
+        
+        # Execute tool
+        result = execute_tool(tool_name, arguments)
+        
+        # If result is already a dict/json string, ensure it's returned as JSON
+        if isinstance(result, str):
+            try:
+                # Try to parse if it looks like JSON
+                json_result = json.loads(result)
+                return jsonify(json_result)
+            except:
+                return jsonify({"result": result})
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"[MCP REST] Error executing {tool_name}: {e}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 async def _process_json_rpc(session_id: str, message: Dict[str, Any]):
     """Process incoming JSON-RPC message and queue response."""
     if not isinstance(message, dict):
