@@ -154,8 +154,99 @@ Usage of this memory system is ADDITIVE. It should NOT block your normal ability
 # HTTP Client Helper
 # ============================================================================
 
+# ============================================================================
+# HTTP Client Helper (with Server-Side Bypass)
+# ============================================================================
+
+# Try to import server module for direct execution (server-side optimization)
+try:
+    import mcp_memory_server
+    SERVER_AVAILABLE = True
+except ImportError:
+    SERVER_AVAILABLE = False
+
 async def call_api(endpoint: str, payload: dict) -> dict:
-    """Make an authenticated request to the Manhattan API."""
+    """
+    Make a request to the Manhattan API.
+    
+    If running on the server (mcp_memory_server available), calls the function directly
+    to avoid network hops and recursion errors (307 redirects).
+    Otherwise, makes a standard HTTP request.
+    """
+    
+    # --- Server-Side Bypass ---
+    if SERVER_AVAILABLE:
+        try:
+            # Map endpoints to server functions
+            # endpoint name -> (function_name, arg_preprocessing_fn)
+            SERVER_MAP = {
+                "process_raw": ("process_raw_dialogues", None),
+                "add_memory": ("add_memory_direct", None),  # Map add_memory alias
+                "add_memory_direct": ("add_memory_direct", None),
+                "search_memory": ("search_memory", None),
+                "get_context_answer": ("get_context_answer", None),
+                "create_memory": ("create_memory", None),
+                "list_memories": ("list_all_memories", None), # Map list alias
+                "list_all_memories": ("list_all_memories", None),
+                "update_memory": ("update_memory_entry", None),
+                "delete_memory": ("delete_memory_entries", None),
+                # Agent management
+                "create_agent": ("register_agent", None),
+                "list_agents": ("list_my_agents", None),
+                "get_agent": ("get_agent_details", None),
+                "switch_agent": ("switch_to_agent", None),
+            }
+            
+            mapping = SERVER_MAP.get(endpoint)
+            if mapping:
+                func_name, _ = mapping
+                
+                # Dynamic lookup of the function in the server module
+                # The server module uses FastMCP, so the functions are decorated.
+                # But the underlying async functions are usually available in the module scope
+                # or we can access them via mcp._tool_manager
+                
+                server_func = getattr(mcp_memory_server, func_name, None)
+                
+                # If not found directly, try to get from the mcp object tools
+                if not server_func:
+                    tool = mcp_memory_server.mcp._tool_manager._tools.get(func_name)
+                    if tool:
+                        server_func = tool.fn
+                
+                if server_func:
+                    # Special validation for 'dialogues' vs 'process_raw' mismatch
+                    # auto_remember sends 'dialogues', process_raw_dialogues expects 'dialogues'
+                    # so payload should match kwargs
+                    
+                    # Convert payload to kwargs
+                    # Note: server functions allow extra args or defaults? 
+                    # We might need to filter args based on signature or pass as **payload
+                    
+                    if asyncio.iscoroutinefunction(server_func):
+                        # Execute directly
+                        result_json = await server_func(**payload)
+                    else:
+                        result_json = server_func(**payload)
+                        
+                    # Server functions return JSON strings, call_api expects dict
+                    if isinstance(result_json, str):
+                        try:
+                            return json.loads(result_json)
+                        except:
+                            return {"result": result_json}
+                    return result_json
+            
+            # If we fall through here, either endpoint not mapped or func not found
+            # Fallback to HTTP? Or error? 
+            # If server is available but endpoint missing, HTTP might self-call and fail.
+            print(f"[MCP Client] Warning: Endpoint '{endpoint}' not found in server map. Falling back to HTTP.")
+            
+        except Exception as e:
+            print(f"[MCP Client] Server-side execution error: {e}")
+            return {"ok": False, "error": f"Server-side execution failed: {str(e)}"}
+
+    # --- HTTP Client Fallback ---
     url = f"{API_URL}/{endpoint}"
     
     headers = {
