@@ -2297,41 +2297,41 @@ async def check_health() -> str:
 # Main entry point
 # ============================================================================
 
-# def main():
-#     """Initialize and run the MCP server."""
-#     import argparse
+def main():
+    """Initialize and run the MCP server."""
+    import argparse
     
-#     parser = argparse.ArgumentParser(description='Manhattan Memory MCP Client')
-#     parser.add_argument('--transport', default='sse', choices=['stdio', 'sse'],
-#                       help='Transport protocol to use (default: sse)')
-#     parser.add_argument('--host', default='0.0.0.0',
-#                       help='Host to bind to for SSE (default: 0.0.0.0)')
-#     parser.add_argument('--port', type=int, default=8000,
-#                       help='Port to listen on for SSE (default: 8000)')
+    parser = argparse.ArgumentParser(description='Manhattan Memory MCP Client')
+    parser.add_argument('--transport', default='sse', choices=['stdio', 'sse'],
+                      help='Transport protocol to use (default: sse)')
+    parser.add_argument('--host', default='0.0.0.0',
+                      help='Host to bind to for SSE (default: 0.0.0.0)')
+    parser.add_argument('--port', type=int, default=8000,
+                      help='Port to listen on for SSE (default: 8000)')
     
-#     args = parser.parse_args()
+    args = parser.parse_args()
 
-#     print("=" * 70, file=sys.stderr)
-#     print("  Manhattan Memory MCP Client v3.0 - Session Enforced Edition", file=sys.stderr)
-#     print("=" * 70, file=sys.stderr)
+    print("=" * 70, file=sys.stderr)
+    print("  Manhattan Memory MCP Client v3.0 - Session Enforced Edition", file=sys.stderr)
+    print("=" * 70, file=sys.stderr)
     
-#     if args.transport == 'sse':
-#         print(f"  Starting Remote HTTP Server on http://{args.host}:{args.port} (SSE)", file=sys.stderr)
-#         print(f"  API URL: {API_URL}", file=sys.stderr)
-#         print(f"  API Key: {'Configured' if API_KEY else 'Not set (set MANHATTAN_API_KEY)'}", file=sys.stderr)
-#         print("  Client-side file NOT required for users. Share the SSE URL!", file=sys.stderr)
-#         print("=" * 70, file=sys.stderr)
+    if args.transport == 'sse':
+        print(f"  Starting Remote HTTP Server on http://{args.host}:{args.port} (SSE)", file=sys.stderr)
+        print(f"  API URL: {API_URL}", file=sys.stderr)
+        print(f"  API Key: {'Configured' if API_KEY else 'Not set (set MANHATTAN_API_KEY)'}", file=sys.stderr)
+        print("  Client-side file NOT required for users. Share the SSE URL!", file=sys.stderr)
+        print("=" * 70, file=sys.stderr)
         
-#         mcp.settings.port = args.port
-#         mcp.settings.host = args.host
-#         mcp.run(transport="sse")
-#     else:
-#         print(f"  API URL: {API_URL}", file=sys.stderr)
-#         print(f"  API Key: {'Configured' if API_KEY else 'Not set (set MANHATTAN_API_KEY)'}", file=sys.stderr)
-#         print("  Running on stdio transport...", file=sys.stderr)
-#         print("=" * 70, file=sys.stderr)
-#         mcp.run(transport="stdio")
+        mcp.settings.port = args.port
+        mcp.settings.host = args.host
+        mcp.run(transport="sse")
+    else:
+        print(f"  API URL: {API_URL}", file=sys.stderr)
+        print(f"  API Key: {'Configured' if API_KEY else 'Not set (set MANHATTAN_API_KEY)'}", file=sys.stderr)
+        print("  Running on stdio transport...", file=sys.stderr)
+        print("=" * 70, file=sys.stderr)
+        mcp.run(transport="stdio")
 
 
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    main()
