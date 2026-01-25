@@ -81,6 +81,11 @@ try:
     from gitmem.api.websocket_events import init_websocket
     init_websocket(socketio)
     print("[STARTUP] Flask-SocketIO initialized for real-time updates")
+    
+    # Initialize MCP Socket.IO Gateway for remote AI agents
+    from mcp_socketio_gateway import init_mcp_socketio
+    init_mcp_socketio(socketio)
+    print("[STARTUP] MCP Socket.IO Gateway initialized on /mcp namespace")
 except ImportError as e:
     print(f"[STARTUP] Flask-SocketIO not available: {e}")
     socketio = None
