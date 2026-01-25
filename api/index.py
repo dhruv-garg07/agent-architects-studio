@@ -1495,39 +1495,23 @@ def api_docs():
     # Pass serialized JSON (or null) to the template. The template will use this as INITIAL_DOCS.
     return render_template('api_docs.html', docs_json=json.dumps(docs_json) if docs_json is not None else None)
 
+
+import requests
+from flask import Response, request
+
+MCP_URL = "http://127.0.0.1:8000/sse"
+
 @app.route("/mcp/sse")
-def mcp_sse_proxy():
-    """
-    Flask -> MCP SSE bridge
-    """
+def proxy_mcp():
+    def generate():
+        with requests.get(MCP_URL, stream=True) as r:
+            for chunk in r.iter_content(chunk_size=None):
+                if chunk:
+                    yield chunk
 
-    async def run_asgi():
-        scope = {
-            "type": "http",
-            "method": request.method,
-            "path": "/sse",
-            "headers": [(k.encode(), v.encode()) for k, v in request.headers.items()],
-        }
+    return Response(generate(), mimetype="text/event-stream")
 
-        messages = []
 
-        async def send(message):
-            if message["type"] == "http.response.body":
-                messages.append(message.get("body", b""))
-
-        await mcp_sse_app(scope, None, send)
-        return b"".join(messages)
-
-    loop = asyncio.new_event_loop()
-    data = loop.run_until_complete(run_asgi())
-
-    return Response(data, mimetype="text/event-stream")
-
-from mcp.server.sse import create_sse_app
-from mcp_memory_client import mcp
-
-# Create SSE ASGI app from MCP
-mcp_sse_app = create_sse_app(mcp)
 
 # IMPORT MCP from your blueprint file
 from mcp_memory_client import mcp
