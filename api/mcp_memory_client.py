@@ -123,7 +123,7 @@ TARGET_AGENT_ID = "84aab1f8-3ea9-4c6a-aa3c-cd8eaa274a5e"
 
 # Initialize FastMCP server with instructions for AI agents
 mcp = FastMCP(
-    "manhattan-memory-client",
+    "manhattan_memory",
     instructions="""
 You have access to a PERSISTENT MEMORY SYSTEM for storing and retrieving information.
 This is a HELPFUL tool to provide better, more personalized answers.
