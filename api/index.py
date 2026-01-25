@@ -1523,6 +1523,11 @@ def mcp_sse_proxy():
 
     return Response(data, mimetype="text/event-stream")
 
+from mcp.server.sse import create_sse_app
+from mcp_memory_client import mcp
+
+# Create SSE ASGI app from MCP
+mcp_sse_app = create_sse_app(mcp)
 
 # IMPORT MCP from your blueprint file
 from mcp_memory_client import mcp
