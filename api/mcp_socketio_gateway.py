@@ -38,9 +38,18 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
-
 # Import key utilities for API key verification
 from key_utils import hash_key
+
+from flask import Blueprint, Response, request, stream_with_context, jsonify
+import queue
+import uuid
+
+# Define Blueprint for SSE
+mcp_bp = Blueprint('mcp_sse', __name__)
+
+# Store SSE sessions: session_id -> Queue
+_sse_sessions: Dict[str, queue.Queue] = {}
 
 # Supabase for API key validation (optional - falls back to dev mode if unavailable)
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
@@ -304,6 +313,191 @@ def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> Any:
         asyncio.set_event_loop(loop)
     
     return loop.run_until_complete(execute_tool_async(tool_name, arguments))
+
+
+# ============================================================================
+# Standard MCP SSE Implementation (for "No Local File" usage)
+# ============================================================================
+
+@mcp_bp.route("/mcp/sse", methods=["GET"])
+def handle_sse():
+    """
+    Standard MCP SSE Endpoint.
+    Establishes connection and sends the message endpoint URL.
+    """
+    api_key = request.args.get("api_key")
+    auth = verify_api_key(api_key)
+    if not auth["ok"]:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    session_id = str(uuid.uuid4())
+    q = queue.Queue()
+    _sse_sessions[session_id] = q
+    
+    print(f"[MCP SSE] New session: {session_id}")
+    
+    def generate():
+        # 1. Send the endpoint event telling client where to POST messages
+        # The endpoint should include the session_id as a query param
+        # Construct absolute URL for robustness
+        endpoint_url = url_for('mcp_sse.handle_messages', session_id=session_id, _external=True)
+        yield f"event: endpoint\ndata: {endpoint_url}\n\n"
+        
+        try:
+            while True:
+                # Blocks until message available
+                data = q.get()
+                # MCP spec sends JSON-RPC messages as 'message' events
+                yield f"event: message\ndata: {json.dumps(data)}\n\n"
+        except GeneratorExit:
+            print(f"[MCP SSE] Session closed: {session_id}")
+            if session_id in _sse_sessions:
+                del _sse_sessions[session_id]
+        except Exception as e:
+            print(f"[MCP SSE] Error in stream: {e}")
+            if session_id in _sse_sessions:
+                del _sse_sessions[session_id]
+
+    return Response(stream_with_context(generate()), content_type="text/event-stream")
+
+
+@mcp_bp.route("/mcp/messages", methods=["POST"])
+def handle_messages():
+    """
+    Standard MCP Message Endpoint.
+    Receives JSON-RPC messages and queues responses.
+    """
+    session_id = request.args.get("session_id")
+    if not session_id or session_id not in _sse_sessions:
+        return "Session not found", 404
+    
+    try:
+        message = request.json
+        # Process asynchronously to not block the POST request? 
+        # Actually MCP spec says POST should return 202 Accepted quickly.
+        # We'll run logic in a background thread or just do it here if fast.
+        # For simplicity/safety in Flask, doing it synchronously here is okay 
+        # as long as we put the RESULT in the queue for the SSE stream.
+        
+        # We need to run this in an event loop since our tools are async
+        asyncio.run(_process_json_rpc(session_id, message))
+        
+        return "Accepted", 202
+    except Exception as e:
+        print(f"[MCP SSE] Error handling message: {e}")
+        return str(e), 500
+
+
+async def _process_json_rpc(session_id: str, message: Dict[str, Any]):
+    """Process incoming JSON-RPC message and queue response."""
+    if not isinstance(message, dict):
+        return
+        
+    msg_type = message.get("method")
+    msg_id = message.get("id")
+    
+    response = None
+    
+    try:
+        # Initialize
+        if msg_type == "initialize":
+            response = {
+                "jsonrpc": "2.0",
+                "id": msg_id,
+                "result": {
+                    "protocolVersion": "2024-11-05",
+                    "capabilities": {
+                        "tools": {}
+                    },
+                    "serverInfo": {
+                        "name": "manhattan-memory-sse",
+                        "version": "1.0.0"
+                    }
+                }
+            }
+            
+        # List Tools
+        elif msg_type == "tools/list":
+            tools_schema = get_tools_schema()
+            tool_list = []
+            for name, schema in tools_schema.items():
+                tool_list.append({
+                    "name": name,
+                    "description": schema.get("description", ""),
+                    "inputSchema": schema.get("parameters", {})
+                })
+            
+            response = {
+                "jsonrpc": "2.0",
+                "id": msg_id,
+                "result": {
+                    "tools": tool_list
+                }
+            }
+            
+        # Call Tool
+        elif msg_type == "tools/call":
+            params = message.get("params", {})
+            name = params.get("name")
+            args = params.get("arguments", {})
+            
+            result = await execute_tool_async(name, args)
+            
+            # Format result for MCP (content array)
+            if isinstance(result, dict) and not result.get("ok", True) and "error" in result:
+                content = [{"type": "text", "text": f"Error: {result['error']}"}]
+                is_error = True
+            else:
+                content = [{"type": "text", "text": json.dumps(result, indent=2)}]
+                is_error = False
+                
+            response = {
+                "jsonrpc": "2.0",
+                "id": msg_id,
+                "result": {
+                    "content": content,
+                    "isError": is_error
+                }
+            }
+            
+        # Ping / Notifications (ignore or ack)
+        elif msg_type == "notifications/initialized":
+            # Client confirming init
+            return
+            
+        else:
+            # Unknown method
+            print(f"[MCP SSE] Unknown method: {msg_type}")
+            # Optional: send error back if it's a request (has id)
+            if msg_id is not None:
+                response = {
+                    "jsonrpc": "2.0",
+                    "id": msg_id,
+                    "error": {
+                        "code": -32601,
+                        "message": "Method not found"
+                    }
+                }
+                
+    except Exception as e:
+        print(f"[MCP SSE] Execution error: {e}")
+        if msg_id is not None:
+            response = {
+                "jsonrpc": "2.0",
+                "id": msg_id,
+                "error": {
+                    "code": -32603,
+                    "message": str(e)
+                }
+            }
+
+    # Send response if generated
+    if response and session_id in _sse_sessions:
+        _sse_sessions[session_id].put(response)
+
+
+# Import url_for needs to be inside request context or imported
+from flask import url_for
 
 
 def init_mcp_socketio(socketio: SocketIO):
