@@ -83,11 +83,11 @@ try:
     print("[STARTUP] Flask-SocketIO initialized for real-time updates")
     
     # Initialize MCP Socket.IO Gateway for remote AI agents
-    from mcp_socketio_gateway import init_mcp_socketio, mcp_bp
-    app.register_blueprint(mcp_bp)
-    init_mcp_socketio(socketio)
-    print("[STARTUP] MCP Socket.IO Gateway initialized on /mcp namespace")
-    print("[STARTUP] MCP SSE Transport initialized at /mcp/sse")
+    # from mcp_socketio_gateway import init_mcp_socketio, mcp_bp
+    # app.register_blueprint(mcp_bp)
+    # init_mcp_socketio(socketio)
+    # print("[STARTUP] MCP Socket.IO Gateway initialized on /mcp namespace")
+    # print("[STARTUP] MCP SSE Transport initialized at /mcp/sse")
 except ImportError as e:
     print(f"[STARTUP] Flask-SocketIO not available: {e}")
     socketio = None
@@ -99,15 +99,15 @@ app.register_blueprint(gitmem_bp)
 # --- MCP Client Compatibility ---
 
 try:
-    # Try importing from root (parent_dir)
-    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-    from mcp_compat_shim import mcp_compat_bp
-    app.register_blueprint(mcp_compat_bp)
-    print("[MOCK] MCP Shim registered (root)")
+     # Try importing from root (parent_dir)
+     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+    #  from mcp_compat_shim import mcp_compat_bp
+    #  app.register_blueprint(mcp_compat_bp)
+    #  print("[MOCK] MCP Shim registered (root)")
 except ImportError as e:
-    print(f"Shim import failed: {e}")
-    # Fallback to local (if moved) or skip
-    pass
+    #  print(f"Shim import failed: {e}")
+     # Fallback to local (if moved) or skip
+     pass
 # ------------------------------
 # ------------------------------
 
