@@ -183,6 +183,7 @@ async def call_api(endpoint: str, payload: dict) -> dict:
                 "process_raw": ("process_raw_dialogues", None),
                 "add_memory": ("add_memory_direct", None),  # Map add_memory alias
                 "add_memory_direct": ("add_memory_direct", None),
+                "read_memory": ("search_memory", None),     # Map read_memory endpoint
                 "search_memory": ("search_memory", None),
                 "get_context_answer": ("get_context_answer", None),
                 "create_memory": ("create_memory", None),
@@ -2334,5 +2335,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
