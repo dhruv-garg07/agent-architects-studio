@@ -319,7 +319,7 @@ def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> Any:
 # Standard MCP SSE Implementation (for "No Local File" usage)
 # ============================================================================
 
-@mcp_bp.route("/mcp/sse", methods=["POST"])
+@mcp_bp.route("/mcp/sse", methods=["POST", "GET", "DELETE"])
 def handle_sse():
     """
     Standard MCP SSE Endpoint.
@@ -363,7 +363,7 @@ def handle_sse():
 
 
 # SOCKET IO ROUTE
-@mcp_bp.route("/mcp/messages", methods=["POST"])
+@mcp_bp.route("/mcp/messages", methods=["POST", "GET", "DELETE"])
 def handle_messages():
     """
     Standard MCP Message Endpoint.
@@ -391,7 +391,7 @@ def handle_messages():
         return str(e), 500
 
 
-@mcp_bp.route("/mcp/<tool_name>", methods=["POST"])
+@mcp_bp.route("/mcp/<tool_name>", methods=["POST", "GET", "DELETE"])
 def handle_tool_rest(tool_name):
     """
     REST Endpoint for direct tool execution (used by mcp_memory_client.py).
