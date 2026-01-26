@@ -341,6 +341,7 @@ def handle_sse():
         # The endpoint should include the session_id as a query param
         # Construct absolute URL for robustness
         endpoint_url = url_for('mcp_sse.handle_messages', session_id=session_id, _external=True)
+        print("Sending endpoint, URL: ", endpoint_url)
         yield f"event: endpoint\ndata: {endpoint_url}\n\n"
         
         try:
