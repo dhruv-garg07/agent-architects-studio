@@ -369,34 +369,65 @@ def handle_mcp_root():
 @mcp_bp.route("/mcp/sse", methods=["POST", "GET", "DELETE"])
 def handle_sse():
     """
-    Standard MCP SSE Endpoint (fallback transport).
-    Establishes connection and sends the message endpoint URL.
+    MCP SSE Endpoint - supports both SSE and streamable-http transports.
+    
+    GET: Establishes SSE connection and streams responses
+    POST: Handles streamable-http JSON-RPC requests directly
+    DELETE: Cleans up sessions
     """
-    api_key = request.args.get("api_key")
+    api_key = request.args.get("api_key") or request.headers.get("Authorization", "").replace("Bearer ", "")
     auth = verify_api_key(api_key)
     if not auth["ok"]:
-        return jsonify({"error": "Unauthorized"}), 401
+        return jsonify({"error": "Unauthorized", "message": auth.get("error")}), 401
     
+    # Handle POST as streamable-http transport (JSON-RPC direct)
+    if request.method == "POST":
+        try:
+            message = request.json
+            print(f"[MCP HTTP] POST to /mcp/sse - Processing: {message.get('method', 'unknown')} (id: {message.get('id', 'none')})")
+            
+            # Process the JSON-RPC message directly and return response
+            loop = asyncio.new_event_loop()
+            try:
+                asyncio.set_event_loop(loop)
+                response_data = loop.run_until_complete(_process_json_rpc_direct(message))
+                print(f"[MCP HTTP] Response generated for: {message.get('method', 'unknown')}")
+                return jsonify(response_data)
+            finally:
+                loop.close()
+                
+        except Exception as e:
+            print(f"[MCP HTTP] Error processing POST: {e}")
+            import traceback
+            traceback.print_exc()
+            return jsonify({
+                "jsonrpc": "2.0",
+                "id": request.json.get("id") if request.json else None,
+                "error": {"code": -32603, "message": str(e)}
+            }), 500
+    
+    # Handle DELETE - cleanup
+    if request.method == "DELETE":
+        return jsonify({"status": "ok", "message": "Session cleanup acknowledged"}), 200
+    
+    # Handle GET as SSE transport
     session_id = str(uuid.uuid4())
     q = queue.Queue()
     _sse_sessions[session_id] = q
     
-    print(f"[MCP SSE] New session: {session_id}")
+    print(f"[MCP SSE] New SSE session: {session_id}")
     
     def generate():
         # 1. Send the endpoint event telling client where to POST messages
-        # The endpoint should include the session_id as a query param
-        # Construct absolute URL for robustness
         endpoint_url = url_for('mcp_sse.handle_messages', session_id=session_id, _external=True)
-        print("Sending endpoint, URL: ", endpoint_url)
+        print(f"[MCP SSE] Sending endpoint URL: {endpoint_url}")
         yield f"event: endpoint\ndata: {endpoint_url}\n\n"
         
         try:
             while True:
                 try:
-                    # Use timeout to prevent indefinite blocking - critical for worker health
-                    data = q.get(timeout=30)  # 30 second timeout
-                    # MCP spec sends JSON-RPC messages as 'message' events
+                    # Use timeout to prevent indefinite blocking
+                    data = q.get(timeout=30)
                     yield f"event: message\ndata: {json.dumps(data)}\n\n"
                 except queue.Empty:
                     # Send heartbeat to keep connection alive
@@ -414,7 +445,7 @@ def handle_sse():
     response = Response(stream_with_context(generate()), content_type="text/event-stream")
     response.headers['Cache-Control'] = 'no-cache'
     response.headers['Connection'] = 'keep-alive'
-    response.headers['X-Accel-Buffering'] = 'no'  # Disable nginx buffering
+    response.headers['X-Accel-Buffering'] = 'no'
     return response
 
 
