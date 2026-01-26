@@ -83,11 +83,11 @@ try:
     print("[STARTUP] Flask-SocketIO initialized for real-time updates")
     
     # Initialize MCP Socket.IO Gateway for remote AI agents
-    # from mcp_socketio_gateway import init_mcp_socketio, mcp_bp
-    # app.register_blueprint(mcp_bp)
-    # init_mcp_socketio(socketio)
-    # print("[STARTUP] MCP Socket.IO Gateway initialized on /mcp namespace")
-    # print("[STARTUP] MCP SSE Transport initialized at /mcp/sse")
+    from mcp_socketio_gateway import init_mcp_socketio, mcp_bp
+    app.register_blueprint(mcp_bp)
+    init_mcp_socketio(socketio)
+    print("[STARTUP] MCP Socket.IO Gateway initialized on /mcp namespace")
+    print("[STARTUP] MCP SSE Transport initialized at /mcp/sse")
 except ImportError as e:
     print(f"[STARTUP] Flask-SocketIO not available: {e}")
     socketio = None
@@ -1621,35 +1621,11 @@ def api_docs():
     return render_template('api_docs.html', docs_json=json.dumps(docs_json) if docs_json is not None else None)
 
 
-import requests
-from flask import Response, request
-
-MCP_URL = "http://127.0.0.1:8000/sse"
-
-@app.route("/mcp/sse")
-def proxy_mcp():
-    def generate():
-        with requests.get(MCP_URL, stream=True) as r:
-            for chunk in r.iter_content(chunk_size=None):
-                if chunk:
-                    yield chunk
-
-    return Response(generate(), mimetype="text/event-stream")
-
-
-
-# IMPORT MCP from your blueprint file
-from mcp_memory_client import mcp
-
-def run_mcp():
-    print("🚀 Starting Manhattan Memory MCP Server...", file=sys.stderr)
-    try:
-        mcp.run(transport="http", host="0.0.0.0", port=3333)
-    except Exception as e:
-        print(f"❌ MCP Server crashed: {e}", file=sys.stderr)
+# MCP SSE endpoint is now handled by the mcp_bp blueprint registered above
+# See mcp_socketio_gateway.py for implementation
 
 if __name__ == '__main__':
-    threading.Thread(target=run_mcp, daemon=True).start()
+    # MCP SSE is now served via the mcp_bp blueprint (no separate thread needed)
     if socketio:
         # Run with SocketIO for WebSocket support
         print("[STARTUP] Running with Flask-SocketIO (WebSocket enabled)")
