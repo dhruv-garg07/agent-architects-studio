@@ -1,0 +1,10 @@
+{
+    "mcpServers": {
+        "manhattan_remote_2": {
+            "serverUrl": "https://themanhattanproject.ai/mcp/sse",
+            "headers": {
+                "Authorization": "Bearer sk-cc5yYQQXdiN66pADVmlT8vcg_296O0vbX5VcqTec3Ts"
+            }
+        }
+    }
+}

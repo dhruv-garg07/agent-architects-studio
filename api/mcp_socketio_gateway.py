@@ -42,14 +42,111 @@ if parent_dir not in sys.path:
 from key_utils import hash_key
 
 from flask import Blueprint, Response, request, stream_with_context, jsonify, redirect
-import queue
 import uuid
+import threading
+from time import time as get_time
+
+# Use gevent-compatible queue to avoid blocking workers
+try:
+    from gevent.queue import Queue as GeventQueue
+    GEVENT_AVAILABLE = True
+except ImportError:
+    from queue import Queue as GeventQueue
+    GEVENT_AVAILABLE = False
+    print("[MCP Gateway] Warning: gevent not available, using standard queue (may cause 502 errors)")
 
 # Define Blueprint for SSE
 mcp_bp = Blueprint('mcp_sse', __name__)
 
-# Store SSE sessions: session_id -> Queue
-_sse_sessions: Dict[str, queue.Queue] = {}
+# Session configuration
+SESSION_TTL_SECONDS = 3600  # 1 hour TTL for sessions
+MAX_GLOBAL_SESSIONS = 100   # Maximum concurrent SSE sessions
+MAX_USER_SESSIONS = 5       # Maximum sessions per user
+HEARTBEAT_INTERVAL = 15     # Seconds between heartbeats (reduced from 30)
+SESSION_CLEANUP_INTERVAL = 300  # Run cleanup every 5 minutes
+
+# Store SSE sessions with metadata: session_id -> {queue, user_id, created_at, last_activity}
+_sse_sessions: Dict[str, Dict[str, Any]] = {}
+_session_lock = threading.Lock()
+_last_cleanup_time = 0
+
+
+def _cleanup_stale_sessions():
+    """Remove sessions that have exceeded TTL."""
+    global _last_cleanup_time
+    current_time = get_time()
+    
+    # Only run cleanup periodically
+    if current_time - _last_cleanup_time < SESSION_CLEANUP_INTERVAL:
+        return
+    
+    _last_cleanup_time = current_time
+    
+    with _session_lock:
+        stale_sessions = []
+        for session_id, session_data in _sse_sessions.items():
+            if current_time - session_data.get('created_at', 0) > SESSION_TTL_SECONDS:
+                stale_sessions.append(session_id)
+        
+        for session_id in stale_sessions:
+            print(f"[MCP SSE] Cleaning up stale session: {session_id}")
+            del _sse_sessions[session_id]
+        
+        if stale_sessions:
+            print(f"[MCP SSE] Cleaned up {len(stale_sessions)} stale sessions")
+
+
+def _count_user_sessions(user_id: str) -> int:
+    """Count active sessions for a user."""
+    count = 0
+    for session_data in _sse_sessions.values():
+        if session_data.get('user_id') == user_id:
+            count += 1
+    return count
+
+
+def _create_session(user_id: Optional[str] = None) -> Optional[str]:
+    """Create a new session with limits enforcement."""
+    _cleanup_stale_sessions()
+    
+    with _session_lock:
+        # Check global limit
+        if len(_sse_sessions) >= MAX_GLOBAL_SESSIONS:
+            print(f"[MCP SSE] Global session limit reached ({MAX_GLOBAL_SESSIONS})")
+            return None
+        
+        # Check per-user limit
+        if user_id and _count_user_sessions(user_id) >= MAX_USER_SESSIONS:
+            print(f"[MCP SSE] User session limit reached for {user_id} ({MAX_USER_SESSIONS})")
+            return None
+        
+        session_id = str(uuid.uuid4())
+        _sse_sessions[session_id] = {
+            'queue': GeventQueue(),
+            'user_id': user_id,
+            'created_at': get_time(),
+            'last_activity': get_time()
+        }
+        
+        print(f"[MCP SSE] Created session: {session_id} (total: {len(_sse_sessions)})")
+        return session_id
+
+
+def _get_session_queue(session_id: str) -> Optional[GeventQueue]:
+    """Get the queue for a session, updating last activity."""
+    session_data = _sse_sessions.get(session_id)
+    if session_data:
+        session_data['last_activity'] = get_time()
+        return session_data.get('queue')
+    return None
+
+
+def _delete_session(session_id: str):
+    """Remove a session."""
+    with _session_lock:
+        if session_id in _sse_sessions:
+            del _sse_sessions[session_id]
+            print(f"[MCP SSE] Deleted session: {session_id} (remaining: {len(_sse_sessions)})")
 
 # Supabase for API key validation (optional - falls back to dev mode if unavailable)
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
@@ -411,11 +508,18 @@ def handle_sse():
         return jsonify({"status": "ok", "message": "Session cleanup acknowledged"}), 200
     
     # Handle GET as SSE transport
-    session_id = str(uuid.uuid4())
-    q = queue.Queue()
-    _sse_sessions[session_id] = q
+    # Extract user_id from auth for session tracking
+    user_id = auth.get('user_id')
     
-    print(f"[MCP SSE] New SSE session: {session_id}")
+    # Create session with limits enforcement
+    session_id = _create_session(user_id)
+    if not session_id:
+        return jsonify({
+            "error": "Session limit reached",
+            "message": "Too many active connections. Please try again later."
+        }), 429
+    
+    session_queue = _get_session_queue(session_id)
     
     def generate():
         # 1. Send the endpoint event telling client where to POST messages
@@ -426,21 +530,19 @@ def handle_sse():
         try:
             while True:
                 try:
-                    # Use timeout to prevent indefinite blocking
-                    data = q.get(timeout=30)
+                    # Use shorter timeout with gevent-compatible queue
+                    data = session_queue.get(timeout=HEARTBEAT_INTERVAL)
                     yield f"event: message\ndata: {json.dumps(data)}\n\n"
-                except queue.Empty:
-                    # Send heartbeat to keep connection alive
+                except Exception:
+                    # Send heartbeat to keep connection alive (works for both Empty and gevent timeout)
                     yield ": heartbeat\n\n"
                     continue
         except GeneratorExit:
-            print(f"[MCP SSE] Session closed: {session_id}")
-            if session_id in _sse_sessions:
-                del _sse_sessions[session_id]
+            print(f"[MCP SSE] Session closed by client: {session_id}")
+            _delete_session(session_id)
         except Exception as e:
             print(f"[MCP SSE] Error in stream: {e}")
-            if session_id in _sse_sessions:
-                del _sse_sessions[session_id]
+            _delete_session(session_id)
 
     response = Response(stream_with_context(generate()), content_type="text/event-stream")
     response.headers['Cache-Control'] = 'no-cache'
@@ -463,7 +565,8 @@ def handle_messages():
         print("[MCP SSE] No session_id provided")
         return jsonify({"error": "session_id required"}), 400
         
-    if session_id not in _sse_sessions:
+    session_queue = _get_session_queue(session_id)
+    if not session_queue:
         print(f"[MCP SSE] Session not found: {session_id}, active sessions: {list(_sse_sessions.keys())}")
         return jsonify({"error": "Session not found or expired"}), 404
     
@@ -749,8 +852,10 @@ async def _process_json_rpc(session_id: str, message: Dict[str, Any]):
             }
 
     # Send response if generated
-    if response and session_id in _sse_sessions:
-        _sse_sessions[session_id].put(response)
+    if response:
+        session_queue = _get_session_queue(session_id)
+        if session_queue:
+            session_queue.put(response)
 
 
 # Import url_for needs to be inside request context or imported
