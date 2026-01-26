@@ -1,0 +1,622 @@
+{% extends 'base.html' %}
+
+{% block title %}Manhattan Memory MCP - Documentation{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Enhanced Header with Search -->
+    <div class="mb-8">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-white mb-2">Manhattan Memory MCP</h1>
+                <p class="text-gray-400">AI-powered memory management for Claude, Cursor, and other AI agents.</p>
+            </div>
+            <div class="relative w-full sm:w-80">
+                <div class="relative">
+                    <input type="text" id="docs-search" placeholder="Search documentation..."
+                        class="w-full px-4 py-2.5 pl-10 bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.08)] rounded-lg focus:ring-2 focus:ring-[rgba(59,130,246,0.3)] focus:border-transparent text-white placeholder-gray-400 text-sm">
+                    <svg class="absolute left-3 top-3 w-4 h-4 text-gray-400" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="api-docs-panels">
+        <!-- Left: Navigation Panel -->
+        <aside id="doc-nav" class="panel nav-panel card">
+            <div class="p-4 border-b border-[rgba(255,255,255,0.03)]">
+                <h2 class="font-semibold text-white mb-0 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                    Contents
+                </h2>
+            </div>
+
+            <div id="nav-content" class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                <!-- Navigation items will be injected here -->
+            </div>
+        </aside>
+
+        <!-- Middle: Content Panel -->
+        <section id="doc-content" class="panel middle-panel card">
+            <div class="p-8 h-full flex flex-col">
+                <div id="article-content"
+                    class="overflow-y-auto flex-1 custom-scrollbar prose prose-invert prose-headings:text-white prose-a:text-blue-400 max-w-none">
+                    <!-- Article content will be injected here -->
+                    <div class="flex items-center justify-center h-full text-gray-500">
+                        Select a topic to view details
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right: Code Examples Panel -->
+        <aside id="doc-code" class="panel code-panel card">
+            <div class="p-6 h-full flex flex-col">
+                <!-- Panel Header -->
+                <div class="mb-4 flex items-center justify-between">
+                    <h3 class="font-semibold text-white flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                        </svg>
+                        <span>Code / Config</span>
+                    </h3>
+                    <button id="copy-code-btn"
+                        class="text-xs px-3 py-1.5 rounded-lg bg-[rgba(59,130,246,0.2)] text-[#3b82f6] border border-[rgba(59,130,246,0.3)] hover:bg-[rgba(59,130,246,0.3)] transition-colors">
+                        Copy
+                    </button>
+                </div>
+
+                <!-- Code Block Container -->
+                <div class="flex-1 min-h-0">
+                    <div
+                        class="bg-[rgba(0,0,0,0.25)] rounded-lg overflow-hidden border border-[rgba(255,255,255,0.08)] h-full flex flex-col">
+                        <div
+                            class="px-4 py-3 bg-[rgba(0,0,0,0.3)] border-b border-[rgba(255,255,255,0.08)] flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="flex gap-1.5">
+                                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                                    <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                                    <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                                </div>
+                                <span class="text-sm font-mono text-gray-400" id="code-lang">text</span>
+                            </div>
+                        </div>
+                        <pre id="code-block"
+                            class="flex-1 p-4 overflow-auto font-mono text-sm text-gray-200 custom-scrollbar"><code class="language-bash"># Select a topic to see code examples</code></pre>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+</div>
+
+<!-- Mobile Navigation Toggle -->
+<button id="mobile-nav-toggle"
+    class="fixed bottom-6 right-6 z-50 p-3 bg-[#3b82f6] text-white rounded-full shadow-lg lg:hidden">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+</button>
+
+<style>
+    /* Layout Styles (Matching API Docs) */
+    .api-docs-panels {
+        display: grid;
+        /* Grid columns: Nav | Content | Code */
+        grid-template-columns: 260px 1fr 400px;
+        gap: 16px;
+        height: 75vh;
+        min-height: 700px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        width: 100%;
+        max-width: 1600px;
+        margin: 0 auto;
+        align-items: stretch;
+    }
+
+    /* Override container max-widths to use full space */
+    .max-w-7xl {
+        max-width: 100% !important;
+        padding-left: 1.5rem !important;
+        padding-right: 1.5rem !important;
+    }
+
+    .mx-auto.px-4.sm\:px-6.lg\:px-8.py-8 {
+        max-width: 100% !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+
+    /* Card & Panel Common Styles */
+    .api-docs-panels .card {
+        border: none;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+        box-shadow: 0 8px 30px rgba(2, 6, 23, 0.55);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .api-docs-panels .panel {
+        padding: 0;
+        height: 100%;
+        box-sizing: border-box;
+        position: relative;
+    }
+
+    /* Specific Panel Styles */
+    .nav-panel {
+        border-top-left-radius: 12px;
+        border-bottom-left-radius: 12px;
+    }
+
+    .code-panel {
+        border-top-right-radius: 12px;
+        border-bottom-right-radius: 12px;
+    }
+
+    .middle-panel {
+        border-left: 1px solid rgba(255, 255, 255, 0.03);
+        border-right: 1px solid rgba(255, 255, 255, 0.03);
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Navigation Items */
+    .nav-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .nav-group-title {
+        padding: 0.5rem 0.75rem;
+        color: #fff;
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .nav-item {
+        display: block;
+        width: 100%;
+        text-align: left;
+        padding: 0.4rem 1rem;
+        font-size: 0.85rem;
+        color: #94a3b8;
+        border-left: 2px solid transparent;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+
+    .nav-item:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.03);
+    }
+
+    .nav-item.active {
+        color: #3b82f6;
+        background: rgba(59, 130, 246, 0.08);
+        border-left-color: #3b82f6;
+    }
+
+    /* Code Panel Enhancements */
+    .code-panel .code-action-btn {
+        color: #94a3b8;
+        padding: 0.25rem;
+        border-radius: 0.25rem;
+        transition: color 0.2s;
+    }
+
+    .code-panel .code-action-btn:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Responsive Breakpoints */
+    @media (max-width: 1280px) {
+        .api-docs-panels {
+            grid-template-columns: 240px 1fr 350px;
+        }
+    }
+
+    @media (max-width: 1024px) {
+        .api-docs-panels {
+            grid-template-columns: 220px 1fr;
+        }
+
+        #doc-code {
+            display: none;
+            /* Hide code panel on smaller screens, or move it */
+        }
+
+        /* You might want to stack them or make code panel toggleable */
+    }
+
+    @media (max-width: 768px) {
+        .api-docs-panels {
+            grid-template-columns: 1fr;
+            height: auto;
+        }
+
+        #doc-nav {
+            display: none;
+            /* Hide nav on mobile, use toggle */
+        }
+
+        .middle-panel {
+            border: none;
+            border-radius: 12px;
+        }
+    }
+
+    /* Custom Scrollbar */
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 3px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+</style>
+
+<!-- Include Prism.js -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+
+<script>
+    // Documentation Content Data
+    const DOCS_DATA = {
+        categories: [
+            {
+                title: "Getting Started",
+                items: [
+                    {
+                        id: "quick-start",
+                        title: "Quick Start",
+                        content: `
+                        <h2 class="text-2xl font-bold mb-4 text-white">Quick Start (2 Minutes)</h2>
+                        <div class="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-6">
+                            <h3 class="font-semibold text-blue-400 mb-1">No setup required!</h3>
+                            <p class="text-gray-300">Use our hosted API - just download one file and add your API key.</p>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-3 text-white">Step 1: Download Client</h3>
+                        <p class="mb-4">Download the single-file client to your desired location.</p>
+                        <h3 class="text-xl font-semibold mb-3 text-white">Step 2: Install Dependencies</h3>
+                        <p class="mb-4">You need 'mcp' and 'httpx' packages.</p>
+                        <h3 class="text-xl font-semibold mb-3 text-white">Step 3: Get API Key</h3>
+                        <p>1. Go to Settings → API Keys<br>2. Create a new key</p>
+                    `,
+                        code: {
+                            lang: "bash",
+                            content: `# Step 1: Download client
+curl -O https://raw.githubusercontent.com/your-username/agent-architects-studio/main/api/mcp_memory_client.py
+
+# Step 2: Install dependencies
+pip install mcp httpx`
+                        }
+                    },
+                    {
+                        id: "self-hosted",
+                        title: "Self Hosted",
+                        content: `
+                        <h2 class="text-2xl font-bold mb-4 text-white">Self-Hosted (Advanced)</h2>
+                        <p class="text-gray-300 mb-6">Clone the full repository and run your own server. This gives you full control over the data and infrastructure.</p>
+                        <p>See <a href="#" class="text-blue-400 hover:text-blue-300">SELF_HOSTED_SETUP.md</a> for detailed instructions.</p>
+                    `,
+                        code: {
+                            lang: "bash",
+                            content: `# Clone repository
+git clone https://github.com/your-username/agent-architects-studio.git
+cd agent-architects-studio
+
+# Install server dependencies
+pip install -r requirements.txt
+
+# Run server
+python api/mcp_memory_server.py`
+                        }
+                    }
+                ]
+            },
+            {
+                title: "Configuration",
+                items: [
+                    {
+                        id: "claude-desktop",
+                        title: "Claude Desktop",
+                        content: `
+                        <h2 class="text-2xl font-bold mb-4 text-white">Claude Desktop Configuration</h2>
+                        <p class="mb-6">Add the configuration to your Claude Desktop config file.</p>
+                        
+                        <h3 class="text-lg font-semibold text-white mb-2">Config File Locations:</h3>
+                        <ul class="list-disc pl-5 mb-6 space-y-1 text-gray-300">
+                            <li><strong>Windows:</strong> %APPDATA%\\Claude\\claude_desktop_config.json</li>
+                            <li><strong>macOS:</strong> ~/Library/Application Support/Claude/claude_desktop_config.json</li>
+                            <li><strong>Linux:</strong> ~/.config/Claude/claude_desktop_config.json</li>
+                        </ul>
+                    `,
+                        code: {
+                            lang: "json",
+                            content: `{
+  "servers": {
+    "manhattan-memory": {
+      "type": "stdio",
+      "command": "/path/to/venv/bin/python",
+      "args": ["/path/to/mcp_memory_client.py"],
+      "env": {
+        "MANHATTAN_API_KEY": "your-api-key-here"
+      }
+    }
+  }
+}`
+                        }
+                    },
+                    {
+                        id: "vscode",
+                        title: "VS Code",
+                        content: `
+                        <h2 class="text-2xl font-bold mb-4 text-white">VS Code Configuration</h2>
+                        <p class="mb-6">Integrate with GitHub Copilot in VS Code.</p>
+                        <ol class="list-decimal pl-5 space-y-2 text-gray-300">
+                            <li>Install the <strong>MCP Server</strong> extension.</li>
+                            <li>Open Command Palette (Cmd+Shift+P) -> "MCP: Open User Configuration".</li>
+                            <li>Add the server config to <code>mcp.json</code>.</li>
+                        </ol>
+                    `,
+                        code: {
+                            lang: "json",
+                            content: `{
+  "servers": {
+    "manhattan-memory": {
+      "type": "stdio",
+      "command": "/path/to/venv/bin/python",
+      "args": ["\${workspaceFolder}/api/mcp_memory_client.py"],
+      "env": {
+        "MANHATTAN_API_KEY": "your-api-key-here"
+      }
+    }
+  }
+}`
+                        }
+                    },
+                    {
+                        id: "cursor",
+                        title: "Cursor IDE",
+                        content: `
+                        <h2 class="text-2xl font-bold mb-4 text-white">Cursor IDE Configuration</h2>
+                        <p class="mb-6">Add the configuration to your Cursor MCP settings.</p>
+                        <p class="text-gray-300">File: <code>~/.cursor/mcp.json</code></p>
+                    `,
+                        code: {
+                            lang: "json",
+                            content: `{
+  "servers": {
+    "manhattan-memory": {
+      "type": "stdio",
+      "command": "/path/to/venv/bin/python",
+      "args": ["/absolute/path/to/mcp_memory_client.py"],
+      "env": {
+        "MANHATTAN_API_KEY": "your-api-key-here"
+      }
+    }
+  }
+}`
+                        }
+                    },
+                    {
+                        id: "windsurf",
+                        title: "Windsurf",
+                        content: `
+                        <h2 class="text-2xl font-bold mb-4 text-white">Windsurf Configuration</h2>
+                        <p class="mb-6">Add the configuration to your Windsurf MCP settings.</p>
+                        <p class="text-gray-300">File: <code>~/.windsurf/mcp_config.json</code></p>
+                    `,
+                        code: {
+                            lang: "json",
+                            content: `{
+  "servers": {
+    "manhattan-memory": {
+      "type": "stdio",
+      "command": "/path/to/venv/bin/python",
+      "args": ["/absolute/path/to/mcp_memory_client.py"],
+      "env": {
+        "MANHATTAN_API_KEY": "your-api-key-here"
+      }
+    }
+  }
+}`
+                        }
+                    }
+                ]
+            },
+            {
+                title: "Tools & Usage",
+                items: [
+                    {
+                        id: "memory-tools",
+                        title: "Available Tools",
+                        content: `
+                        <h2 class="text-2xl font-bold mb-4 text-white">Available Tools</h2>
+                        <p class="mb-6 text-gray-300">Once configured, these tools are available to your AI assistant.</p>
+                        
+                        <div class="overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.1)] mb-6">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-[rgba(255,255,255,0.05)] text-white uppercase font-semibold">
+                                    <tr>
+                                        <th class="px-4 py-3">Tool</th>
+                                        <th class="px-4 py-3">Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-[rgba(255,255,255,0.05)] text-gray-300">
+                                    <tr><td class="px-4 py-2 font-mono text-blue-300">create_memory</td><td class="px-4 py-2">Init memory system</td></tr>
+                                    <tr><td class="px-4 py-2 font-mono text-blue-300">add_memory_direct</td><td class="px-4 py-2">Add structured memory</td></tr>
+                                    <tr><td class="px-4 py-2 font-mono text-blue-300">search_memory</td><td class="px-4 py-2">Search memories</td></tr>
+                                    <tr><td class="px-4 py-2 font-mono text-blue-300">get_context_answer</td><td class="px-4 py-2">Q&A with memory</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    `,
+                        code: {
+                            lang: "text",
+                            content: `Example Prompts:
+
+"Create a memory system for agent 'my-assistant'"
+
+"Add fact: Project deadline is Jan 30"
+
+"Search 'my-assistant' for 'deadline'"
+
+"When is the deadline?"`
+                        }
+                    },
+                    {
+                        id: "examples",
+                        title: "Usage Examples",
+                        content: `
+                        <h2 class="text-2xl font-bold mb-4 text-white">Usage Examples</h2>
+                        <p class="mb-4 text-gray-300">Here are some examples of how to interact with the memory system through your AI agent.</p>
+                        
+                        <h3 class="text-lg font-semibold text-white mb-2">1. Storing Information</h3>
+                        <p class="mb-4 text-gray-300">You can ask the agent to remember key details directly.</p>
+                        
+                        <h3 class="text-lg font-semibold text-white mb-2">2. Retrieving Information</h3>
+                        <p class="mb-4 text-gray-300">Ask questions naturally. The agent will use the tools to find the answer in its memory.</p>
+                    `,
+                        code: {
+                            lang: "text",
+                            content: `User: "Add to 'project-helper' memory: The client deadline is February 15, 2025. The budget is $50k."
+
+Agent: [Calls add_memory_direct] "I've stored those project details."
+
+---
+
+User: "Ask 'project-helper': What's the budget?"
+
+Agent: [Calls get_context_answer] "The project budget is $50,000."`
+                        }
+                    }
+                ]
+            }
+        ]
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        renderNav();
+
+        // Select first item by default
+        if (DOCS_DATA.categories.length > 0 && DOCS_DATA.categories[0].items.length > 0) {
+            selectItem(DOCS_DATA.categories[0].items[0]);
+        }
+    });
+
+    function renderNav() {
+        const navContent = document.getElementById('nav-content');
+        navContent.innerHTML = '';
+
+        DOCS_DATA.categories.forEach(category => {
+            const group = document.createElement('div');
+            group.className = 'nav-group';
+
+            const title = document.createElement('div');
+            title.className = 'nav-group-title';
+            title.textContent = category.title;
+            group.appendChild(title);
+
+            category.items.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'nav-item';
+                el.textContent = item.title;
+                el.dataset.id = item.id;
+                el.onclick = () => selectItem(item);
+                group.appendChild(el);
+            });
+
+            navContent.appendChild(group);
+        });
+    }
+
+    function selectItem(item) {
+        // Update active nav state
+        document.querySelectorAll('.nav-item').forEach(el => {
+            if (el.dataset.id === item.id) {
+                el.classList.add('active');
+            } else {
+                el.classList.remove('active');
+            }
+        });
+
+        // Update Content
+        const contentPanel = document.getElementById('article-content');
+        contentPanel.innerHTML = item.content;
+
+        // Update Code
+        const codeBlock = document.getElementById('code-block');
+        const codeLang = document.getElementById('code-lang');
+
+        codeBlock.innerHTML = `<code class="language-${item.code.lang}">${item.code.content.replace(/</g, '&lt;')}</code>`;
+        codeLang.textContent = item.code.lang;
+
+        // Re-highlight syntax
+        if (window.Prism) {
+            Prism.highlightAll();
+        }
+    }
+
+    // Mobile Toggle
+    document.getElementById('mobile-nav-toggle').addEventListener('click', () => {
+        const nav = document.getElementById('doc-nav');
+        nav.style.display = nav.style.display === 'none' ? 'flex' : 'none';
+        if (nav.style.display === 'flex') {
+            nav.style.position = 'fixed';
+            nav.style.top = '0';
+            nav.style.left = '0';
+            nav.style.zIndex = '40';
+            nav.style.height = '100vh';
+            nav.style.width = '80%';
+            nav.style.maxWidth = '300px';
+            nav.style.background = '#0f172a';
+        } else {
+            nav.style = ''; // Reset inline styles
+        }
+    });
+
+    // Copy Code
+    document.getElementById('copy-code-btn').addEventListener('click', () => {
+        const code = document.querySelector('#code-block code').innerText;
+        navigator.clipboard.writeText(code);
+
+        const btn = document.getElementById('copy-code-btn');
+        const originalText = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = originalText, 2000);
+    });
+
+    // Search
+    document.getElementById('docs-search').addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase();
+        document.querySelectorAll('.nav-item').forEach(el => {
+            const match = el.textContent.toLowerCase().includes(query);
+            el.style.display = match ? 'block' : 'none';
+        });
+    });
+</script>
+{% endblock %}

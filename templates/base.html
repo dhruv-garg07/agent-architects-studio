@@ -11,6 +11,7 @@
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Mr+Dafoe&display=swap" rel="stylesheet">
 
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -407,13 +408,9 @@
                 <!-- Brand / Logo Section -->
                 <div class="flex items-center gap-6">
                     <a href="{{ url_for('homepage') }}" class="flex items-center gap-2 group">
-                        <div
-                            class="flex items-center justify-center p-1.5 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                            <i data-lucide="brain-circuit" class="h-5 w-5 text-primary"></i>
-                        </div>
-                        <span
-                            class="font-semibold text-lg tracking-tight text-gray-100 group-hover:text-white transition-colors">AI
-                            Agents</span>
+                        <span style="font-family: 'Mr Dafoe', cursive; font-size: 2rem;"
+                            class="tracking-wide text-white group-hover:text-blue-200 transition-colors">The Manhattan
+                            Project</span>
                     </a>
 
                     <!-- Navigation Links (Placeholder/Commented) -->
@@ -441,6 +438,12 @@
                             <i data-lucide="book-open"
                                 class="w-4 h-4 text-gray-500 group-hover:text-white transition-colors"></i>
                             API Docs
+                        </a>
+                        <a href="{{ url_for('mcp_docs') }}"
+                            class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-all group">
+                            <i data-lucide="file-json"
+                                class="w-4 h-4 text-gray-500 group-hover:text-white transition-colors"></i>
+                            MCP Docs
                         </a>
                         <a href="{{ url_for('memory') }}"
                             class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-all group">
@@ -583,8 +586,9 @@
             <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
                 <!-- Brand -->
                 <div class="md:col-span-1">
-                    <h3 class="text-lg font-bold text-white mb-4">Agent Architects</h3>
-                    <p class="text-gray-400 text-sm">AI agent marketplace and collaboration platform.</p>
+                    <h3 style="font-family: 'Mr Dafoe', cursive; font-size: 2rem;" class="text-white mb-4">The Manhattan
+                        Project</h3>
+                    <p class="text-gray-400 text-sm">Memory for AI</p>
                 </div>
 
                 <!-- Explore -->
@@ -604,6 +608,8 @@
                     <ul class="space-y-2">
                         <li><a href="{{ url_for('api_docs') }}"
                                 class="text-gray-400 hover:text-blue-400 transition text-sm">API Docs</a></li>
+                        <li><a href="{{ url_for('mcp_docs') }}"
+                                class="text-gray-400 hover:text-blue-400 transition text-sm">MCP Docs</a></li>
                         <li><a href="{{ url_for('memory') }}"
                                 class="text-gray-400 hover:text-blue-400 transition text-sm">Memory System</a></li>
                     </ul>
@@ -630,7 +636,7 @@
 
             <!-- Divider -->
             <div class="border-t border-gray-700 pt-8">
-                <p class="text-gray-500 text-sm">&copy; 2026 Agent Architects Studio. All rights reserved.</p>
+                <p class="text-gray-500 text-sm">&copy; 2026 The Manhattan Project. All rights reserved.</p>
             </div>
         </div>
     </footer>

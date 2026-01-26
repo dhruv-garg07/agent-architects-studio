@@ -46,7 +46,8 @@ Add to your Claude Desktop config file:
 {
   "mcpServers": {
     "manhattan-memory": {
-      "command": "python",
+      "type": "stdio",
+      "command": "C:/path/to/python.exe",
       "args": ["C:/path/to/mcp_memory_client.py"],
       "env": {
         "MANHATTAN_API_KEY": "your-api-key-here"
@@ -61,7 +62,8 @@ Add to your Claude Desktop config file:
 {
   "mcpServers": {
     "manhattan-memory": {
-      "command": "python3",
+      "type": "stdio",
+      "command": "/path/to/venv/bin/python",
       "args": ["/path/to/mcp_memory_client.py"],
       "env": {
         "MANHATTAN_API_KEY": "your-api-key-here"
@@ -76,7 +78,8 @@ Add to your Claude Desktop config file:
 {
   "mcpServers": {
     "manhattan-memory": {
-      "command": "python3",
+      "type": "stdio",
+      "command": "/path/to/venv/bin/python",
       "args": ["/path/to/mcp_memory_client.py"],
       "env": {
         "MANHATTAN_API_KEY": "your-api-key-here"
@@ -124,7 +127,8 @@ See Quick Start above.
 {
   "mcpServers": {
     "manhattan-memory": {
-      "command": "python",
+      "type": "stdio",
+      "command": "/path/to/venv/bin/python",
       "args": ["${workspaceFolder}/api/mcp_memory_client.py"],
       "env": {
         "MANHATTAN_API_KEY": "your-api-key-here"
@@ -141,7 +145,8 @@ Add to `~/.cursor/mcp.json`:
 {
   "mcpServers": {
     "manhattan-memory": {
-      "command": "python",
+      "type": "stdio",
+      "command": "/path/to/venv/bin/python",
       "args": ["/absolute/path/to/mcp_memory_client.py"],
       "env": {
         "MANHATTAN_API_KEY": "your-api-key-here"
@@ -158,7 +163,8 @@ Add to `~/.windsurf/mcp_config.json`:
 {
   "mcpServers": {
     "manhattan-memory": {
-      "command": "python",
+      "type": "stdio",
+      "command": "/path/to/venv/bin/python",
       "args": ["/absolute/path/to/mcp_memory_client.py"],
       "env": {
         "MANHATTAN_API_KEY": "your-api-key-here"

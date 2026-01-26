@@ -177,6 +177,11 @@ def load_user(user_id):
         return None
     return User(user_id)
 
+@app.route('/mcp-docs')
+def mcp_docs():
+    """MCP Server Documentation Page"""
+    return render_template('mcp_docs.html')
+
 @app.route('/explore')
 def explore():
     """Explore agents with search and filters."""
