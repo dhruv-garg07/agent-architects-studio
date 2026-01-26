@@ -1,6 +1,15 @@
 #!/usr/bin/env python3
 """Flask AI Agent Marketplace Application."""
-#okay 
+
+# CRITICAL: Gevent monkey patching MUST happen before any other imports
+# This ensures all standard library modules work properly with gevent workers
+try:
+    from gevent import monkey
+    monkey.patch_all()
+    print("[STARTUP] Gevent monkey patching applied successfully")
+except ImportError:
+    print("[STARTUP] Gevent not available - running without monkey patching")
+
 import os
 import sys
 # import sys, os
@@ -75,21 +84,32 @@ app = Flask(__name__, static_folder=STATIC_DIR, template_folder=TEMPLATES_DIR)
 # --- Flask-SocketIO for Real-Time Updates ---
 try:
     from flask_socketio import SocketIO
-    socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+    # Use 'gevent' async_mode to match gunicorn worker class
+    # This is critical for websocket/SSE support in production
+    socketio = SocketIO(app, cors_allowed_origins="*", async_mode='gevent', ping_timeout=60, ping_interval=25)
     
     # Initialize GitMem WebSocket handlers
     from gitmem.api.websocket_events import init_websocket
     init_websocket(socketio)
-    print("[STARTUP] Flask-SocketIO initialized for real-time updates")
+    print("[STARTUP] Flask-SocketIO initialized for real-time updates (gevent mode)")
     
-    # Initialize MCP Socket.IO Gateway in a background thread to avoid blocking startup
+    # Register MCP Blueprint synchronously to avoid race conditions
+    try:
+        from mcp_socketio_gateway import init_mcp_socketio, mcp_bp
+        app.register_blueprint(mcp_bp)
+        print("[STARTUP] MCP SSE Blueprint registered at /mcp")
+    except Exception as e:
+        print(f"[STARTUP] MCP Blueprint registration error: {e}")
+        mcp_bp = None
+    
+    # Initialize MCP Socket.IO Gateway after app context is ready
     def init_mcp_gateway():
         try:
-            from mcp_socketio_gateway import init_mcp_socketio, mcp_bp
-            app.register_blueprint(mcp_bp)
-            init_mcp_socketio(socketio)
-            print("[STARTUP] MCP Socket.IO Gateway initialized on /mcp namespace")
-            print("[STARTUP] MCP SSE Transport initialized at /mcp/sse")
+            if mcp_bp:
+                from mcp_socketio_gateway import init_mcp_socketio
+                init_mcp_socketio(socketio)
+                print("[STARTUP] MCP Socket.IO Gateway initialized on /mcp namespace")
+                print("[STARTUP] MCP SSE Transport initialized at /mcp/sse")
         except Exception as e:
             print(f"[STARTUP] MCP Gateway initialization error: {e}")
     
@@ -187,6 +207,26 @@ def load_user(user_id):
     if not user_id:
         return None
     return User(user_id)
+
+
+# ==================== Health Check Endpoints ====================
+@app.route('/ping')
+def ping():
+    """Simple ping endpoint for keep-alive and health checks."""
+    return jsonify({"status": "ok", "timestamp": datetime.utcnow().isoformat()})
+
+
+@app.route('/health')
+def health_check():
+    """Detailed health check endpoint for monitoring."""
+    from datetime import datetime
+    status = {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "socketio_enabled": socketio is not None,
+        "mcp_enabled": mcp_bp is not None if 'mcp_bp' in dir() else False,
+    }
+    return jsonify(status)
 
 @app.route('/mcp-docs')
 def mcp_docs():

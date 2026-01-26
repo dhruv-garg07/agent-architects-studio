@@ -305,14 +305,14 @@ async def execute_tool_async(tool_name: str, arguments: Dict[str, Any]) -> Any:
 
 
 def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> Any:
-    """Synchronous wrapper for tool execution."""
+    """Synchronous wrapper for tool execution - gevent-safe."""
+    # Always use a new event loop to avoid conflicts with gevent
+    loop = asyncio.new_event_loop()
     try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-    
-    return loop.run_until_complete(execute_tool_async(tool_name, arguments))
+        return loop.run_until_complete(execute_tool_async(tool_name, arguments))
+    finally:
+        loop.close()
 
 
 # ============================================================================
@@ -346,10 +346,15 @@ def handle_sse():
         
         try:
             while True:
-                # Blocks until message available
-                data = q.get()
-                # MCP spec sends JSON-RPC messages as 'message' events
-                yield f"event: message\ndata: {json.dumps(data)}\n\n"
+                try:
+                    # Use timeout to prevent indefinite blocking - critical for worker health
+                    data = q.get(timeout=30)  # 30 second timeout
+                    # MCP spec sends JSON-RPC messages as 'message' events
+                    yield f"event: message\ndata: {json.dumps(data)}\n\n"
+                except queue.Empty:
+                    # Send heartbeat to keep connection alive
+                    yield ": heartbeat\n\n"
+                    continue
         except GeneratorExit:
             print(f"[MCP SSE] Session closed: {session_id}")
             if session_id in _sse_sessions:
@@ -376,14 +381,23 @@ def handle_messages():
     
     try:
         message = request.json
-        # Process asynchronously to not block the POST request? 
-        # Actually MCP spec says POST should return 202 Accepted quickly.
-        # We'll run logic in a background thread or just do it here if fast.
-        # For simplicity/safety in Flask, doing it synchronously here is okay 
-        # as long as we put the RESULT in the queue for the SSE stream.
+        # Process in background thread to avoid blocking and asyncio conflicts with gevent
+        import threading
         
-        # We need to run this in an event loop since our tools are async
-        asyncio.run(_process_json_rpc(session_id, message))
+        def process_message():
+            try:
+                # Create a new event loop for this thread
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                try:
+                    loop.run_until_complete(_process_json_rpc(session_id, message))
+                finally:
+                    loop.close()
+            except Exception as e:
+                print(f"[MCP SSE] Background processing error: {e}")
+        
+        thread = threading.Thread(target=process_message, daemon=True)
+        thread.start()
         
         return "Accepted", 202
     except Exception as e:

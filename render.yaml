@@ -5,4 +5,5 @@ services:
     plan: free
     runtime: python3.11
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn api.index:app --workers 4 --bind 0.0.0.0:$PORT
+    # Use gevent workers for SocketIO/SSE support - critical for MCP connections
+    startCommand: gunicorn --worker-class gevent --workers 2 --timeout 120 --keep-alive 65 api.index:app --bind 0.0.0.0:$PORT

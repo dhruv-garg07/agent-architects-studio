@@ -22,3 +22,8 @@ python-docx
 pdfplumber
 dateparser==1.2.2
 mcp
+httpx>=0.24.0
+
+# Async workers for Gunicorn (required for SocketIO/SSE)
+gevent>=23.9.0
+gevent-websocket>=0.10.1
