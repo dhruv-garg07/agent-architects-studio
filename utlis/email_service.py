@@ -30,8 +30,7 @@ class EmailService:
     def __init__(self):
         self.sender_email = os.environ.get('SENDER_EMAIL')
         self.sender_password = os.environ.get('SENDER_EMAIL_PASSWORD')
-        print(f"Sender email: {self.sender_email}")
-        print(f"Sender password: {self.sender_password}")
+        # Credentials loaded from environment
         self.smtp_host = "smtpout.secureserver.net"
         self.smtp_port = 465
         self.max_retries = 7
@@ -53,8 +52,17 @@ class EmailService:
                 if email_task is None:  # Shutdown signal
                     break
                 
-                receiver_email, subject, body, callback = email_task
-                self._send_email_with_retry(receiver_email, subject, body, callback)
+                if len(email_task) == 4: # Legacy 1
+                    receiver_email, subject, body, callback = email_task
+                    html_body = None
+                    image_attachment_path = None
+                elif len(email_task) == 5: # Legacy 2
+                    receiver_email, subject, body, callback, html_body = email_task
+                    image_attachment_path = None
+                else:
+                    receiver_email, subject, body, callback, html_body, image_attachment_path = email_task
+                    
+                self._send_email_with_retry(receiver_email, subject, body, callback, html_body, image_attachment_path)
                 self.email_queue.task_done()
             except Exception as e:
                 logger.error(f"Error in email worker: {e}")
@@ -64,7 +72,9 @@ class EmailService:
         receiver_email: str,
         subject: str,
         body: str,
-        callback: Optional[Callable] = None
+        callback: Optional[Callable] = None,
+        html_body: Optional[str] = None,
+        image_attachment_path: Optional[str] = None
     ) -> bool:
         """
         Send email with exponential backoff retry logic.
@@ -72,20 +82,55 @@ class EmailService:
         Args:
             receiver_email: Recipient email address
             subject: Email subject
-            body: Email body
+            body: Email body (plain text)
             callback: Optional callback function(success: bool, error: str) after sending
-
-        Returns:
-            bool: True if email sent successfully, False otherwise
+            html_body: Optional HTML version of the email body
+            image_attachment_path: Optional path to an image file to embed (CID: logo)
         """
         for attempt in range(self.max_retries):
             try:
-                # Create message
-                msg = MIMEMultipart()
+                # Create message container
+                if image_attachment_path:
+                    msg = MIMEMultipart('related')
+                    msg_alternative = MIMEMultipart('alternative')
+                    msg.attach(msg_alternative)
+                else:
+                    msg = MIMEMultipart('alternative') if html_body else MIMEMultipart()
+                    msg_alternative = msg
+
                 msg['From'] = self.sender_email
                 msg['To'] = receiver_email
                 msg['Subject'] = subject
-                msg.attach(MIMEText(body, 'plain'))
+                
+                # Attach plain text
+                msg_alternative.attach(MIMEText(body, 'plain'))
+                
+                # Attach HTML if provided
+                if html_body:
+                    msg_alternative.attach(MIMEText(html_body, 'html'))
+
+                # Attach Image if provided
+                if image_attachment_path and os.path.exists(image_attachment_path):
+                    try:
+                        with open(image_attachment_path, 'rb') as img_file:
+                            img_data = img_file.read()
+                            
+                        # Determine MIME type based on extension
+                        if image_attachment_path.lower().endswith('.svg'):
+                            from email.mime.base import MIMEBase
+                            from email import encoders
+                            img = MIMEBase('image', 'svg+xml')
+                            img.set_payload(img_data)
+                            encoders.encode_base64(img)
+                        else:
+                            from email.mime.image import MIMEImage
+                            img = MIMEImage(img_data)
+                            
+                        img.add_header('Content-ID', '<logo>')
+                        img.add_header('Content-Disposition', 'inline', filename=os.path.basename(image_attachment_path))
+                        msg.attach(img)
+                    except Exception as e:
+                        logger.error(f"Failed to attach image: {e}")
 
                 # Create SSL context
                 context = ssl.create_default_context()
@@ -154,7 +199,9 @@ class EmailService:
         receiver_email: str,
         subject: str,
         body: str,
-        callback: Optional[Callable] = None
+        callback: Optional[Callable] = None,
+        html_body: Optional[str] = None,
+        image_attachment_path: Optional[str] = None
     ):
         """
         Send email asynchronously using background worker thread.
@@ -164,14 +211,18 @@ class EmailService:
             subject: Email subject
             body: Email body
             callback: Optional callback function(success: bool, error: str) after sending
+            html_body: Optional HTML version of the email body
+            image_attachment_path: Optional path to an image file to embed
         """
-        self.email_queue.put((receiver_email, subject, body, callback))
+        self.email_queue.put((receiver_email, subject, body, callback, html_body, image_attachment_path))
 
     def send_email_sync(
         self,
         receiver_email: str,
         subject: str,
-        body: str
+        body: str,
+        html_body: Optional[str] = None,
+        image_attachment_path: Optional[str] = None
     ) -> bool:
         """
         Send email synchronously (blocking call).
@@ -180,11 +231,13 @@ class EmailService:
             receiver_email: Recipient email address
             subject: Email subject
             body: Email body
+            html_body: Optional HTML version of the email body
+            image_attachment_path: Optional path to an image file to embed
 
         Returns:
             bool: True if email sent successfully, False otherwise
         """
-        return self._send_email_with_retry(receiver_email, subject, body)
+        return self._send_email_with_retry(receiver_email, subject, body, html_body=html_body, image_attachment_path=image_attachment_path)
 
 
 # Create a singleton instance

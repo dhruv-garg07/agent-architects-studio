@@ -1182,6 +1182,44 @@ def join_waitlist():
         existing_entry = supabase.table('waitlist').select('email').eq('email', email).execute()
         
         if existing_entry.data:
+            # Send welcome email asynchronously even if already registered
+            email_service = get_email_service()
+            receiver_email = email
+            subject = "Welcome to the Agent Architects Waitlist!"
+            body = "Thanks for signing up we will keep you posted :)"
+            
+            # Prepare content
+            name = "there" # Main waitlist doesn't capture name in this route
+            plain_body = f"Hello {name},\n\nWe are absolutely thrilled that you took the time to sign up for our waitlist! 🚀\n\nWe are currently working hard behind the scenes to build something special. We will notify you the moment we are ready.\n\nIn the meantime, feel free to explore our website.\n\nWarm regards,\nThe Manhattan Project Team"
+            
+            html_body = f"""
+            <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
+              <p>Hello {name},</p>
+              <p>We are absolutely thrilled that you took the time to sign up for our waitlist! 🚀</p>
+              <p>We are currently working hard behind the scenes to build something special, and we can't wait to share it with you. We will notify you the moment we are ready to onboard you.</p>
+              <p>In the meantime, please feel free to explore our website and get a feel for what we are building.</p>
+              <p>Warm regards,</p>
+              <p>The Manhattan Project Team</p>
+              
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 15px;">
+                <tr>
+                   <td style="vertical-align: middle; padding-right: 12px;">
+                      <img src="cid:logo" width="30" height="30" style="display: block;" alt="Logo">
+                   </td>
+                   <td style="vertical-align: middle;">
+                      <span style="font-family: 'Mr Dafoe', cursive, serif; font-size: 26px; color: #EC4899; line-height: 1;">The Manhattan Project</span>
+                   </td>
+                </tr>
+              </table>
+            </div>
+            """
+
+            # Path to logo
+            logo_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'favicon.svg')
+
+            # Send asynchronously to avoid blocking
+            email_service.send_email_async(receiver_email, subject, plain_body, html_body=html_body, image_attachment_path=logo_path)
+
             # Get current count
             count_result = supabase.table('waitlist').select('id', count='exact').execute()
             return jsonify({
@@ -1200,10 +1238,37 @@ def join_waitlist():
             email_service = get_email_service()
             receiver_email = email
             subject = "Welcome to the Agent Architects Waitlist!"
-            body = "Thank you for joining the waitlist. We'll keep you updated!"
+            # Prepare content
+            name = "there"
+            plain_body = f"Hello {name},\n\nWe are absolutely thrilled that you took the time to sign up for our waitlist! 🚀\n\nWe are currently working hard behind the scenes to build something special. We will notify you the moment we are ready.\n\nIn the meantime, feel free to explore our website.\n\nWarm regards,\nThe Manhattan Project Team"
             
+            html_body = f"""
+            <div style="font-family: 'Inter', Arial, sans-serif; color: #333; line-height: 1.6;">
+              <p>Hello {name},</p>
+              <p>We are absolutely thrilled that you took the time to sign up for our waitlist! 🚀</p>
+              <p>We are currently working hard behind the scenes to build something special, and we can't wait to share it with you. We will notify you the moment we are ready to onboard you.</p>
+              <p>In the meantime, please feel free to explore our website and get a feel for what we are building.</p>
+              <p>Warm regards,</p>
+              <p>The Manhattan Project Team</p>
+              
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 15px;">
+                <tr>
+                   <td style="vertical-align: middle; padding-right: 12px;">
+                      <img src="cid:logo" width="30" height="30" style="display: block;" alt="Logo">
+                   </td>
+                   <td style="vertical-align: middle;">
+                      <span style="font-family: 'Mr Dafoe', cursive, serif; font-size: 26px; color: #EC4899; line-height: 1;">The Manhattan Project</span>
+                   </td>
+                </tr>
+              </table>
+            </div>
+            """
+            
+            # Path to logo
+            logo_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'favicon.svg')
+
             # Send asynchronously to avoid blocking
-            email_service.send_email_async(receiver_email, subject, body)
+            email_service.send_email_async(receiver_email, subject, plain_body, html_body=html_body, image_attachment_path=logo_path)
             
             # Get updated count
             count_result = supabase.table('waitlist').select('id', count='exact').execute()
@@ -1265,6 +1330,45 @@ def join_gitmem_waitlist():
         try:
             existing_entry = supabase.table('gitmem_waitlist').select('email').eq('email', email).execute()
             if existing_entry.data:
+                # Send welcome email asynchronously even if already registered
+                email_service = get_email_service()
+                receiver_email = email
+                subject = "Welcome to GitMem Waitlist"
+                # Prepare content
+                # Prepare content
+                name = gitmem_data.get('name') if 'gitmem_data' in locals() else "there"
+                input_name = data.get('name', '').strip() or "there"
+                
+                plain_body = f"Hello {input_name},\n\nWe are absolutely thrilled that you took the time to sign up for our waitlist! 🚀\n\nWe are currently working hard behind the scenes to build something special. We will notify you the moment we are ready.\n\nIn the meantime, feel free to explore our website.\n\nWarm regards,\nThe Manhattan Project Team"
+                
+                html_body = f"""
+                <div style="font-family: 'Inter', Arial, sans-serif; color: #333; line-height: 1.6;">
+                  <p>Hello {input_name},</p>
+                  <p>We are absolutely thrilled that you took the time to sign up for our waitlist! 🚀</p>
+                  <p>We are currently working hard behind the scenes to build something special, and we can't wait to share it with you. We will notify you the moment we are ready to onboard you.</p>
+                  <p>In the meantime, please feel free to explore our website and get a feel for what we are building.</p>
+                  <p>Warm regards,</p>
+                  <p>The Manhattan Project Team</p>
+                  
+                  <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 15px;">
+                    <tr>
+                       <td style="vertical-align: middle; padding-right: 12px;">
+                          <img src="cid:logo" width="30" height="30" style="display: block;" alt="Logo">
+                       </td>
+                       <td style="vertical-align: middle;">
+                          <span style="font-family: 'Mr Dafoe', cursive, serif; font-size: 26px; color: #EC4899; line-height: 1;">The Manhattan Project</span>
+                       </td>
+                    </tr>
+                  </table>
+                </div>
+                """
+                
+                # Path to logo
+                logo_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'logo.png')
+
+                # Send asynchronously to avoid blocking
+                email_service.send_email_async(receiver_email, subject, plain_body, html_body=html_body, image_attachment_path=logo_path)
+                
                 return jsonify({
                     'success': True,
                     'message': 'Email already registered for GitMem',
@@ -1298,23 +1402,39 @@ def join_gitmem_waitlist():
             # Send welcome email asynchronously
             email_service = get_email_service()
             receiver_email = email
-            subject = "Welcome to GitMem Waitlist! 🎉"
-            body = f"""Hi {gitmem_data.get('name', 'there')}!
-
-Thank you for joining the GitMem waitlist. We're excited to have you on board.
-
-Your primary interests:
-- Tools: {gitmem_data.get('tools', 'Not specified')}
-- Stack: {gitmem_data.get('stack', 'Not specified')}
-- Goals: {gitmem_data.get('goals', 'Not specified')}
-
-We're onboarding users in batches and will prioritize people who filled out all the questions. You'll be among the first to get early access!
-
-Stay tuned,
-The GitMem Team"""
+            subject = "Welcome to GitMem Waitlist"
+            # Prepare content
+            # Prepare content
+            name = gitmem_data.get('name') or "there"
+            plain_body = f"Hello {name},\n\nWe are absolutely thrilled that you took the time to sign up for our waitlist! 🚀\n\nWe are currently working hard behind the scenes to build something special. We will notify you the moment we are ready.\n\nIn the meantime, feel free to explore our website.\n\nWarm regards,\nThe Manhattan Project Team"
             
+            html_body = f"""
+            <div style="font-family: 'Inter', Arial, sans-serif; color: #333; line-height: 1.6;">
+              <p>Hello {name},</p>
+              <p>We are absolutely thrilled that you took the time to sign up for our waitlist! 🚀</p>
+              <p>We are currently working hard behind the scenes to build something special, and we can't wait to share it with you. We will notify you the moment we are ready to onboard you.</p>
+              <p>In the meantime, please feel free to explore our website and get a feel for what we are building.</p>
+              <p>Warm regards,</p>
+              <p>The Manhattan Project Team</p>
+              
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 15px;">
+                <tr>
+                   <td style="vertical-align: middle; padding-right: 12px;">
+                      <img src="cid:logo" width="30" height="30" style="display: block;" alt="Logo">
+                   </td>
+                   <td style="vertical-align: middle;">
+                      <span style="font-family: 'Mr Dafoe', cursive, serif; font-size: 26px; color: #EC4899; line-height: 1;">The Manhattan Project</span>
+                   </td>
+                </tr>
+              </table>
+            </div>
+            """
+            
+            # Path to logo
+            logo_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'logo.png')
+
             # Send asynchronously to avoid blocking
-            email_service.send_email_async(receiver_email, subject, body)
+            email_service.send_email_async(receiver_email, subject, plain_body, html_body=html_body, image_attachment_path=logo_path)
             
             return jsonify({
                 'success': True,
