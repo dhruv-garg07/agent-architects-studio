@@ -319,7 +319,7 @@ def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> Any:
 # Standard MCP SSE Implementation (for "No Local File" usage)
 # ============================================================================
 
-@mcp_bp.route("/mcp/sse", methods=["GET", "POST"])
+@mcp_bp.route("/mcp/sse", methods=["POST"])
 def handle_sse():
     """
     Standard MCP SSE Endpoint.
