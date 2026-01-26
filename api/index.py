@@ -82,12 +82,23 @@ try:
     init_websocket(socketio)
     print("[STARTUP] Flask-SocketIO initialized for real-time updates")
     
-    # Initialize MCP Socket.IO Gateway for remote AI agents
-    from mcp_socketio_gateway import init_mcp_socketio, mcp_bp
-    app.register_blueprint(mcp_bp)
-    init_mcp_socketio(socketio)
-    print("[STARTUP] MCP Socket.IO Gateway initialized on /mcp namespace")
-    print("[STARTUP] MCP SSE Transport initialized at /mcp/sse")
+    # Initialize MCP Socket.IO Gateway in a background thread to avoid blocking startup
+    def init_mcp_gateway():
+        try:
+            from mcp_socketio_gateway import init_mcp_socketio, mcp_bp
+            app.register_blueprint(mcp_bp)
+            init_mcp_socketio(socketio)
+            print("[STARTUP] MCP Socket.IO Gateway initialized on /mcp namespace")
+            print("[STARTUP] MCP SSE Transport initialized at /mcp/sse")
+        except Exception as e:
+            print(f"[STARTUP] MCP Gateway initialization error: {e}")
+    
+    # Run MCP initialization in background to not block main app
+    import threading
+    mcp_init_thread = threading.Thread(target=init_mcp_gateway, daemon=True)
+    mcp_init_thread.start()
+    print("[STARTUP] MCP Gateway initialization started in background thread")
+    
 except ImportError as e:
     print(f"[STARTUP] Flask-SocketIO not available: {e}")
     socketio = None
