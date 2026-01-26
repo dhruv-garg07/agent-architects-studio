@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <style>
+    @font-face {
+      font-family: 'Cursive';
+      src: local('Brush Script MT'), local('Segoe Script'), local('Lucida Calligraphy'), local('Cursive');
+    }
+    text {
+      font-family: 'Cursive', cursive;
+      font-weight: bold;
+      fill: #ff00cc; /* GTA Vice City Pink style */
+      text-shadow: 2px 2px 0px #00ffff; /* Retro cyan shadow */
+    }
+  </style>
+  <text x="50%" y="75%" text-anchor="middle" font-size="60">m</text>
+</svg>
