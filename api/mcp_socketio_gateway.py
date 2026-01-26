@@ -363,9 +363,8 @@ def _get_fallback_tools_schema() -> Dict[str, Any]:
     }
 
 
-async def execute_tool_async(tool_name: str, arguments: Dict[str, Any]) -> Any:
-    """Execute an MCP tool by name with given arguments."""
-    # Get the tool function from FastMCP
+def _get_tool_function(tool_name: str):
+    """Get the tool function by name from FastMCP or module."""
     tool_fn = None
     
     if hasattr(mcp, '_tool_manager') and hasattr(mcp._tool_manager, '_tools'):
@@ -378,14 +377,56 @@ async def execute_tool_async(tool_name: str, arguments: Dict[str, Any]) -> Any:
         import mcp_memory_client
         tool_fn = getattr(mcp_memory_client, tool_name, None)
     
+    return tool_fn
+
+
+def _execute_tool_sync(tool_name: str, arguments: Dict[str, Any]) -> Any:
+    """
+    Execute an MCP tool synchronously - gevent-safe version.
+    
+    This avoids asyncio event loops which conflict with gevent workers.
+    Uses gevent.spawn with timeout for safe concurrent execution.
+    """
+    tool_fn = _get_tool_function(tool_name)
+    
     if not tool_fn:
         return {"ok": False, "error": f"Tool '{tool_name}' not found"}
     
     try:
-        # Execute the tool
+        # Check if it's an async function
         if asyncio.iscoroutinefunction(tool_fn):
-            result = await tool_fn(**arguments)
+            # For async functions, we need to run them in a new event loop
+            # But we use gevent.spawn to not block the worker
+            if GEVENT_AVAILABLE:
+                import gevent
+                from gevent import Timeout
+                
+                def run_async():
+                    loop = asyncio.new_event_loop()
+                    try:
+                        asyncio.set_event_loop(loop)
+                        return loop.run_until_complete(tool_fn(**arguments))
+                    finally:
+                        loop.close()
+                
+                # Spawn a greenlet with timeout
+                greenlet = gevent.spawn(run_async)
+                try:
+                    with Timeout(90):  # 90 second timeout for tool execution
+                        result = greenlet.get()
+                except Timeout:
+                    greenlet.kill()
+                    return {"ok": False, "error": "Tool execution timed out (90s)"}
+            else:
+                # Fallback: run directly (may block)
+                loop = asyncio.new_event_loop()
+                try:
+                    asyncio.set_event_loop(loop)
+                    result = loop.run_until_complete(tool_fn(**arguments))
+                finally:
+                    loop.close()
         else:
+            # Sync function - execute directly
             result = tool_fn(**arguments)
         
         # Parse JSON result if it's a string
@@ -398,18 +439,20 @@ async def execute_tool_async(tool_name: str, arguments: Dict[str, Any]) -> Any:
         return result
     
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return {"ok": False, "error": str(e)}
+
+
+async def execute_tool_async(tool_name: str, arguments: Dict[str, Any]) -> Any:
+    """Async wrapper that delegates to sync execution for gevent compatibility."""
+    # In gevent environment, we use sync execution to avoid event loop conflicts
+    return _execute_tool_sync(tool_name, arguments)
 
 
 def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> Any:
     """Synchronous wrapper for tool execution - gevent-safe."""
-    # Always use a new event loop to avoid conflicts with gevent
-    loop = asyncio.new_event_loop()
-    try:
-        asyncio.set_event_loop(loop)
-        return loop.run_until_complete(execute_tool_async(tool_name, arguments))
-    finally:
-        loop.close()
+    return _execute_tool_sync(tool_name, arguments)
 
 
 # ============================================================================
@@ -440,15 +483,10 @@ def handle_mcp_root():
             message = request.json
             print(f"[MCP HTTP] Processing: {message.get('method', 'unknown')} (id: {message.get('id', 'none')})")
             
-            # Process the JSON-RPC message directly
-            loop = asyncio.new_event_loop()
-            try:
-                asyncio.set_event_loop(loop)
-                response = loop.run_until_complete(_process_json_rpc_direct(message))
-                print(f"[MCP HTTP] Response generated for: {message.get('method', 'unknown')}")
-                return jsonify(response)
-            finally:
-                loop.close()
+            # Process the JSON-RPC message directly (sync - no asyncio)
+            response = _process_json_rpc_direct(message)
+            print(f"[MCP HTTP] Response generated for: {message.get('method', 'unknown')}")
+            return jsonify(response)
                 
         except Exception as e:
             print(f"[MCP HTTP] Error: {e}")
@@ -483,15 +521,10 @@ def handle_sse():
             message = request.json
             print(f"[MCP HTTP] POST to /mcp/sse - Processing: {message.get('method', 'unknown')} (id: {message.get('id', 'none')})")
             
-            # Process the JSON-RPC message directly and return response
-            loop = asyncio.new_event_loop()
-            try:
-                asyncio.set_event_loop(loop)
-                response_data = loop.run_until_complete(_process_json_rpc_direct(message))
-                print(f"[MCP HTTP] Response generated for: {message.get('method', 'unknown')}")
-                return jsonify(response_data)
-            finally:
-                loop.close()
+            # Process the JSON-RPC message directly (sync - no asyncio)
+            response_data = _process_json_rpc_direct(message)
+            print(f"[MCP HTTP] Response generated for: {message.get('method', 'unknown')}")
+            return jsonify(response_data)
                 
         except Exception as e:
             print(f"[MCP HTTP] Error processing POST: {e}")
@@ -578,15 +611,9 @@ def handle_messages():
         message = request.json
         print(f"[MCP SSE] Processing message: {message.get('method', 'unknown')} (id: {message.get('id', 'none')})")
         
-        # Process SYNCHRONOUSLY to ensure response is queued before returning
-        # This is important for MCP protocol compliance
-        loop = asyncio.new_event_loop()
-        try:
-            asyncio.set_event_loop(loop)
-            loop.run_until_complete(_process_json_rpc(session_id, message))
-            print(f"[MCP SSE] Message processed successfully for session: {session_id}")
-        finally:
-            loop.close()
+        # Process synchronously - gevent-safe, no asyncio
+        _process_json_rpc_sync(session_id, message)
+        print(f"[MCP SSE] Message processed successfully for session: {session_id}")
         
         return "Accepted", 202
     except Exception as e:
@@ -647,8 +674,8 @@ def handle_tool_rest(tool_name):
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
-async def _process_json_rpc_direct(message: Dict[str, Any]) -> Dict[str, Any]:
-    """Process incoming JSON-RPC message and return response directly (for streamable-http)."""
+def _process_json_rpc_direct(message: Dict[str, Any]) -> Dict[str, Any]:
+    """Process incoming JSON-RPC message and return response directly (for streamable-http). Synchronous for gevent compatibility."""
     if not isinstance(message, dict):
         return {"jsonrpc": "2.0", "id": None, "error": {"code": -32600, "message": "Invalid request"}}
         
@@ -698,7 +725,8 @@ async def _process_json_rpc_direct(message: Dict[str, Any]) -> Dict[str, Any]:
             name = params.get("name")
             args = params.get("arguments", {})
             
-            result = await execute_tool_async(name, args)
+            # Use synchronous execution for gevent compatibility
+            result = execute_tool(name, args)
             
             # Format result for MCP (content array)
             if isinstance(result, dict) and not result.get("ok", True) and "error" in result:
@@ -748,8 +776,8 @@ async def _process_json_rpc_direct(message: Dict[str, Any]) -> Dict[str, Any]:
         }
 
 
-async def _process_json_rpc(session_id: str, message: Dict[str, Any]):
-    """Process incoming JSON-RPC message and queue response."""
+def _process_json_rpc_sync(session_id: str, message: Dict[str, Any]):
+    """Process incoming JSON-RPC message and queue response. Synchronous for gevent."""
     if not isinstance(message, dict):
         return
         
@@ -801,7 +829,8 @@ async def _process_json_rpc(session_id: str, message: Dict[str, Any]):
             name = params.get("name")
             args = params.get("arguments", {})
             
-            result = await execute_tool_async(name, args)
+            # Use synchronous tool execution
+            result = execute_tool(name, args)
             
             # Format result for MCP (content array)
             if isinstance(result, dict) and not result.get("ok", True) and "error" in result:
