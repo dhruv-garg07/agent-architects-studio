@@ -41,7 +41,7 @@ if parent_dir not in sys.path:
 # Import key utilities for API key verification
 from key_utils import hash_key
 
-from flask import Blueprint, Response, request, stream_with_context, jsonify
+from flask import Blueprint, Response, request, stream_with_context, jsonify, redirect
 import queue
 import uuid
 
@@ -319,10 +319,57 @@ def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> Any:
 # Standard MCP SSE Implementation (for "No Local File" usage)
 # ============================================================================
 
+# Primary MCP endpoint - handles both streamable HTTP and SSE
+@mcp_bp.route("/mcp", methods=["POST", "GET", "DELETE"])
+def handle_mcp_root():
+    """
+    Primary MCP endpoint supporting streamable-http transport.
+    
+    For POST requests: Direct JSON-RPC processing (streamable-http)
+    For GET requests: Redirect to SSE endpoint
+    """
+    api_key = request.args.get("api_key") or request.headers.get("Authorization", "").replace("Bearer ", "")
+    auth = verify_api_key(api_key)
+    if not auth["ok"]:
+        return jsonify({"error": "Unauthorized", "message": auth.get("error")}), 401
+    
+    if request.method == "GET":
+        # Redirect to SSE endpoint for SSE transport
+        return redirect(url_for('mcp_sse.handle_sse', api_key=api_key))
+    
+    if request.method == "POST":
+        # Streamable HTTP - process JSON-RPC directly and return response
+        try:
+            message = request.json
+            print(f"[MCP HTTP] Processing: {message.get('method', 'unknown')} (id: {message.get('id', 'none')})")
+            
+            # Process the JSON-RPC message directly
+            loop = asyncio.new_event_loop()
+            try:
+                asyncio.set_event_loop(loop)
+                response = loop.run_until_complete(_process_json_rpc_direct(message))
+                print(f"[MCP HTTP] Response generated for: {message.get('method', 'unknown')}")
+                return jsonify(response)
+            finally:
+                loop.close()
+                
+        except Exception as e:
+            print(f"[MCP HTTP] Error: {e}")
+            import traceback
+            traceback.print_exc()
+            return jsonify({
+                "jsonrpc": "2.0",
+                "id": request.json.get("id") if request.json else None,
+                "error": {"code": -32603, "message": str(e)}
+            }), 500
+    
+    return jsonify({"error": "Method not allowed"}), 405
+
+
 @mcp_bp.route("/mcp/sse", methods=["POST", "GET", "DELETE"])
 def handle_sse():
     """
-    Standard MCP SSE Endpoint.
+    Standard MCP SSE Endpoint (fallback transport).
     Establishes connection and sends the message endpoint URL.
     """
     api_key = request.args.get("api_key")
@@ -364,7 +411,11 @@ def handle_sse():
             if session_id in _sse_sessions:
                 del _sse_sessions[session_id]
 
-    return Response(stream_with_context(generate()), content_type="text/event-stream")
+    response = Response(stream_with_context(generate()), content_type="text/event-stream")
+    response.headers['Cache-Control'] = 'no-cache'
+    response.headers['Connection'] = 'keep-alive'
+    response.headers['X-Accel-Buffering'] = 'no'  # Disable nginx buffering
+    return response
 
 
 # SOCKET IO ROUTE
@@ -374,35 +425,41 @@ def handle_messages():
     Standard MCP Message Endpoint.
     Receives JSON-RPC messages and queues responses.
     """
-    print("In MCP messages")
     session_id = request.args.get("session_id")
-    if not session_id or session_id not in _sse_sessions:
-        return "Session not found", 404
+    print(f"[MCP SSE] Message received for session: {session_id}, method: {request.method}")
+    
+    if not session_id:
+        print("[MCP SSE] No session_id provided")
+        return jsonify({"error": "session_id required"}), 400
+        
+    if session_id not in _sse_sessions:
+        print(f"[MCP SSE] Session not found: {session_id}, active sessions: {list(_sse_sessions.keys())}")
+        return jsonify({"error": "Session not found or expired"}), 404
+    
+    if request.method in ["GET", "DELETE"]:
+        # Health check or cleanup
+        return jsonify({"status": "ok", "session_id": session_id}), 200
     
     try:
         message = request.json
-        # Process in background thread to avoid blocking and asyncio conflicts with gevent
-        import threading
+        print(f"[MCP SSE] Processing message: {message.get('method', 'unknown')} (id: {message.get('id', 'none')})")
         
-        def process_message():
-            try:
-                # Create a new event loop for this thread
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                try:
-                    loop.run_until_complete(_process_json_rpc(session_id, message))
-                finally:
-                    loop.close()
-            except Exception as e:
-                print(f"[MCP SSE] Background processing error: {e}")
-        
-        thread = threading.Thread(target=process_message, daemon=True)
-        thread.start()
+        # Process SYNCHRONOUSLY to ensure response is queued before returning
+        # This is important for MCP protocol compliance
+        loop = asyncio.new_event_loop()
+        try:
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(_process_json_rpc(session_id, message))
+            print(f"[MCP SSE] Message processed successfully for session: {session_id}")
+        finally:
+            loop.close()
         
         return "Accepted", 202
     except Exception as e:
         print(f"[MCP SSE] Error handling message: {e}")
-        return str(e), 500
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 
 @mcp_bp.route("/mcp/<tool_name>", methods=["POST", "GET", "DELETE"])
@@ -454,6 +511,107 @@ def handle_tool_rest(tool_name):
     except Exception as e:
         print(f"[MCP REST] Error executing {tool_name}: {e}")
         return jsonify({"ok": False, "error": str(e)}), 500
+
+
+async def _process_json_rpc_direct(message: Dict[str, Any]) -> Dict[str, Any]:
+    """Process incoming JSON-RPC message and return response directly (for streamable-http)."""
+    if not isinstance(message, dict):
+        return {"jsonrpc": "2.0", "id": None, "error": {"code": -32600, "message": "Invalid request"}}
+        
+    msg_type = message.get("method")
+    msg_id = message.get("id")
+    
+    try:
+        # Initialize
+        if msg_type == "initialize":
+            return {
+                "jsonrpc": "2.0",
+                "id": msg_id,
+                "result": {
+                    "protocolVersion": "2024-11-05",
+                    "capabilities": {
+                        "tools": {}
+                    },
+                    "serverInfo": {
+                        "name": "manhattan-memory",
+                        "version": "1.0.0"
+                    }
+                }
+            }
+            
+        # List Tools
+        elif msg_type == "tools/list":
+            tools_schema = get_tools_schema()
+            tool_list = []
+            for name, schema in tools_schema.items():
+                tool_list.append({
+                    "name": name,
+                    "description": schema.get("description", ""),
+                    "inputSchema": schema.get("parameters", {})
+                })
+            
+            return {
+                "jsonrpc": "2.0",
+                "id": msg_id,
+                "result": {
+                    "tools": tool_list
+                }
+            }
+            
+        # Call Tool
+        elif msg_type == "tools/call":
+            params = message.get("params", {})
+            name = params.get("name")
+            args = params.get("arguments", {})
+            
+            result = await execute_tool_async(name, args)
+            
+            # Format result for MCP (content array)
+            if isinstance(result, dict) and not result.get("ok", True) and "error" in result:
+                content = [{"type": "text", "text": f"Error: {result['error']}"}]
+                is_error = True
+            else:
+                content = [{"type": "text", "text": json.dumps(result, indent=2)}]
+                is_error = False
+                
+            return {
+                "jsonrpc": "2.0",
+                "id": msg_id,
+                "result": {
+                    "content": content,
+                    "isError": is_error
+                }
+            }
+            
+        # Ping / Notifications (respond with empty result)
+        elif msg_type == "notifications/initialized":
+            # No response needed for notifications
+            return {"jsonrpc": "2.0", "id": msg_id, "result": {}}
+            
+        else:
+            # Unknown method
+            print(f"[MCP HTTP] Unknown method: {msg_type}")
+            return {
+                "jsonrpc": "2.0",
+                "id": msg_id,
+                "error": {
+                    "code": -32601,
+                    "message": f"Method not found: {msg_type}"
+                }
+            }
+                
+    except Exception as e:
+        print(f"[MCP HTTP] Execution error: {e}")
+        import traceback
+        traceback.print_exc()
+        return {
+            "jsonrpc": "2.0",
+            "id": msg_id,
+            "error": {
+                "code": -32603,
+                "message": str(e)
+            }
+        }
 
 
 async def _process_json_rpc(session_id: str, message: Dict[str, Any]):
