@@ -369,6 +369,7 @@ def handle_messages():
     Standard MCP Message Endpoint.
     Receives JSON-RPC messages and queues responses.
     """
+    print("In MCP messages")
     session_id = request.args.get("session_id")
     if not session_id or session_id not in _sse_sessions:
         return "Session not found", 404
