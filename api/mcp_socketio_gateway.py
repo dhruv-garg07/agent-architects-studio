@@ -691,7 +691,8 @@ def _process_json_rpc_direct(message: Dict[str, Any]) -> Dict[str, Any]:
                 "result": {
                     "protocolVersion": "2024-11-05",
                     "capabilities": {
-                        "tools": {}
+                        "tools": {},
+                        "sampling": {}
                     },
                     "serverInfo": {
                         "name": "manhattan-memory",
@@ -747,7 +748,8 @@ def _process_json_rpc_direct(message: Dict[str, Any]) -> Dict[str, Any]:
             
         # Ping / Notifications (respond with empty result)
         elif msg_type == "notifications/initialized":
-            # No response needed for notifications
+            # Proactive Message - Send sampling request immediately after init
+            # Note: This only works if it's not a direct return (sync flow handled below)
             return {"jsonrpc": "2.0", "id": msg_id, "result": {}}
             
         else:
@@ -795,7 +797,8 @@ def _process_json_rpc_sync(session_id: str, message: Dict[str, Any]):
                 "result": {
                     "protocolVersion": "2024-11-05",
                     "capabilities": {
-                        "tools": {}
+                        "tools": {},
+                        "sampling": {}
                     },
                     "serverInfo": {
                         "name": "manhattan-memory-sse",
@@ -851,7 +854,28 @@ def _process_json_rpc_sync(session_id: str, message: Dict[str, Any]):
             
         # Ping / Notifications (ignore or ack)
         elif msg_type == "notifications/initialized":
-            # Client confirming init
+            # Client confirming init - Perfect time for the server to say something first!
+            proactive_sampling = {
+                "jsonrpc": "2.0",
+                "method": "sampling/createMessage",
+                "params": {
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": {
+                                "type": "text", 
+                                "text": "Hello! I am connected and ready to help. To provide the best personalized experience, please call 'check_session_status' to initialize our memory session."
+                            }
+                        }
+                    ],
+                    "maxTokens": 100
+                },
+                "id": f"proactive_init_{int(get_time())}"
+            }
+            session_queue = _get_session_queue(session_id)
+            if session_queue:
+                print(f"[MCP SSE] Sending proactive sampling request to session: {session_id}")
+                session_queue.put(proactive_sampling)
             return
             
         else:

@@ -61,7 +61,7 @@ except ImportError:
 
 # Import MCP SDK
 try:
-    from mcp.server.fastmcp import FastMCP
+    from mcp.server.fastmcp import FastMCP, Context
 except ImportError:
     print("=" * 50, file=sys.stderr)
     print("ERROR: MCP package not installed!", file=sys.stderr)
@@ -2262,8 +2262,13 @@ async def get_server_info() -> str:
                 "auto_remember",
                 "should_remember", 
                 "get_memory_hints",
-                "conversation_checkpoint"
+                "conversation_checkpoint",
+                "proactive_sampling_test - 🧪 Test server-initiated chat"
             ]
+        },
+        "proactive_features": {
+            "server_initiated_greeting": "ENABLED",
+            "sampling_capability": "ENABLED"
         },
         "quick_start": [
             "1. 🚨 Call check_session_status() FIRST",
@@ -2291,6 +2296,28 @@ async def check_health() -> str:
                 return json.dumps({"status": "unhealthy", "code": response.status_code})
     except Exception as e:
         return json.dumps({"status": "unreachable", "error": str(e)})
+
+
+
+@mcp.tool()
+async def proactive_sampling_test(prompt: str, ctx: Context) -> str:
+    """
+    🧪 EXPERIMENTAL: Test server-initiated communication.
+    Uses MCP Sampling to ask the LLM to process a prompt and return a response.
+    """
+    print(f"[MCP] Triggering proactive sampling for: {prompt}", file=sys.stderr)
+    try:
+        result = await ctx.request_sampling(
+            messages=[{"role": "user", "content": {"type": "text", "text": prompt}}],
+            max_tokens=200
+        )
+        return json.dumps({
+            "ok": True,
+            "sampling_result": result.content,
+            "model": result.model
+        }, indent=2)
+    except Exception as e:
+        return json.dumps({"ok": False, "error": str(e)}, indent=2)
 
 
 # ============================================================================
