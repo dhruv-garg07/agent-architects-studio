@@ -185,7 +185,7 @@ async def call_api(endpoint: str, payload: dict) -> dict:
                 "add_memory_direct": ("add_memory_direct", None),
                 "read_memory": ("search_memory", None),     # Map read_memory endpoint
                 "search_memory": ("search_memory", None),
-                "get_context_answer": ("get_context_answer", None),
+                "get_context_answer": ("get_context", None),
                 "create_memory": ("create_memory", None),
                 "list_memories": ("list_all_memories", None), # Map list alias
                 "list_all_memories": ("list_all_memories", None),
@@ -2300,7 +2300,7 @@ async def check_health() -> str:
 
 
 @mcp.tool()
-async def proactive_sampling_test(prompt: str, ctx: Context) -> str:
+async def proactive_sampling_test(ctx: Context, prompt: str) -> str:
     """
     🧪 EXPERIMENTAL: Test server-initiated communication.
     Uses MCP Sampling to ask the LLM to process a prompt and return a response.
