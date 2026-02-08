@@ -1453,7 +1453,9 @@ def add_memory():
         return error
 
     try:
+        print(f"[DEBUG /add_memory] Getting memory system for agent_id: {agent_id}")
         memory_system = _get_or_create_memory_system(agent_id)
+        print(f"[DEBUG /add_memory] Memory system obtained. VectorStore agent_id: {memory_system.vector_store.agent_id}")
         
         # Create MemoryEntry objects from the provided data
         entries = []
@@ -1476,8 +1478,10 @@ def add_memory():
             entry_ids.append(entry.entry_id)
         
         if entries:
+            print(f"[DEBUG /add_memory] Calling vector_store.add_entries with {len(entries)} entries")
             # Add directly to vector store (bypassing LLM)
             memory_system.vector_store.add_entries(entries)
+            print(f"[DEBUG /add_memory] add_entries call completed")
         
         return jsonify({
             'ok': True,

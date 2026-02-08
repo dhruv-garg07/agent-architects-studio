@@ -352,11 +352,14 @@ class VectorStore:
         Paper Reference: Section 3.1 - Memory Encoding E(S_k)
         Thread-safe: captures agent_id at start to prevent corruption.
         """
+        print(f"[DEBUG VectorStore.add_entries] Called with {len(entries) if entries else 0} entries")
         if not entries:
+            print("[DEBUG VectorStore.add_entries] No entries to add, returning early")
             return
         
         # Capture agent_id at start (thread-safe snapshot)
         agent_id_snapshot = self._validate_agent_id_unchanged("add_entries")
+        print(f"[DEBUG VectorStore.add_entries] agent_id_snapshot = {agent_id_snapshot}")
         
         ids = []
         documents = []
@@ -388,12 +391,16 @@ class VectorStore:
                 metadatas=metadatas[i:i+100]
             )
         
+        print(f"[DEBUG VectorStore.add_entries] Executing batch with {len(ids)} entries...")
+        print(f"[DEBUG VectorStore.add_entries] IDs: {ids}")
+        print(f"[DEBUG VectorStore.add_entries] Documents: {documents}")
         result = batch.execute()
+        print(f"[DEBUG VectorStore.add_entries] Batch execute result: {result}")
         
         if result.get('success'):
-            print(f"Added {len(entries)} memory entries to {agent_id_snapshot}")
+            print(f"[SUCCESS] Added {len(entries)} memory entries to {agent_id_snapshot}")
         else:
-            print(f"Error adding entries: {result.get('error')}")
+            print(f"[ERROR] Error adding entries: {result.get('error')}")
     
     def add_single_entry(self, entry: MemoryEntry) -> bool:
         """Add a single memory entry."""

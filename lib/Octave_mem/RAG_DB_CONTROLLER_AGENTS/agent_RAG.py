@@ -171,15 +171,19 @@ class BatchOperation:
     
     def execute(self) -> Dict[str, Any]:
         """Execute all queued operations with rollback on failure"""
+        print(f"[DEBUG BatchOperation.execute] Starting execution with {len(self.operations)} operations")
         try:
-            for op in self.operations:
+            for idx, op in enumerate(self.operations):
+                print(f"[DEBUG BatchOperation.execute] Processing operation {idx+1}/{len(self.operations)}: type={op['type']}, agent_id={op['agent_id']}")
                 if op['type'] == 'add':
+                    print(f"[DEBUG BatchOperation.execute] Calling add_docs with {len(op['ids'])} documents")
                     result = self.agentic_rag.add_docs(
                         agent_ID=op['agent_id'],
                         ids=op['ids'],
                         documents=op['documents'],
                         metadatas=op.get('metadatas')
                     )
+                    print(f"[DEBUG BatchOperation.execute] add_docs result: {result}")
                 elif op['type'] == 'update':
                     result = self.agentic_rag.update_docs(
                         agent_ID=op['agent_id'],
@@ -194,12 +198,16 @@ class BatchOperation:
                     )
                 self.results.append(result)
             
+            print(f"[DEBUG BatchOperation.execute] All operations completed successfully")
             return {
                 'success': True,
                 'operations': len(self.operations),
                 'results': self.results
             }
         except Exception as e:
+            print(f"[DEBUG BatchOperation.execute] EXCEPTION: {str(e)}")
+            import traceback
+            traceback.print_exc()
             # Rollback would be implemented here in production
             return {
                 'success': False,
