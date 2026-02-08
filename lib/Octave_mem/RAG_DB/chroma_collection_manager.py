@@ -140,14 +140,20 @@ class ChromaCollectionManager:
 
     def _get_or_cache(self, collection_name: str):
         if collection_name not in self._collection_cache:
-            col = self.client.get_or_create_collection(
-                name=collection_name,
-
-                # 🔥 CRITICAL FIX (never use None)
-                embedding_function=self._disabled_ef,
-
-                metadata={"embedding": "remote-only"},
-            )
+            # First, try to get existing collection (without specifying embedding function)
+            # This prevents conflicts with collections created with different embedding functions
+            try:
+                col = self.client.get_collection(name=collection_name)
+                print(f"[ChromaCollectionManager] Got existing collection: {collection_name}")
+            except Exception:
+                # Collection doesn't exist, create it with our embedding function
+                col = self.client.create_collection(
+                    name=collection_name,
+                    embedding_function=self._disabled_ef,
+                    metadata={"embedding": "remote-only"},
+                )
+                print(f"[ChromaCollectionManager] Created new collection: {collection_name}")
+            
             self._collection_cache[collection_name] = col
         return self._collection_cache[collection_name]
 
