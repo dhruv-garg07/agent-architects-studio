@@ -11,44 +11,261 @@
 
     <!-- Custom Fonts -->
     <link
-        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap"
         rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #87CEEB;
-            /* Sky Blue Base */
-            color: #0f172a;
-            overflow-x: hidden;
-            background: linear-gradient(to bottom, #87CEEB 0%, #E0F7FA 100%);
+        :root {
+            --sky-dark: #0f172a;
+            --sky-light: #38bdf8;
+            /* Sky blue */
+            --sun-glow: #fbbf24;
+            --cloud-white: rgba(255, 255, 255, 0.9);
         }
 
-        /* Pixel Animated Clouds Canvas */
-        #sky-canvas {
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            min-height: 100vh;
+            color: #1e293b;
+            background-color: #0f172a;
+            /* Fallback */
+            position: relative;
+        }
+
+        /* --- Cinematic Background Layer --- */
+        #cinematic-bg {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             z-index: 0;
+            /* Atmospheric Radial Gradient - Sunburst Effect */
+            background: radial-gradient(circle at 50% 30%,
+                    #7dd3fc 0%,
+                    #38bdf8 30%,
+                    #0284c7 70%,
+                    #0c4a6e 100%);
+            overflow: hidden;
+        }
+
+        /* Noise Texture Overlay - The "Trynia" Grit */
+        .noise-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             pointer-events: none;
-            image-rendering: pixelated;
-            /* Key for pixel look */
+            z-index: 5;
+            opacity: 0.05;
+            /* Subtle grain */
+            filter: contrast(120%) brightness(100%);
+            /* Data URI SVG Noise */
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3Csvg%3E");
         }
 
+        /* Vignette for Depth */
+        .vignette {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 6;
+            background: radial-gradient(circle at center, transparent 40%, rgba(15, 23, 42, 0.4) 100%);
+        }
+
+        /* --- Realistic Glowing Orb (Sun) --- */
+        .sun-orb {
+            position: absolute;
+            top: 15%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, rgba(251, 191, 36, 0.4) 40%, transparent 70%);
+            filter: blur(40px);
+            z-index: 1;
+            opacity: 0.6;
+            animation: pulse-sun 8s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulse-sun {
+            0% {
+                opacity: 0.5;
+                transform: translate(-50%, -50%) scale(0.9);
+            }
+
+            100% {
+                opacity: 0.7;
+                transform: translate(-50%, -50%) scale(1.1);
+            }
+        }
+
+        /* --- Soft Clouds (CSS Blur Technique) --- */
+        .cloud-layer {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+        }
+
+        .soft-cloud {
+            position: absolute;
+            background: #fff;
+            border-radius: 50%;
+            filter: blur(30px);
+            /* The key to realism */
+            opacity: 0.7;
+        }
+
+        /* Cloud Shapes composed of multiple circles */
+        .cloud-shape-1 {
+            width: 300px;
+            height: 100px;
+            box-shadow: 100px -20px 0 -20px #fff;
+        }
+
+        .cloud-shape-2 {
+            width: 400px;
+            height: 120px;
+            box-shadow: 80px -30px 0 -20px #fff, -60px 20px 0 -10px #fff;
+        }
+
+        .cloud-shape-3 {
+            width: 250px;
+            height: 80px;
+            box-shadow: 60px 10px 0 -10px #fff;
+        }
+
+        /* Animation */
+        @keyframes float-soft {
+            0% {
+                transform: translateX(-10%) translateY(0);
+            }
+
+            50% {
+                transform: translateX(5%) translateY(-10px);
+            }
+
+            100% {
+                transform: translateX(110vw) translateY(0);
+            }
+        }
+
+        .anim-slow {
+            animation: float-soft 120s linear infinite;
+        }
+
+        .anim-med {
+            animation: float-soft 80s linear infinite;
+        }
+
+        .anim-fast {
+            animation: float-soft 60s linear infinite;
+        }
+
+        /* --- Floating Particles (Dust/Life) --- */
+        .particle {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.4;
+            animation: float-particle 10s ease-in-out infinite;
+        }
+
+        @keyframes float-particle {
+
+            0%,
+            100% {
+                transform: translateY(0) translateX(0);
+                opacity: 0.2;
+            }
+
+            50% {
+                transform: translateY(-20px) translateX(10px);
+                opacity: 0.6;
+            }
+        }
+
+        /* --- Updated Typography --- */
         .gospel-font {
-            font-family: 'Cinzel', serif;
+            /* Now strictly Inter Display/Tight for tech look */
+            font-family: 'Inter', sans-serif;
+            letter-spacing: -0.04em;
         }
 
-        /* Floating Cards / Content */
+        .tech-font {
+            font-family: 'Space Mono', monospace;
+            letter-spacing: 0.05em;
+        }
+
         .content-layer {
             position: relative;
             z-index: 10;
+            /* Above all atmosphere */
         }
 
-        /* Sketch Stamp */
+        /* Glassmorphism Containers */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+        }
+
+        /* Buttons with high-end feel */
+        .btn-premium {
+            background: #0f172a;
+            /* Dark Tech Button */
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 15px rgba(15, 23, 42, 0.2);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-premium:hover {
+            transform: translateY(-2px);
+            background: #1e293b;
+            box-shadow: 0 8px 25px rgba(15, 23, 42, 0.3);
+        }
+
+        .btn-premium-outline {
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid #0f172a;
+            color: #0f172a;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            backdrop-filter: blur(4px);
+            transition: all 0.3s ease;
+        }
+
+        .btn-premium-outline:hover {
+            background: #0f172a;
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(15, 23, 42, 0.2);
+        }
+
+        /* Image Framing */
+        .premium-frame {
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .premium-frame:hover {
+            transform: scale(1.02);
+        }
+
         .sketch-stamp {
             position: absolute;
             top: 2rem;
@@ -58,92 +275,84 @@
             z-index: 20;
             transform: rotate(-5deg);
             transition: all 0.5s ease;
+            mix-blend-mode: multiply;
+            /* Make sketch blend better */
+            filter: grayscale(100%) contrast(120%);
         }
 
         .sketch-stamp:hover {
             transform: rotate(0deg) scale(1.1);
-        }
-
-        /* Divine Image (Forest) */
-        .divine-image {
-            box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.2);
-            transition: transform 0.7s ease;
-            border: 4px solid rgba(255, 255, 255, 0.4);
-        }
-
-        .divine-image:hover {
-            transform: scale(1.02);
-        }
-
-        /* Divine Buttons */
-        .btn-divine {
-            background: linear-gradient(135deg, #fcd34d 0%, #f59e0b 100%);
-            color: #78350f;
-            /* Dark Amber Text */
-            box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.4);
-            border: 1px solid rgba(251, 191, 36, 0.5);
-            transition: all 0.3s ease;
-        }
-
-        .btn-divine:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 20px 40px -5px rgba(245, 158, 11, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.6);
-            background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
-            color: white;
-            /* Invert */
-        }
-
-        .btn-outline {
-            border: 2px solid rgba(255, 255, 255, 0.6);
-            color: #475569;
-            background: rgba(255, 255, 255, 0.4);
-            backdrop-filter: blur(5px);
-            transition: all 0.2s ease;
-        }
-
-        .btn-outline:hover {
-            border-color: #0ea5e9;
-            color: #0284c7;
-            background: white;
         }
     </style>
 </head>
 
 <body class="min-h-screen flex flex-col">
 
-    <!-- Cloud Canvas -->
-    <canvas id="sky-canvas"></canvas>
+    <!-- Cinematic Background System -->
+    <div id="cinematic-bg">
+        <!-- Sun Orb (Light Source) -->
+        <div class="sun-orb"></div>
+
+        <!-- Clouds -->
+        <div class="cloud-layer" id="cloud-container">
+            <!-- Clouds will be injected via JS for randomness, or we can hardcode a few for stability -->
+            <div class="soft-cloud cloud-shape-1 anim-slow" style="top: 10%; left: -10%; opacity: 0.8;"></div>
+            <div class="soft-cloud cloud-shape-2 anim-med"
+                style="top: 30%; left: -20%; opacity: 0.6; transform: scale(0.8);"></div>
+            <div class="soft-cloud cloud-shape-3 anim-fast"
+                style="top: 60%; left: -15%; opacity: 0.9; transform: scale(1.2);"></div>
+            <div class="soft-cloud cloud-shape-1 anim-slow"
+                style="top: 80%; left: -30%; opacity: 0.5; animation-delay: -40s;"></div>
+            <div class="soft-cloud cloud-shape-2 anim-med"
+                style="top: 15%; left: -40%; opacity: 0.7; animation-delay: -20s;"></div>
+        </div>
+
+        <!-- Particles (Dust) -->
+        <div id="particle-container"></div>
+
+        <!-- Noise Overlay -->
+        <div class="noise-overlay"></div>
+
+        <!-- Vignette -->
+        <div class="vignette"></div>
+    </div>
 
     <!-- Sketch Stamp -->
     <div class="sketch-stamp hidden md:block">
         <img src="{{ url_for('static', filename='harshit.png') }}" alt="Harshit Sketch"
-            class="w-full h-full object-cover grayscale rounded-sm bg-white p-1 shadow-lg ring-1 ring-black/5">
+            class="w-full h-full object-cover rounded-sm bg-white p-1 shadow-lg ring-1 ring-black/5">
     </div>
 
     <!-- Main Content -->
+    <!-- Added glass-panel class for better readability against new BG -->
     <main class="w-full max-w-4xl mx-auto px-6 py-20 content-layer flex flex-col items-center">
 
         <!-- Header -->
         <h1
-            class="gospel-font text-5xl md:text-7xl font-bold text-slate-900 mb-2 text-center tracking-tight leading-tight drop-shadow-sm">
+            class="gospel-font text-5xl md:text-7xl font-bold text-slate-900 mb-2 text-center tracking-tight leading-tight drop-shadow-lg">
             Harshit Sheoron
         </h1>
-        <p class="text-slate-600 uppercase tracking-[0.25em] text-xs font-bold mb-12 text-center">
+        <p
+            class="text-slate-800 uppercase tracking-[0.25em] text-xs font-bold mb-12 text-center font-mono mix-blend-multiply">
             The Manhattan Project
         </p>
 
         <!-- Big Image (Forest) -->
         <div class="w-full mb-12 relative group">
-            <img src="{{ url_for('static', filename='harshit_forest.jpg') }}" alt="Harshit in Forest"
-                class="w-full h-auto object-cover rounded-xl divine-image aspect-[16/9] shadow-2xl">
+            <div class="premium-frame rounded-2xl overflow-hidden bg-white/20 backdrop-blur-sm p-2">
+                <img src="{{ url_for('static', filename='harshit_forest.jpg') }}" alt="Harshit in Forest"
+                    class="w-full h-auto object-cover rounded-xl aspect-[16/9]">
+            </div>
         </div>
 
         <!-- The Essay -->
         <div
-            class="prose prose-lg md:prose-xl prose-stone text-center mx-auto space-y-6 font-light leading-relaxed text-slate-800">
+            class="prose prose-lg md:prose-xl prose-stone text-center mx-auto space-y-6 font-light leading-relaxed text-slate-900 glass-panel p-8 rounded-2xl">
             <p>
-                <span class="gospel-font text-3xl text-slate-900 italic block mb-4">"Hi, I am Harshit Sheoron."</span>
-                I am the creator of <span class="font-medium text-slate-900">TheManhattanProject</span>.
+                <span
+                    class="gospel-font text-3xl italic block mb-4 text-transparent bg-clip-text bg-gradient-to-r from-slate-900 to-slate-700">"Hi,
+                    I am Harshit Sheoron."</span>
+                I am the creator of <span class="font-bold text-slate-900">TheManhattanProject</span>.
                 Just like in the original Manhattan Project, how tons of scientists collaborated together creating the
                 world's most powerful weapon,
                 we want your memories and contexts from various sources to collaborate together for better performance.
@@ -160,13 +369,13 @@
         </div>
 
         <!-- Buttons -->
-        <div class="flex flex-col sm:flex-row gap-4 mt-12 mb-16">
+        <div class="flex flex-col sm:flex-row gap-6 mt-12 mb-16">
             <a href="{{ url_for('homepage') }}"
-                class="btn-divine px-8 py-3 rounded-full font-semibold tracking-wide text-center">
+                class="btn-premium px-8 py-4 rounded-xl tracking-wide text-center uppercase text-sm">
                 Join the Waitlist
             </a>
             <a href="mailto:2021eeb1175@iitrpr.ac.in"
-                class="btn-outline px-8 py-3 rounded-full font-medium tracking-wide text-center flex items-center justify-center gap-2">
+                class="btn-premium-outline px-8 py-4 rounded-xl tracking-wide text-center flex items-center justify-center gap-2 uppercase text-sm font-semibold">
                 <i data-lucide="mail" class="w-4 h-4"></i>
                 Email Me
             </a>
@@ -178,79 +387,35 @@
         // Initialize Icons
         lucide.createIcons();
 
-        // Pixelated Cloud Animation
-        const canvas = document.getElementById('sky-canvas');
-        const ctx = canvas.getContext('2d');
+        // Particle System
+        const particleContainer = document.getElementById('particle-container');
+        const PARTICLE_COUNT = 30;
 
-        // Low resolution for pixel effect
-        const PIXEL_SCALE = 8;
+        function createParticle() {
+            const particle = document.createElement('div');
+            particle.classList.add('particle');
 
-        let width, height;
-        let clouds = [];
+            // Random properties
+            const size = Math.random() * 4 + 1; // 1px to 5px
+            const posX = Math.random() * 100;
+            const posY = Math.random() * 100;
+            const duration = Math.random() * 10 + 5; // 5s to 15s
+            const delay = Math.random() * 5;
 
-        function resize() {
-            // Actual canvas size is small (1/8th of screen)
-            width = Math.ceil(window.innerWidth / PIXEL_SCALE);
-            height = Math.ceil(window.innerHeight / PIXEL_SCALE);
+            particle.style.width = `${size}px`;
+            particle.style.height = `${size}px`;
+            particle.style.left = `${posX}%`;
+            particle.style.top = `${posY}%`;
+            particle.style.animationDuration = `${duration}s`;
+            particle.style.animationDelay = `-${delay}s`;
 
-            canvas.width = width;
-            canvas.height = height;
-
-            // Re-init clouds to match new scale
-            initClouds();
+            particleContainer.appendChild(particle);
         }
 
-        class Cloud {
-            constructor() {
-                this.x = Math.random() * width;
-                this.y = Math.random() * (height * 0.8);
-                this.speed = 0.05 + Math.random() * 0.1; // Very slow drift
-                this.size = 8 + Math.random() * 15; // Small size (will be scaled up 8x)
-                this.opacity = 0.3 + Math.random() * 0.4;
-            }
-
-            update() {
-                this.x += this.speed;
-                if (this.x > width + 20) {
-                    this.x = -20;
-                    this.y = Math.random() * (height * 0.8);
-                }
-            }
-
-            draw() {
-                ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
-                // Draw circle (which becomes a pixelated blob when scaled up)
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fill();
-            }
+        // Init Particles
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+            createParticle();
         }
-
-        function initClouds() {
-            clouds = [];
-            // Density of clouds
-            const cloudCount = Math.floor(width / 6);
-            for (let i = 0; i < cloudCount; i++) {
-                clouds.push(new Cloud());
-            }
-        }
-
-        function animate() {
-            ctx.clearRect(0, 0, width, height);
-
-            // Draw clouds
-            clouds.forEach(cloud => {
-                cloud.update();
-                cloud.draw();
-            });
-
-            requestAnimationFrame(animate);
-        }
-
-        window.addEventListener('resize', resize);
-
-        resize();
-        animate();
     </script>
 </body>
 

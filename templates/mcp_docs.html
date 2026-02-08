@@ -111,7 +111,7 @@
     .api-docs-panels {
         display: grid;
         /* Grid columns: Nav | Content | Code */
-        grid-template-columns: 260px 1fr 400px;
+        grid-template-columns: 260px 0.8fr 1.2fr;
         gap: 16px;
         height: 75vh;
         min-height: 700px;
@@ -295,44 +295,73 @@
                         content: `
                         <h2 class="text-2xl font-bold mb-4 text-white">Quick Start (2 Minutes)</h2>
                         <div class="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-6">
-                            <h3 class="font-semibold text-blue-400 mb-1">No setup required!</h3>
-                            <p class="text-gray-300">Use our hosted API - just download one file and add your API key.</p>
+                            <h3 class="font-semibold text-blue-400 mb-1">Install via PyPI</h3>
+                            <p class="text-gray-300">Get started instantly with the official Python package.</p>
                         </div>
-                        <h3 class="text-xl font-semibold mb-3 text-white">Step 1: Download Client</h3>
-                        <p class="mb-4">Download the single-file client to your desired location.</p>
-                        <h3 class="text-xl font-semibold mb-3 text-white">Step 2: Install Dependencies</h3>
-                        <p class="mb-4">You need 'mcp' and 'httpx' packages.</p>
-                        <h3 class="text-xl font-semibold mb-3 text-white">Step 3: Get API Key</h3>
-                        <p>1. Go to Settings → API Keys<br>2. Create a new key</p>
+
+                        <h3 class="text-xl font-semibold mb-3 text-white">Step 1: Get Your API Key</h3>
+                        <p class="mb-4 text-gray-300">Sign up at <a href="https://themanhattanproject.ai" class="text-blue-400 hover:text-blue-300">The Manhattan Project</a> to get your API key.</p>
+
+                        <h3 class="text-xl font-semibold mb-3 text-white">Step 2: Install Package</h3>
+                        <p class="mb-4 text-gray-300">Install the <code>manhattan-mcp</code> package using pip.</p>
+
+                        <h3 class="text-xl font-semibold mb-3 text-white">Step 3: Set Environment Variable</h3>
+                        <p class="text-gray-300">Set your API key as an environment variable or in a <code>.env</code> file.</p>
                     `,
                         code: {
                             lang: "bash",
-                            content: `# Step 1: Download client
-curl -O https://raw.githubusercontent.com/your-username/agent-architects-studio/main/api/mcp_memory_client.py
+                            content: `# Install package
+pip install manhattan-mcp
 
-# Step 2: Install dependencies
-pip install mcp httpx`
+# Set API Key
+export MANHATTAN_API_KEY="your-api-key-here"`
                         }
                     },
                     {
-                        id: "self-hosted",
-                        title: "Self Hosted",
+                        id: "features",
+                        title: "Features",
                         content: `
-                        <h2 class="text-2xl font-bold mb-4 text-white">Self-Hosted (Advanced)</h2>
-                        <p class="text-gray-300 mb-6">Clone the full repository and run your own server. This gives you full control over the data and infrastructure.</p>
-                        <p>See <a href="#" class="text-blue-400 hover:text-blue-300">SELF_HOSTED_SETUP.md</a> for detailed instructions.</p>
+                        <h2 class="text-2xl font-bold mb-4 text-white">Features</h2>
+                        <ul class="space-y-4 text-gray-300">
+                            <li class="flex gap-3">
+                                <span class="text-2xl">🧠</span>
+                                <div>
+                                    <strong class="text-white block">Persistent Memory</strong>
+                                    Store and retrieve information across conversations and sessions.
+                                </div>
+                            </li>
+                            <li class="flex gap-3">
+                                <span class="text-2xl">🔍</span>
+                                <div>
+                                    <strong class="text-white block">Semantic Search</strong>
+                                    Find relevant memories using natural language queries.
+                                </div>
+                            </li>
+                            <li class="flex gap-3">
+                                <span class="text-2xl">🤖</span>
+                                <div>
+                                    <strong class="text-white block">AI-Generated Answers</strong>
+                                    Get comprehensive answers using memory context directly.
+                                </div>
+                            </li>
+                            <li class="flex gap-3">
+                                <span class="text-2xl">👤</span>
+                                <div>
+                                    <strong class="text-white block">Multi-Agent Support</strong>
+                                    Create separate memory spaces for different use cases or projects.
+                                </div>
+                            </li>
+                        </ul>
                     `,
                         code: {
-                            lang: "bash",
-                            content: `# Clone repository
-git clone https://github.com/your-username/agent-architects-studio.git
-cd agent-architects-studio
-
-# Install server dependencies
-pip install -r requirements.txt
-
-# Run server
-python api/mcp_memory_server.py`
+                            lang: "text",
+                            content: `Features:
+- Persistent Memory
+- Semantic Search
+- AI-Generated Answers
+- Multi-Agent Support
+- Analytics
+- Export/Import`
                         }
                     }
                 ]
@@ -341,29 +370,20 @@ python api/mcp_memory_server.py`
                 title: "Configuration",
                 items: [
                     {
-                        id: "claude-desktop",
-                        title: "Claude Desktop",
+                        id: "antigravity",
+                        title: "Manhattan Remote (SSE)",
                         content: `
-                        <h2 class="text-2xl font-bold mb-4 text-white">Claude Desktop Configuration</h2>
-                        <p class="mb-6">Add the configuration to your Claude Desktop config file.</p>
-                        
-                        <h3 class="text-lg font-semibold text-white mb-2">Config File Locations:</h3>
-                        <ul class="list-disc pl-5 mb-6 space-y-1 text-gray-300">
-                            <li><strong>Windows:</strong> %APPDATA%\\Claude\\claude_desktop_config.json</li>
-                            <li><strong>macOS:</strong> ~/Library/Application Support/Claude/claude_desktop_config.json</li>
-                            <li><strong>Linux:</strong> ~/.config/Claude/claude_desktop_config.json</li>
-                        </ul>
+                        <h2 class="text-2xl font-bold mb-4 text-white">Manhattan Remote (SSE)</h2>
+                        <p class="mb-6 text-gray-300">Configuration for connecting via Server-Sent Events (SSE).</p>
                     `,
                         code: {
                             lang: "json",
                             content: `{
-  "servers": {
-    "manhattan-memory": {
-      "type": "stdio",
-      "command": "/path/to/venv/bin/python",
-      "args": ["/path/to/mcp_memory_client.py"],
-      "env": {
-        "MANHATTAN_API_KEY": "your-api-key-here"
+  "mcpServers": {
+    "Manhattan_Remote": {
+      "serverUrl": "https://themanhattanproject.ai/mcp/sse",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_KEY"
       }
     }
   }
@@ -371,25 +391,45 @@ python api/mcp_memory_server.py`
                         }
                     },
                     {
-                        id: "vscode",
-                        title: "VS Code",
+                        id: "copilot",
+                        title: "GitHub Copilot",
                         content: `
-                        <h2 class="text-2xl font-bold mb-4 text-white">VS Code Configuration</h2>
-                        <p class="mb-6">Integrate with GitHub Copilot in VS Code.</p>
-                        <ol class="list-decimal pl-5 space-y-2 text-gray-300">
-                            <li>Install the <strong>MCP Server</strong> extension.</li>
-                            <li>Open Command Palette (Cmd+Shift+P) -> "MCP: Open User Configuration".</li>
-                            <li>Add the server config to <code>mcp.json</code>.</li>
-                        </ol>
+                        <h2 class="text-2xl font-bold mb-4 text-white">GitHub Copilot Configuration</h2>
+                        <p class="mb-6 text-gray-300">Add to your GitHub Copilot MCP settings.</p>
                     `,
                         code: {
                             lang: "json",
                             content: `{
   "servers": {
-    "manhattan-memory": {
-      "type": "stdio",
-      "command": "/path/to/venv/bin/python",
-      "args": ["\${workspaceFolder}/api/mcp_memory_client.py"],
+    "manhattan_pip": {
+      "command": "manhattan-mcp",
+      "args": [
+        "start"
+      ],
+      "env": {
+        "MANHATTAN_API_KEY": "YOUR_API_KEY",
+        "MANHATTAN_API_URL": "https://www.themanhattanproject.ai"
+      },
+      "disabledTools": []
+    }
+  }
+}`
+                        }
+                    },
+                    {
+                        id: "claude-desktop",
+                        title: "Claude Desktop",
+                        content: `
+                        <h2 class="text-2xl font-bold mb-4 text-white">Claude Desktop</h2>
+                        <p class="mb-6 text-gray-300">Add to <code>claude_desktop_config.json</code>.</p>
+                    `,
+                        code: {
+                            lang: "json",
+                            content: `{
+  "mcpServers": {
+    "manhattan": {
+      "command": "manhattan-mcp",
+      "args": ["start"],
       "env": {
         "MANHATTAN_API_KEY": "your-api-key-here"
       }
@@ -402,18 +442,15 @@ python api/mcp_memory_server.py`
                         id: "cursor",
                         title: "Cursor IDE",
                         content: `
-                        <h2 class="text-2xl font-bold mb-4 text-white">Cursor IDE Configuration</h2>
-                        <p class="mb-6">Add the configuration to your Cursor MCP settings.</p>
-                        <p class="text-gray-300">File: <code>~/.cursor/mcp.json</code></p>
+                        <h2 class="text-2xl font-bold mb-4 text-white">Cursor IDE</h2>
+                        <p class="mb-6 text-gray-300">Add to <code>.cursor/mcp.json</code>.</p>
                     `,
                         code: {
                             lang: "json",
                             content: `{
-  "servers": {
-    "manhattan-memory": {
-      "type": "stdio",
-      "command": "/path/to/venv/bin/python",
-      "args": ["/absolute/path/to/mcp_memory_client.py"],
+  "mcpServers": {
+    "manhattan": {
+      "command": "manhattan-mcp",
       "env": {
         "MANHATTAN_API_KEY": "your-api-key-here"
       }
@@ -426,18 +463,16 @@ python api/mcp_memory_server.py`
                         id: "windsurf",
                         title: "Windsurf",
                         content: `
-                        <h2 class="text-2xl font-bold mb-4 text-white">Windsurf Configuration</h2>
-                        <p class="mb-6">Add the configuration to your Windsurf MCP settings.</p>
-                        <p class="text-gray-300">File: <code>~/.windsurf/mcp_config.json</code></p>
+                        <h2 class="text-2xl font-bold mb-4 text-white">Windsurf</h2>
+                        <p class="mb-6 text-gray-300">Add to Windsurf configuration.</p>
                     `,
                         code: {
                             lang: "json",
                             content: `{
-  "servers": {
-    "manhattan-memory": {
-      "type": "stdio",
-      "command": "/path/to/venv/bin/python",
-      "args": ["/absolute/path/to/mcp_memory_client.py"],
+  "mcpServers": {
+    "manhattan": {
+      "command": "manhattan-mcp",
+      "args": ["start"],
       "env": {
         "MANHATTAN_API_KEY": "your-api-key-here"
       }
@@ -452,67 +487,89 @@ python api/mcp_memory_server.py`
                 title: "Tools & Usage",
                 items: [
                     {
-                        id: "memory-tools",
-                        title: "Available Tools",
+                        id: "memory-ops",
+                        title: "Memory Operations",
                         content: `
-                        <h2 class="text-2xl font-bold mb-4 text-white">Available Tools</h2>
-                        <p class="mb-6 text-gray-300">Once configured, these tools are available to your AI assistant.</p>
-                        
+                        <h2 class="text-2xl font-bold mb-4 text-white">Memory Operations</h2>
                         <div class="overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.1)] mb-6">
                             <table class="w-full text-left text-sm">
                                 <thead class="bg-[rgba(255,255,255,0.05)] text-white uppercase font-semibold">
-                                    <tr>
-                                        <th class="px-4 py-3">Tool</th>
-                                        <th class="px-4 py-3">Description</th>
-                                    </tr>
+                                    <tr><th class="px-4 py-3">Tool</th><th class="px-4 py-3">Description</th></tr>
                                 </thead>
                                 <tbody class="divide-y divide-[rgba(255,255,255,0.05)] text-gray-300">
-                                    <tr><td class="px-4 py-2 font-mono text-blue-300">create_memory</td><td class="px-4 py-2">Init memory system</td></tr>
-                                    <tr><td class="px-4 py-2 font-mono text-blue-300">add_memory_direct</td><td class="px-4 py-2">Add structured memory</td></tr>
-                                    <tr><td class="px-4 py-2 font-mono text-blue-300">search_memory</td><td class="px-4 py-2">Search memories</td></tr>
-                                    <tr><td class="px-4 py-2 font-mono text-blue-300">get_context_answer</td><td class="px-4 py-2">Q&A with memory</td></tr>
+                                    <tr><td class="px-4 py-2 font-mono text-blue-300">search_memory</td><td class="px-4 py-2">Search memories using natural language</td></tr>
+                                    <tr><td class="px-4 py-2 font-mono text-blue-300">add_memory_direct</td><td class="px-4 py-2">Store structured memories</td></tr>
+                                    <tr><td class="px-4 py-2 font-mono text-blue-300">get_context_answer</td><td class="px-4 py-2">Get AI answers using memory context</td></tr>
+                                    <tr><td class="px-4 py-2 font-mono text-blue-300">update_memory_entry</td><td class="px-4 py-2">Update existing memories</td></tr>
+                                    <tr><td class="px-4 py-2 font-mono text-blue-300">delete_memory_entries</td><td class="px-4 py-2">Delete specific memories</td></tr>
                                 </tbody>
                             </table>
                         </div>
                     `,
-                        code: {
-                            lang: "text",
-                            content: `Example Prompts:
-
-"Create a memory system for agent 'my-assistant'"
-
-"Add fact: Project deadline is Jan 30"
-
-"Search 'my-assistant' for 'deadline'"
-
-"When is the deadline?"`
-                        }
+                        code: { lang: "text", content: "Tools for managing memory entries." }
                     },
                     {
-                        id: "examples",
-                        title: "Usage Examples",
+                        id: "agent-mgmt",
+                        title: "Agent Management",
                         content: `
-                        <h2 class="text-2xl font-bold mb-4 text-white">Usage Examples</h2>
-                        <p class="mb-4 text-gray-300">Here are some examples of how to interact with the memory system through your AI agent.</p>
-                        
-                        <h3 class="text-lg font-semibold text-white mb-2">1. Storing Information</h3>
-                        <p class="mb-4 text-gray-300">You can ask the agent to remember key details directly.</p>
-                        
-                        <h3 class="text-lg font-semibold text-white mb-2">2. Retrieving Information</h3>
-                        <p class="mb-4 text-gray-300">Ask questions naturally. The agent will use the tools to find the answer in its memory.</p>
+                        <h2 class="text-2xl font-bold mb-4 text-white">Agent Management</h2>
+                         <div class="overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.1)] mb-6">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-[rgba(255,255,255,0.05)] text-white uppercase font-semibold">
+                                    <tr><th class="px-4 py-3">Tool</th><th class="px-4 py-3">Description</th></tr>
+                                </thead>
+                                <tbody class="divide-y divide-[rgba(255,255,255,0.05)] text-gray-300">
+                                    <tr><td class="px-4 py-2 font-mono text-blue-300">create_agent</td><td class="px-4 py-2">Create a new memory agent</td></tr>
+                                    <tr><td class="px-4 py-2 font-mono text-blue-300">list_agents</td><td class="px-4 py-2">List all your agents</td></tr>
+                                    <tr><td class="px-4 py-2 font-mono text-blue-300">get_agent</td><td class="px-4 py-2">Get agent details</td></tr>
+                                    <tr><td class="px-4 py-2 font-mono text-blue-300">update_agent</td><td class="px-4 py-2">Update agent configuration</td></tr>
+                                    <tr><td class="px-4 py-2 font-mono text-blue-300">delete_agent</td><td class="px-4 py-2">Permanently delete an agent</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
                     `,
-                        code: {
-                            lang: "text",
-                            content: `User: "Add to 'project-helper' memory: The client deadline is February 15, 2025. The budget is $50k."
-
-Agent: [Calls add_memory_direct] "I've stored those project details."
-
----
-
-User: "Ask 'project-helper': What's the budget?"
-
-Agent: [Calls get_context_answer] "The project budget is $50,000."`
-                        }
+                        code: { lang: "text", content: "Tools for creating and managing memory agents." }
+                    },
+                    {
+                        id: "session-mgmt",
+                        title: "Session Management",
+                        content: `
+                        <h2 class="text-2xl font-bold mb-4 text-white">Session Management</h2>
+                         <div class="overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.1)] mb-6">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-[rgba(255,255,255,0.05)] text-white uppercase font-semibold">
+                                    <tr><th class="px-4 py-3">Tool</th><th class="px-4 py-3">Description</th></tr>
+                                </thead>
+                                <tbody class="divide-y divide-[rgba(255,255,255,0.05)] text-gray-300">
+                                    <tr><td class="px-4 py-2 font-mono text-blue-300">session_start</td><td class="px-4 py-2">Initialize a conversation</td></tr>
+                                    <tr><td class="px-4 py-2 font-mono text-blue-300">session_end</td><td class="px-4 py-2">End session and sync memories</td></tr>
+                                    <tr><td class="px-4 py-2 font-mono text-blue-300">pull_context</td><td class="px-4 py-2">Load relevant context</td></tr>
+                                    <tr><td class="px-4 py-2 font-mono text-blue-300">push_memories</td><td class="px-4 py-2">Sync pending memories</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    `,
+                        code: { lang: "text", content: "Tools for managing conversation sessions." }
+                    },
+                    {
+                        id: "ai-helpers",
+                        title: "AI Helpers",
+                        content: `
+                        <h2 class="text-2xl font-bold mb-4 text-white">AI Helpers</h2>
+                         <div class="overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.1)] mb-6">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-[rgba(255,255,255,0.05)] text-white uppercase font-semibold">
+                                    <tr><th class="px-4 py-3">Tool</th><th class="px-4 py-3">Description</th></tr>
+                                </thead>
+                                <tbody class="divide-y divide-[rgba(255,255,255,0.05)] text-gray-300">
+                                    <tr><td class="px-4 py-2 font-mono text-blue-300">auto_remember</td><td class="px-4 py-2">Automatically extract facts from messages</td></tr>
+                                    <tr><td class="px-4 py-2 font-mono text-blue-300">should_remember</td><td class="px-4 py-2">Check if info is worth storing</td></tr>
+                                    <tr><td class="px-4 py-2 font-mono text-blue-300">what_do_i_know</td><td class="px-4 py-2">Summary of known user info</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    `,
+                        code: { lang: "text", content: "Helper tools for AI agents." }
                     }
                 ]
             }

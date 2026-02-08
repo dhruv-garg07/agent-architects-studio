@@ -415,10 +415,19 @@
                     </a>
 
                     <!-- Navigation Links (Placeholder/Commented) -->
-                    <div class="hidden md:flex ml-4 space-x-1">
-                        <!-- 
-                        <a href="{{ url_for('explore') }}" class="px-3 py-1.5 text-sm font-medium text-gray-400 hover:text-white rounded-md hover:bg-white/5 transition-all">Explore</a>
-                        -->
+                    <div class="hidden md:flex ml-4 space-x-1 gap-2">
+                        <a href="{{ url_for('api_docs') }}"
+                            class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-all group">
+                            <i data-lucide="book-open"
+                                class="w-4 h-4 text-gray-500 group-hover:text-white transition-colors"></i>
+                            API Docs
+                        </a>
+                        <a href="{{ url_for('mcp_docs') }}"
+                            class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-all group">
+                            <i data-lucide="file-json"
+                                class="w-4 h-4 text-gray-500 group-hover:text-white transition-colors"></i>
+                            MCP Docs
+                        </a>
                     </div>
                 </div>
 
@@ -434,18 +443,7 @@
                                 class="w-4 h-4 text-gray-500 group-hover:text-white transition-colors"></i>
                             Dashboard
                         </a>
-                        <a href="{{ url_for('api_docs') }}"
-                            class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-all group">
-                            <i data-lucide="book-open"
-                                class="w-4 h-4 text-gray-500 group-hover:text-white transition-colors"></i>
-                            API Docs
-                        </a>
-                        <a href="{{ url_for('mcp_docs') }}"
-                            class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-all group">
-                            <i data-lucide="file-json"
-                                class="w-4 h-4 text-gray-500 group-hover:text-white transition-colors"></i>
-                            MCP Docs
-                        </a>
+
                         <a href="{{ url_for('memory') }}"
                             class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-all group">
                             <i data-lucide="zap"
