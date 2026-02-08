@@ -1324,9 +1324,16 @@ from SimpleMem.models.memory_entry import MemoryEntry, Dialogue
 _memory_systems_cache = {}
 
 def _get_or_create_memory_system(agent_id: str, clear_db: bool = False) -> SimpleMemSystem:
-    """Get cached SimpleMem system or create new one for the agent."""
+    """Get cached SimpleMem system or create new one for the agent.
+    
+    Uses agent_id as the table_name to create separate LanceDB tables per agent.
+    """
     if agent_id not in _memory_systems_cache or clear_db:
-        _memory_systems_cache[agent_id] = create_system(agent_id=agent_id, clear_db=clear_db)
+        # Use SimpleMemSystem directly with table_name=agent_id for per-agent storage
+        _memory_systems_cache[agent_id] = SimpleMemSystem(
+            table_name=agent_id,
+            clear_db=clear_db
+        )
     return _memory_systems_cache[agent_id]
 
 
