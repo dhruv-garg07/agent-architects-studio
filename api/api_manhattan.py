@@ -1326,12 +1326,14 @@ _memory_systems_cache = {}
 def _get_or_create_memory_system(agent_id: str, clear_db: bool = False) -> SimpleMemSystem:
     """Get cached SimpleMem system or create new one for the agent.
     
-    Uses agent_id as the table_name to create separate LanceDB tables per agent.
+    Uses agent_id as the collection name in ChromaDB for per-agent storage.
     """
     if agent_id not in _memory_systems_cache or clear_db:
-        # Use SimpleMemSystem directly with table_name=agent_id for per-agent storage
+        # Use SimpleMemSystem with agent_id for ChromaDB collection name
+        # NOTE: agent_id parameter is what VectorStore uses for the ChromaDB collection,
+        # not table_name (which was being used incorrectly before)
         _memory_systems_cache[agent_id] = SimpleMemSystem(
-            table_name=agent_id,
+            agent_id=agent_id,
             clear_db=clear_db
         )
     return _memory_systems_cache[agent_id]
