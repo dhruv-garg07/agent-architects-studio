@@ -1,384 +1,174 @@
 {% extends 'base.html' %}
 
-{% block title %}Manhattan Memory MCP - Documentation{% endblock %}
+{% block title %}Manhattan Memory MCP – Documentation{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <!-- Enhanced Header with Search -->
-    <div class="mb-8">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-            <div>
-                <h1 class="text-3xl font-bold text-white mb-2">Manhattan Memory MCP</h1>
-                <p class="text-gray-400">AI-powered memory management for Claude, Cursor, and other AI agents.</p>
-            </div>
-            <div class="relative w-full sm:w-80">
-                <div class="relative">
-                    <input type="text" id="docs-search" placeholder="Search documentation..."
-                        class="w-full px-4 py-2.5 pl-10 bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.08)] rounded-lg focus:ring-2 focus:ring-[rgba(59,130,246,0.3)] focus:border-transparent text-white placeholder-gray-400 text-sm">
-                    <svg class="absolute left-3 top-3 w-4 h-4 text-gray-400" fill="none" stroke="currentColor"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                </div>
-            </div>
+<div class="mcp-wrap">
+
+    <!-- ══════  LEFT SIDEBAR  ══════ -->
+    <aside class="mcp-sidebar" id="mcp-sidebar">
+        <div class="mcp-sidebar-scroll" id="sidebar-nav">
+            <!-- Populated by JS -->
         </div>
-    </div>
+    </aside>
 
-    <div class="api-docs-panels">
-        <!-- Left: Navigation Panel -->
-        <aside id="doc-nav" class="panel nav-panel card">
-            <div class="p-4 border-b border-[rgba(255,255,255,0.03)]">
-                <h2 class="font-semibold text-white mb-0 flex items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
-                    Contents
-                </h2>
+    <!-- Mobile Overlay -->
+    <div class="mcp-overlay" id="mcp-overlay"></div>
+
+    <!-- ══════  MAIN CONTENT  ══════ -->
+    <main class="mcp-main" id="mcp-main">
+
+        <!-- Hero -->
+        <div class="mcp-hero">
+            <div class="mcp-hero-badge">Documentation</div>
+            <h1>Manhattan Memory MCP</h1>
+            <p>AI-powered persistent memory for Claude, Cursor, and other AI agents.</p>
+        </div>
+
+        <!-- Quick-Link Cards -->
+        <section class="mcp-section" id="section-overview">
+            <div class="mcp-grid-cards">
+                <a href="#section-quick-start" class="mcp-card">
+                    <div class="mcp-card-top">
+                        <span class="mcp-card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                            </svg></span>
+                    </div>
+                    <strong>Quick Start</strong>
+                    <p>Get up and running in under 2 minutes.</p>
+                </a>
+                <a href="#section-features" class="mcp-card">
+                    <div class="mcp-card-top">
+                        <span class="mcp-card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                                <path d="M2 17l10 5 10-5" />
+                                <path d="M2 12l10 5 10-5" />
+                            </svg></span>
+                    </div>
+                    <strong>Features</strong>
+                    <p>Persistent memory, semantic search, multi-agent.</p>
+                </a>
+                <a href="#section-config" class="mcp-card">
+                    <div class="mcp-card-top">
+                        <span class="mcp-card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="3" />
+                                <path
+                                    d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+                            </svg></span>
+                    </div>
+                    <strong>Configuration</strong>
+                    <p>Setup for Claude, Cursor, Copilot, Windsurf.</p>
+                </a>
+                <a href="#section-memory-ops" class="mcp-card">
+                    <div class="mcp-card-top">
+                        <span class="mcp-card-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                                <polyline points="14 2 14 8 20 8" />
+                                <line x1="16" y1="13" x2="8" y2="13" />
+                                <line x1="16" y1="17" x2="8" y2="17" />
+                                <polyline points="10 9 9 9 8 9" />
+                            </svg></span>
+                    </div>
+                    <strong>Tools Reference</strong>
+                    <p>Memory, agent, session, and AI helper tools.</p>
+                </a>
+            </div>
+        </section>
+
+        <!-- ── Install ── -->
+        <section class="mcp-section" id="section-install">
+            <h2>Install</h2>
+            <div class="mcp-code">
+                <div class="mcp-code-bar">
+                    <div class="mcp-code-dots"><i></i><i></i><i></i></div>
+                    <span>Terminal</span>
+                    <button class="mcp-copy" data-copy>Copy</button>
+                </div>
+                <pre><code>pip install manhattan-mcp</code></pre>
+            </div>
+        </section>
+
+        <!-- ── Quick Start ── -->
+        <section class="mcp-section" id="section-quick-start">
+            <h2>Quick Start</h2>
+
+            <h3 id="h-step1">1. Get Your API Key</h3>
+            <p>Sign up at <a href="https://themanhattanproject.ai">themanhattanproject.ai</a> to get your API key.</p>
+
+            <h3 id="h-step2">2. Install the Package</h3>
+            <div class="mcp-code">
+                <div class="mcp-code-bar">
+                    <div class="mcp-code-dots"><i></i><i></i><i></i></div>
+                    <span>Terminal</span>
+                    <button class="mcp-copy" data-copy>Copy</button>
+                </div>
+                <pre><code>pip install manhattan-mcp</code></pre>
             </div>
 
-            <div id="nav-content" class="flex-1 overflow-y-auto p-4 custom-scrollbar">
-                <!-- Navigation items will be injected here -->
+            <h3 id="h-step3">3. Set Your API Key</h3>
+            <p>Export as an environment variable or add to a <code>.env</code> file:</p>
+            <div class="mcp-code">
+                <div class="mcp-code-bar">
+                    <div class="mcp-code-dots"><i></i><i></i><i></i></div>
+                    <span>bash</span>
+                    <button class="mcp-copy" data-copy>Copy</button>
+                </div>
+                <pre><code>export MANHATTAN_API_KEY="your-api-key-here"</code></pre>
             </div>
-        </aside>
+        </section>
 
-        <!-- Middle: Content Panel -->
-        <section id="doc-content" class="panel middle-panel card">
-            <div class="p-8 h-full flex flex-col">
-                <div id="article-content"
-                    class="overflow-y-auto flex-1 custom-scrollbar prose prose-invert prose-headings:text-white prose-a:text-blue-400 max-w-none">
-                    <!-- Article content will be injected here -->
-                    <div class="flex items-center justify-center h-full text-gray-500">
-                        Select a topic to view details
+        <!-- ── Features ── -->
+        <section class="mcp-section" id="section-features">
+            <h2>Features</h2>
+            <div class="mcp-feature-list">
+                <div class="mcp-feat"><span class="mcp-feat-dot" style="--c:#6366f1"></span>
+                    <div><strong>Persistent Memory</strong>
+                        <p>Store and retrieve information across conversations and sessions.</p>
+                    </div>
+                </div>
+                <div class="mcp-feat"><span class="mcp-feat-dot" style="--c:#06b6d4"></span>
+                    <div><strong>Semantic Search</strong>
+                        <p>Find relevant memories using natural language queries.</p>
+                    </div>
+                </div>
+                <div class="mcp-feat"><span class="mcp-feat-dot" style="--c:#f59e0b"></span>
+                    <div><strong>AI-Generated Answers</strong>
+                        <p>Get comprehensive answers using memory context directly.</p>
+                    </div>
+                </div>
+                <div class="mcp-feat"><span class="mcp-feat-dot" style="--c:#10b981"></span>
+                    <div><strong>Multi-Agent Support</strong>
+                        <p>Separate memory spaces for different use cases or projects.</p>
+                    </div>
+                </div>
+                <div class="mcp-feat"><span class="mcp-feat-dot" style="--c:#ec4899"></span>
+                    <div><strong>Analytics</strong>
+                        <p>Track memory usage, queries, and performance metrics.</p>
+                    </div>
+                </div>
+                <div class="mcp-feat"><span class="mcp-feat-dot" style="--c:#8b5cf6"></span>
+                    <div><strong>Export / Import</strong>
+                        <p>Export and import your memory data easily.</p>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Right: Code Examples Panel -->
-        <aside id="doc-code" class="panel code-panel card">
-            <div class="p-6 h-full flex flex-col">
-                <!-- Panel Header -->
-                <div class="mb-4 flex items-center justify-between">
-                    <h3 class="font-semibold text-white flex items-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                        </svg>
-                        <span>Code / Config</span>
-                    </h3>
-                    <button id="copy-code-btn"
-                        class="text-xs px-3 py-1.5 rounded-lg bg-[rgba(59,130,246,0.2)] text-[#3b82f6] border border-[rgba(59,130,246,0.3)] hover:bg-[rgba(59,130,246,0.3)] transition-colors">
-                        Copy
-                    </button>
+        <!-- ── Configuration ── -->
+        <section class="mcp-section" id="section-config">
+            <h2>Configuration</h2>
+
+            <h3 id="h-sse">Manhattan Remote (SSE)</h3>
+            <div class="mcp-code">
+                <div class="mcp-code-bar">
+                    <div class="mcp-code-dots"><i></i><i></i><i></i></div><span>json</span><button class="mcp-copy"
+                        data-copy>Copy</button>
                 </div>
-
-                <!-- Code Block Container -->
-                <div class="flex-1 min-h-0">
-                    <div
-                        class="bg-[rgba(0,0,0,0.25)] rounded-lg overflow-hidden border border-[rgba(255,255,255,0.08)] h-full flex flex-col">
-                        <div
-                            class="px-4 py-3 bg-[rgba(0,0,0,0.3)] border-b border-[rgba(255,255,255,0.08)] flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <div class="flex gap-1.5">
-                                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
-                                    <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
-                                    <div class="w-3 h-3 rounded-full bg-green-500"></div>
-                                </div>
-                                <span class="text-sm font-mono text-gray-400" id="code-lang">text</span>
-                            </div>
-                        </div>
-                        <pre id="code-block"
-                            class="flex-1 p-4 overflow-auto font-mono text-sm text-gray-200 custom-scrollbar"><code class="language-bash"># Select a topic to see code examples</code></pre>
-                    </div>
-                </div>
-            </div>
-        </aside>
-    </div>
-</div>
-
-<!-- Mobile Navigation Toggle -->
-<button id="mobile-nav-toggle"
-    class="fixed bottom-6 right-6 z-50 p-3 bg-[#3b82f6] text-white rounded-full shadow-lg lg:hidden">
-    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-    </svg>
-</button>
-
-<style>
-    /* Layout Styles (Matching API Docs) */
-    .api-docs-panels {
-        display: grid;
-        /* Grid columns: Nav | Content | Code */
-        grid-template-columns: 260px 0.8fr 1.2fr;
-        gap: 16px;
-        height: 75vh;
-        min-height: 700px;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        width: 100%;
-        max-width: 1600px;
-        margin: 0 auto;
-        align-items: stretch;
-    }
-
-    /* Override container max-widths to use full space */
-    .max-w-7xl {
-        max-width: 100% !important;
-        padding-left: 1.5rem !important;
-        padding-right: 1.5rem !important;
-    }
-
-    .mx-auto.px-4.sm\:px-6.lg\:px-8.py-8 {
-        max-width: 100% !important;
-        padding-left: 1rem !important;
-        padding-right: 1rem !important;
-    }
-
-    /* Card & Panel Common Styles */
-    .api-docs-panels .card {
-        border: none;
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
-        box-shadow: 0 8px 30px rgba(2, 6, 23, 0.55);
-        border-radius: 12px;
-        overflow: hidden;
-    }
-
-    .api-docs-panels .panel {
-        padding: 0;
-        height: 100%;
-        box-sizing: border-box;
-        position: relative;
-    }
-
-    /* Specific Panel Styles */
-    .nav-panel {
-        border-top-left-radius: 12px;
-        border-bottom-left-radius: 12px;
-    }
-
-    .code-panel {
-        border-top-right-radius: 12px;
-        border-bottom-right-radius: 12px;
-    }
-
-    .middle-panel {
-        border-left: 1px solid rgba(255, 255, 255, 0.03);
-        border-right: 1px solid rgba(255, 255, 255, 0.03);
-        display: flex;
-        flex-direction: column;
-    }
-
-    /* Navigation Items */
-    .nav-group {
-        margin-bottom: 1.5rem;
-    }
-
-    .nav-group-title {
-        padding: 0.5rem 0.75rem;
-        color: #fff;
-        font-weight: 600;
-        font-size: 0.9rem;
-        margin-bottom: 0.25rem;
-    }
-
-    .nav-item {
-        display: block;
-        width: 100%;
-        text-align: left;
-        padding: 0.4rem 1rem;
-        font-size: 0.85rem;
-        color: #94a3b8;
-        border-left: 2px solid transparent;
-        transition: all 0.2s;
-        cursor: pointer;
-    }
-
-    .nav-item:hover {
-        color: #fff;
-        background: rgba(255, 255, 255, 0.03);
-    }
-
-    .nav-item.active {
-        color: #3b82f6;
-        background: rgba(59, 130, 246, 0.08);
-        border-left-color: #3b82f6;
-    }
-
-    /* Code Panel Enhancements */
-    .code-panel .code-action-btn {
-        color: #94a3b8;
-        padding: 0.25rem;
-        border-radius: 0.25rem;
-        transition: color 0.2s;
-    }
-
-    .code-panel .code-action-btn:hover {
-        color: #fff;
-        background: rgba(255, 255, 255, 0.1);
-    }
-
-    /* Responsive Breakpoints */
-    @media (max-width: 1280px) {
-        .api-docs-panels {
-            grid-template-columns: 240px 1fr 350px;
-        }
-    }
-
-    @media (max-width: 1024px) {
-        .api-docs-panels {
-            grid-template-columns: 220px 1fr;
-        }
-
-        #doc-code {
-            display: none;
-            /* Hide code panel on smaller screens, or move it */
-        }
-
-        /* You might want to stack them or make code panel toggleable */
-    }
-
-    @media (max-width: 768px) {
-        .api-docs-panels {
-            grid-template-columns: 1fr;
-            height: auto;
-        }
-
-        #doc-nav {
-            display: none;
-            /* Hide nav on mobile, use toggle */
-        }
-
-        .middle-panel {
-            border: none;
-            border-radius: 12px;
-        }
-    }
-
-    /* Custom Scrollbar */
-    .custom-scrollbar::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
-    }
-
-    .custom-scrollbar::-webkit-scrollbar-track {
-        background: transparent;
-    }
-
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 3px;
-    }
-
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 255, 255, 0.2);
-    }
-</style>
-
-<!-- Include Prism.js -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
-
-<script>
-    // Documentation Content Data
-    const DOCS_DATA = {
-        categories: [
-            {
-                title: "Getting Started",
-                items: [
-                    {
-                        id: "quick-start",
-                        title: "Quick Start",
-                        content: `
-                        <h2 class="text-2xl font-bold mb-4 text-white">Quick Start (2 Minutes)</h2>
-                        <div class="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-6">
-                            <h3 class="font-semibold text-blue-400 mb-1">Install via PyPI</h3>
-                            <p class="text-gray-300">Get started instantly with the official Python package.</p>
-                        </div>
-
-                        <h3 class="text-xl font-semibold mb-3 text-white">Step 1: Get Your API Key</h3>
-                        <p class="mb-4 text-gray-300">Sign up at <a href="https://themanhattanproject.ai" class="text-blue-400 hover:text-blue-300">The Manhattan Project</a> to get your API key.</p>
-
-                        <h3 class="text-xl font-semibold mb-3 text-white">Step 2: Install Package</h3>
-                        <p class="mb-4 text-gray-300">Install the <code>manhattan-mcp</code> package using pip.</p>
-
-                        <h3 class="text-xl font-semibold mb-3 text-white">Step 3: Set Environment Variable</h3>
-                        <p class="text-gray-300">Set your API key as an environment variable or in a <code>.env</code> file.</p>
-                    `,
-                        code: {
-                            lang: "bash",
-                            content: `# Install package
-pip install manhattan-mcp
-
-# Set API Key
-export MANHATTAN_API_KEY="your-api-key-here"`
-                        }
-                    },
-                    {
-                        id: "features",
-                        title: "Features",
-                        content: `
-                        <h2 class="text-2xl font-bold mb-4 text-white">Features</h2>
-                        <ul class="space-y-4 text-gray-300">
-                            <li class="flex gap-3">
-                                <span class="text-2xl">🧠</span>
-                                <div>
-                                    <strong class="text-white block">Persistent Memory</strong>
-                                    Store and retrieve information across conversations and sessions.
-                                </div>
-                            </li>
-                            <li class="flex gap-3">
-                                <span class="text-2xl">🔍</span>
-                                <div>
-                                    <strong class="text-white block">Semantic Search</strong>
-                                    Find relevant memories using natural language queries.
-                                </div>
-                            </li>
-                            <li class="flex gap-3">
-                                <span class="text-2xl">🤖</span>
-                                <div>
-                                    <strong class="text-white block">AI-Generated Answers</strong>
-                                    Get comprehensive answers using memory context directly.
-                                </div>
-                            </li>
-                            <li class="flex gap-3">
-                                <span class="text-2xl">👤</span>
-                                <div>
-                                    <strong class="text-white block">Multi-Agent Support</strong>
-                                    Create separate memory spaces for different use cases or projects.
-                                </div>
-                            </li>
-                        </ul>
-                    `,
-                        code: {
-                            lang: "text",
-                            content: `Features:
-- Persistent Memory
-- Semantic Search
-- AI-Generated Answers
-- Multi-Agent Support
-- Analytics
-- Export/Import`
-                        }
-                    }
-                ]
-            },
-            {
-                title: "Configuration",
-                items: [
-                    {
-                        id: "antigravity",
-                        title: "Manhattan Remote (SSE)",
-                        content: `
-                        <h2 class="text-2xl font-bold mb-4 text-white">Manhattan Remote (SSE)</h2>
-                        <p class="mb-6 text-gray-300">Configuration for connecting via Server-Sent Events (SSE).</p>
-                    `,
-                        code: {
-                            lang: "json",
-                            content: `{
+                <pre><code>{
   "mcpServers": {
     "Manhattan_Remote": {
       "serverUrl": "https://themanhattanproject.ai/mcp/sse",
@@ -387,25 +177,20 @@ export MANHATTAN_API_KEY="your-api-key-here"`
       }
     }
   }
-}`
-                        }
-                    },
-                    {
-                        id: "copilot",
-                        title: "GitHub Copilot",
-                        content: `
-                        <h2 class="text-2xl font-bold mb-4 text-white">GitHub Copilot Configuration</h2>
-                        <p class="mb-6 text-gray-300">Add to your GitHub Copilot MCP settings.</p>
-                    `,
-                        code: {
-                            lang: "json",
-                            content: `{
+}</code></pre>
+            </div>
+
+            <h3 id="h-copilot">GitHub Copilot</h3>
+            <div class="mcp-code">
+                <div class="mcp-code-bar">
+                    <div class="mcp-code-dots"><i></i><i></i><i></i></div><span>json</span><button class="mcp-copy"
+                        data-copy>Copy</button>
+                </div>
+                <pre><code>{
   "servers": {
     "manhattan_pip": {
       "command": "manhattan-mcp",
-      "args": [
-        "start"
-      ],
+      "args": ["start"],
       "env": {
         "MANHATTAN_API_KEY": "YOUR_API_KEY",
         "MANHATTAN_API_URL": "https://www.themanhattanproject.ai"
@@ -413,19 +198,17 @@ export MANHATTAN_API_KEY="your-api-key-here"`
       "disabledTools": []
     }
   }
-}`
-                        }
-                    },
-                    {
-                        id: "claude-desktop",
-                        title: "Claude Desktop",
-                        content: `
-                        <h2 class="text-2xl font-bold mb-4 text-white">Claude Desktop</h2>
-                        <p class="mb-6 text-gray-300">Add to <code>claude_desktop_config.json</code>.</p>
-                    `,
-                        code: {
-                            lang: "json",
-                            content: `{
+}</code></pre>
+            </div>
+
+            <h3 id="h-claude">Claude Desktop</h3>
+            <p>Add to <code>claude_desktop_config.json</code>:</p>
+            <div class="mcp-code">
+                <div class="mcp-code-bar">
+                    <div class="mcp-code-dots"><i></i><i></i><i></i></div><span>json</span><button class="mcp-copy"
+                        data-copy>Copy</button>
+                </div>
+                <pre><code>{
   "mcpServers": {
     "manhattan": {
       "command": "manhattan-mcp",
@@ -435,19 +218,17 @@ export MANHATTAN_API_KEY="your-api-key-here"`
       }
     }
   }
-}`
-                        }
-                    },
-                    {
-                        id: "cursor",
-                        title: "Cursor IDE",
-                        content: `
-                        <h2 class="text-2xl font-bold mb-4 text-white">Cursor IDE</h2>
-                        <p class="mb-6 text-gray-300">Add to <code>.cursor/mcp.json</code>.</p>
-                    `,
-                        code: {
-                            lang: "json",
-                            content: `{
+}</code></pre>
+            </div>
+
+            <h3 id="h-cursor">Cursor IDE</h3>
+            <p>Add to <code>.cursor/mcp.json</code>:</p>
+            <div class="mcp-code">
+                <div class="mcp-code-bar">
+                    <div class="mcp-code-dots"><i></i><i></i><i></i></div><span>json</span><button class="mcp-copy"
+                        data-copy>Copy</button>
+                </div>
+                <pre><code>{
   "mcpServers": {
     "manhattan": {
       "command": "manhattan-mcp",
@@ -456,19 +237,16 @@ export MANHATTAN_API_KEY="your-api-key-here"`
       }
     }
   }
-}`
-                        }
-                    },
-                    {
-                        id: "windsurf",
-                        title: "Windsurf",
-                        content: `
-                        <h2 class="text-2xl font-bold mb-4 text-white">Windsurf</h2>
-                        <p class="mb-6 text-gray-300">Add to Windsurf configuration.</p>
-                    `,
-                        code: {
-                            lang: "json",
-                            content: `{
+}</code></pre>
+            </div>
+
+            <h3 id="h-windsurf">Windsurf</h3>
+            <div class="mcp-code">
+                <div class="mcp-code-bar">
+                    <div class="mcp-code-dots"><i></i><i></i><i></i></div><span>json</span><button class="mcp-copy"
+                        data-copy>Copy</button>
+                </div>
+                <pre><code>{
   "mcpServers": {
     "manhattan": {
       "command": "manhattan-mcp",
@@ -478,201 +256,790 @@ export MANHATTAN_API_KEY="your-api-key-here"`
       }
     }
   }
-}`
-                        }
-                    }
+}</code></pre>
+            </div>
+        </section>
+
+        <!-- ── Tools ── -->
+        <section class="mcp-section" id="section-memory-ops">
+            <h2>Memory Operations</h2>
+            <div class="mcp-tbl-wrap">
+                <table class="mcp-tbl">
+                    <thead>
+                        <tr>
+                            <th>Tool</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>search_memory</code></td>
+                            <td>Search memories using natural language</td>
+                        </tr>
+                        <tr>
+                            <td><code>add_memory_direct</code></td>
+                            <td>Store structured memories</td>
+                        </tr>
+                        <tr>
+                            <td><code>get_context_answer</code></td>
+                            <td>Get AI answers using memory context</td>
+                        </tr>
+                        <tr>
+                            <td><code>update_memory_entry</code></td>
+                            <td>Update existing memories</td>
+                        </tr>
+                        <tr>
+                            <td><code>delete_memory_entries</code></td>
+                            <td>Delete specific memories</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="mcp-section" id="section-agent-mgmt">
+            <h2>Agent Management</h2>
+            <div class="mcp-tbl-wrap">
+                <table class="mcp-tbl">
+                    <thead>
+                        <tr>
+                            <th>Tool</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>create_agent</code></td>
+                            <td>Create a new memory agent</td>
+                        </tr>
+                        <tr>
+                            <td><code>list_agents</code></td>
+                            <td>List all your agents</td>
+                        </tr>
+                        <tr>
+                            <td><code>get_agent</code></td>
+                            <td>Get agent details</td>
+                        </tr>
+                        <tr>
+                            <td><code>update_agent</code></td>
+                            <td>Update agent configuration</td>
+                        </tr>
+                        <tr>
+                            <td><code>delete_agent</code></td>
+                            <td>Permanently delete an agent</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="mcp-section" id="section-session-mgmt">
+            <h2>Session Management</h2>
+            <div class="mcp-tbl-wrap">
+                <table class="mcp-tbl">
+                    <thead>
+                        <tr>
+                            <th>Tool</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>session_start</code></td>
+                            <td>Initialize a conversation</td>
+                        </tr>
+                        <tr>
+                            <td><code>session_end</code></td>
+                            <td>End session and sync memories</td>
+                        </tr>
+                        <tr>
+                            <td><code>pull_context</code></td>
+                            <td>Load relevant context</td>
+                        </tr>
+                        <tr>
+                            <td><code>push_memories</code></td>
+                            <td>Sync pending memories</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="mcp-section" id="section-ai-helpers">
+            <h2>AI Helpers</h2>
+            <div class="mcp-tbl-wrap">
+                <table class="mcp-tbl">
+                    <thead>
+                        <tr>
+                            <th>Tool</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>auto_remember</code></td>
+                            <td>Automatically extract facts from messages</td>
+                        </tr>
+                        <tr>
+                            <td><code>should_remember</code></td>
+                            <td>Check if info is worth storing</td>
+                        </tr>
+                        <tr>
+                            <td><code>what_do_i_know</code></td>
+                            <td>Summary of known user info</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <!-- ══════  RIGHT TOC  ══════ -->
+    <aside class="mcp-toc" id="mcp-toc">
+        <div class="mcp-toc-label">On this page</div>
+        <nav id="toc-nav"></nav>
+    </aside>
+</div>
+
+<!-- Mobile FAB -->
+<button class="mcp-fab" id="mcp-fab" aria-label="Menu">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <line x1="3" y1="12" x2="21" y2="12" />
+        <line x1="3" y1="6" x2="21" y2="6" />
+        <line x1="3" y1="18" x2="21" y2="18" />
+    </svg>
+</button>
+
+<!-- ════════════════════  STYLES  ════════════════════ -->
+<style>
+    /* ── Tokens (inheriting from site's dark theme) ── */
+    :root {
+        --mcp-bg: #1a1a1a;
+        --mcp-sidebar-bg: #151515;
+        --mcp-surface: #222222;
+        --mcp-surface-2: #2a2a2a;
+        --mcp-border: #2d2d2d;
+        --mcp-border-hi: #3a3a3a;
+        --mcp-text: #c8c8d0;
+        --mcp-heading: #eaeaef;
+        --mcp-muted: #78788a;
+        --mcp-primary: #6366f1;
+        --mcp-primary-soft: rgba(99, 102, 241, .12);
+        --mcp-cyan: #06b6d4;
+        --mcp-green: #22c55e;
+        --mcp-header-h: 56px;
+        --mcp-sidebar-w: 240px;
+        --mcp-toc-w: 200px;
+        --mcp-font: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+        --mcp-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+        --mcp-radius: 10px;
+    }
+
+    /* ── Layout ── */
+    .mcp-wrap {
+        display: grid;
+        grid-template-columns: var(--mcp-sidebar-w) minmax(0, 1fr) var(--mcp-toc-w);
+        max-width: 1380px;
+        margin: 0 auto;
+        min-height: calc(100vh - var(--mcp-header-h));
+        font-family: var(--mcp-font);
+    }
+
+    /* ── LEFT SIDEBAR ── */
+    .mcp-sidebar {
+        position: sticky;
+        top: var(--mcp-header-h);
+        height: calc(100vh - var(--mcp-header-h));
+        overflow-y: auto;
+        background: var(--mcp-sidebar-bg);
+        border-right: 1px solid var(--mcp-border);
+        padding: 20px 0 60px;
+    }
+
+    .mcp-sidebar::-webkit-scrollbar {
+        width: 0;
+    }
+
+    .mcp-nav-group {
+        margin-bottom: 24px;
+    }
+
+    .mcp-nav-heading {
+        padding: 0 18px;
+        margin-bottom: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: .07em;
+        text-transform: uppercase;
+        color: var(--mcp-muted);
+    }
+
+    .mcp-nav-link {
+        display: block;
+        padding: 7px 18px 7px 20px;
+        font-size: 13.5px;
+        line-height: 1.4;
+        color: var(--mcp-muted);
+        text-decoration: none;
+        border-left: 2px solid transparent;
+        transition: color .15s, background .15s, border-color .15s;
+    }
+
+    .mcp-nav-link:hover {
+        color: var(--mcp-text);
+        background: rgba(255, 255, 255, .03);
+    }
+
+    .mcp-nav-link.active {
+        color: #fff;
+        background: var(--mcp-primary-soft);
+        border-left-color: var(--mcp-primary);
+    }
+
+    /* ── MAIN CONTENT ── */
+    .mcp-main {
+        padding: 36px 48px 80px;
+        max-width: 780px;
+        color: var(--mcp-text);
+        line-height: 1.7;
+        font-size: 15px;
+    }
+
+    /* Hero */
+    .mcp-hero {
+        margin-bottom: 32px;
+    }
+
+    .mcp-hero-badge {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 6px;
+        margin-bottom: 14px;
+        background: var(--mcp-primary-soft);
+        color: var(--mcp-primary);
+        letter-spacing: .04em;
+        text-transform: uppercase;
+    }
+
+    .mcp-hero h1 {
+        font-size: 28px;
+        font-weight: 700;
+        color: #fff;
+        margin: 0 0 8px;
+        line-height: 1.2;
+    }
+
+    .mcp-hero p {
+        font-size: 16px;
+        color: var(--mcp-muted);
+        margin: 0;
+    }
+
+    /* Headings */
+    .mcp-main h2 {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--mcp-heading);
+        margin: 48px 0 16px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--mcp-border);
+        scroll-margin-top: calc(var(--mcp-header-h) + 20px);
+    }
+
+    .mcp-main h3 {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--mcp-heading);
+        margin: 28px 0 8px;
+        scroll-margin-top: calc(var(--mcp-header-h) + 20px);
+    }
+
+    .mcp-main p {
+        margin: 0 0 14px;
+    }
+
+    .mcp-main a {
+        color: var(--mcp-primary);
+        text-decoration: none;
+    }
+
+    .mcp-main a:hover {
+        text-decoration: underline;
+    }
+
+    .mcp-main code {
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: .87em;
+        background: var(--mcp-primary-soft);
+        color: #a5b4fc;
+        font-family: var(--mcp-mono);
+    }
+
+    /* ── Cards ── */
+    .mcp-grid-cards {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .mcp-card {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 18px 20px;
+        border-radius: var(--mcp-radius);
+        background: var(--mcp-surface);
+        border: 1px solid var(--mcp-border);
+        color: var(--mcp-text);
+        text-decoration: none;
+        transition: border-color .2s, background .2s, transform .18s;
+    }
+
+    .mcp-card:hover {
+        border-color: var(--mcp-primary);
+        background: var(--mcp-surface-2);
+        transform: translateY(-2px);
+    }
+
+    .mcp-card-top {
+        display: flex;
+        align-items: center;
+    }
+
+    .mcp-card-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        background: var(--mcp-primary-soft);
+        color: var(--mcp-primary);
+    }
+
+    .mcp-card strong {
+        font-size: 14px;
+        color: #fff;
+    }
+
+    .mcp-card p {
+        margin: 0;
+        font-size: 12.5px;
+        color: var(--mcp-muted);
+        line-height: 1.5;
+    }
+
+    /* ── Code Blocks ── */
+    .mcp-code {
+        border-radius: var(--mcp-radius);
+        overflow: hidden;
+        border: 1px solid var(--mcp-border);
+        margin-bottom: 20px;
+        background: #111111;
+    }
+
+    .mcp-code-bar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 14px;
+        background: rgba(0, 0, 0, .4);
+        border-bottom: 1px solid var(--mcp-border);
+        font-size: 12px;
+        color: var(--mcp-muted);
+    }
+
+    .mcp-code-dots {
+        display: flex;
+        gap: 5px;
+    }
+
+    .mcp-code-dots i {
+        display: block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+    }
+
+    .mcp-code-dots i:nth-child(1) {
+        background: #ff5f57;
+    }
+
+    .mcp-code-dots i:nth-child(2) {
+        background: #febc2e;
+    }
+
+    .mcp-code-dots i:nth-child(3) {
+        background: #28c840;
+    }
+
+    .mcp-code-bar span {
+        flex: 1;
+    }
+
+    .mcp-copy {
+        font-size: 11px;
+        padding: 2px 10px;
+        border-radius: 5px;
+        background: rgba(255, 255, 255, .06);
+        color: var(--mcp-muted);
+        border: 1px solid var(--mcp-border);
+        cursor: pointer;
+        transition: background .15s, color .15s;
+        font-family: var(--mcp-font);
+    }
+
+    .mcp-copy:hover {
+        background: rgba(255, 255, 255, .1);
+        color: #fff;
+    }
+
+    .mcp-code pre {
+        margin: 0;
+        padding: 16px 18px;
+        overflow-x: auto;
+        font-size: 13px;
+        line-height: 1.6;
+        color: #d4d4d8;
+        font-family: var(--mcp-mono);
+    }
+
+    .mcp-code pre::-webkit-scrollbar {
+        height: 4px;
+    }
+
+    .mcp-code pre::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, .08);
+        border-radius: 4px;
+    }
+
+    /* ── Features ── */
+    .mcp-feature-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .mcp-feat {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        padding: 14px 16px;
+        border-radius: 8px;
+        transition: background .15s;
+    }
+
+    .mcp-feat:hover {
+        background: rgba(255, 255, 255, .02);
+    }
+
+    .mcp-feat-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        margin-top: 6px;
+        background: var(--c);
+    }
+
+    .mcp-feat strong {
+        color: var(--mcp-heading);
+        font-size: 14px;
+        display: block;
+        margin-bottom: 2px;
+    }
+
+    .mcp-feat p {
+        margin: 0;
+        font-size: 13px;
+        color: var(--mcp-muted);
+    }
+
+    /* ── Tables ── */
+    .mcp-tbl-wrap {
+        overflow-x: auto;
+        border-radius: var(--mcp-radius);
+        border: 1px solid var(--mcp-border);
+        margin-bottom: 20px;
+    }
+
+    .mcp-tbl {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13.5px;
+    }
+
+    .mcp-tbl thead {
+        background: var(--mcp-surface);
+    }
+
+    .mcp-tbl th {
+        padding: 10px 16px;
+        text-align: left;
+        font-weight: 600;
+        color: var(--mcp-muted);
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: .05em;
+        border-bottom: 1px solid var(--mcp-border);
+    }
+
+    .mcp-tbl td {
+        padding: 10px 16px;
+        border-top: 1px solid var(--mcp-border);
+        color: var(--mcp-text);
+    }
+
+    .mcp-tbl td code {
+        background: var(--mcp-primary-soft);
+        color: #a5b4fc;
+    }
+
+    .mcp-tbl tbody tr {
+        transition: background .12s;
+    }
+
+    .mcp-tbl tbody tr:hover {
+        background: rgba(255, 255, 255, .02);
+    }
+
+    /* ── RIGHT TOC ── */
+    .mcp-toc {
+        position: sticky;
+        top: var(--mcp-header-h);
+        height: calc(100vh - var(--mcp-header-h));
+        overflow-y: auto;
+        padding: 24px 14px 40px;
+        border-left: 1px solid var(--mcp-border);
+    }
+
+    .mcp-toc::-webkit-scrollbar {
+        width: 0;
+    }
+
+    .mcp-toc-label {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: .07em;
+        text-transform: uppercase;
+        color: var(--mcp-muted);
+        margin-bottom: 12px;
+        padding-left: 10px;
+    }
+
+    .mcp-toc a {
+        display: block;
+        padding: 3px 0 3px 10px;
+        font-size: 12.5px;
+        color: var(--mcp-muted);
+        text-decoration: none;
+        border-left: 2px solid transparent;
+        transition: color .12s, border-color .12s;
+    }
+
+    .mcp-toc a:hover {
+        color: var(--mcp-text);
+    }
+
+    .mcp-toc a.active {
+        color: #fff;
+        border-left-color: var(--mcp-primary);
+    }
+
+    .mcp-toc a.toc-h3 {
+        padding-left: 22px;
+        font-size: 12px;
+    }
+
+    /* ── Mobile Overlay ── */
+    .mcp-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, .55);
+        z-index: 90;
+    }
+
+    .mcp-fab {
+        display: none;
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 80;
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        background: var(--mcp-primary);
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 4px 20px rgba(99, 102, 241, .35);
+        place-items: center;
+        transition: transform .15s;
+    }
+
+    .mcp-fab:hover {
+        transform: scale(1.05);
+    }
+
+    /* ════ Responsive ════ */
+    @media (max-width: 1100px) {
+        .mcp-toc {
+            display: none;
+        }
+
+        .mcp-wrap {
+            grid-template-columns: var(--mcp-sidebar-w) 1fr;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .mcp-fab {
+            display: grid;
+        }
+
+        .mcp-wrap {
+            grid-template-columns: 1fr;
+        }
+
+        .mcp-sidebar {
+            position: fixed;
+            top: var(--mcp-header-h);
+            left: 0;
+            bottom: 0;
+            width: 260px;
+            z-index: 95;
+            transform: translateX(-100%);
+            transition: transform .25s cubic-bezier(.4, 0, .2, 1);
+            box-shadow: 4px 0 24px rgba(0, 0, 0, .4);
+        }
+
+        .mcp-sidebar.open {
+            transform: translateX(0);
+        }
+
+        .mcp-overlay.open {
+            display: block;
+        }
+
+        .mcp-main {
+            padding: 24px 18px 60px;
+        }
+
+        .mcp-grid-cards {
+            grid-template-columns: 1fr;
+        }
+
+        .mcp-hero h1 {
+            font-size: 22px;
+        }
+    }
+</style>
+
+<!-- ════════════════════  SCRIPTS  ════════════════════ -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        /* ── Nav Data ── */
+        const NAV = [
+            {
+                title: 'Getting Started', items: [
+                    { label: 'Overview', href: '#section-overview' },
+                    { label: 'Install', href: '#section-install' },
+                    { label: 'Quick Start', href: '#section-quick-start' },
+                    { label: 'Features', href: '#section-features' },
                 ]
             },
             {
-                title: "Tools & Usage",
-                items: [
-                    {
-                        id: "memory-ops",
-                        title: "Memory Operations",
-                        content: `
-                        <h2 class="text-2xl font-bold mb-4 text-white">Memory Operations</h2>
-                        <div class="overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.1)] mb-6">
-                            <table class="w-full text-left text-sm">
-                                <thead class="bg-[rgba(255,255,255,0.05)] text-white uppercase font-semibold">
-                                    <tr><th class="px-4 py-3">Tool</th><th class="px-4 py-3">Description</th></tr>
-                                </thead>
-                                <tbody class="divide-y divide-[rgba(255,255,255,0.05)] text-gray-300">
-                                    <tr><td class="px-4 py-2 font-mono text-blue-300">search_memory</td><td class="px-4 py-2">Search memories using natural language</td></tr>
-                                    <tr><td class="px-4 py-2 font-mono text-blue-300">add_memory_direct</td><td class="px-4 py-2">Store structured memories</td></tr>
-                                    <tr><td class="px-4 py-2 font-mono text-blue-300">get_context_answer</td><td class="px-4 py-2">Get AI answers using memory context</td></tr>
-                                    <tr><td class="px-4 py-2 font-mono text-blue-300">update_memory_entry</td><td class="px-4 py-2">Update existing memories</td></tr>
-                                    <tr><td class="px-4 py-2 font-mono text-blue-300">delete_memory_entries</td><td class="px-4 py-2">Delete specific memories</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    `,
-                        code: { lang: "text", content: "Tools for managing memory entries." }
-                    },
-                    {
-                        id: "agent-mgmt",
-                        title: "Agent Management",
-                        content: `
-                        <h2 class="text-2xl font-bold mb-4 text-white">Agent Management</h2>
-                         <div class="overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.1)] mb-6">
-                            <table class="w-full text-left text-sm">
-                                <thead class="bg-[rgba(255,255,255,0.05)] text-white uppercase font-semibold">
-                                    <tr><th class="px-4 py-3">Tool</th><th class="px-4 py-3">Description</th></tr>
-                                </thead>
-                                <tbody class="divide-y divide-[rgba(255,255,255,0.05)] text-gray-300">
-                                    <tr><td class="px-4 py-2 font-mono text-blue-300">create_agent</td><td class="px-4 py-2">Create a new memory agent</td></tr>
-                                    <tr><td class="px-4 py-2 font-mono text-blue-300">list_agents</td><td class="px-4 py-2">List all your agents</td></tr>
-                                    <tr><td class="px-4 py-2 font-mono text-blue-300">get_agent</td><td class="px-4 py-2">Get agent details</td></tr>
-                                    <tr><td class="px-4 py-2 font-mono text-blue-300">update_agent</td><td class="px-4 py-2">Update agent configuration</td></tr>
-                                    <tr><td class="px-4 py-2 font-mono text-blue-300">delete_agent</td><td class="px-4 py-2">Permanently delete an agent</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    `,
-                        code: { lang: "text", content: "Tools for creating and managing memory agents." }
-                    },
-                    {
-                        id: "session-mgmt",
-                        title: "Session Management",
-                        content: `
-                        <h2 class="text-2xl font-bold mb-4 text-white">Session Management</h2>
-                         <div class="overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.1)] mb-6">
-                            <table class="w-full text-left text-sm">
-                                <thead class="bg-[rgba(255,255,255,0.05)] text-white uppercase font-semibold">
-                                    <tr><th class="px-4 py-3">Tool</th><th class="px-4 py-3">Description</th></tr>
-                                </thead>
-                                <tbody class="divide-y divide-[rgba(255,255,255,0.05)] text-gray-300">
-                                    <tr><td class="px-4 py-2 font-mono text-blue-300">session_start</td><td class="px-4 py-2">Initialize a conversation</td></tr>
-                                    <tr><td class="px-4 py-2 font-mono text-blue-300">session_end</td><td class="px-4 py-2">End session and sync memories</td></tr>
-                                    <tr><td class="px-4 py-2 font-mono text-blue-300">pull_context</td><td class="px-4 py-2">Load relevant context</td></tr>
-                                    <tr><td class="px-4 py-2 font-mono text-blue-300">push_memories</td><td class="px-4 py-2">Sync pending memories</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    `,
-                        code: { lang: "text", content: "Tools for managing conversation sessions." }
-                    },
-                    {
-                        id: "ai-helpers",
-                        title: "AI Helpers",
-                        content: `
-                        <h2 class="text-2xl font-bold mb-4 text-white">AI Helpers</h2>
-                         <div class="overflow-x-auto rounded-lg border border-[rgba(255,255,255,0.1)] mb-6">
-                            <table class="w-full text-left text-sm">
-                                <thead class="bg-[rgba(255,255,255,0.05)] text-white uppercase font-semibold">
-                                    <tr><th class="px-4 py-3">Tool</th><th class="px-4 py-3">Description</th></tr>
-                                </thead>
-                                <tbody class="divide-y divide-[rgba(255,255,255,0.05)] text-gray-300">
-                                    <tr><td class="px-4 py-2 font-mono text-blue-300">auto_remember</td><td class="px-4 py-2">Automatically extract facts from messages</td></tr>
-                                    <tr><td class="px-4 py-2 font-mono text-blue-300">should_remember</td><td class="px-4 py-2">Check if info is worth storing</td></tr>
-                                    <tr><td class="px-4 py-2 font-mono text-blue-300">what_do_i_know</td><td class="px-4 py-2">Summary of known user info</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    `,
-                        code: { lang: "text", content: "Helper tools for AI agents." }
-                    }
+                title: 'Configuration', items: [
+                    { label: 'Manhattan Remote (SSE)', href: '#section-config' },
                 ]
-            }
-        ]
-    };
+            },
+            {
+                title: 'Tools Reference', items: [
+                    { label: 'Memory Operations', href: '#section-memory-ops' },
+                    { label: 'Agent Management', href: '#section-agent-mgmt' },
+                    { label: 'Session Management', href: '#section-session-mgmt' },
+                    { label: 'AI Helpers', href: '#section-ai-helpers' },
+                ]
+            },
+        ];
 
-    document.addEventListener('DOMContentLoaded', () => {
-        renderNav();
-
-        // Select first item by default
-        if (DOCS_DATA.categories.length > 0 && DOCS_DATA.categories[0].items.length > 0) {
-            selectItem(DOCS_DATA.categories[0].items[0]);
-        }
-    });
-
-    function renderNav() {
-        const navContent = document.getElementById('nav-content');
-        navContent.innerHTML = '';
-
-        DOCS_DATA.categories.forEach(category => {
-            const group = document.createElement('div');
-            group.className = 'nav-group';
-
-            const title = document.createElement('div');
-            title.className = 'nav-group-title';
-            title.textContent = category.title;
-            group.appendChild(title);
-
-            category.items.forEach(item => {
-                const el = document.createElement('div');
-                el.className = 'nav-item';
-                el.textContent = item.title;
-                el.dataset.id = item.id;
-                el.onclick = () => selectItem(item);
-                group.appendChild(el);
+        /* Render Sidebar */
+        const sidebarNav = document.getElementById('sidebar-nav');
+        NAV.forEach(g => {
+            const div = document.createElement('div');
+            div.className = 'mcp-nav-group';
+            div.innerHTML = `<div class="mcp-nav-heading">${g.title}</div>`;
+            g.items.forEach(item => {
+                const a = document.createElement('a');
+                a.className = 'mcp-nav-link';
+                a.href = item.href;
+                a.textContent = item.label;
+                div.appendChild(a);
             });
-
-            navContent.appendChild(group);
-        });
-    }
-
-    function selectItem(item) {
-        // Update active nav state
-        document.querySelectorAll('.nav-item').forEach(el => {
-            if (el.dataset.id === item.id) {
-                el.classList.add('active');
-            } else {
-                el.classList.remove('active');
-            }
+            sidebarNav.appendChild(div);
         });
 
-        // Update Content
-        const contentPanel = document.getElementById('article-content');
-        contentPanel.innerHTML = item.content;
+        /* Render TOC */
+        const tocNav = document.getElementById('toc-nav');
+        document.querySelectorAll('.mcp-main h2, .mcp-main h3').forEach(h => {
+            const id = h.id || h.closest('.mcp-section')?.id;
+            if (!id) return;
+            const a = document.createElement('a');
+            a.href = `#${id}`;
+            a.textContent = h.textContent.trim();
+            if (h.tagName === 'H3') a.classList.add('toc-h3');
+            tocNav.appendChild(a);
+        });
 
-        // Update Code
-        const codeBlock = document.getElementById('code-block');
-        const codeLang = document.getElementById('code-lang');
+        /* Scroll Spy */
+        const sections = document.querySelectorAll('.mcp-section');
+        const navLinks = document.querySelectorAll('.mcp-nav-link');
+        const tocLinks = document.querySelectorAll('#toc-nav a');
+        const headings = document.querySelectorAll('.mcp-main h2[id], .mcp-main h3[id]');
 
-        codeBlock.innerHTML = `<code class="language-${item.code.lang}">${item.code.content.replace(/</g, '&lt;')}</code>`;
-        codeLang.textContent = item.code.lang;
+        function spy() {
+            let cur = '';
+            sections.forEach(s => { if (s.getBoundingClientRect().top < 100) cur = s.id; });
+            navLinks.forEach(l => l.classList.toggle('active', l.getAttribute('href') === `#${cur}`));
 
-        // Re-highlight syntax
-        if (window.Prism) {
-            Prism.highlightAll();
+            let curH = '';
+            headings.forEach(h => { if (h.getBoundingClientRect().top < 100) curH = h.id; });
+            if (!curH) sections.forEach(s => { if (s.getBoundingClientRect().top < 100) curH = s.id; });
+            tocLinks.forEach(l => l.classList.toggle('active', l.getAttribute('href') === `#${curH}`));
         }
-    }
+        window.addEventListener('scroll', spy, { passive: true });
+        spy();
 
-    // Mobile Toggle
-    document.getElementById('mobile-nav-toggle').addEventListener('click', () => {
-        const nav = document.getElementById('doc-nav');
-        nav.style.display = nav.style.display === 'none' ? 'flex' : 'none';
-        if (nav.style.display === 'flex') {
-            nav.style.position = 'fixed';
-            nav.style.top = '0';
-            nav.style.left = '0';
-            nav.style.zIndex = '40';
-            nav.style.height = '100vh';
-            nav.style.width = '80%';
-            nav.style.maxWidth = '300px';
-            nav.style.background = '#0f172a';
-        } else {
-            nav.style = ''; // Reset inline styles
-        }
-    });
+        /* Copy */
+        document.querySelectorAll('.mcp-copy').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const code = btn.closest('.mcp-code').querySelector('code').textContent;
+                navigator.clipboard.writeText(code);
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Copy', 1800);
+            });
+        });
 
-    // Copy Code
-    document.getElementById('copy-code-btn').addEventListener('click', () => {
-        const code = document.querySelector('#code-block code').innerText;
-        navigator.clipboard.writeText(code);
+        /* Mobile */
+        const fab = document.getElementById('mcp-fab');
+        const sidebar = document.getElementById('mcp-sidebar');
+        const overlay = document.getElementById('mcp-overlay');
+        function toggle(open) { sidebar.classList.toggle('open', open); overlay.classList.toggle('open', open); }
+        fab.addEventListener('click', () => toggle(!sidebar.classList.contains('open')));
+        overlay.addEventListener('click', () => toggle(false));
+        sidebarNav.addEventListener('click', e => { if (e.target.classList.contains('mcp-nav-link')) toggle(false); });
 
-        const btn = document.getElementById('copy-code-btn');
-        const originalText = btn.textContent;
-        btn.textContent = 'Copied!';
-        setTimeout(() => btn.textContent = originalText, 2000);
-    });
-
-    // Search
-    document.getElementById('docs-search').addEventListener('input', (e) => {
-        const query = e.target.value.toLowerCase();
-        document.querySelectorAll('.nav-item').forEach(el => {
-            const match = el.textContent.toLowerCase().includes(query);
-            el.style.display = match ? 'block' : 'none';
+        /* Smooth Scroll */
+        document.querySelectorAll('a[href^="#"]').forEach(a => {
+            a.addEventListener('click', e => {
+                const t = document.querySelector(a.getAttribute('href'));
+                if (t) { e.preventDefault(); t.scrollIntoView({ behavior: 'smooth', block: 'start' }); history.replaceState(null, '', a.getAttribute('href')); }
+            });
         });
     });
 </script>

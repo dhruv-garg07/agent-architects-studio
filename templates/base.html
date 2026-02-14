@@ -401,6 +401,7 @@
 
 <body class="min-h-full">
     <!-- Navigation -->
+    {% block navbar %}
     <nav class="bg-[#1a1a1a] border-b border-[#2d2d2d] sticky top-0 z-50 w-full">
         <!-- Main container with consistent max-width and padding -->
         <div class="px-6 w-full">
@@ -509,6 +510,7 @@
             </div>
         </div>
     </nav>
+    {% endblock %}
 
     <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
