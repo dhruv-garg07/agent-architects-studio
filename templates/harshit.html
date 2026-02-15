@@ -11,8 +11,9 @@
 
     <!-- Custom Fonts -->
     <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Mr+Dafoe&display=swap"
         rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 
     <style>
@@ -165,7 +166,7 @@
         .sketch-stamp {
             position: absolute;
             top: 2rem;
-            left: 2rem;
+            right: 2rem;
             width: 100px;
             height: 100px;
             z-index: 20;
@@ -185,6 +186,16 @@
 </head>
 
 <body class="min-h-screen flex flex-col">
+
+    <!-- Navigation Overlay -->
+    <nav class="absolute top-0 left-0 w-full z-50 px-6 py-6 flex justify-between items-center pointer-events-auto">
+        <a href="{{ url_for('homepage') }}" class="flex items-center gap-2 group">
+            <span style="font-family: 'Mr Dafoe', cursive; font-size: 2rem;"
+                class="tracking-wide text-white group-hover:text-violet-300 transition-colors drop-shadow-lg">
+                The Manhattan Project
+            </span>
+        </a>
+    </nav>
 
     <!-- Gradient Cloud Background (Animated) -->
     <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
