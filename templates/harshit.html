@@ -17,11 +17,13 @@
 
     <style>
         :root {
-            --sky-dark: #0f172a;
-            --sky-light: #38bdf8;
-            /* Sky blue */
-            --sun-glow: #fbbf24;
-            --cloud-white: rgba(255, 255, 255, 0.9);
+            /* Cosmic Theme Palette (Violet/Cyan) */
+            --bg-dark: #050505;
+            --cosmic-violet: #8b5cf6;
+            --cosmic-cyan: #06b6d4;
+            --cosmic-fuchsia: #d946ef;
+            --text-main: #e5e5e5;
+            --text-muted: #a3a3a3;
         }
 
         body {
@@ -30,175 +32,60 @@
             padding: 0;
             overflow-x: hidden;
             min-height: 100vh;
-            color: #1e293b;
-            background-color: #0f172a;
-            /* Fallback */
+            color: var(--text-main);
+            background-color: var(--bg-dark);
             position: relative;
         }
 
-        /* --- Cinematic Background Layer --- */
-        #cinematic-bg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            /* Atmospheric Radial Gradient - Sunburst Effect */
-            background: radial-gradient(circle at 50% 30%,
-                    #7dd3fc 0%,
-                    #38bdf8 30%,
-                    #0284c7 70%,
-                    #0c4a6e 100%);
-            overflow: hidden;
-        }
-
-        /* Noise Texture Overlay - The "Trynia" Grit */
-        .noise-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 5;
-            opacity: 0.05;
-            /* Subtle grain */
-            filter: contrast(120%) brightness(100%);
-            /* Data URI SVG Noise */
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3Csvg%3E");
-        }
-
-        /* Vignette for Depth */
-        .vignette {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 6;
-            background: radial-gradient(circle at center, transparent 40%, rgba(15, 23, 42, 0.4) 100%);
-        }
-
-        /* --- Realistic Glowing Orb (Sun) --- */
-        .sun-orb {
-            position: absolute;
-            top: 15%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 200px;
-            height: 200px;
-            background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, rgba(251, 191, 36, 0.4) 40%, transparent 70%);
-            filter: blur(40px);
-            z-index: 1;
-            opacity: 0.6;
-            animation: pulse-sun 8s ease-in-out infinite alternate;
-        }
-
-        @keyframes pulse-sun {
+        /* --- Floating Orbs Animation --- */
+        @keyframes float {
             0% {
-                opacity: 0.5;
-                transform: translate(-50%, -50%) scale(0.9);
+                transform: translate(0px, 0px) scale(1);
+            }
+
+            33% {
+                transform: translate(30px, -50px) scale(1.1);
+            }
+
+            66% {
+                transform: translate(-20px, 20px) scale(0.9);
             }
 
             100% {
-                opacity: 0.7;
-                transform: translate(-50%, -50%) scale(1.1);
+                transform: translate(0px, 0px) scale(1);
             }
         }
 
-        /* --- Soft Clouds (CSS Blur Technique) --- */
-        .cloud-layer {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            z-index: 2;
-        }
-
-        .soft-cloud {
-            position: absolute;
-            background: #fff;
-            border-radius: 50%;
-            filter: blur(30px);
-            /* The key to realism */
-            opacity: 0.7;
-        }
-
-        /* Cloud Shapes composed of multiple circles */
-        .cloud-shape-1 {
-            width: 300px;
-            height: 100px;
-            box-shadow: 100px -20px 0 -20px #fff;
-        }
-
-        .cloud-shape-2 {
-            width: 400px;
-            height: 120px;
-            box-shadow: 80px -30px 0 -20px #fff, -60px 20px 0 -10px #fff;
-        }
-
-        .cloud-shape-3 {
-            width: 250px;
-            height: 80px;
-            box-shadow: 60px 10px 0 -10px #fff;
-        }
-
-        /* Animation */
-        @keyframes float-soft {
+        @keyframes float-delayed {
             0% {
-                transform: translateX(-10%) translateY(0);
+                transform: translate(0px, 0px) scale(1);
             }
 
-            50% {
-                transform: translateX(5%) translateY(-10px);
+            33% {
+                transform: translate(-30px, 50px) scale(0.9);
+            }
+
+            66% {
+                transform: translate(20px, -20px) scale(1.1);
             }
 
             100% {
-                transform: translateX(110vw) translateY(0);
+                transform: translate(0px, 0px) scale(1);
             }
         }
 
-        .anim-slow {
-            animation: float-soft 120s linear infinite;
+        .animate-blob {
+            animation: float 20s infinite;
         }
 
-        .anim-med {
-            animation: float-soft 80s linear infinite;
+        .animate-blob-delayed {
+            animation: float-delayed 25s infinite reverse;
         }
 
-        .anim-fast {
-            animation: float-soft 60s linear infinite;
-        }
-
-        /* --- Floating Particles (Dust/Life) --- */
-        .particle {
-            position: absolute;
-            background: white;
-            border-radius: 50%;
-            opacity: 0.4;
-            animation: float-particle 10s ease-in-out infinite;
-        }
-
-        @keyframes float-particle {
-
-            0%,
-            100% {
-                transform: translateY(0) translateX(0);
-                opacity: 0.2;
-            }
-
-            50% {
-                transform: translateY(-20px) translateX(10px);
-                opacity: 0.6;
-            }
-        }
-
-        /* --- Updated Typography --- */
+        /* --- Typography & UI --- */
         .gospel-font {
-            /* Now strictly Inter Display/Tight for tech look */
             font-family: 'Inter', sans-serif;
-            letter-spacing: -0.04em;
+            letter-spacing: -0.02em;
         }
 
         .tech-font {
@@ -209,61 +96,70 @@
         .content-layer {
             position: relative;
             z-index: 10;
-            /* Above all atmosphere */
         }
 
-        /* Glassmorphism Containers */
+        /* Cosmic Gradient Text */
+        .text-gradient-cosmic {
+            background: linear-gradient(to right, #a78bfa, #e879f9, #22d3ee);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(139, 92, 246, 0.3);
+        }
+
+        /* Glass Panel - Clean & Modern */
         .glass-panel {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
         }
 
-        /* Buttons with high-end feel */
-        .btn-premium {
-            background: #0f172a;
-            /* Dark Tech Button */
-            color: #fff;
-            font-family: 'Inter', sans-serif;
-            font-weight: 500;
+        /* Image Filtering */
+        .cosmic-filter {
+            filter: contrast(110%) brightness(110%) saturate(110%);
+            transition: filter 0.5s ease;
+        }
+
+        .cosmic-filter:hover {
+            filter: contrast(100%) brightness(100%) saturate(100%);
+        }
+
+        .premium-frame {
+            box-shadow: 0 0 50px -10px rgba(139, 92, 246, 0.15);
+            /* Violet glow */
             border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 4px 15px rgba(15, 23, 42, 0.2);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .btn-premium:hover {
-            transform: translateY(-2px);
-            background: #1e293b;
-            box-shadow: 0 8px 25px rgba(15, 23, 42, 0.3);
-        }
-
-        .btn-premium-outline {
-            background: rgba(255, 255, 255, 0.5);
-            border: 1px solid #0f172a;
-            color: #0f172a;
-            font-family: 'Inter', sans-serif;
-            font-weight: 500;
-            backdrop-filter: blur(4px);
+        /* Buttons */
+        .btn-cosmic {
+            background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%);
+            color: #fff;
+            font-weight: 600;
+            border: none;
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
             transition: all 0.3s ease;
         }
 
-        .btn-premium-outline:hover {
-            background: #0f172a;
+        .btn-cosmic:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(139, 92, 246, 0.5);
+            filter: brightness(1.1);
+        }
+
+        .btn-cosmic-outline {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #d4d4d8;
+            transition: all 0.3s ease;
+        }
+
+        .btn-cosmic-outline:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: #fff;
             color: #fff;
-            box-shadow: 0 4px 15px rgba(15, 23, 42, 0.2);
-        }
-
-        /* Image Framing */
-        .premium-frame {
-            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
-        }
-
-        .premium-frame:hover {
-            transform: scale(1.02);
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.2);
         }
 
         .sketch-stamp {
@@ -275,107 +171,276 @@
             z-index: 20;
             transform: rotate(-5deg);
             transition: all 0.5s ease;
-            mix-blend-mode: multiply;
-            /* Make sketch blend better */
-            filter: grayscale(100%) contrast(120%);
+            mix-blend-mode: luminosity;
+            opacity: 0.8;
+            filter: contrast(120%);
         }
 
         .sketch-stamp:hover {
             transform: rotate(0deg) scale(1.1);
+            opacity: 1;
+            mix-blend-mode: normal;
         }
     </style>
 </head>
 
 <body class="min-h-screen flex flex-col">
 
-    <!-- Cinematic Background System -->
-    <div id="cinematic-bg">
-        <!-- Sun Orb (Light Source) -->
-        <div class="sun-orb"></div>
-
-        <!-- Clouds -->
-        <div class="cloud-layer" id="cloud-container">
-            <!-- Clouds will be injected via JS for randomness, or we can hardcode a few for stability -->
-            <div class="soft-cloud cloud-shape-1 anim-slow" style="top: 10%; left: -10%; opacity: 0.8;"></div>
-            <div class="soft-cloud cloud-shape-2 anim-med"
-                style="top: 30%; left: -20%; opacity: 0.6; transform: scale(0.8);"></div>
-            <div class="soft-cloud cloud-shape-3 anim-fast"
-                style="top: 60%; left: -15%; opacity: 0.9; transform: scale(1.2);"></div>
-            <div class="soft-cloud cloud-shape-1 anim-slow"
-                style="top: 80%; left: -30%; opacity: 0.5; animation-delay: -40s;"></div>
-            <div class="soft-cloud cloud-shape-2 anim-med"
-                style="top: 15%; left: -40%; opacity: 0.7; animation-delay: -20s;"></div>
+    <!-- Gradient Cloud Background (Animated) -->
+    <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <!-- Top Left -->
+        <div
+            class="absolute top-[-5%] left-[-5%] w-[25vw] h-[25vw] bg-violet-600/20 rounded-full blur-[60px] animate-blob mix-blend-screen">
         </div>
 
-        <!-- Particles (Dust) -->
-        <div id="particle-container"></div>
+        <!-- Top Right -->
+        <div
+            class="absolute top-[10%] right-[-5%] w-[20vw] h-[20vw] bg-cyan-500/15 rounded-full blur-[50px] animate-blob-delayed mix-blend-screen">
+        </div>
 
-        <!-- Noise Overlay -->
-        <div class="noise-overlay"></div>
+        <!-- Middle Left -->
+        <div class="absolute top-[40%] left-[-10%] w-[22vw] h-[22vw] bg-fuchsia-500/10 rounded-full blur-[60px] animate-blob mix-blend-screen"
+            style="animation-delay: 4s"></div>
 
-        <!-- Vignette -->
-        <div class="vignette"></div>
+        <!-- Middle Right -->
+        <div class="absolute top-[30%] right-[15%] w-[18vw] h-[18vw] bg-violet-500/15 rounded-full blur-[50px] animate-blob-delayed mix-blend-screen"
+            style="animation-delay: 2s"></div>
+
+        <!-- Bottom Left -->
+        <div class="absolute bottom-[-5%] left-[10%] w-[24vw] h-[24vw] bg-cyan-600/15 rounded-full blur-[60px] animate-blob mix-blend-screen"
+            style="animation-delay: 6s"></div>
+
+        <!-- Bottom Right -->
+        <div class="absolute bottom-[-10%] right-[-5%] w-[25vw] h-[25vw] bg-fuchsia-600/10 rounded-full blur-[70px] animate-blob-delayed mix-blend-screen"
+            style="animation-delay: 3s"></div>
+
+        <!-- Center Drift -->
+        <div class="absolute top-[20%] left-[40%] w-[15vw] h-[15vw] bg-violet-400/10 rounded-full blur-[40px] animate-blob mix-blend-screen"
+            style="animation-delay: 5s"></div>
     </div>
 
     <!-- Sketch Stamp -->
     <div class="sketch-stamp hidden md:block">
         <img src="{{ url_for('static', filename='harshit.png') }}" alt="Harshit Sketch"
-            class="w-full h-full object-cover rounded-sm bg-white p-1 shadow-lg ring-1 ring-black/5">
+            class="w-full h-full object-cover rounded-sm bg-stone-200 p-1 shadow-lg ring-1 ring-black/5">
     </div>
 
     <!-- Main Content -->
-    <!-- Added glass-panel class for better readability against new BG -->
     <main class="w-full max-w-4xl mx-auto px-6 py-20 content-layer flex flex-col items-center">
 
         <!-- Header -->
         <h1
-            class="gospel-font text-5xl md:text-7xl font-bold text-slate-900 mb-2 text-center tracking-tight leading-tight drop-shadow-lg">
+            class="gospel-font text-5xl md:text-7xl font-bold mb-2 text-center tracking-tight leading-tight text-gradient-cosmic">
             Harshit Sheoron
         </h1>
-        <p
-            class="text-slate-800 uppercase tracking-[0.25em] text-xs font-bold mb-12 text-center font-mono mix-blend-multiply">
+        <p class="text-stone-400 uppercase tracking-[0.25em] text-xs font-bold mb-12 text-center font-mono">
             The Manhattan Project
         </p>
 
-        <!-- Big Image (Forest) -->
+        <!-- Big Image (Forest) - Filtered -->
         <div class="w-full mb-12 relative group">
-            <div class="premium-frame rounded-2xl overflow-hidden bg-white/20 backdrop-blur-sm p-2">
+            <div class="premium-frame rounded-2xl overflow-hidden bg-black/40 backdrop-blur-sm p-1">
                 <img src="{{ url_for('static', filename='harshit_forest.jpg') }}" alt="Harshit in Forest"
-                    class="w-full h-auto object-cover rounded-xl aspect-[16/9]">
+                    class="w-full h-auto object-cover rounded-xl aspect-[16/9] cosmic-filter">
+            </div>
+            <!-- Subtle tagline overlay -->
+            <div
+                class="absolute bottom-6 left-6 text-white/50 text-xs font-mono tracking-widest opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                MEMORIES_COLLABORATING_V1.0
             </div>
         </div>
 
         <!-- The Essay -->
         <div
-            class="prose prose-lg md:prose-xl prose-stone text-center mx-auto space-y-6 font-light leading-relaxed text-slate-900 glass-panel p-8 rounded-2xl">
+            class="prose prose-lg md:prose-xl prose-invert text-center mx-auto space-y-6 font-light leading-relaxed glass-panel p-8 rounded-2xl">
             <p>
-                <span
-                    class="gospel-font text-3xl italic block mb-4 text-transparent bg-clip-text bg-gradient-to-r from-slate-900 to-slate-700">"Hi,
+                <span class="gospel-font text-3xl italic block mb-4 text-white">"Hi,
                     I am Harshit Sheoron."</span>
-                I am the creator of <span class="font-bold text-slate-900">TheManhattanProject</span>.
+                I am one of the founders of <span
+                    class="font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400">TheManhattanProject</span>.
                 Just like in the original Manhattan Project, how tons of scientists collaborated together creating the
-                world's most powerful weapon,
-                we want your memories and contexts from various sources to collaborate together for better performance.
+                world's most powerful <span class="text-violet-300">weapon</span>,
+                we want your memories and contexts from various sources to collaborate together for better <span
+                    class="text-cyan-300">performance</span>.
             </p>
-            <p>
+            <p class="text-stone-300">
                 My mission is to ensure technical models remain robust when resources are scarce and expertise is thin.
                 I bridge the gap between rigorous research and global scalability through resource optimization and
                 impact-driven integrity.
             </p>
-            <p>
+            <p class="text-stone-300">
                 We are very much a work in progress but would like for you to test us out.
                 I would love for you to sign up so we can get back to you once we are done.
             </p>
         </div>
 
+        <!-- The Universal Memory Layer (New Section) -->
+        <div class="w-full mt-12 mb-16 space-y-12">
+
+            <!-- Quote Section -->
+            <div class="text-center space-y-4">
+                <h2 class="gospel-font text-3xl md:text-4xl text-gradient-cosmic">
+                    "Intelligence without memory is nothing but sophisticated randomness."
+                </h2>
+                <div class="h-1 w-24 bg-gradient-to-r from-violet-500 to-cyan-500 mx-auto rounded-full opacity-50">
+                </div>
+            </div>
+
+            <!-- Detailed Manifesto (Expanded) -->
+            <div class="glass-panel p-8 md:p-12 rounded-2xl space-y-8 text-left border-l-4 border-violet-500/50">
+
+                <!-- Intro / AGI Race -->
+                <div>
+                    <h3 class="gospel-font text-2xl text-white mb-4">The Race to AGI</h3>
+                    <p class="text-stone-300 leading-relaxed">
+                        It’s 2026. Model providers are racing to build AGI—a model that is on par with, or better than,
+                        humans in every task.
+                        For a true superintelligence to exist, it needs three core pillars:
+                    </p>
+                    <ul class="list-none space-y-4 mt-6 ml-2">
+                        <li class="flex items-start gap-3">
+                            <span class="text-violet-400 font-mono text-lg">01.</span>
+                            <span class="text-stone-200"><strong>PHD Level Intelligence</strong> in every field.</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-fuchsia-400 font-mono text-lg">02.</span>
+                            <span class="text-stone-200"><strong>Agency & Tools</strong> (The ability to do
+                                things).</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-cyan-400 font-mono text-lg">03.</span>
+                            <span class="text-stone-200"><strong>Memory & Adaptation</strong> to the world around
+                                it.</span>
+                        </li>
+                    </ul>
+                    <p class="text-stone-300 leading-relaxed mt-6">
+                        While there’s massive progress in Intelligence and Tools, <strong>Memory</strong> remains the
+                        final frontier.
+                        It is the final hill to climb to make AI truly feel human.
+                    </p>
+                </div>
+
+                <div class="w-full h-px bg-white/10"></div>
+
+                <!-- The Solution / Universal Right -->
+                <div>
+                    <h3 class="gospel-font text-2xl text-white mb-4">Memory as a Universal Right</h3>
+                    <p class="text-stone-300 leading-relaxed mb-6">
+                        The layer that solves this problem has to be independent of the model provider.
+                        Memory is stateful—switching between providers would not only mean a lot of work for developers
+                        and users, but also would need support from these providers themselves.
+                    </p>
+                    <p class="text-stone-300 leading-relaxed mb-6">
+                        If Google releases the next best model this week, but you’re stuck to OpenAI because their API
+                        has your memory, you are locked in.
+                        <strong>Memory should be a universal right, not a moat.</strong>
+                    </p>
+                    <p class="text-stone-300 leading-relaxed mb-6">
+                        If Google releases the next best model this week, but you’re stuck to OpenAI because their API
+                        has your memory, you are locked in.
+                        <strong>Memory should be a universal right, not a moat.</strong>
+                    </p>
+
+                    <p class="text-stone-300 leading-relaxed mb-6">
+                        Therefore, a layer that handles memory must exist. <span
+                            class="text-violet-400 font-bold">GitMem</span> acts as this independent layer.
+                        Developers shouldn’t have to reinvent the wheel to give their users better experiences.
+                        Almost all of our early customers saw increases in app usage, customer delight, or revenue by
+                        making their experience more personalized.
+                    </p>
+                    <p class="text-stone-300 leading-relaxed mb-6">
+                        Users should not be locked into a chatbot just because it knows everything about them.
+                        All chatbots should be able to know what they need to know. All of them work with <span
+                            class="text-cyan-400 font-bold">GitMem</span>.
+                    </p>
+
+                    <!-- Token Costs & Context -->
+                    <div class="mt-8 mb-8 p-6 rounded-xl bg-violet-500/5 border border-violet-500/10 backdrop-blur-sm">
+                        <p class="text-stone-300 leading-relaxed">
+                            <span class="text-violet-300 font-bold">Our first offering?</span>
+                            Drastically reduced <strong>token costs</strong> through smarter, better context handling.
+                            But we are not limited to this alone—this is just the beginning of a memory layer that
+                            evolves with your users.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="w-full h-px bg-white/10"></div>
+
+                <!-- Semantic Memory -->
+                <div>
+                    <h3 class="gospel-font text-2xl text-white mb-4">Semantic & Adaptive</h3>
+                    <p class="text-stone-300 leading-relaxed mb-6">
+                        Memory needs to be semantic. Like the human brain—something that adapts, learns, forgets, and
+                        remembers when it needs to.
+                        It must be configurable for a wide variety of use cases, scale as your users do, and infer
+                        connections no one expected.
+                        Moreover, it needs to be <strong>fast</strong>. Personalization should not affect an experience;
+                        it should enhance it.
+                    </p>
+
+                    <!-- Graph: Intelligence vs Memory -->
+                    <div
+                        class="my-8 rounded-xl overflow-hidden border border-white/10 shadow-2xl shadow-cyan-500/10 bg-black/40">
+                        <img src="{{ url_for('static', filename='graph_intelligence.png') }}"
+                            alt="Intelligence vs Memory Graph" class="w-full h-auto cosmic-filter">
+                        <div
+                            class="p-2 text-center text-xs text-stone-500 font-mono bg-white/5 border-t border-white/5">
+                            FIG 2.0: THE MEMORY CURVE
+                        </div>
+                    </div>
+
+                    <p class="text-stone-300 leading-relaxed mb-4">
+                        "Intelligence without memory is nothing but sophisticated randomness."
+                        We add memory to the intelligence.
+                    </p>
+                    <p class="text-stone-300 leading-relaxed">
+                        One day, when AGI is a thing and robots are walking around everywhere, they will need a memory
+                        as robust as their intelligence.
+                    </p>
+                </div>
+
+            </div>
+
+            <!-- CTA / Work in Progress -->
+            <div
+                class="text-center space-y-6 p-8 border border-dashed border-violet-500/30 rounded-2xl bg-violet-500/5">
+                <p class="text-stone-400 font-mono text-sm uppercase tracking-widest">
+                    ⚠️ Work in Progress • Experimental Build
+                </p>
+                <p class="text-stone-200 max-w-2xl mx-auto">
+                    We are very much building the tracks while the train is moving.
+                    Please explore the website, check our documentation, and see how memory can transform your agents.
+                </p>
+
+                <div class="flex flex-wrap justify-center gap-4 pt-4">
+                    <a href="{{ url_for('api_docs') }}"
+                        class="btn-cosmic-outline px-6 py-3 rounded-lg text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+                        <i data-lucide="book-open" class="w-4 h-4"></i> API Docs
+                    </a>
+                    <a href="{{ url_for('mcp_docs') }}"
+                        class="btn-cosmic-outline px-6 py-3 rounded-lg text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+                        <i data-lucide="server" class="w-4 h-4"></i> MCP Server
+                    </a>
+                </div>
+            </div>
+
+            <div class="text-center pt-8">
+                <p class="text-stone-500 text-sm italic">
+                    "The future is not just about smarter models, but about models that remember."
+                </p>
+            </div>
+
+        </div>
+
         <!-- Buttons -->
         <div class="flex flex-col sm:flex-row gap-6 mt-12 mb-16">
             <a href="{{ url_for('homepage') }}"
-                class="btn-premium px-8 py-4 rounded-xl tracking-wide text-center uppercase text-sm">
+                class="btn-cosmic px-8 py-4 rounded-xl tracking-wide text-center uppercase text-sm font-bold">
                 Join the Waitlist
             </a>
             <a href="mailto:2021eeb1175@iitrpr.ac.in"
-                class="btn-premium-outline px-8 py-4 rounded-xl tracking-wide text-center flex items-center justify-center gap-2 uppercase text-sm font-semibold">
+                class="btn-cosmic-outline px-8 py-4 rounded-xl tracking-wide text-center flex items-center justify-center gap-2 uppercase text-sm font-semibold">
                 <i data-lucide="mail" class="w-4 h-4"></i>
                 Email Me
             </a>
@@ -386,36 +451,6 @@
     <script>
         // Initialize Icons
         lucide.createIcons();
-
-        // Particle System
-        const particleContainer = document.getElementById('particle-container');
-        const PARTICLE_COUNT = 30;
-
-        function createParticle() {
-            const particle = document.createElement('div');
-            particle.classList.add('particle');
-
-            // Random properties
-            const size = Math.random() * 4 + 1; // 1px to 5px
-            const posX = Math.random() * 100;
-            const posY = Math.random() * 100;
-            const duration = Math.random() * 10 + 5; // 5s to 15s
-            const delay = Math.random() * 5;
-
-            particle.style.width = `${size}px`;
-            particle.style.height = `${size}px`;
-            particle.style.left = `${posX}%`;
-            particle.style.top = `${posY}%`;
-            particle.style.animationDuration = `${duration}s`;
-            particle.style.animationDelay = `-${delay}s`;
-
-            particleContainer.appendChild(particle);
-        }
-
-        // Init Particles
-        for (let i = 0; i < PARTICLE_COUNT; i++) {
-            createParticle();
-        }
     </script>
 </body>
 
