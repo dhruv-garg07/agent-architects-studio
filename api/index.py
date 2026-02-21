@@ -181,6 +181,12 @@ def keep_alive_task():
 
 # =====================================================================
 
+# ==================== LLM Third Party Polling System ====================
+llm_request_queue = []
+llm_responses = {} # request_id -> {"event": threading.Event(), "response": None}
+llm_queue_lock = threading.Lock()
+# =========================================================================
+
 class User:
     def __init__(self, user_id=None, email=None):
         self.id = user_id
@@ -1683,6 +1689,87 @@ def api_docs():
 
 # MCP SSE endpoint is now handled by the mcp_bp blueprint registered above
 # See mcp_socketio_gateway.py for implementation
+
+@app.route('/call_third_party_llm_service', methods=['POST'])
+def call_third_party_llm_service():
+    """
+    User endpoint to request a third-party LLM call.
+    Blocks until the LLM client polls and responds.
+    """
+    data = request.get_json()
+    if not data or 'prompt' not in data:
+        return jsonify({"error": "Missing prompt"}), 400
+    
+    prompt = data['prompt']
+    request_id = str(uuid.uuid4())
+    
+    # Store request for polling
+    print(f"[LLM_SERVICE] Enqueuing request {request_id} with prompt size {len(prompt)}")
+    with llm_queue_lock:
+        llm_request_queue.append({
+            "request_id": request_id,
+            "prompt": prompt,
+            "timestamp": time.time()
+        })
+        llm_responses[request_id] = {"event": threading.Event(), "response": None}
+    
+    # Wait for response (timeout 60s)
+    event = llm_responses[request_id]["event"]
+    success = event.wait(timeout=60.0)
+    
+    if success:
+        response_data = llm_responses[request_id]["response"]
+        print(f"[LLM_SERVICE] Request {request_id} received response")
+        # Note: We don't delete immediately here to ensure we return it, 
+        # but the local copy is safe.
+        with llm_queue_lock:
+            if request_id in llm_responses:
+                del llm_responses[request_id]
+        return jsonify({"request_id": request_id, "response": response_data})
+    else:
+        print(f"[LLM_SERVICE] Request {request_id} timed out waiting for response")
+        # Timeout cleanup
+        with llm_queue_lock:
+            if request_id in llm_responses:
+                del llm_responses[request_id]
+            # Also remove from queue if still there (though usually it would be popped by now)
+            llm_request_queue[:] = [r for r in llm_request_queue if r['request_id'] != request_id]
+        return jsonify({"error": "LLM service timeout"}), 504
+
+@app.route('/llm-poll', methods=['GET'])
+def llm_poll():
+    """
+    Endpoint for the third-party LLM client to poll for pending requests.
+    """
+    with llm_queue_lock:
+        if not llm_request_queue:
+            return jsonify({"status": "no_requests"}), 200
+        # Give the first one
+        req = llm_request_queue.pop(0)
+        print(f"[LLM_SERVICE] Polled request {req['request_id']}")
+        return jsonify(req)
+
+@app.route('/llm_respond', methods=['POST'])
+def llm_respond():
+    """
+    Endpoint for the third-party LLM client to submit responses for a request_id.
+    """
+    data = request.get_json()
+    if not data or 'request_id' not in data or 'response' not in data:
+        return jsonify({"error": "Missing request_id or response"}), 400
+    
+    request_id = data['request_id']
+    response_text = data['response']
+    
+    with llm_queue_lock:
+        if request_id in llm_responses:
+            print(f"[LLM_SERVICE] Received response for {request_id}")
+            llm_responses[request_id]["response"] = response_text
+            llm_responses[request_id]["event"].set()
+            return jsonify({"status": "success"})
+        else:
+            print(f"[LLM_SERVICE] Received response for unknown or timed out request {request_id}")
+            return jsonify({"error": "Request ID not found or timed out"}), 404
 
 if __name__ == '__main__':
     # MCP SSE is now served via the mcp_bp blueprint (no separate thread needed)
