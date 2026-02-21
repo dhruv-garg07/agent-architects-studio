@@ -1736,11 +1736,29 @@ def call_third_party_llm_service():
             llm_request_queue[:] = [r for r in llm_request_queue if r['request_id'] != request_id]
         return jsonify({"error": "LLM service timeout"}), 504
 
-@app.route('/llm-poll', methods=['GET'])
+@app.route('/llm_poll', methods=['GET', 'POST'])
 def llm_poll():
     """
-    Endpoint for the third-party LLM client to poll for pending requests.
+    Merged endpoint for the third-party LLM client.
+    - If POSTed with JSON including 'request_id' and 'response', it handles the response.
+    - Always returns the next available prompt from the queue if one exists.
     """
+    # 1. Handle Response if provided (POST only)
+    if request.method == 'POST':
+        data = request.get_json(silent=True)
+        if data and 'request_id' in data and 'response' in data:
+            request_id = data['request_id']
+            response_text = data['response']
+            
+            with llm_queue_lock:
+                if request_id in llm_responses:
+                    print(f"[LLM_SERVICE] Received merged response for {request_id}")
+                    llm_responses[request_id]["response"] = response_text
+                    llm_responses[request_id]["event"].set()
+                else:
+                    print(f"[LLM_SERVICE] Received merged response for unknown/timed out request {request_id}")
+
+    # 2. Return Next Job (Common to GET and POST)
     with llm_queue_lock:
         if not llm_request_queue:
             return jsonify({"status": "no_requests"}), 200
@@ -1752,7 +1770,8 @@ def llm_poll():
 @app.route('/llm_respond', methods=['POST'])
 def llm_respond():
     """
-    Endpoint for the third-party LLM client to submit responses for a request_id.
+    Deprecated: Use POST /llm_poll instead.
+    Still works for direct response submission.
     """
     data = request.get_json()
     if not data or 'request_id' not in data or 'response' not in data:
@@ -1763,12 +1782,12 @@ def llm_respond():
     
     with llm_queue_lock:
         if request_id in llm_responses:
-            print(f"[LLM_SERVICE] Received response for {request_id}")
+            print(f"[LLM_SERVICE] Received response via legacy endpoint for {request_id}")
             llm_responses[request_id]["response"] = response_text
             llm_responses[request_id]["event"].set()
             return jsonify({"status": "success"})
         else:
-            print(f"[LLM_SERVICE] Received response for unknown or timed out request {request_id}")
+            print(f"[LLM_SERVICE] Received response via legacy endpoint for unknown request {request_id}")
             return jsonify({"error": "Request ID not found or timed out"}), 404
 
 if __name__ == '__main__':

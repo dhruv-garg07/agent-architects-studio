@@ -3,7 +3,7 @@ import threading
 import time
 import sys
 
-BASE_URL = "http://localhost:1078"
+BASE_URL = "https://www.console.themanhattanproject.ai"
 
 def simulate_user():
     print("[USER] Sending prompt: 'Tell me a joke'")
@@ -23,32 +23,42 @@ def simulate_user():
         print(f"[USER] Request failed: {e}")
 
 def simulate_llm_client():
-    print("[CLIENT] Polling for requests...")
+    print("[CLIENT] Initial poll...")
     time.sleep(2) # Wait a bit for user request to arrive
+    current_request_id = None
+    
     try:
-        poll_resp = requests.get(f"{BASE_URL}/llm-poll")
+        # Step 1: Initial Poll (GET)
+        poll_resp = requests.get(f"{BASE_URL}/llm_poll")
         if poll_resp.status_code == 200:
             data = poll_resp.json()
             if data.get('status') == 'no_requests':
-                print("[CLIENT] No requests found.")
+                print("[CLIENT] No requests found on initial poll.")
                 return
             
-            request_id = data['request_id']
+            current_request_id = data['request_id']
             prompt = data['prompt']
-            print(f"[CLIENT] Got request {request_id}: '{prompt}'")
+            print(f"[CLIENT] Got request {current_request_id}: '{prompt}'")
             
             # Simulate processing time
             time.sleep(1)
             
-            print(f"[CLIENT] Sending response for {request_id}")
+            # Step 2: Merged response and next job poll (POST)
+            print(f"[CLIENT] Sending response for {current_request_id} and polling for next...")
             resp = requests.post(
-                f"{BASE_URL}/llm-respond",
+                f"{BASE_URL}/llm_poll",
                 json={
-                    "request_id": request_id,
-                    "response": f"This is the LLM response to: {prompt}"
+                    "request_id": current_request_id,
+                    "response": f"This is the merged response to: {prompt}"
                 }
             )
-            print(f"[CLIENT] Response status: {resp.status_code}")
+            print(f"[CLIENT] Response/Next poll status: {resp.status_code}")
+            if resp.status_code == 200:
+                next_job = resp.json()
+                if next_job.get('status') == 'no_requests':
+                    print("[CLIENT] No more requests available.")
+                else:
+                    print(f"[CLIENT] Received next job: {next_job.get('request_id')}")
         else:
             print(f"[CLIENT] Poll error {poll_resp.status_code}")
     except Exception as e:
