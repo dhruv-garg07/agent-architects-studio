@@ -263,51 +263,6 @@
     font-family: var(--mcp-mono);
   }
 
-
-  /* ── Code Tabs ── */
-  .mcp-code-tabs-container {
-    margin-bottom: 20px;
-  }
-
-  .mcp-code-tabs {
-    display: flex;
-    gap: 6px;
-    margin-bottom: 8px;
-  }
-
-  .mcp-code-tab {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--mcp-border);
-    color: var(--mcp-muted);
-    padding: 6px 14px;
-    font-size: 12px;
-    cursor: pointer;
-    border-radius: 6px;
-    font-family: var(--mcp-font);
-    transition: all 0.2s;
-  }
-
-  .mcp-code-tab.active {
-    background: var(--mcp-primary-soft);
-    border-color: var(--mcp-primary);
-    color: var(--mcp-primary);
-  }
-
-  .mcp-code-tab:hover:not(.active) {
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
-  }
-
-  .mcp-code-tab-content {
-    display: none;
-    margin-bottom: 0px !important;
-    /* Override mcp-code margin inside tabs */
-  }
-
-  .mcp-code-tab-content.active {
-    display: block;
-  }
-
   /* ── Code Blocks ── */
   .mcp-code {
     border-radius: var(--mcp-radius);
@@ -857,56 +812,9 @@
             // Request / Response / Code
             const codeWrap = document.createElement('div');
 
-            // Code examples (Tabs: cURL, Python, JS)
-            if (endpoint.code && (endpoint.code.curl || endpoint.code.python || endpoint.code.javascript)) {
-              const tabsContainer = document.createElement('div');
-              tabsContainer.className = 'mcp-code-tabs-container';
-
-              let tabsHTML = `<div class="mcp-code-tabs">`;
-              if (endpoint.code.curl) tabsHTML += `<button class="mcp-code-tab active" data-lang="curl-${endpoint.htmlId}">cURL</button>`;
-              if (endpoint.code.python) tabsHTML += `<button class="mcp-code-tab ${!endpoint.code.curl ? 'active' : ''}" data-lang="python-${endpoint.htmlId}">Python</button>`;
-              if (endpoint.code.javascript) tabsHTML += `<button class="mcp-code-tab ${!endpoint.code.curl && !endpoint.code.python ? 'active' : ''}" data-lang="js-${endpoint.htmlId}">JavaScript</button>`;
-              tabsHTML += `</div>`;
-
-              tabsContainer.innerHTML = tabsHTML;
-
-              if (endpoint.code.curl) {
-                const curlBlock = createCodeBlock('cURL', 'bash', endpoint.code.curl);
-                curlBlock.classList.add('mcp-code-tab-content', 'active');
-                curlBlock.dataset.lang = `curl-${endpoint.htmlId}`;
-                tabsContainer.appendChild(curlBlock);
-              }
-
-              if (endpoint.code.python) {
-                const pythonBlock = createCodeBlock('Python', 'python', endpoint.code.python);
-                pythonBlock.classList.add('mcp-code-tab-content');
-                if (!endpoint.code.curl) pythonBlock.classList.add('active');
-                pythonBlock.dataset.lang = `python-${endpoint.htmlId}`;
-                tabsContainer.appendChild(pythonBlock);
-              }
-
-              if (endpoint.code.javascript) {
-                const jsBlock = createCodeBlock('JavaScript', 'javascript', endpoint.code.javascript);
-                jsBlock.classList.add('mcp-code-tab-content');
-                if (!endpoint.code.curl && !endpoint.code.python) jsBlock.classList.add('active');
-                jsBlock.dataset.lang = `js-${endpoint.htmlId}`;
-                tabsContainer.appendChild(jsBlock);
-              }
-
-              // Event listener for tab switching
-              tabsContainer.querySelectorAll('.mcp-code-tab').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                  const lang = e.target.dataset.lang;
-                  // Update buttons
-                  tabsContainer.querySelectorAll('.mcp-code-tab').forEach(b => b.classList.remove('active'));
-                  e.target.classList.add('active');
-                  // Update content blocks
-                  tabsContainer.querySelectorAll('.mcp-code-tab-content').forEach(c => c.classList.remove('active'));
-                  tabsContainer.querySelector(`.mcp-code-tab-content[data-lang="${lang}"]`).classList.add('active');
-                });
-              });
-
-              codeWrap.appendChild(tabsContainer);
+            // Code examples (cURL)
+            if (endpoint.code && endpoint.code.curl) {
+              codeWrap.appendChild(createCodeBlock('cURL', 'bash', endpoint.code.curl));
             }
 
             // JSON Request
