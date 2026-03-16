@@ -352,6 +352,14 @@ def ranaji_page():
     except Exception as e:
         return f"<h1>Rana Ji</h1><p>Unable to render page: {e}</p>", 500
 
+@app.route('/about')
+def about_page():
+    """About Us page."""
+    try:
+        return render_template('about_us.html')
+    except Exception as e:
+        return f"<h1>About Us</h1><p>Unable to render page: {e}</p>", 500
+
 @app.route('/submit')
 @login_required
 def creator_studio():
