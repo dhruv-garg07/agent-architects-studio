@@ -120,7 +120,7 @@ const HarshitPage = () => {
                             <ExternalLink className="w-4 h-4" />
                         </a>
                         <a
-                            href="mailto:2021eeb1175@iitrpr.ac.in"
+                            href="mailto:founders@themanhattanproject.ai  "
                             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#1a1a1a] border border-[#2d2d2d] hover:border-[#4285f4]/30 text-white font-medium transition-all hover:-translate-y-0.5"
                         >
                             <Mail className="w-4 h-4" />
