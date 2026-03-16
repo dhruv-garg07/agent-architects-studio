@@ -212,7 +212,19 @@ class User:
 def load_user(user_id):
     if not user_id:
         return None
-    return User(user_id)
+    try:
+        # Fetch user's email from the profiles table
+        profile_res = supabase.table('profiles').select('email').eq('id', user_id).execute()
+        if profile_res.data and len(profile_res.data) > 0:
+            email = profile_res.data[0].get('email')
+            return User(user_id=user_id, email=email)
+        
+        # If no profile, we can try to get the auth user (requires admin client or session, 
+        # but in our current setup we might just query the profiles table which should have their email)
+        return User(user_id=user_id)
+    except Exception as e:
+        print(f"Error loading user {user_id}: {e}")
+        return User(user_id=user_id)
 
 
 # ==================== Health Check Endpoints ====================
@@ -852,7 +864,14 @@ def view_profile(username):
         if current_user.is_authenticated and current_user.id == profile_data['id']:
             is_own_profile = True
 
-        return render_template('profile.html', profile=profile_data, is_own_profile=is_own_profile)
+        # Generate deterministic pseudo-random activity data based on the user's ID or username
+        import random
+        random.seed(profile_data['id'])
+        # Generate 30 days of activity data (heights from 10 to 100)
+        activity_data = [random.randint(10, 100) for _ in range(30)]
+        random.seed() # reset seed
+
+        return render_template('profile.html', profile=profile_data, is_own_profile=is_own_profile, activity_data=activity_data)
 
     except Exception as e:
         flash(f"An error occurred while fetching the profile: {e}", "error")

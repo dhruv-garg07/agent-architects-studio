@@ -150,19 +150,6 @@
                         </div>
                     </div>
 
-                    <!-- Right: Activity -->
-                    <div class="md:col-span-2 space-y-6">
-                        <div class="p-6 rounded-xl bg-white/5 border border-white/10">
-                            <h3 class="text-sm font-semibold text-gray-300 mb-4">Activity</h3>
-                            <div class="flex items-end justify-between h-24 gap-1">
-                                {% for i in range(20) %}
-                                <div class="w-full bg-primary/20 hover:bg-primary/40 rounded-sm transition-colors"
-                                    style="height: {{ range(10, 100) | random }}%"></div>
-                                {% endfor %}
-                            </div>
-                            <p class="text-xs text-muted-foreground text-center mt-3">Recent interactions</p>
-                        </div>
-                    </div>
                 </div>
             </section>
 
@@ -371,15 +358,15 @@
                         class="p-6 rounded-xl bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-white/10 hover:border-primary/50 transition-all group">
                         <div
                             class="w-12 h-12 rounded-lg bg-white/5 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                            <i data-lucide="message-circle" class="w-6 h-6 text-white"></i>
+                            <i data-lucide="mail" class="w-6 h-6 text-white"></i>
                         </div>
-                        <h3 class="text-lg font-bold text-white mb-2">Contact Founder</h3>
-                        <p class="text-sm text-gray-400 mb-6 min-h-[40px]">Direct line to Harshit (Founder) for
-                            enterprise inquiries and partnership opportunities.</p>
-                        <a href="/harshit"
-                            class="inline-flex items-center text-sm font-medium text-primary hover:text-white transition-colors">
-                            Visit Contact Page <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
-                        </a>
+                        <h3 class="text-lg font-bold text-white mb-2">Contact Creators</h3>
+                        <p class="text-sm text-gray-400 mb-6 min-h-[40px]">For enterprise inquiries, partnerships, or
+                            support, please reach out to us directly via email.</p>
+                        <div class="flex items-center text-sm font-medium text-primary">
+                            <i data-lucide="at-sign" class="w-4 h-4 mr-2"></i>
+                            2021eeb1175@iitrpr.ac.in
+                        </div>
                     </div>
 
                     <!-- Documentation -->

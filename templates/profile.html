@@ -159,24 +159,6 @@
                             {% endif %}
                         </div>
 
-                        <!-- Activity Placeholder (Graph-like) -->
-                        <div class="p-6 rounded-xl bg-[#161616] border border-[#2d2d2d]">
-                            <div class="flex items-center justify-between mb-6">
-                                <h3 class="text-sm font-semibold text-gray-300">Recent Activity</h3>
-                                <span class="text-xs text-gray-500">Last 30 Days</span>
-                            </div>
-
-                            <!-- Static Activity Graph Visualization (CSS only) -->
-                            <div class="flex items-end justify-between h-24 gap-1">
-                                {% for i in range(20) %}
-                                <div class="w-full bg-primary/20 hover:bg-primary/40 rounded-sm transition-colors"
-                                    style="height: {{ range(10, 100) | random }}%"></div>
-                                {% endfor %}
-                            </div>
-                            <div class="mt-4 text-xs text-center text-gray-500">
-                                Activity monitoring is active
-                            </div>
-                        </div>
                     </div>
                 </div>
             </section>
