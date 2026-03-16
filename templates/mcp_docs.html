@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}MCP Documentation – Manhattan Memory{% endblock %}
+{% block title %}MCP Documentation – GitMem MCP (Manhattan){% endblock %}
 
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -9,7 +9,7 @@
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
       <div>
         <h1 class="text-3xl font-bold text-white mb-2">MCP Documentation</h1>
-        <p class="text-gray-400">Manhattan Memory MCP – Persistent AI memory that reduces token costs by 37%</p>
+        <p class="text-gray-400">GitMem MCP (Manhattan) – Persistent AI memory that reduces token costs by 37%</p>
       </div>
       <div class="relative w-full sm:w-80">
         <div class="relative">
@@ -52,7 +52,7 @@
             <div class="flex items-center gap-3 mb-4">
               <span class="method-badge-large" style="background:linear-gradient(135deg,rgba(99,102,241,0.2),rgba(99,102,241,0.08));color:#6366f1;border:1px solid rgba(99,102,241,0.3);padding:6px 16px;border-radius:6px;font-weight:700;font-size:12px;letter-spacing:0.5px">MCP</span>
               <div class="flex-1">
-                <code class="text-lg font-mono font-semibold text-white">Manhattan Memory MCP</code>
+                <code class="text-lg font-mono font-semibold text-white">GitMem MCP (Manhattan)</code>
                 <div class="flex items-center gap-2 mt-1">
                   <span class="text-xs text-gray-400">Model Context Protocol Server</span>
                 </div>
@@ -86,8 +86,8 @@
           <!-- Overview Content -->
           <div class="space-y-6">
             <div>
-              <h3 class="text-lg font-semibold text-white mb-3">What is Manhattan MCP?</h3>
-              <p class="text-gray-300 mb-3">Manhattan Memory MCP is a <strong class="text-white">Model Context Protocol server</strong> that gives AI coding agents persistent, semantic memory across conversations. Instead of re-explaining your codebase, preferences, and project context every session, Manhattan remembers it — <span class="text-emerald-400 font-semibold">cutting token usage by up to 37%</span>.</p>
+              <h3 class="text-lg font-semibold text-white mb-3">What is GitMem MCP?</h3>
+              <p class="text-gray-300 mb-3">GitMem MCP is a <strong class="text-white">Model Context Protocol server</strong> that gives AI coding agents persistent, semantic memory across conversations. Instead of re-explaining your codebase, preferences, and project context every session, GitMem remembers it — <span class="text-emerald-400 font-semibold">cutting token usage by up to 37%</span>.</p>
               <p class="text-gray-300 mb-3">It works with any MCP-compatible client: <strong class="text-white">Claude Desktop</strong>, <strong class="text-white">Cursor IDE</strong>, <strong class="text-white">GitHub Copilot</strong>, <strong class="text-white">Windsurf</strong>, <strong class="text-white">Cline</strong>, and more.</p>
             </div>
 
@@ -459,11 +459,60 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── IDE Config Snippets ──
   const IDE_CONFIGS = {
-    sse: { label: 'SSE Remote', lang: 'json', code: `{\n  "mcpServers": {\n    "Manhattan_Remote": {\n      "serverUrl": "https://themanhattanproject.ai/mcp/sse",\n      "headers": {\n        "Authorization": "Bearer YOUR_API_KEY"\n      }\n    }\n  }\n}`, tip: 'Use SSE for remote connections — no local installation needed.' },
-    claude: { label: 'Claude Desktop', lang: 'json', code: `{\n  "mcpServers": {\n    "manhattan": {\n      "command": "manhattan-mcp",\n      "args": ["start"],\n      "env": {\n        "MANHATTAN_API_KEY": "your-api-key-here"\n      }\n    }\n  }\n}`, tip: 'Add this to claude_desktop_config.json in your Claude Desktop config directory.' },
-    cursor: { label: 'Cursor IDE', lang: 'json', code: `{\n  "mcpServers": {\n    "manhattan": {\n      "command": "manhattan-mcp",\n      "env": {\n        "MANHATTAN_API_KEY": "your-api-key-here"\n      }\n    }\n  }\n}`, tip: 'Add this to .cursor/mcp.json in your project root.' },
-    copilot: { label: 'GitHub Copilot', lang: 'json', code: `{\n  "servers": {\n    "manhattan_pip": {\n      "command": "manhattan-mcp",\n      "args": ["start"],\n      "env": {\n        "MANHATTAN_API_KEY": "YOUR_API_KEY",\n        "MANHATTAN_API_URL": "https://www.themanhattanproject.ai"\n      },\n      "disabledTools": []\n    }\n  }\n}`, tip: 'Add this to your VS Code settings or .vscode/mcp.json.' },
-    windsurf: { label: 'Windsurf', lang: 'json', code: `{\n  "mcpServers": {\n    "manhattan": {\n      "command": "manhattan-mcp",\n      "args": ["start"],\n      "env": {\n        "MANHATTAN_API_KEY": "your-api-key-here"\n      }\n    }\n  }\n}`, tip: 'Add this to your Windsurf MCP configuration file.' },
+    sse: { label: 'SSE Remote', lang: 'json', code: `{
+  "mcpServers": {
+    "GitMem_Remote": {
+      "serverUrl": "https://themanhattanproject.ai/mcp/sse",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_KEY"
+      }
+    }
+  }
+}`, tip: 'Use SSE for remote connections — no local installation needed.' },
+    claude: { label: 'Claude Desktop', lang: 'json', code: `{
+  "mcpServers": {
+    "gitmem_mcp": {
+      "command": "gitmem",
+      "args": ["start"],
+      "env": {
+        "MANHATTAN_API_URL": "https://www.themanhattanproject.ai"
+      }
+    }
+  }
+}`, tip: 'Add this to claude_desktop_config.json in your Claude Desktop config directory.' },
+    cursor: { label: 'Cursor IDE', lang: 'json', code: `{
+  "mcpServers": {
+    "gitmem_mcp": {
+      "command": "gitmem",
+      "env": {
+        "MANHATTAN_API_URL": "https://www.themanhattanproject.ai"
+      }
+    }
+  }
+}`, tip: 'Add this to .cursor/mcp.json in your project root.' },
+    copilot: { label: 'GitHub Copilot', lang: 'json', code: `{
+  "servers": {
+    "gitmem_mcp": {
+      "command": "gitmem",
+      "args": ["start"],
+      "env": {
+        "MANHATTAN_API_URL": "https://www.themanhattanproject.ai"
+      },
+      "disabledTools": []
+    }
+  }
+}`, tip: 'Add this to your VS Code settings or .vscode/mcp.json.' },
+    windsurf: { label: 'Windsurf', lang: 'json', code: `{
+  "mcpServers": {
+    "gitmem_mcp": {
+      "command": "gitmem",
+      "args": ["start"],
+      "env": {
+        "MANHATTAN_API_URL": "https://www.themanhattanproject.ai"
+      }
+    }
+  }
+}`, tip: 'Add this to your Windsurf MCP configuration file.' },
   };
 
   // ── Detail Content Templates ──
@@ -472,18 +521,18 @@ document.addEventListener('DOMContentLoaded', () => {
     installation: () => `
       <div class="mb-6 pb-4 border-b border-[rgba(255,255,255,0.03)]">
         <h2 class="text-xl font-semibold text-white mb-2">Installation Guide</h2>
-        <p class="text-gray-400">Install Manhattan MCP and connect it to your favorite AI coding tool.</p>
+        <p class="text-gray-400">Install GitMem MCP and connect it to your favorite AI coding tool.</p>
       </div>
       <div class="space-y-6">
         <div>
           <h3 class="text-lg font-semibold text-white mb-3">1. Install the Package</h3>
-          <p class="text-gray-300 mb-3">Install Manhattan MCP via pip:</p>
+          <p class="text-gray-300 mb-3">Install GitMem MCP via pip:</p>
           <div class="bg-[rgba(0,0,0,0.25)] rounded-lg overflow-hidden border border-[rgba(255,255,255,0.08)] mb-4">
             <div class="px-4 py-2 bg-[rgba(0,0,0,0.3)] border-b border-[rgba(255,255,255,0.08)] flex items-center gap-3">
               <div class="flex gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-red-500"></div><div class="w-2.5 h-2.5 rounded-full bg-yellow-500"></div><div class="w-2.5 h-2.5 rounded-full bg-green-500"></div></div>
               <span class="text-xs font-mono text-gray-400">Terminal</span>
             </div>
-            <pre class="p-4 font-mono text-sm text-gray-200"><code>pip install manhattan-mcp</code></pre>
+            <pre class="p-4 font-mono text-sm text-gray-200"><code>pip install gitmem-mcp</code></pre>
           </div>
         </div>
         <div>
@@ -513,7 +562,7 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
       <div class="space-y-4">
         <div class="bg-gradient-to-br from-[rgba(16,185,129,0.06)] to-transparent rounded-xl p-5 border border-[rgba(16,185,129,0.12)]">
-          <p class="text-gray-300"><strong class="text-white">Step 1:</strong> Install — <code class="text-xs px-1.5 py-0.5 rounded bg-[rgba(0,0,0,0.3)] text-[#a5b4fc]">pip install manhattan-mcp</code></p>
+          <p class="text-gray-300"><strong class="text-white">Step 1:</strong> Install — <code class="text-xs px-1.5 py-0.5 rounded bg-[rgba(0,0,0,0.3)] text-[#a5b4fc]">pip install gitmem-mcp</code></p>
         </div>
         <div class="bg-gradient-to-br from-[rgba(59,130,246,0.06)] to-transparent rounded-xl p-5 border border-[rgba(59,130,246,0.12)]">
           <p class="text-gray-300"><strong class="text-white">Step 2:</strong> Set your API key — <code class="text-xs px-1.5 py-0.5 rounded bg-[rgba(0,0,0,0.3)] text-[#a5b4fc]">export MANHATTAN_API_KEY="..."</code></p>
@@ -522,7 +571,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <p class="text-gray-300"><strong class="text-white">Step 3:</strong> Add the MCP config to your IDE (see IDE Setup in the sidebar) and restart.</p>
         </div>
         <div class="bg-gradient-to-br from-[rgba(245,158,11,0.06)] to-transparent rounded-xl p-5 border border-[rgba(245,158,11,0.12)]">
-          <p class="text-gray-300"><strong class="text-white">Step 4:</strong> Start chatting! Manhattan will automatically remember context across sessions.</p>
+          <p class="text-gray-300"><strong class="text-white">Step 4:</strong> Start navigating! Your AI agent can now use GitMem MCP to understand your codebase efficiently.</p>
         </div>
       </div>`,
   };
