@@ -1,6 +1,15 @@
 {% extends 'base.html' %}
 
-{% block title %}Manhattan Memory MCP – Documentation{% endblock %}
+{% block title %}Manhattan Memory MCP – Documentation
+<!-- Include Prism.js for syntax highlighting -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+
+{% endblock %}
 
 {% block content %}
 <div class="mcp-wrap">
@@ -88,7 +97,7 @@
                     <span>Terminal</span>
                     <button class="mcp-copy" data-copy>Copy</button>
                 </div>
-                <pre><code>pip install manhattan-mcp</code></pre>
+                <pre><code class="language-bash">pip install manhattan-mcp</code></pre>
             </div>
         </section>
 
@@ -106,7 +115,7 @@
                     <span>Terminal</span>
                     <button class="mcp-copy" data-copy>Copy</button>
                 </div>
-                <pre><code>pip install manhattan-mcp</code></pre>
+                <pre><code class="language-bash">pip install manhattan-mcp</code></pre>
             </div>
 
             <h3 id="h-step3">3. Set Your API Key</h3>
@@ -117,7 +126,7 @@
                     <span>bash</span>
                     <button class="mcp-copy" data-copy>Copy</button>
                 </div>
-                <pre><code>export MANHATTAN_API_KEY="your-api-key-here"</code></pre>
+                <pre><code class="language-bash">export MANHATTAN_API_KEY="your-api-key-here"</code></pre>
             </div>
         </section>
 
@@ -168,7 +177,7 @@
                     <div class="mcp-code-dots"><i></i><i></i><i></i></div><span>json</span><button class="mcp-copy"
                         data-copy>Copy</button>
                 </div>
-                <pre><code>{
+                <pre><code class="language-json">{
   "mcpServers": {
     "Manhattan_Remote": {
       "serverUrl": "https://themanhattanproject.ai/mcp/sse",
@@ -186,7 +195,7 @@
                     <div class="mcp-code-dots"><i></i><i></i><i></i></div><span>json</span><button class="mcp-copy"
                         data-copy>Copy</button>
                 </div>
-                <pre><code>{
+                <pre><code class="language-json">{
   "servers": {
     "manhattan_pip": {
       "command": "manhattan-mcp",
@@ -208,7 +217,7 @@
                     <div class="mcp-code-dots"><i></i><i></i><i></i></div><span>json</span><button class="mcp-copy"
                         data-copy>Copy</button>
                 </div>
-                <pre><code>{
+                <pre><code class="language-json">{
   "mcpServers": {
     "manhattan": {
       "command": "manhattan-mcp",
@@ -228,7 +237,7 @@
                     <div class="mcp-code-dots"><i></i><i></i><i></i></div><span>json</span><button class="mcp-copy"
                         data-copy>Copy</button>
                 </div>
-                <pre><code>{
+                <pre><code class="language-json">{
   "mcpServers": {
     "manhattan": {
       "command": "manhattan-mcp",
@@ -246,7 +255,7 @@
                     <div class="mcp-code-dots"><i></i><i></i><i></i></div><span>json</span><button class="mcp-copy"
                         data-copy>Copy</button>
                 </div>
-                <pre><code>{
+                <pre><code class="language-json">{
   "mcpServers": {
     "manhattan": {
       "command": "manhattan-mcp",
@@ -273,23 +282,23 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <td><code>search_memory</code></td>
+                            <td><span class="method-badge method-tool">TOOL</span> <code>search_memory</code></td>
                             <td>Search memories using natural language</td>
                         </tr>
                         <tr>
-                            <td><code>add_memory_direct</code></td>
+                            <td><span class="method-badge method-tool">TOOL</span> <code>add_memory_direct</code></td>
                             <td>Store structured memories</td>
                         </tr>
                         <tr>
-                            <td><code>get_context_answer</code></td>
+                            <td><span class="method-badge method-tool">TOOL</span> <code>get_context_answer</code></td>
                             <td>Get AI answers using memory context</td>
                         </tr>
                         <tr>
-                            <td><code>update_memory_entry</code></td>
+                            <td><span class="method-badge method-tool">TOOL</span> <code>update_memory_entry</code></td>
                             <td>Update existing memories</td>
                         </tr>
                         <tr>
-                            <td><code>delete_memory_entries</code></td>
+                            <td><span class="method-badge method-tool">TOOL</span> <code>delete_memory_entries</code></td>
                             <td>Delete specific memories</td>
                         </tr>
                     </tbody>
@@ -309,23 +318,23 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <td><code>create_agent</code></td>
+                            <td><span class="method-badge method-tool">TOOL</span> <code>create_agent</code></td>
                             <td>Create a new memory agent</td>
                         </tr>
                         <tr>
-                            <td><code>list_agents</code></td>
+                            <td><span class="method-badge method-tool">TOOL</span> <code>list_agents</code></td>
                             <td>List all your agents</td>
                         </tr>
                         <tr>
-                            <td><code>get_agent</code></td>
+                            <td><span class="method-badge method-tool">TOOL</span> <code>get_agent</code></td>
                             <td>Get agent details</td>
                         </tr>
                         <tr>
-                            <td><code>update_agent</code></td>
+                            <td><span class="method-badge method-tool">TOOL</span> <code>update_agent</code></td>
                             <td>Update agent configuration</td>
                         </tr>
                         <tr>
-                            <td><code>delete_agent</code></td>
+                            <td><span class="method-badge method-tool">TOOL</span> <code>delete_agent</code></td>
                             <td>Permanently delete an agent</td>
                         </tr>
                     </tbody>
@@ -345,19 +354,19 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <td><code>session_start</code></td>
+                            <td><span class="method-badge method-tool">TOOL</span> <code>session_start</code></td>
                             <td>Initialize a conversation</td>
                         </tr>
                         <tr>
-                            <td><code>session_end</code></td>
+                            <td><span class="method-badge method-tool">TOOL</span> <code>session_end</code></td>
                             <td>End session and sync memories</td>
                         </tr>
                         <tr>
-                            <td><code>pull_context</code></td>
+                            <td><span class="method-badge method-tool">TOOL</span> <code>pull_context</code></td>
                             <td>Load relevant context</td>
                         </tr>
                         <tr>
-                            <td><code>push_memories</code></td>
+                            <td><span class="method-badge method-tool">TOOL</span> <code>push_memories</code></td>
                             <td>Sync pending memories</td>
                         </tr>
                     </tbody>
@@ -377,15 +386,15 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <td><code>auto_remember</code></td>
+                            <td><span class="method-badge method-tool">TOOL</span> <code>auto_remember</code></td>
                             <td>Automatically extract facts from messages</td>
                         </tr>
                         <tr>
-                            <td><code>should_remember</code></td>
+                            <td><span class="method-badge method-tool">TOOL</span> <code>should_remember</code></td>
                             <td>Check if info is worth storing</td>
                         </tr>
                         <tr>
-                            <td><code>what_do_i_know</code></td>
+                            <td><span class="method-badge method-tool">TOOL</span> <code>what_do_i_know</code></td>
                             <td>Summary of known user info</td>
                         </tr>
                     </tbody>
@@ -577,6 +586,25 @@
         background: var(--mcp-primary-soft);
         color: #a5b4fc;
         font-family: var(--mcp-mono);
+    }
+
+    /* Method Badges */
+    .method-badge {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 800;
+        padding: 2px 6px;
+        border-radius: 4px;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        vertical-align: middle;
+    }
+
+    .method-tool {
+        background: var(--mcp-primary-soft);
+        color: var(--mcp-primary);
+        border: 1px solid rgba(99, 102, 241, 0.25);
+        margin-right: 6px;
     }
 
     /* ── Cards ── */
@@ -1043,4 +1071,13 @@
         });
     });
 </script>
+
+<!-- Include Prism.js for syntax highlighting -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+
 {% endblock %}
