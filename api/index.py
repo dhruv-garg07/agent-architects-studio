@@ -344,13 +344,6 @@ def dhruv_page():
     except Exception as e:
         return f"<h1>Dhruv</h1><p>Unable to render page: {e}</p>", 500
 
-@app.route('/ranaji')
-def ranaji_page():
-    """Rana Ji Ka Rishta page."""
-    try:
-        return render_template('ranaji.html')
-    except Exception as e:
-        return f"<h1>Rana Ji</h1><p>Unable to render page: {e}</p>", 500
 
 @app.route('/about')
 def about_page():
