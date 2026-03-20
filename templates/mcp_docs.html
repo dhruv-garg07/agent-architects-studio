@@ -43,7 +43,7 @@
       </div>
     </aside>
 
-    <!-- Middle: Details Panel -->
+    <!-- Right: Details & Content Panel -->
     <section id="mcp-details" class="panel middle-panel card">
       <div class="p-6" id="mcp-detail-content">
         <!-- Default: Overview -->
@@ -137,86 +137,6 @@
       </div>
     </section>
 
-    <!-- Right: Code Examples Panel -->
-    <aside id="mcp-code" class="panel code-panel card">
-      <div class="p-6 h-full flex flex-col">
-        <div class="mb-6">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="font-semibold text-white flex items-center gap-2">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
-              </svg>
-              Configuration
-            </h3>
-            <button id="mcp-copy-code" class="text-xs px-3 py-1.5 rounded-lg bg-[rgba(59,130,246,0.2)] text-[#3b82f6] border border-[rgba(59,130,246,0.3)] hover:bg-[rgba(59,130,246,0.3)] transition-colors">
-              Copy
-            </button>
-          </div>
-          <!-- IDE Selector -->
-          <div class="mb-4">
-            <div class="flex items-center gap-2 mb-2">
-              <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-              </svg>
-              <span class="text-sm text-gray-400">IDE / Client</span>
-            </div>
-            <div class="flex flex-wrap gap-2" id="mcp-ide-selector">
-              <button class="lang-btn active" data-ide="sse">
-                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"/></svg>
-                SSE Remote
-              </button>
-              <button class="lang-btn" data-ide="claude">Claude</button>
-              <button class="lang-btn" data-ide="cursor">Cursor</button>
-              <button class="lang-btn" data-ide="copilot">Copilot</button>
-              <button class="lang-btn" data-ide="windsurf">Windsurf</button>
-            </div>
-          </div>
-        </div>
-        <!-- Code Block -->
-        <div class="flex-1 min-h-0">
-          <div class="bg-[rgba(0,0,0,0.25)] rounded-lg overflow-hidden border border-[rgba(255,255,255,0.08)] h-full flex flex-col">
-            <div class="px-4 py-3 bg-[rgba(0,0,0,0.3)] border-b border-[rgba(255,255,255,0.08)] flex items-center justify-between">
-              <div class="flex items-center gap-3">
-                <div class="flex gap-1.5">
-                  <div class="w-3 h-3 rounded-full bg-red-500"></div>
-                  <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
-                  <div class="w-3 h-3 rounded-full bg-green-500"></div>
-                </div>
-                <span class="text-sm font-mono text-gray-400" id="mcp-code-lang">json</span>
-              </div>
-              <button id="mcp-copy-active" class="text-xs px-3 py-1.5 rounded bg-[rgba(255,255,255,0.08)] text-gray-300 hover:bg-[rgba(255,255,255,0.12)] transition-colors flex items-center gap-1">
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                </svg>
-                Copy
-              </button>
-            </div>
-            <pre id="mcp-code-block" class="flex-1 p-4 overflow-auto font-mono text-sm text-gray-200"><code class="language-json" id="mcp-code-content">{
-  "mcpServers": {
-    "Manhattan_Remote": {
-      "serverUrl": "https://themanhattanproject.ai/mcp/sse",
-      "headers": {
-        "Authorization": "Bearer YOUR_API_KEY"
-      }
-    }
-  }
-}</code></pre>
-          </div>
-        </div>
-        <!-- Tip -->
-        <div class="mt-4 p-4 bg-[rgba(0,0,0,0.18)] rounded-lg border border-[rgba(255,255,255,0.03)]">
-          <div class="flex items-start gap-3">
-            <svg class="w-5 h-5 text-[#3b82f6] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-            <div>
-              <p id="mcp-tip-text" class="text-sm text-gray-300 mb-1">Replace <code class="text-xs px-1.5 py-0.5 rounded bg-[rgba(0,0,0,0.3)] text-[#a5b4fc]">YOUR_API_KEY</code> with your actual API key from the dashboard.</p>
-              <p class="text-xs text-gray-400">Get your API key at <a href="/dashboard" class="text-[#3b82f6] hover:underline">Dashboard → API Keys</a></p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </aside>
   </div>
 </div>
 
@@ -228,16 +148,16 @@
 </button>
 
 <style>
-/* ── MCP Docs Panel Layout (mirrors API docs) ── */
+/* ── MCP Docs Panel Layout (2 columns) ── */
 .mcp-docs-panels {
   display: grid;
-  grid-template-columns: 260px 1fr 480px;
-  gap: 16px;
+  grid-template-columns: 280px 1fr;
+  gap: 20px;
   height: 78vh;
   min-height: 700px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   width: 100%;
-  max-width: 1600px;
+  max-width: 1200px;
   margin: 0 auto;
   align-items: stretch;
 }
@@ -260,8 +180,7 @@
   min-height: 0;
 }
 .mcp-docs-panels .middle-panel {
-  border-left: 1px solid rgba(255,255,255,0.03);
-  border-right: 1px solid rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.03);
   display: flex;
   flex-direction: column;
 }
@@ -347,57 +266,10 @@
   flex-shrink: 0;
 }
 
-/* ── Lang/IDE buttons (same as API docs) ── */
-.lang-btn {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.4rem 0.8rem;
-  border-radius: 5px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: #94a3b8;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-.lang-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-.lang-btn.active {
-  background: linear-gradient(135deg, rgba(59,130,246,0.2), rgba(59,130,246,0.1));
-  border-color: rgba(59,130,246,0.3);
-  color: #3b82f6;
-  box-shadow: 0 2px 8px rgba(59,130,246,0.2);
-}
-
-/* ── Code Panel (same as API docs) ── */
-.code-panel {
-  background: linear-gradient(180deg, rgba(2,6,23,0.9) 0%, rgba(2,6,23,0.95) 100%);
-  border: 1px solid rgba(59,130,246,0.1);
-  box-shadow: 0 8px 32px rgba(2,6,23,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
-}
+/* Code block dots */
 .bg-red-500 { background:#ef4444; box-shadow:0 0 8px rgba(239,68,68,0.4); }
 .bg-yellow-500 { background:#f59e0b; box-shadow:0 0 8px rgba(245,158,11,0.4); }
 .bg-green-500 { background:#10b981; box-shadow:0 0 8px rgba(16,185,129,0.4); }
-
-/* ── Tool badge ── */
-.tool-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 45px;
-  padding: 0.15rem 0.4rem;
-  border-radius: 0.3rem;
-  font-weight: 700;
-  font-size: 0.6rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(59,130,246,0.08));
-  color: #3b82f6;
-  border: 1px solid rgba(59,130,246,0.25);
-}
 
 /* ── Tool table in detail panel ── */
 .mcp-tool-table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -409,20 +281,13 @@
 .mcp-tool-table tbody tr:hover { background: rgba(59,130,246,0.05); }
 
 /* ── Responsive ── */
-@media (max-width: 1600px) {
-  .mcp-docs-panels { grid-template-columns: 240px 1fr 440px; max-width: 1400px; }
-}
-@media (max-width: 1400px) {
-  .mcp-docs-panels { grid-template-columns: 230px 1fr 420px; max-width: 1300px; }
-}
-@media (max-width: 1200px) {
-  .mcp-docs-panels { grid-template-columns: 220px 1fr; max-width: 100%; gap: 12px; }
-  #mcp-code { grid-column: 1 / -1; margin-top: 1rem; height: 450px; }
+@media (max-width: 1024px) {
+  .mcp-docs-panels { grid-template-columns: 240px 1fr; }
 }
 @media (max-width: 768px) {
   .mcp-docs-panels { grid-template-columns: 1fr; height: auto; min-height: auto; gap: 10px; }
-  #mcp-nav, #mcp-details, #mcp-code { margin-bottom: 1rem; height: auto; }
-  .nav-panel, .middle-panel, .code-panel { border-radius: 12px; }
+  #mcp-nav, #mcp-details { margin-bottom: 1rem; height: auto; }
+  .nav-panel, .middle-panel { border-radius: 12px; }
 }
 </style>
 
@@ -442,12 +307,12 @@ document.addEventListener('DOMContentLoaded', () => {
       { label: 'Installation Guide', id: 'installation', dot: '#10b981' },
       { label: 'Quick Start', id: 'quickstart', dot: '#06b6d4' },
     ]},
-    { title: 'IDE Setup', color: '#8b5cf6', items: [
+    { title: 'IDE Setup Guides', color: '#8b5cf6', items: [
       { label: 'Claude Desktop', id: 'ide-claude', dot: '#f59e0b' },
       { label: 'Cursor IDE', id: 'ide-cursor', dot: '#ec4899' },
       { label: 'GitHub Copilot', id: 'ide-copilot', dot: '#3b82f6' },
       { label: 'Windsurf', id: 'ide-windsurf', dot: '#06b6d4' },
-      { label: 'SSE Remote', id: 'ide-sse', dot: '#8b5cf6' },
+      { label: 'SSE Remote API', id: 'ide-sse', dot: '#8b5cf6' },
     ]},
     { title: 'Tools Reference', color: '#10b981', items: [
       { label: 'Memory Operations', id: 'tools-memory', dot: '#6366f1' },
@@ -457,9 +322,12 @@ document.addEventListener('DOMContentLoaded', () => {
     ]},
   ];
 
-  // ── IDE Config Snippets ──
+  // ── IDE Config Snippets & Content ──
   const IDE_CONFIGS = {
-    sse: { label: 'SSE Remote', lang: 'json', code: `{
+    sse: { 
+      label: 'SSE Remote API', 
+      lang: 'json', 
+      code: `{
   "mcpServers": {
     "GitMem_Remote": {
       "serverUrl": "https://themanhattanproject.ai/mcp/sse",
@@ -468,8 +336,14 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   }
-}`, tip: 'Use SSE for remote connections — no local installation needed.' },
-    claude: { label: 'Claude Desktop', lang: 'json', code: `{
+}`, 
+      tip: 'Use Server-Sent Events (SSE) for remote connections — no local Python installation needed.',
+      knowledge: 'The SSE connection allows clients to securely connect to the Manhattan remote infrastructure. This is ideal when you cannot run a local python interpreter or desire zero setup times. Make sure you keep your API Keys secure!'
+    },
+    claude: { 
+      label: 'Claude Desktop', 
+      lang: 'json', 
+      code: `{
   "mcpServers": {
     "gitmem_mcp": {
       "command": "gitmem",
@@ -479,8 +353,14 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   }
-}`, tip: 'Add this to claude_desktop_config.json in your Claude Desktop config directory.' },
-    cursor: { label: 'Cursor IDE', lang: 'json', code: `{
+}`, 
+      tip: 'Add this to claude_desktop_config.json in your Claude Desktop config directory.',
+      knowledge: 'Claude Desktop reads configuration on startup. Ensure `gitmem` is in your system PATH using the pip installer. Claude integrates perfectly with MCP to enhance multi-turn prompts using our memory vector stores.'
+    },
+    cursor: { 
+      label: 'Cursor IDE', 
+      lang: 'json', 
+      code: `{
   "mcpServers": {
     "gitmem_mcp": {
       "command": "gitmem",
@@ -489,8 +369,14 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   }
-}`, tip: 'Add this to .cursor/mcp.json in your project root.' },
-    copilot: { label: 'GitHub Copilot', lang: 'json', code: `{
+}`, 
+      tip: 'Add this to .cursor/mcp.json in your project root or global Cursor settings.',
+      knowledge: 'Cursor IDE allows seamless MCP integration dynamically. With Manhattan memory, Cursor\'s Composer can look back at past commands you issued across entirely different days or sessions!'
+    },
+    copilot: { 
+      label: 'GitHub Copilot', 
+      lang: 'json', 
+      code: `{
   "servers": {
     "gitmem_mcp": {
       "command": "gitmem",
@@ -501,8 +387,14 @@ document.addEventListener('DOMContentLoaded', () => {
       "disabledTools": []
     }
   }
-}`, tip: 'Add this to your VS Code settings or .vscode/mcp.json.' },
-    windsurf: { label: 'Windsurf', lang: 'json', code: `{
+}`, 
+      tip: 'Add this to your VS Code settings or .vscode/mcp.json.',
+      knowledge: 'GitHub Copilot extends its capabilities securely by relying on Manhattan Memory servers for external knowledge beyond its immediate codebase context window, drastically reducing API token billing.'
+    },
+    windsurf: { 
+      label: 'Windsurf', 
+      lang: 'json', 
+      code: `{
   "mcpServers": {
     "gitmem_mcp": {
       "command": "gitmem",
@@ -512,7 +404,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   }
-}`, tip: 'Add this to your Windsurf MCP configuration file.' },
+}`, 
+      tip: 'Add this to your Windsurf MCP configuration file.',
+      knowledge: 'Windsurf\'s agentic execution pairs excellently with GitMem MCP. Automated memory retrieval guarantees Windsurf bots pick up tasks right where you left off.'
+    },
   };
 
   // ── Detail Content Templates ──
@@ -520,17 +415,20 @@ document.addEventListener('DOMContentLoaded', () => {
     overview: null, // default panel already rendered in HTML
     installation: () => `
       <div class="mb-6 pb-4 border-b border-[rgba(255,255,255,0.03)]">
-        <h2 class="text-xl font-semibold text-white mb-2">Installation Guide</h2>
+        <h2 class="text-2xl font-bold text-white mb-2">Installation Guide</h2>
         <p class="text-gray-400">Install GitMem MCP and connect it to your favorite AI coding tool.</p>
       </div>
-      <div class="space-y-6">
+      <div class="space-y-6 max-w-3xl">
         <div>
           <h3 class="text-lg font-semibold text-white mb-3">1. Install the Package</h3>
-          <p class="text-gray-300 mb-3">Install GitMem MCP via pip:</p>
+          <p class="text-gray-300 mb-3">Install GitMem MCP via pip securely:</p>
           <div class="bg-[rgba(0,0,0,0.25)] rounded-lg overflow-hidden border border-[rgba(255,255,255,0.08)] mb-4">
-            <div class="px-4 py-2 bg-[rgba(0,0,0,0.3)] border-b border-[rgba(255,255,255,0.08)] flex items-center gap-3">
-              <div class="flex gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-red-500"></div><div class="w-2.5 h-2.5 rounded-full bg-yellow-500"></div><div class="w-2.5 h-2.5 rounded-full bg-green-500"></div></div>
-              <span class="text-xs font-mono text-gray-400">Terminal</span>
+            <div class="px-4 py-2 bg-[rgba(0,0,0,0.3)] border-b border-[rgba(255,255,255,0.08)] flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                  <div class="flex gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-red-500"></div><div class="w-2.5 h-2.5 rounded-full bg-yellow-500"></div><div class="w-2.5 h-2.5 rounded-full bg-green-500"></div></div>
+                  <span class="text-xs font-mono text-gray-400">Terminal</span>
+              </div>
+              <button class="text-xs px-2 py-1 rounded bg-[rgba(255,255,255,0.08)] text-gray-300 hover:bg-[rgba(255,255,255,0.12)] transition-colors copy-btn" data-clipboard="pip install gitmem-mcp">Copy</button>
             </div>
             <pre class="p-4 font-mono text-sm text-gray-200"><code>pip install gitmem-mcp</code></pre>
           </div>
@@ -541,57 +439,84 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
         <div>
           <h3 class="text-lg font-semibold text-white mb-3">3. Set Your API Key</h3>
-          <p class="text-gray-300 mb-3">Export as an environment variable:</p>
+          <p class="text-gray-300 mb-3">Export as an environment variable to allow your local MCP servers to authenticate:</p>
           <div class="bg-[rgba(0,0,0,0.25)] rounded-lg overflow-hidden border border-[rgba(255,255,255,0.08)] mb-4">
-            <div class="px-4 py-2 bg-[rgba(0,0,0,0.3)] border-b border-[rgba(255,255,255,0.08)] flex items-center gap-3">
-              <div class="flex gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-red-500"></div><div class="w-2.5 h-2.5 rounded-full bg-yellow-500"></div><div class="w-2.5 h-2.5 rounded-full bg-green-500"></div></div>
-              <span class="text-xs font-mono text-gray-400">bash</span>
+            <div class="px-4 py-2 bg-[rgba(0,0,0,0.3)] border-b border-[rgba(255,255,255,0.08)] flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                  <div class="flex gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-red-500"></div><div class="w-2.5 h-2.5 rounded-full bg-yellow-500"></div><div class="w-2.5 h-2.5 rounded-full bg-green-500"></div></div>
+                  <span class="text-xs font-mono text-gray-400">bash</span>
+              </div>
+              <button class="text-xs px-2 py-1 rounded bg-[rgba(255,255,255,0.08)] text-gray-300 hover:bg-[rgba(255,255,255,0.12)] transition-colors copy-btn" data-clipboard='export MANHATTAN_API_KEY="your-api-key-here"'>Copy</button>
             </div>
             <pre class="p-4 font-mono text-sm text-gray-200"><code>export MANHATTAN_API_KEY="your-api-key-here"</code></pre>
           </div>
         </div>
         <div>
           <h3 class="text-lg font-semibold text-white mb-3">4. Configure Your IDE</h3>
-          <p class="text-gray-300 mb-3">Select your IDE from the left panel or use the IDE selector on the right to see the configuration snippet. Paste it into the appropriate config file for your editor.</p>
+          <p class="text-gray-300 mb-3">Select your IDE from the left panel under "IDE Setup Guides" to see the specific configuration snippet. Paste it into the appropriate config file for your editor.</p>
         </div>
       </div>`,
     quickstart: () => `
       <div class="mb-6 pb-4 border-b border-[rgba(255,255,255,0.03)]">
-        <h2 class="text-xl font-semibold text-white mb-2">Quick Start</h2>
+        <h2 class="text-2xl font-bold text-white mb-2">Quick Start</h2>
         <p class="text-gray-400">Get up and running in under 2 minutes.</p>
       </div>
-      <div class="space-y-4">
+      <div class="space-y-4 max-w-3xl">
         <div class="bg-gradient-to-br from-[rgba(16,185,129,0.06)] to-transparent rounded-xl p-5 border border-[rgba(16,185,129,0.12)]">
-          <p class="text-gray-300"><strong class="text-white">Step 1:</strong> Install — <code class="text-xs px-1.5 py-0.5 rounded bg-[rgba(0,0,0,0.3)] text-[#a5b4fc]">pip install gitmem-mcp</code></p>
+          <p class="text-gray-300"><strong class="text-white text-lg block mb-1">Step 1: Install</strong> <code class="text-sm px-2 py-1 rounded bg-[rgba(0,0,0,0.3)] text-[#a5b4fc]">pip install gitmem-mcp</code></p>
         </div>
         <div class="bg-gradient-to-br from-[rgba(59,130,246,0.06)] to-transparent rounded-xl p-5 border border-[rgba(59,130,246,0.12)]">
-          <p class="text-gray-300"><strong class="text-white">Step 2:</strong> Set your API key — <code class="text-xs px-1.5 py-0.5 rounded bg-[rgba(0,0,0,0.3)] text-[#a5b4fc]">export MANHATTAN_API_KEY="..."</code></p>
+          <p class="text-gray-300"><strong class="text-white text-lg block mb-1">Step 2: Authenticate</strong> <code class="text-sm px-2 py-1 rounded bg-[rgba(0,0,0,0.3)] text-[#a5b4fc]">export MANHATTAN_API_KEY="..."</code></p>
         </div>
         <div class="bg-gradient-to-br from-[rgba(139,92,246,0.06)] to-transparent rounded-xl p-5 border border-[rgba(139,92,246,0.12)]">
-          <p class="text-gray-300"><strong class="text-white">Step 3:</strong> Add the MCP config to your IDE (see IDE Setup in the sidebar) and restart.</p>
+          <p class="text-gray-300"><strong class="text-white text-lg block mb-1">Step 3: Setup IDE</strong> Add the MCP config to your IDE (see IDE Setup in the sidebar) and restart.</p>
         </div>
         <div class="bg-gradient-to-br from-[rgba(245,158,11,0.06)] to-transparent rounded-xl p-5 border border-[rgba(245,158,11,0.12)]">
-          <p class="text-gray-300"><strong class="text-white">Step 4:</strong> Start navigating! Your AI agent can now use GitMem MCP to understand your codebase efficiently.</p>
+          <p class="text-gray-300"><strong class="text-white text-lg block mb-1">Step 4: Go!</strong> Start navigating! Your AI agent can now use GitMem MCP to understand your codebase efficiently and persist memory for later sessions.</p>
         </div>
       </div>`,
   };
 
-  // IDE detail pages
+  // Generate content for each IDE
   ['claude','cursor','copilot','windsurf','sse'].forEach(ide => {
     const cfg = IDE_CONFIGS[ide];
     DETAILS['ide-' + ide] = () => `
       <div class="mb-6 pb-4 border-b border-[rgba(255,255,255,0.03)]">
-        <h2 class="text-xl font-semibold text-white mb-2">${cfg.label} Setup</h2>
+        <h2 class="text-2xl font-bold text-white mb-2">${cfg.label} Integration Guide</h2>
         <p class="text-gray-400">${cfg.tip}</p>
       </div>
-      <div class="space-y-4">
-        <p class="text-gray-300">Add the following JSON to your ${cfg.label} MCP configuration file:</p>
-        <div class="bg-[rgba(0,0,0,0.25)] rounded-lg overflow-hidden border border-[rgba(255,255,255,0.08)]">
-          <div class="px-4 py-2 bg-[rgba(0,0,0,0.3)] border-b border-[rgba(255,255,255,0.08)] flex items-center gap-3">
-            <div class="flex gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-red-500"></div><div class="w-2.5 h-2.5 rounded-full bg-yellow-500"></div><div class="w-2.5 h-2.5 rounded-full bg-green-500"></div></div>
-            <span class="text-xs font-mono text-gray-400">${cfg.lang}</span>
-          </div>
-          <pre class="p-4 font-mono text-sm text-gray-200 overflow-auto"><code class="language-json">${cfg.code}</code></pre>
+      <div class="space-y-6 max-w-4xl">
+        <!-- Knowledge card -->
+        <div class="flex items-start gap-4 p-5 bg-[rgba(59,130,246,0.05)] rounded-xl border border-[rgba(59,130,246,0.15)] shadow-sm">
+            <div class="flex-shrink-0 bg-blue-500/20 p-2 rounded-lg">
+                <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div>
+                <h4 class="text-white font-semibold mb-1 text-lg">Knowledge specific to ${cfg.label}</h4>
+                <p class="text-gray-300 leading-relaxed">${cfg.knowledge}</p>
+            </div>
+        </div>
+
+        <div>
+            <h3 class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                Configuration Snippet
+            </h3>
+            <p class="text-gray-300 mb-3">Copy and paste the following configuration into your ${cfg.label} settings:</p>
+            
+            <div class="bg-[rgba(2,6,23,0.8)] rounded-xl overflow-hidden border border-[rgba(255,255,255,0.1)] shadow-lg max-w-3xl">
+            <div class="px-4 py-3 bg-[rgba(255,255,255,0.05)] border-b border-[rgba(255,255,255,0.1)] flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                <div class="flex gap-1.5"><div class="w-3 h-3 rounded-full bg-red-500"></div><div class="w-3 h-3 rounded-full bg-yellow-500"></div><div class="w-3 h-3 rounded-full bg-green-500"></div></div>
+                <span class="text-sm font-mono text-gray-400">${cfg.lang}</span>
+                </div>
+                <button class="text-xs px-3 py-1.5 rounded-md bg-[rgba(59,130,246,0.15)] text-[#60a5fa] border border-[rgba(59,130,246,0.2)] hover:bg-[rgba(59,130,246,0.25)] hover:text-white transition-colors flex items-center gap-1 copy-btn" data-clipboard="${encodeURIComponent(cfg.code)}">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                    Copy JSON
+                </button>
+            </div>
+            <pre class="p-5 font-mono text-sm text-gray-200 overflow-auto"><code class="language-json">${cfg.code}</code></pre>
+            </div>
         </div>
       </div>`;
   });
@@ -630,11 +555,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const rows = data.tools.map(t => `<tr><td><code>${t[0]}</code></td><td>${t[1]}</td></tr>`).join('');
       return `
         <div class="mb-6 pb-4 border-b border-[rgba(255,255,255,0.03)]">
-          <h2 class="text-xl font-semibold text-white mb-2">${data.title}</h2>
+          <h2 class="text-2xl font-bold text-white mb-2">${data.title}</h2>
           <p class="text-gray-400">${data.desc}</p>
         </div>
-        <div class="overflow-hidden rounded-lg border border-[rgba(255,255,255,0.08)]">
-          <table class="mcp-tool-table"><thead><tr><th>Tool</th><th>Description</th></tr></thead><tbody>${rows}</tbody></table>
+        <div class="overflow-hidden rounded-lg border border-[rgba(255,255,255,0.08)] max-w-4xl">
+          <table class="mcp-tool-table"><thead><tr><th>Tool Identifier</th><th>Description</th></tr></thead><tbody>${rows}</tbody></table>
         </div>`;
     };
   });
@@ -669,7 +594,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Select Section ──
   function selectSection(id, btn) {
-    // Update nav active
+    // Update nav active state
     document.querySelectorAll('.mcp-nav-item').forEach(b => b.classList.remove('active'));
     if (btn) btn.classList.add('active');
 
@@ -677,7 +602,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (id === 'overview') {
       document.getElementById('mcp-overview-panel').style.display = 'block';
-      // Remove any injected panels
       const injected = detailEl.querySelector('.mcp-injected');
       if (injected) injected.remove();
       return;
@@ -686,58 +610,37 @@ document.addEventListener('DOMContentLoaded', () => {
     // Hide default overview
     document.getElementById('mcp-overview-panel').style.display = 'none';
 
-    // Remove old injected
+    // Remove old injected content
     const old = detailEl.querySelector('.mcp-injected');
     if (old) old.remove();
 
     const fn = DETAILS[id];
     if (fn) {
       const wrap = document.createElement('div');
-      wrap.className = 'mcp-injected';
+      wrap.className = 'mcp-injected animate-fade-in fade-in transition-all duration-300';
       wrap.innerHTML = fn();
       detailEl.appendChild(wrap);
-      // Re-highlight
+      // Syntax Highlight
       if (typeof Prism !== 'undefined') setTimeout(() => Prism.highlightAllUnder(wrap), 50);
     }
-
-    // If it's an IDE section, also switch the right code panel
-    const ideKey = id.replace('ide-', '');
-    if (IDE_CONFIGS[ideKey]) switchIDE(ideKey);
   }
 
-  // ── IDE Selector (right panel) ──
-  function switchIDE(ide) {
-    const cfg = IDE_CONFIGS[ide];
-    if (!cfg) return;
-    document.getElementById('mcp-code-content').textContent = cfg.code;
-    document.getElementById('mcp-code-lang').textContent = cfg.lang;
-    document.getElementById('mcp-tip-text').innerHTML = cfg.tip;
-    document.querySelectorAll('#mcp-ide-selector .lang-btn').forEach(b => {
-      b.classList.toggle('active', b.dataset.ide === ide);
-    });
-    if (typeof Prism !== 'undefined') {
-      setTimeout(() => Prism.highlightElement(document.getElementById('mcp-code-content')), 50);
+  // ── Global Copy Event Delegation ──
+  document.addEventListener('click', function(e) {
+    const copyBtn = e.target.closest('.copy-btn');
+    if (copyBtn) {
+        const textToCopy = decodeURIComponent(copyBtn.dataset.clipboard);
+        navigator.clipboard.writeText(textToCopy).catch(err => console.error("Copy failed", err));
+        
+        const originalHtml = copyBtn.innerHTML;
+        copyBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Copied!`;
+        copyBtn.classList.add('text-green-400');
+        
+        setTimeout(() => {
+            copyBtn.innerHTML = originalHtml;
+            copyBtn.classList.remove('text-green-400');
+        }, 2000);
     }
-  }
-
-  document.querySelectorAll('#mcp-ide-selector .lang-btn').forEach(btn => {
-    btn.addEventListener('click', () => switchIDE(btn.dataset.ide));
-  });
-
-  // ── Copy ──
-  function doCopy(text, btn) {
-    navigator.clipboard.writeText(text).catch(() => {});
-    if (btn) {
-      const orig = btn.textContent;
-      btn.textContent = 'Copied!';
-      setTimeout(() => btn.textContent = orig, 1500);
-    }
-  }
-  document.getElementById('mcp-copy-code')?.addEventListener('click', function() {
-    doCopy(document.getElementById('mcp-code-content').textContent, this);
-  });
-  document.getElementById('mcp-copy-active')?.addEventListener('click', function() {
-    doCopy(document.getElementById('mcp-code-content').textContent, this);
   });
 
   // ── Search ──
@@ -752,7 +655,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const firstBtn = document.querySelector('.mcp-nav-item[data-section="overview"]');
   if (firstBtn) { firstBtn.classList.add('active'); }
 
-  // ── Highlight initial code ──
+  // Highlight default syntax blocks inside HTML
   if (typeof Prism !== 'undefined') Prism.highlightAll();
 });
 </script>
