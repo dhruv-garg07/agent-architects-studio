@@ -307,6 +307,15 @@ document.addEventListener('DOMContentLoaded', () => {
       { label: 'Installation Guide', id: 'installation', dot: '#10b981' },
       { label: 'Quick Start', id: 'quickstart', dot: '#06b6d4' },
     ]},
+    { title: 'Core Concepts', color: '#f43f5e', items: [
+      { label: 'The Economics of GitMem', id: 'concept-economics', dot: '#fb7185' },
+      { label: 'Architecture Overview', id: 'concept-architecture', dot: '#e11d48' },
+    ]},
+    { title: 'Advanced Guides', color: '#eab308', items: [
+      { label: 'Hybrid Search & Tracing', id: 'guide-search', dot: '#fcd34d' },
+      { label: 'Delta Updates & Freshness', id: 'guide-deltas', dot: '#d97706' },
+      { label: 'Call Graph Diagnostics', id: 'guide-diagnostics', dot: '#fbbf24' },
+    ]},
     { title: 'IDE Setup Guides', color: '#8b5cf6', items: [
       { label: 'Claude Desktop', id: 'ide-claude', dot: '#f59e0b' },
       { label: 'Cursor IDE', id: 'ide-cursor', dot: '#ec4899' },
@@ -315,10 +324,10 @@ document.addEventListener('DOMContentLoaded', () => {
       { label: 'SSE Remote API', id: 'ide-sse', dot: '#8b5cf6' },
     ]},
     { title: 'Tools Reference', color: '#10b981', items: [
-      { label: 'Memory Operations', id: 'tools-memory', dot: '#6366f1' },
-      { label: 'Agent Management', id: 'tools-agent', dot: '#06b6d4' },
-      { label: 'Session Management', id: 'tools-session', dot: '#f59e0b' },
-      { label: 'AI Helpers', id: 'tools-ai', dot: '#ec4899' },
+      { label: 'Virtual File System', id: 'tools-vfs', dot: '#6366f1' },
+      { label: 'Codebase Analysis', id: 'tools-analysis', dot: '#06b6d4' },
+      { label: 'Indexing & Cache', id: 'tools-index', dot: '#f59e0b' },
+      { label: 'System & Snapshots', id: 'tools-system', dot: '#ec4899' },
     ]},
   ];
 
@@ -475,6 +484,148 @@ document.addEventListener('DOMContentLoaded', () => {
           <p class="text-gray-300"><strong class="text-white text-lg block mb-1">Step 4: Go!</strong> Start navigating! Your AI agent can now use GitMem MCP to understand your codebase efficiently and persist memory for later sessions.</p>
         </div>
       </div>`,
+    'concept-economics': () => `
+      <div class="mb-6 pb-4 border-b border-[rgba(255,255,255,0.03)]">
+        <h2 class="text-2xl font-bold text-white mb-2">The Economics of GitMem</h2>
+        <p class="text-gray-400">Converting variable exploration costs into fixed caching costs.</p>
+      </div>
+      <div class="space-y-6 max-w-4xl text-gray-300">
+        <div class="bg-gradient-to-br from-[rgba(239,68,68,0.05)] to-transparent rounded-xl p-5 border border-[rgba(239,68,68,0.1)] shadow-sm">
+            <h3 class="text-xl font-semibold text-red-400 mb-3 flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/></svg>
+                The Old Way: Expensive Variable Costs
+            </h3>
+            <p class="mb-3 leading-relaxed">When using standard AI code agents, codebase exploration is an unpredictable <strong>variable cost</strong>. To answer a difficult codebase question, the agent must recursively use <code class="text-xs px-1.5 py-0.5 bg-[rgba(255,255,255,0.1)] rounded">grep</code> and <code class="text-xs px-1.5 py-0.5 bg-[rgba(255,255,255,0.1)] rounded">cat</code> on dozens of files.</p>
+            <p class="mb-3 leading-relaxed">If an agent reads a 2,000-line file to find 5 relevant lines of a function, you are billed for reading all 2,000 lines. When multiplied by hundreds of files over an active debugging session, token counts skyrocket, rapidly eating through API budgets or hitting Claude/Cursor message limits abruptly.</p>
+        </div>
+
+        <div class="bg-gradient-to-br from-[rgba(16,185,129,0.05)] to-transparent rounded-xl p-5 border border-[rgba(16,185,129,0.1)] shadow-sm">
+            <h3 class="text-xl font-semibold text-emerald-400 mb-3 flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                The Manhattan Way: Efficient Fixed Costs
+            </h3>
+            <p class="mb-3 leading-relaxed">GitMem flips this economic model completely. By running <code class="text-xs px-1.5 py-0.5 bg-[rgba(16,185,129,0.2)] text-emerald-300 rounded">index_file</code> once, you pay a single <strong>fixed upfront cost</strong> to securely compress, embed, and store the semantic meaning of your codebase utilizing advanced Abstract Syntax Tree (AST) scanning.</p>
+            <p class="leading-relaxed">From then on, exploration uses the local vector database. When the agent uses <code class="text-xs px-1.5 py-0.5 bg-[rgba(16,185,129,0.2)] text-emerald-300 rounded">search_codebase</code>, we return <em>only</em> the highly relevant, compressed semantic chunks. You never pay tokens for the agent to "read past" irrelevant code ever again! This drastically slashes prompt lengths, leading to the <strong>37% to 80% token savings</strong> observed inside active coding sessions.</p>
+        </div>
+      </div>`,
+    'concept-architecture': () => `
+      <div class="mb-6 pb-4 border-b border-[rgba(255,255,255,0.03)]">
+        <h2 class="text-2xl font-bold text-white mb-2">Architecture Overview</h2>
+        <p class="text-gray-400">How the Manhattan GitMem MCP server bridges the gap under the hood.</p>
+      </div>
+      <div class="space-y-6 max-w-4xl text-gray-300">
+        <p class="mb-4 text-lg">GitMem acts as a high-performance middleware intercepting file reads dynamically.</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="p-5 bg-[rgba(0,0,0,0.2)] rounded-xl border border-[rgba(255,255,255,0.05)] shadow hover:border-[rgba(59,130,246,0.5)] transition-colors">
+                <h4 class="text-blue-400 font-bold mb-2 text-lg">1. Semantic Chunking Engine</h4>
+                <p class="text-sm leading-relaxed">We don't blindly chop strings by line numbers. We parse the syntax tree (AST) to logically separate Classes, Methods, Imports, and Functions. This ensures we never break code syntactically when presenting it to the LLM context window.</p>
+            </div>
+            <div class="p-5 bg-[rgba(0,0,0,0.2)] rounded-xl border border-[rgba(255,255,255,0.05)] shadow hover:border-[rgba(139,92,246,0.5)] transition-colors">
+                <h4 class="text-purple-400 font-bold mb-2 text-lg">2. Local Vector Store</h4>
+                <p class="text-sm leading-relaxed">Embeddings generated are persisted securely to your local machine (or the isolated Manhattan Remote SSE environment). The database allows lightning-fast similarity matching without leaking code to public internet searches.</p>
+            </div>
+            <div class="p-5 bg-[rgba(0,0,0,0.2)] rounded-xl border border-[rgba(255,255,255,0.05)] shadow hover:border-[rgba(236,72,153,0.5)] transition-colors">
+                <h4 class="text-pink-400 font-bold mb-2 text-lg">3. Virtual File System (VFS)</h4>
+                <p class="text-sm leading-relaxed">To the AI agent, Manhattan is presented as a set of file-exploration tools (<code class="text-xs">list_directory</code> and <code class="text-xs">search_codebase</code>). The agent feels like it's exploring files natively, but it's actually accessing our VFS abstraction layer retrieving 1/10th of the text payload.</p>
+            </div>
+            <div class="p-5 bg-[rgba(0,0,0,0.2)] rounded-xl border border-[rgba(255,255,255,0.05)] shadow hover:border-[rgba(245,158,11,0.5)] transition-colors">
+                <h4 class="text-amber-400 font-bold mb-2 text-lg">4. Standard MCP Transport</h4>
+                <p class="text-sm leading-relaxed">We strictly follow the Anthropic Model Context Protocol specification allowing cross-compatibility with Claude Desktop via stdio, or web-based agents via Server-Sent Events (SSE).</p>
+            </div>
+        </div>
+      </div>`,
+    'guide-search': () => `
+      <div class="mb-6 pb-4 border-b border-[rgba(255,255,255,0.03)]">
+        <h2 class="text-2xl font-bold text-white mb-2">Hybrid Search & Tracing</h2>
+        <p class="text-gray-400">Taking codebase exploration way beyond standard grep functionality.</p>
+      </div>
+      <div class="space-y-6 max-w-4xl text-gray-300">
+        <p class="text-lg">The <code class="px-2 py-1 bg-blue-500/10 text-blue-400 rounded text-sm">search_codebase</code> tool is the primary way agents extract context locally.</p>
+
+        <h3 class="text-xl font-bold text-white mt-8 mb-3 border-b border-[rgba(255,255,255,0.1)] pb-2">🧠 Hybrid Matching</h3>
+        <p>Unlike <code class="text-sm text-gray-400">grep</code>, which looks for exact string matches, GitMem uses a hybrid search that combines <strong class="text-white">BM25 keyword matching</strong> with <strong class="text-white">Dense Vector Similarity</strong>.</p>
+        <ul class="list-disc pl-6 space-y-3 mt-4 text-sm bg-black/20 p-5 rounded-lg border border-white/5">
+            <li><strong>Natural Language Mastery:</strong> If an agent searches for "database validation logic", GitMem will return functions involving JWTs, SQL sanitization, or constraint checks even if the exact string "validation" does not natively exist in the function's name.</li>
+            <li><strong>Symbols & Patterns:</strong> It accurately identifies function signatures, overriding classes, or variable allocations.</li>
+        </ul>
+
+        <h3 class="text-xl font-bold text-white mt-8 mb-3 border-b border-[rgba(255,255,255,0.1)] pb-2">🕸️ Call Graph Tracing</h3>
+        <p>By executing searches with <code class="text-sm bg-[rgba(236,72,153,0.15)] text-pink-300 px-2 py-0.5 rounded border border-pink-500/20">trace_calls=True</code>, the Virtual File System automatically traverses the codebase dependency graph during the retrieval phase.</p>
+        <div class="bg-gradient-to-r from-[rgba(139,92,246,0.1)] to-[rgba(59,130,246,0.1)] p-5 rounded-xl border border-[rgba(139,92,246,0.2)] mt-5">
+            <p class="text-[15px] italic text-blue-100 leading-relaxed font-medium">"If the agent discovers a validation function it determines is relevant, the VFS will automatically bundle the functions that <strong>call</strong> it, and the underlying functions <strong>it depends on</strong>. We deliver a fully formed Context Bundle in a single tool response."</p>
+        </div>
+        <p class="mt-4 leading-relaxed">This completely eliminates the tedious back-and-forth roundtrips usually required for an agent to trace a complete data workflow across multiple files manually.</p>
+      </div>`,
+    'guide-deltas': () => `
+      <div class="mb-6 pb-4 border-b border-[rgba(255,255,255,0.03)]">
+        <h2 class="text-2xl font-bold text-white mb-2">Delta Updates & Freshness</h2>
+        <p class="text-gray-400">Keeping AI context perfectly synchronized with your actual code seamlessly.</p>
+      </div>
+      <div class="space-y-6 max-w-4xl text-gray-300">
+        <p class="text-lg">Codebases mutate rapidly. Re-indexing entirely every time you press save would be incredibly slow and extremely expensive. GitMem solves this using the <code class="px-2 py-1 bg-amber-500/10 text-amber-400 rounded text-sm">delta_update</code> tool.</p>
+        
+        <div class="flex flex-col gap-6 mt-8">
+            <div class="flex items-start gap-5 p-4 bg-black/20 rounded-xl border border-white/5">
+                <div class="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0 text-emerald-400 border border-emerald-500/30 text-xl shadow-lg shadow-emerald-500/10">✓</div>
+                <div>
+                    <strong class="text-white text-lg block mb-1">Unchanged Semantic Nodes</strong>
+                    <p class="text-sm text-gray-400 leading-relaxed">Functions and classes that haven't been modified bypass the embedding API completely. Their vectors are instantly reinstated from local cache.</p>
+                </div>
+            </div>
+            <div class="flex items-start gap-5 p-4 bg-black/20 rounded-xl border border-white/5">
+                <div class="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0 text-blue-400 border border-blue-500/30 text-xl shadow-lg shadow-blue-500/10">↻</div>
+                <div>
+                    <strong class="text-white text-lg block mb-1">Modified or New Nodes</strong>
+                    <p class="text-sm text-gray-400 leading-relaxed">Only the specific functions, methods, or blocks you just typed are surgically extracted, parsed via AST, and sent for embedding. They immediately overwrite stale definitions.</p>
+                </div>
+            </div>
+            <div class="flex items-start gap-5 p-4 bg-black/20 rounded-xl border border-white/5">
+                <div class="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0 text-red-400 border border-red-500/30 text-xl shadow-lg shadow-red-500/10">✗</div>
+                <div>
+                    <strong class="text-white text-lg block mb-1">Deleted Nodes</strong>
+                    <p class="text-sm text-gray-400 leading-relaxed">Deleted code disappears from the AST parser and is automatically pruned from the vector database to ensure your AI agent never hallucinates features that were removed.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-r from-[rgba(59,130,246,0.1)] to-transparent p-6 rounded-xl border-l-4 border-[rgba(59,130,246,0.5)] mt-8">
+            <strong class="text-blue-400 flex items-center gap-2 mb-2 text-lg">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                Agent Autonomy
+            </strong>
+            <p class="text-sm leading-relaxed">Your AI Agent is strictly instructed to trigger <code class="text-xs bg-black/40 px-1 py-0.5 rounded text-white">delta_update</code> autonomously right after it writes or edits a file for you. You never have to manually click a "sync" button. The cache remains consistently fresh!</p>
+        </div>
+      </div>`,
+    'guide-diagnostics': () => `
+      <div class="mb-6 pb-4 border-b border-[rgba(255,255,255,0.03)]">
+        <h2 class="text-2xl font-bold text-white mb-2">Call Graph Diagnostics</h2>
+        <p class="text-gray-400">Deep structural evaluations for intelligent code refactoring.</p>
+      </div>
+      <div class="space-y-6 max-w-4xl text-gray-300">
+        <p class="text-lg">Beyond finding specific strings, GitMem transforms your AI agent into an experienced static analysis machine via the <code class="px-2 py-1 bg-purple-500/10 text-purple-400 rounded text-sm border border-purple-500/20">usage_analysis</code> and <code class="px-2 py-1 bg-purple-500/10 text-purple-400 rounded text-sm border border-purple-500/20">dependency_graph</code> tools.</p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+            <div class="bg-[rgba(255,255,255,0.02)] p-6 rounded-xl border border-[rgba(255,255,255,0.08)] hover:bg-[rgba(255,255,255,0.04)] transition-colors">
+                <h4 class="text-lg font-bold text-white mb-3 flex items-center gap-2">💀 Dead Code Detection</h4>
+                <p class="text-sm text-gray-400 leading-relaxed">By running global utilization traces across the parsed AST, GitMem can confidently flag unused functions or deprecated classes globally. If your AI asks to clean up technical debt, it knows exactly what is safe to delete.</p>
+            </div>
+            
+            <div class="bg-[rgba(255,255,255,0.02)] p-6 rounded-xl border border-[rgba(255,255,255,0.08)] hover:bg-[rgba(255,255,255,0.04)] transition-colors">
+                <h4 class="text-lg font-bold text-white mb-3 flex items-center gap-2">👻 Unused Parameters</h4>
+                <p class="text-sm text-gray-400 leading-relaxed">Function signatures are analyzed. If a parameter is accepted but never referenced inside the function block, GitMem surfaces this inefficiency immediately to the agent.</p>
+            </div>
+            
+            <div class="bg-[rgba(255,255,255,0.02)] p-6 rounded-xl border border-[rgba(255,255,255,0.08)] hover:bg-[rgba(255,255,255,0.04)] transition-colors">
+                <h4 class="text-lg font-bold text-white mb-3 flex items-center gap-2">🔄 Circular Dependencies</h4>
+                <p class="text-sm text-gray-400 leading-relaxed">Complex architectures often spawn cyclical imports. The <code class="text-xs text-pink-300">circular_dependency_check</code> recursively evaluates node edge directions to pinpoint dangerous cycles before they halt application startup.</p>
+            </div>
+            
+            <div class="bg-[rgba(255,255,255,0.02)] p-6 rounded-xl border border-[rgba(255,255,255,0.08)] hover:bg-[rgba(255,255,255,0.04)] transition-colors">
+                <h4 class="text-lg font-bold text-white mb-3 flex items-center gap-2">🔌 External Call Tracing</h4>
+                <p class="text-sm text-gray-400 leading-relaxed">Quickly assesses where a file invokes third-party dependencies (like requests, boto3, or supabase) to isolate side effects from pure business logic.</p>
+            </div>
+        </div>
+      </div>`,
   };
 
   // Generate content for each IDE
@@ -523,30 +674,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Tool tables
   const TOOL_TABLES = {
-    'tools-memory': { title: 'Memory Operations', desc: 'Core tools for storing, searching, and managing memories.', tools: [
-      ['search_memory', 'Search memories using natural language queries'],
-      ['add_memory_direct', 'Store structured memories with metadata'],
-      ['get_context_answer', 'Get AI-generated answers using memory context'],
-      ['update_memory_entry', 'Update existing memory entries'],
-      ['delete_memory_entries', 'Delete specific memories by ID'],
+    'tools-vfs': { title: 'Virtual File System (VFS)', desc: 'Token-efficient codebase navigation replacing standard file reading.', tools: [
+      ['list_directory', 'List files and directories in the indexed codebase'],
+      ['search_codebase', 'Search the indexed codebase using semantic + keyword search'],
     ]},
-    'tools-agent': { title: 'Agent Management', desc: 'Create and manage isolated memory agents.', tools: [
-      ['create_agent', 'Create a new memory agent with its own namespace'],
-      ['list_agents', 'List all agents associated with your account'],
-      ['get_agent', 'Retrieve details for a specific agent'],
-      ['update_agent', 'Update agent configuration and settings'],
-      ['delete_agent', 'Permanently delete an agent and its data'],
+    'tools-analysis': { title: 'Codebase Analysis', desc: 'Powerful tools for analyzing dependencies and code usage.', tools: [
+      ['dependency_graph', 'Build an import/dependency graph for a list of files'],
+      ['usage_analysis', 'Analyze code usage, dead code, and external calls in a file'],
+      ['circular_dependency_check', 'Detect circular dependencies in the indexed codebase'],
     ]},
-    'tools-session': { title: 'Session Management', desc: 'Manage conversation sessions and context sync.', tools: [
-      ['session_start', 'Initialize a new conversation session'],
-      ['session_end', 'End session and sync pending memories'],
-      ['pull_context', 'Load relevant context for the current task'],
-      ['push_memories', 'Sync locally buffered memories to server'],
+    'tools-index': { title: 'Indexing & Cache', desc: 'Tools to manage the context cache efficiently.', tools: [
+      ['index_file', 'Index a file into the codebase context system'],
+      ['reindex_file', 'Re-index a file after modifications'],
+      ['delta_update', 'Incrementally re-index a file processing only chunks that changed'],
+      ['remove_index', "Remove a file's index from the codebase context system"],
+      ['list_indexed_files', 'List all files currently indexed in the system'],
+      ['invalidate_cache', 'Explicitly invalidate cache entries for a file or entire scope'],
     ]},
-    'tools-ai': { title: 'AI Helpers', desc: 'Intelligent automation tools for memory management.', tools: [
-      ['auto_remember', 'Automatically extract and store facts from messages'],
-      ['should_remember', 'Check if information is worth storing'],
-      ['what_do_i_know', 'Get a summary of everything known about the user'],
+    'tools-system': { title: 'System & Snapshots', desc: 'Diagnostics, usage stats, and snapshot tools.', tools: [
+      ['diagnostics', 'Get system diagnostics including token savings and cache performance'],
+      ['api_usage', 'Get overall usage statistics for the server'],
+      ['create_snapshot', 'Create an immutable snapshot of all currently indexed contexts'],
+      ['compare_snapshots', 'Compare two snapshots to see what changed in the codebase context'],
     ]},
   };
 
