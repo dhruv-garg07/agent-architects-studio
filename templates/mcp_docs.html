@@ -806,12 +806,47 @@ python3 -m pip install gitmem-mcp</code></pre>
     }
   });
 
-  // ── Search ──
-  document.getElementById('mcp-nav-search')?.addEventListener('input', e => {
-    const q = e.target.value.toLowerCase();
-    document.querySelectorAll('.mcp-nav-item').forEach(item => {
-      item.style.display = item.textContent.toLowerCase().includes(q) ? 'flex' : 'none';
+  // ── Search Logic ──
+  function handleSearch(query) {
+    const q = query.toLowerCase();
+    const groups = document.querySelectorAll('.mcp-nav-group');
+    
+    groups.forEach(group => {
+      let hasVisibleItem = false;
+      const items = group.querySelectorAll('.mcp-nav-item');
+      const container = group.querySelector('.mt-1');
+      const header = group.querySelector('.mcp-nav-header');
+      
+      items.forEach(item => {
+        const matches = item.textContent.toLowerCase().includes(q);
+        item.style.display = matches ? 'flex' : 'none';
+        if (matches) hasVisibleItem = true;
+      });
+      
+      // Hide the group header if no items are visible
+      group.style.display = hasVisibleItem ? 'block' : 'none';
+      
+      // Auto-expand group if there's a match and a query
+      if (q.length > 0 && hasVisibleItem) {
+        if (container) container.style.display = 'block';
+        if (header) header.querySelector('svg').style.transform = 'rotate(180deg)';
+      }
     });
+  }
+
+  const globalSearch = document.getElementById('mcp-global-search');
+  const navSearch = document.getElementById('mcp-nav-search');
+
+  globalSearch?.addEventListener('input', e => {
+    const q = e.target.value;
+    if (navSearch) navSearch.value = q;
+    handleSearch(q);
+  });
+
+  navSearch?.addEventListener('input', e => {
+    const q = e.target.value;
+    if (globalSearch) globalSearch.value = q;
+    handleSearch(q);
   });
 
   // ── Auto-select Overview ──
