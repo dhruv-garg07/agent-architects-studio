@@ -515,10 +515,74 @@ def forgot_password():
             return redirect(url_for('forgot_password'))
         
         try:
-            # Send recovery email
+            # Generate the recovery link using the admin API so we can send a custom email
             redirect_url = url_for('reset_password_callback', _external=True)
-            supabase.auth.reset_password_for_email(email, options={"redirect_to": redirect_url})
-            flash('Recovery email sent if your account exists.', 'success')
+            
+            # Note: We must use the backend (service role) client for admin endpoints
+            link_response = supabase_backend.auth.admin.generate_link({
+                "type": "recovery",
+                "email": email,
+                "options": {
+                    "redirect_to": redirect_url
+                }
+            })
+            
+            # Safely extract action_link based on gotrue python SDK response structure
+            if hasattr(link_response, 'properties'):
+                action_link = getattr(link_response.properties, 'action_link', getattr(link_response, 'properties', {}).get('action_link') if isinstance(getattr(link_response, 'properties', None), dict) else None)
+            elif isinstance(link_response, dict) and 'properties' in link_response:
+                action_link = link_response['properties'].get('action_link')
+            else:
+                action_link = str(link_response)  # Fallback
+
+            if not action_link:
+                raise Exception("Failed to generate action link.")
+
+            # Send purely custom HTML email containing the reset link
+            email_service = get_email_service()
+            subject = "Password Reset Request - The Manhattan Project"
+            plain_body = f"Hello,\n\nWe received a request to reset your password. Click the link below to set a new password:\n\n{action_link}\n\nIf you did not request this, please safely ignore this email.\n\nWarm regards,\nThe Manhattan Project Team"
+            
+            html_body = f"""
+            <div style="font-family: 'Inter', Arial, sans-serif; color: #333; line-height: 1.6; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #1a1a1a;">Password Reset</h2>
+              <p>Hello,</p>
+              <p>We received a request to reset your password for your Agent Architects Marketplace account.</p>
+              <p>Please click the secure button below to choose a new password:</p>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="{action_link}" style="background-color: #8b5cf6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+                    Reset Password
+                </a>
+              </div>
+              
+              <p style="font-size: 14px; color: #666;">If the button doesn't work, copy and paste this link into your browser:<br>
+              <a href="{action_link}" style="color: #8b5cf6; word-break: break-all;">{action_link}</a></p>
+              
+              <p>If you didn't request a password reset, you can safely ignore this email.</p>
+              
+              <p>Warm regards,</p>
+              <p>The Manhattan Project Team</p>
+              
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 15px;">
+                <tr>
+                   <td style="vertical-align: middle; padding-right: 12px;">
+                      <img src="cid:logo" width="30" height="30" style="display: block;" alt="Logo">
+                   </td>
+                   <td style="vertical-align: middle;">
+                      <span style="font-family: 'Mr Dafoe', cursive, serif; font-size: 26px; color: #EC4899; line-height: 1;">The Manhattan Project</span>
+                   </td>
+                </tr>
+              </table>
+            </div>
+            """
+            
+            logo_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'favicon.svg')
+            
+            # Send asynchronously to avoid blocking
+            email_service.send_email_async(email, subject, plain_body, html_body=html_body, image_attachment_path=logo_path)
+            
+            flash('Recovery email sent if your account exists. Please check your inbox.', 'success')
             return redirect(url_for('auth'))
         except Exception as e:
             flash(f'An error occurred: {str(e)}', 'error')
