@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Terms of Service - The Manhattan Project{% endblock %}
+
+{% block content %}
+<div class="min-h-screen relative py-16">
+    <!-- Decorative Backgrounds -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute -top-[10%] -right-[10%] w-[40rem] h-[40rem] bg-violet-600/10 rounded-full blur-[100px]"></div>
+        <div class="absolute top-[30%] -left-[10%] w-[35rem] h-[35rem] bg-cyan-600/10 rounded-full blur-[100px]"></div>
+    </div>
+
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        
+        <!-- Header -->
+        <div class="mb-16 text-center md:text-left pt-8">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-sm text-violet-400 mb-6 font-medium">
+                <i data-lucide="clock" class="w-4 h-4"></i>
+                Effective Date: March 2026
+            </div>
+            <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight text-white mb-6">
+                Terms of <span class="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-cyan-400">Service</span>
+            </h1>
+            <p class="text-lg text-gray-400 max-w-2xl leading-relaxed">
+                Please read these terms carefully before accessing or using The Manhattan Project. These terms govern your use of our API, platform, and services.
+            </p>
+        </div>
+
+        <div class="flex flex-col md:flex-row gap-12">
+            
+            <!-- Sticky TOC -->
+            <div class="hidden md:block w-64 shrink-0">
+                <div class="sticky top-28 backdrop-blur-md bg-white/[0.02] border border-white/5 rounded-2xl p-6 shadow-xl shadow-black/50">
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">On this page</h3>
+                    <ul class="space-y-4">
+                        <li><a href="#acceptance" class="toc-link text-sm text-gray-400 hover:text-white transition-colors flex items-center gap-3"><div class="w-1.5 h-1.5 rounded-full bg-violet-500/50 transition-all"></div> Acceptance</a></li>
+                        <li><a href="#license" class="toc-link text-sm text-gray-400 hover:text-white transition-colors flex items-center gap-3"><div class="w-1.5 h-1.5 rounded-full bg-transparent transition-all"></div> Use License</a></li>
+                        <li><a href="#content" class="toc-link text-sm text-gray-400 hover:text-white transition-colors flex items-center gap-3"><div class="w-1.5 h-1.5 rounded-full bg-transparent transition-all"></div> User Content</a></li>
+                        <li><a href="#limitations" class="toc-link text-sm text-gray-400 hover:text-white transition-colors flex items-center gap-3"><div class="w-1.5 h-1.5 rounded-full bg-transparent transition-all"></div> Limitations</a></li>
+                        <li><a href="#governing" class="toc-link text-sm text-gray-400 hover:text-white transition-colors flex items-center gap-3"><div class="w-1.5 h-1.5 rounded-full bg-transparent transition-all"></div> Governing Law</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Content Container -->
+            <div class="flex-1 max-w-3xl">
+                <div class="card p-8 md:p-12 border-white/10 shadow-2xl shadow-violet-500/5 text-gray-300 font-inter space-y-12">
+                    
+                    <section id="acceptance" class="scroll-mt-32">
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center border border-violet-500/20">
+                                <i data-lucide="check-circle-2" class="w-5 h-5 text-violet-400"></i>
+                            </div>
+                            <h2 class="text-2xl font-bold text-white">1. Acceptance of Terms</h2>
+                        </div>
+                        <div class="prose prose-invert prose-violet">
+                            <p>By accessing or using The Manhattan Project, you agree to be bound by these Terms of Service. If you disagree with any part of the terms, you may not access the service.</p>
+                            <p>We reserve the right to modify these terms at any time. We will always post the most current version on our site. By continuing to use the platform after changes become effective, you agree to be bound by the revised terms.</p>
+                        </div>
+                    </section>
+
+                    <hr class="border-white/5">
+
+                    <section id="license" class="scroll-mt-32">
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center border border-violet-500/20">
+                                <i data-lucide="shield" class="w-5 h-5 text-violet-400"></i>
+                            </div>
+                            <h2 class="text-2xl font-bold text-white">2. Use License</h2>
+                        </div>
+                        <div class="prose prose-invert prose-violet">
+                            <p>Permission is granted to temporarily use our platform. This is the grant of a license, not a transfer of title, and under this license you may not:</p>
+                            <ul class="custom-list space-y-3 mt-4">
+                                <li class="flex items-start"><i data-lucide="chevron-right" class="w-4 h-4 text-violet-500 mt-1 mr-2 flex-shrink-0"></i>Modify, duplicate, or copy the proprietary materials;</li>
+                                <li class="flex items-start"><i data-lucide="chevron-right" class="w-4 h-4 text-violet-500 mt-1 mr-2 flex-shrink-0"></i>Use the materials for any commercial purpose without explicit API permission;</li>
+                                <li class="flex items-start"><i data-lucide="chevron-right" class="w-4 h-4 text-violet-500 mt-1 mr-2 flex-shrink-0"></i>Attempt to decompile or reverse engineer any software contained on the platform;</li>
+                                <li class="flex items-start"><i data-lucide="chevron-right" class="w-4 h-4 text-violet-500 mt-1 mr-2 flex-shrink-0"></i>Remove any copyright or other proprietary notations from the materials.</li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <hr class="border-white/5">
+
+                    <section id="content" class="scroll-mt-32">
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center border border-violet-500/20">
+                                <i data-lucide="file-text" class="w-5 h-5 text-violet-400"></i>
+                            </div>
+                            <h2 class="text-2xl font-bold text-white">3. User Content</h2>
+                        </div>
+                        <div class="prose prose-invert prose-violet">
+                            <p>You retain all rights to any content you submit, post, or display on or through the service. By submitting AI agents, models, or data, you grant us a worldwide, non-exclusive, royalty-free license to host, reproduce, and distribute such content strictly to facilitate the platform's features for you and other authorized users.</p>
+                        </div>
+                    </section>
+
+                    <hr class="border-white/5">
+
+                    <section id="limitations" class="scroll-mt-32">
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center border border-violet-500/20">
+                                <i data-lucide="alert-triangle" class="w-5 h-5 text-violet-400"></i>
+                            </div>
+                            <h2 class="text-2xl font-bold text-white">4. Limitations</h2>
+                        </div>
+                        <div class="prose prose-invert prose-violet">
+                            <p>In no event shall The Manhattan Project or its suppliers be liable for any damages (including, without limitation, damages for loss of data or profit, or due to business interruption) arising out of the use or inability to use the materials on our platform or API endpoints.</p>
+                        </div>
+                    </section>
+
+                    <hr class="border-white/5">
+
+                    <section id="governing" class="scroll-mt-32">
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center border border-violet-500/20">
+                                <i data-lucide="scale" class="w-5 h-5 text-violet-400"></i>
+                            </div>
+                            <h2 class="text-2xl font-bold text-white">5. Governing Law</h2>
+                        </div>
+                        <div class="prose prose-invert prose-violet">
+                            <p>These terms and conditions are governed by and construed in accordance with the laws of the applicable jurisdiction, and you irrevocably submit to the exclusive jurisdiction of the courts in that location without regard to its conflict of law provisions.</p>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+/* Smooth scrolling for anchor links */
+html {
+    scroll-behavior: smooth;
+}
+.prose p {
+    margin-bottom: 1.25rem;
+    line-height: 1.8;
+    color: #a3a3a3; /* gray-400 */
+}
+</style>
+
+<script>
+    // Intersection observer to highlight active TOC link
+    document.addEventListener('DOMContentLoaded', () => {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.getAttribute('id');
+                    document.querySelectorAll('.toc-link').forEach(link => {
+                        link.classList.remove('text-white', 'font-medium');
+                        link.classList.add('text-gray-400');
+                        link.querySelector('div').classList.remove('bg-violet-500/50', 'scale-150');
+                        link.querySelector('div').classList.add('bg-transparent');
+                        
+                        if (link.getAttribute('href') === `#${id}`) {
+                            link.classList.remove('text-gray-400');
+                            link.classList.add('text-white', 'font-medium');
+                            link.querySelector('div').classList.remove('bg-transparent');
+                            link.querySelector('div').classList.add('bg-violet-500/50', 'scale-150');
+                        }
+                    });
+                }
+            });
+        }, { rootMargin: '-20% 0px -80% 0px' });
+
+        document.querySelectorAll('section[id]').forEach(section => {
+            observer.observe(section);
+        });
+    });
+</script>
+{% endblock %}

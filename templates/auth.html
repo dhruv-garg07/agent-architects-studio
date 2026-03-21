@@ -166,8 +166,8 @@
                     <div class="flex items-start">
                         <input type="checkbox" id="terms-signup" name="terms" required class="mr-2 mt-1">
                         <label for="terms-signup" class="text-sm text-muted-foreground">
-                            I agree to the <a href="#" class="text-primary hover:underline">Terms of Service</a>
-                            and <a href="#" class="text-primary hover:underline">Privacy Policy</a>
+                            I agree to the <a href="{{ url_for('terms') }}" class="text-primary hover:underline" target="_blank">Terms of Service</a>
+                            and <a href="{{ url_for('privacy') }}" class="text-primary hover:underline" target="_blank">Privacy Policy</a>
                         </label>
                     </div>
 
@@ -209,7 +209,7 @@
 
         <!-- Additional Info -->
         <div class="text-center mt-6 text-sm text-gray-500">
-            <p>By signing in, you agree to our terms and privacy policy.</p>
+            <p>By continuing, you agree to our <a href="{{ url_for('terms') }}" class="hover:text-white transition-colors" target="_blank">Terms of Service</a> and <a href="{{ url_for('privacy') }}" class="hover:text-white transition-colors" target="_blank">Privacy Policy</a>.</p>
         </div>
     </div>
 </div>

@@ -353,6 +353,22 @@ def about_page():
     except Exception as e:
         return f"<h1>About Us</h1><p>Unable to render page: {e}</p>", 500
 
+@app.route('/terms')
+def terms():
+    """Terms of Service page."""
+    try:
+        return render_template('terms.html')
+    except Exception as e:
+        return f"<h1>Terms of Service</h1><p>Unable to render page: {e}</p>", 500
+
+@app.route('/privacy')
+def privacy():
+    """Privacy Policy page."""
+    try:
+        return render_template('privacy.html')
+    except Exception as e:
+        return f"<h1>Privacy Policy</h1><p>Unable to render page: {e}</p>", 500
+
 @app.route('/submit')
 @login_required
 def creator_studio():

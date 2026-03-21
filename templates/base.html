@@ -486,7 +486,7 @@
                                 </div>
                                 <a href="/profile"
                                     class="block px-4 py-2 text-sm text-gray-400 hover:bg-[#2d2d2d] hover:text-white transition-colors">Profile</a>
-                                <a href="/"
+                                <a href="{{ url_for('dashboard') }}#settings"
                                     class="block px-4 py-2 text-sm text-gray-400 hover:bg-[#2d2d2d] hover:text-white transition-colors">Settings</a>
                                 <div class="border-t border-[#333] mt-1 pt-1">
                                     <a href="{{ url_for('logout') }}"
@@ -645,8 +645,14 @@
             </div>
 
             <!-- Divider -->
-            <div class="border-t border-gray-700 pt-8">
-                <p class="text-gray-500 text-sm">&copy; 2026 The Manhattan Project. All rights reserved.</p>
+            <div class="border-t border-[#2d2d2d] pt-8 flex flex-col md:flex-row items-center justify-between text-sm text-gray-500">
+                <div class="flex items-center space-x-2">
+                    <span>&copy; 2026 The Manhattan Project</span>
+                    <span>&middot;</span>
+                    <a href="{{ url_for('terms') }}" class="hover:text-gray-300 transition-colors">Terms</a>
+                    <span>&middot;</span>
+                    <a href="{{ url_for('privacy') }}" class="hover:text-gray-300 transition-colors">Privacy</a>
+                </div>
             </div>
         </div>
     </footer>
