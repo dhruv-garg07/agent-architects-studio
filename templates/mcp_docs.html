@@ -441,6 +441,20 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
             <pre class="p-4 font-mono text-sm text-gray-200"><code>pip install gitmem-mcp</code></pre>
           </div>
+
+          <p class="text-gray-300 mb-3">If you have trouble installing this on your PC, try doing this in a virtual environment:</p>
+          <div class="bg-[rgba(0,0,0,0.25)] rounded-lg overflow-hidden border border-[rgba(255,255,255,0.08)] mb-4">
+            <div class="px-4 py-2 bg-[rgba(0,0,0,0.3)] border-b border-[rgba(255,255,255,0.08)] flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                  <div class="flex gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-red-500"></div><div class="w-2.5 h-2.5 rounded-full bg-yellow-500"></div><div class="w-2.5 h-2.5 rounded-full bg-green-500"></div></div>
+                  <span class="text-xs font-mono text-gray-400">Terminal (Venv)</span>
+              </div>
+              <button class="text-xs px-2 py-1 rounded bg-[rgba(255,255,255,0.08)] text-gray-300 hover:bg-[rgba(255,255,255,0.12)] transition-colors copy-btn" data-clipboard="python3 -m venv path/to/venv && source path/to/venv/bin/activate && python3 -m pip install gitmem-mcp">Copy</button>
+            </div>
+            <pre class="p-4 font-mono text-sm text-gray-200"><code>python3 -m venv path/to/venv
+source path/to/venv/bin/activate
+python3 -m pip install gitmem-mcp</code></pre>
+          </div>
         </div>
         <div>
           <h3 class="text-lg font-semibold text-white mb-3">2. Get Your API Key</h3>
