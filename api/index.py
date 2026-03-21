@@ -505,6 +505,60 @@ def login():
         # Optional: log e
         flash('Login failed. Please check your credentials.', 'error')
         return redirect(url_for('auth'))
+
+@app.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = _clean_email(request.form.get('email'))
+        if not email:
+            flash('Please enter your email.', 'error')
+            return redirect(url_for('forgot_password'))
+        
+        try:
+            # Send recovery email
+            redirect_url = url_for('reset_password_callback', _external=True)
+            supabase.auth.reset_password_for_email(email, options={"redirect_to": redirect_url})
+            flash('Recovery email sent if your account exists.', 'success')
+            return redirect(url_for('auth'))
+        except Exception as e:
+            flash(f'An error occurred: {str(e)}', 'error')
+            return redirect(url_for('forgot_password'))
+            
+    return render_template('forgot_password.html')
+
+@app.route('/reset_password_callback')
+def reset_password_callback():
+    return render_template('reset_password_callback.html')
+
+@app.route('/reset_password', methods=['GET', 'POST'])
+@login_required
+def reset_password():
+    if request.method == 'POST':
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        
+        if not password or password != confirm_password:
+            flash('Passwords do not match or are empty.', 'error')
+            return redirect(url_for('reset_password'))
+            
+        if len(password) < 8:
+            flash('Password must be at least 8 characters long.', 'error')
+            return redirect(url_for('reset_password'))
+            
+        try:
+            # Update user's password using Supabase admin
+            res = supabase_backend.auth.admin.update_user_by_id(
+                current_user.id,
+                {"password": password}
+            )
+            if res:
+                flash('Password has been successfully updated!', 'success')
+                return redirect(url_for('homepage'))
+        except Exception as e:
+            flash(f'Error updating password: {str(e)}', 'error')
+            return redirect(url_for('reset_password'))
+            
+    return render_template('reset_password.html')
     
 @app.route("/login/google")
 def login_google():
