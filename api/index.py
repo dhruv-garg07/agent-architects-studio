@@ -326,25 +326,6 @@ def creators():
                         sort_by=sort_by)
 
 
-@app.route('/harshit')
-def harshit_page():
-    """Founder page for Harshit."""
-    try:
-        return render_template('harshit.html')
-    except Exception as e:
-        # If template missing or render fails, return a simple fallback
-        return f"<h1>Harshit</h1><p>Unable to render page: {e}</p>", 500
-
-
-@app.route('/dhruv')
-def dhruv_page():
-    """Founder page for Dhruv."""
-    try:
-        return render_template('dhruv.html')
-    except Exception as e:
-        return f"<h1>Dhruv</h1><p>Unable to render page: {e}</p>", 500
-
-
 @app.route('/about')
 def about_page():
     """About Us page."""
