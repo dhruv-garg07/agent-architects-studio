@@ -246,7 +246,7 @@ def health_check():
     }
     return jsonify(status)
 
-@app.route('/mcp-docs')
+@app.route('/gitmem/mcp-docs')
 def mcp_docs():
     """MCP Server Documentation Page"""
     return render_template('mcp_docs.html')
