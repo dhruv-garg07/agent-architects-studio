@@ -246,6 +246,7 @@ def health_check():
     }
     return jsonify(status)
 
+@app.route('/mcp-docs')
 @app.route('/gitmem/mcp-docs')
 def mcp_docs():
     """MCP Server Documentation Page"""
@@ -1334,7 +1335,7 @@ def join_waitlist():
               <p>Hello {name},</p>
               <p>We are absolutely thrilled that you took the time to sign up for our waitlist! 🚀</p>
               <p>We are currently working hard behind the scenes to build something special, and we can't wait to share it with you. We will notify you the moment we are ready to onboard you.</p>
-              <p>In the meantime, please feel free to explore our website and get a feel for what we are building.</p>
+              <p>In the meantime, feel free to explore our website.</p>
               <p>Warm regards,</p>
               <p>The Manhattan Project Team</p>
               
@@ -1860,14 +1861,3 @@ def llm_respond():
         else:
             print(f"[LLM_SERVICE] Received response via legacy endpoint for unknown request {request_id}")
             return jsonify({"error": "Request ID not found or timed out"}), 404
-
-if __name__ == '__main__':
-    # MCP SSE is now served via the mcp_bp blueprint (no separate thread needed)
-    if socketio:
-        # Run with SocketIO for WebSocket support
-        print("[STARTUP] Running with Flask-SocketIO (WebSocket enabled)")
-        socketio.run(app, debug=True, host='0.0.0.0', port=1078, allow_unsafe_werkzeug=True)
-    else:
-        # Fallback to standard Flask
-        print("[STARTUP] Running with standard Flask (no WebSocket)")
-        app.run(debug=True, host='0.0.0.0', port=1078)
