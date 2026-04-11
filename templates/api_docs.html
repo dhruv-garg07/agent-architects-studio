@@ -606,9 +606,26 @@ pre[class*="language-"] {
     gap: 10px;
   }
   
-  #api-nav, #api-details, #api-code {
+  #api-details, #api-code {
     margin-bottom: 1rem;
     height: auto;
+  }
+  
+  #api-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    z-index: 50;
+    background: #1a1a1a;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+  }
+  
+  #api-nav.mobile-open {
+    transform: translateX(0);
   }
   
   .nav-panel, .middle-panel, .code-panel {
@@ -1394,6 +1411,25 @@ table thead {
       if (navSearch) {
         navSearch.addEventListener('input', debounce(handleNavSearch, 300));
         console.log('Nav search listener added');
+      }
+      
+      // Auto-switch to next endpoint on scroll
+      const detailsPanel = document.getElementById('api-details');
+      if (detailsPanel) {
+        detailsPanel.addEventListener('scroll', () => {
+          // Check if scrolled to bottom
+          if (detailsPanel.scrollTop + detailsPanel.clientHeight >= detailsPanel.scrollHeight - 10) {
+            const currentActive = document.querySelector('.endpoint-item.active');
+            if (currentActive) {
+              const allItems = Array.from(document.querySelectorAll('.endpoint-item'));
+              const currentIndex = allItems.indexOf(currentActive);
+              if (currentIndex !== -1 && currentIndex < allItems.length - 1) {
+                const nextItem = allItems[currentIndex + 1];
+                nextItem.click();
+              }
+            }
+          }
+        });
       }
       
       // Filter chips
@@ -2385,14 +2421,14 @@ table thead {
       
       if (toggleBtn && navPanel) {
         toggleBtn.addEventListener('click', () => {
-          navPanel.classList.toggle('hidden');
+          navPanel.classList.toggle('mobile-open');
         });
         
         // Close nav when clicking outside on mobile
         document.addEventListener('click', (e) => {
           if (window.innerWidth < 1024) {
-            if (!navPanel.contains(e.target) && !toggleBtn.contains(e.target) && !navPanel.classList.contains('hidden')) {
-              navPanel.classList.add('hidden');
+            if (!navPanel.contains(e.target) && !toggleBtn.contains(e.target) && navPanel.classList.contains('mobile-open')) {
+              navPanel.classList.remove('mobile-open');
             }
           }
         });

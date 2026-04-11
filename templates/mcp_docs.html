@@ -45,7 +45,7 @@
 
     <!-- Right: Details & Content Panel -->
     <section id="mcp-details" class="panel middle-panel card">
-      <div class="p-6" id="mcp-detail-content">
+      <div class="p-6 relative" id="mcp-detail-content">
         <!-- Default: Overview -->
         <div id="mcp-overview-panel">
           <div class="mb-8 pb-6 border-b border-[rgba(255,255,255,0.03)]">
@@ -757,7 +757,12 @@ python3 -m pip install gitmem-mcp</code></pre>
       btn.className = 'mcp-nav-item';
       btn.dataset.section = item.id;
       btn.innerHTML = `<span class="mcp-nav-dot" style="background:${item.dot};box-shadow:0 0 6px ${item.dot}"></span>${item.label}`;
-      btn.addEventListener('click', () => selectSection(item.id, btn));
+      btn.addEventListener('click', () => {
+        const target = document.getElementById(item.id === 'overview' ? 'mcp-overview-panel' : `section-${item.id}`);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth' });
+        }
+      });
       container.appendChild(btn);
     });
     div.appendChild(container);
@@ -769,38 +774,45 @@ python3 -m pip install gitmem-mcp</code></pre>
     catList.appendChild(div);
   });
 
-  // ── Select Section ──
-  function selectSection(id, btn) {
-    // Update nav active state
+  // ── Render All Sections ──
+  const detailEl = document.getElementById('mcp-detail-content');
+  NAV.forEach(group => {
+    group.items.forEach(item => {
+      if (item.id === 'overview') return; // Skip overview as it's already there
+      const fn = DETAILS[item.id];
+      if (fn) {
+        const wrap = document.createElement('div');
+        wrap.className = 'mcp-section mb-12 pt-4'; // Add spacing and padding for scroll target
+        wrap.id = `section-${item.id}`;
+        wrap.innerHTML = fn();
+        detailEl.appendChild(wrap);
+        // Syntax Highlight
+        if (typeof Prism !== 'undefined') Prism.highlightAllUnder(wrap);
+      }
+    });
+  });
+
+  // ── Scroll Spy ──
+  const detailsEl = document.getElementById('mcp-detail-content');
+  const overviewPanel = document.getElementById('mcp-overview-panel');
+  if (overviewPanel) overviewPanel.classList.add('mcp-section');
+
+  detailsEl.addEventListener('scroll', () => {
+    const sections = document.querySelectorAll('.mcp-section');
+    let current = 'overview'; // Default fallback
+    
+    sections.forEach(section => {
+      const sectionTop = section.offsetTop;
+      // If we have scrolled past the top of the section (with some buffer)
+      if (detailsEl.scrollTop >= (sectionTop - 100)) {
+        current = section.id === 'mcp-overview-panel' ? 'overview' : section.id.replace('section-', '');
+      }
+    });
+    
     document.querySelectorAll('.mcp-nav-item').forEach(b => b.classList.remove('active'));
+    const btn = document.querySelector(`.mcp-nav-item[data-section="${current}"]`);
     if (btn) btn.classList.add('active');
-
-    const detailEl = document.getElementById('mcp-detail-content');
-
-    if (id === 'overview') {
-      document.getElementById('mcp-overview-panel').style.display = 'block';
-      const injected = detailEl.querySelector('.mcp-injected');
-      if (injected) injected.remove();
-      return;
-    }
-
-    // Hide default overview
-    document.getElementById('mcp-overview-panel').style.display = 'none';
-
-    // Remove old injected content
-    const old = detailEl.querySelector('.mcp-injected');
-    if (old) old.remove();
-
-    const fn = DETAILS[id];
-    if (fn) {
-      const wrap = document.createElement('div');
-      wrap.className = 'mcp-injected animate-fade-in fade-in transition-all duration-300';
-      wrap.innerHTML = fn();
-      detailEl.appendChild(wrap);
-      // Syntax Highlight
-      if (typeof Prism !== 'undefined') setTimeout(() => Prism.highlightAllUnder(wrap), 50);
-    }
-  }
+  });
 
   // ── Global Copy Event Delegation ──
   document.addEventListener('click', function(e) {
