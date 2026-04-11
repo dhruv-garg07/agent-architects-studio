@@ -357,6 +357,12 @@
                     transparent);
             opacity: 0.6;
         }
+
+        @media (max-width: 767px) {
+            #nav-login-link, #nav-signin-link {
+                display: none !important;
+            }
+        }
     </style>
 
     <script>
@@ -411,12 +417,12 @@
                 <div class="flex items-center gap-6">
                     <a href="{{ url_for('homepage') }}" class="flex items-center gap-2 group">
                         <span
-                            class="text-xl font-bold tracking-wide text-white group-hover:text-blue-200 transition-colors">The
+                            class="text-lg sm:text-xl font-bold tracking-wide text-white group-hover:text-blue-200 transition-colors">The
                             Manhattan
                             Project</span>
                     </a>
 
-                    <!-- Navigation Links (Placeholder/Commented) -->
+                    <!-- Navigation Links -->
                     <div class="hidden md:flex ml-4 space-x-1 gap-2">
                         <a href="{{ url_for('api_docs') }}"
                             class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-all group">
@@ -509,13 +515,39 @@
                     </script>
 
                     {% else %}
-                    <a href="{{ url_for('auth') }}"
-                        class="text-sm font-medium text-gray-400 hover:text-white px-2 transition-colors">Log In</a>
-                    <a href="{{ url_for('auth') }}" class="btn-primary ml-2 px-4 py-1.5 h-8 text-sm flex items-center">
+                    <a id="nav-login-link" href="{{ url_for('auth') }}"
+                        class="hidden md:inline mobile-hide text-sm font-medium text-gray-400 hover:text-white px-2 transition-colors">Log In</a>
+                    <a id="nav-signin-link" href="{{ url_for('auth') }}" class="hidden md:flex mobile-hide btn-primary ml-2 px-4 py-1.5 h-8 text-sm items-center">
                         Sign In
                     </a>
                     {% endif %}
+
+                    <!-- Hamburger Menu Button -->
+                    <button id="mobile-menu-button" class="md:hidden text-gray-400 hover:text-white focus:outline-none ml-2">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
                 </div>
+            </div>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-[#1a1a1a] border-t border-[#2d2d2d]">
+            <div class="px-6 py-4 space-y-2">
+                <a href="{{ url_for('api_docs') }}" class="block text-gray-400 hover:text-white py-2 text-sm font-medium">API Docs</a>
+                <a href="/gitmem/mcp-docs" class="block text-gray-400 hover:text-white py-2 text-sm font-medium">MCP Docs</a>
+                <a href="{{ url_for('about_page') }}" class="block text-gray-400 hover:text-white py-2 text-sm font-medium">About</a>
+                {% if current_user.is_authenticated %}
+                    <div class="border-t border-[#2d2d2d] my-2 pt-2"></div>
+                    <a href="{{ url_for('dashboard') }}" class="block text-gray-400 hover:text-white py-2 text-sm font-medium">Dashboard</a>
+                    <a href="{{ url_for('memory') }}" class="block text-gray-400 hover:text-white py-2 text-sm font-medium">Playground</a>
+                    <a href="/gitmem" class="block text-gray-400 hover:text-white py-2 text-sm font-medium">GitMem</a>
+                    <a href="/profile" class="block text-gray-400 hover:text-white py-2 text-sm font-medium">Profile</a>
+                    <a href="{{ url_for('logout') }}" class="block text-red-400 hover:text-red-300 py-2 text-sm font-medium">Sign out</a>
+                {% else %}
+                    <div class="border-t border-[#2d2d2d] my-2 pt-2"></div>
+                    <a href="{{ url_for('auth') }}" class="block text-gray-400 hover:text-white py-2 text-sm font-medium">Log In</a>
+                    <a href="{{ url_for('auth') }}" class="block text-blue-400 hover:text-blue-300 py-2 text-sm font-medium">Sign In</a>
+                {% endif %}
             </div>
         </div>
     </nav>
@@ -657,9 +689,42 @@
         </div>
     </footer>
 
-    <!-- Initialize Lucide Icons -->
+    <!-- Initialize Lucide Icons and Mobile Menu -->
     <script>
         lucide.createIcons();
+        
+        // Hide mobile links if screen is small (Fail-safe)
+        function checkMobileLinks() {
+            if (window.innerWidth < 768) {
+                document.querySelectorAll('.mobile-hide').forEach(el => {
+                    el.style.setProperty('display', 'none', 'important');
+                });
+            } else {
+                document.querySelectorAll('.mobile-hide').forEach(el => {
+                    el.style.removeProperty('display');
+                });
+            }
+        }
+        
+        checkMobileLinks();
+        window.addEventListener('resize', checkMobileLinks);
+        
+        // Mobile menu toggle
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        
+        if (mobileMenuButton && mobileMenu) {
+            mobileMenuButton.addEventListener('click', function() {
+                mobileMenu.classList.toggle('hidden');
+            });
+            
+            // Close menu when clicking outside
+            document.addEventListener('click', function(event) {
+                if (!mobileMenu.contains(event.target) && !mobileMenuButton.contains(event.target)) {
+                    mobileMenu.classList.add('hidden');
+                }
+            });
+        }
     </script>
 </body>
 

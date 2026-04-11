@@ -281,12 +281,26 @@
 .mcp-tool-table tbody tr:hover { background: rgba(59,130,246,0.05); }
 
 /* ── Responsive ── */
-@media (max-width: 1024px) {
-  .mcp-docs-panels { grid-template-columns: 240px 1fr; }
-}
 @media (max-width: 768px) {
   .mcp-docs-panels { grid-template-columns: 1fr; height: auto; min-height: auto; gap: 10px; }
-  #mcp-nav, #mcp-details { margin-bottom: 1rem; height: auto; }
+  #mcp-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    z-index: 100;
+    background-color: #1a1a1a;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+  }
+  #mcp-nav.mobile-open {
+    transform: translateX(0);
+  }
+  #mcp-details { margin-bottom: 1rem; height: auto; }
   .nav-panel, .middle-panel { border-radius: 12px; }
 }
 </style>
@@ -847,6 +861,21 @@ python3 -m pip install gitmem-mcp</code></pre>
     const q = e.target.value;
     if (globalSearch) globalSearch.value = q;
     handleSearch(q);
+  });
+
+  // ── Mobile Nav Toggle ──
+  const mobileNavToggle = document.getElementById('mcp-mobile-nav-toggle');
+  const mcpNav = document.getElementById('mcp-nav');
+  
+  mobileNavToggle?.addEventListener('click', () => {
+    mcpNav.classList.toggle('mobile-open');
+  });
+  
+  // Close when clicking a nav item on mobile
+  document.querySelectorAll('.mcp-nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+      mcpNav.classList.remove('mobile-open');
+    });
   });
 
   // ── Auto-select Overview ──
