@@ -51,12 +51,11 @@ class read_data_RAG:
             return []
         # print(collection.items())
         try:
-            results = collection.query(
-                query_texts=[""],  # Empty query to fetch all documents
-                n_results=top_k
+            results = collection.get(
+                limit=top_k
             )
-            documents = results.get("documents", [[]])[0]
-            metadatas = results.get("metadatas", [[]])[0]
+            documents = results.get("documents", [])
+            metadatas = results.get("metadatas", [])
             
             chat_history = []
             for doc, meta in zip(documents, metadatas):
@@ -90,13 +89,12 @@ class read_data_RAG:
             return []
         
         try:
-            results = collection.query(
-                query_texts=[""],  # Empty query to fetch all documents
-                n_results=top_k,
+            results = collection.get(
+                limit=top_k,
                 where=filter_metadata
             )
-            documents = results.get("documents", [[]])[0]
-            metadatas = results.get("metadatas", [[]])[0]
+            documents = results.get("documents", [])
+            metadatas = results.get("metadatas", [])
             
             chat_history = []
             for doc, meta in zip(documents, metadatas):
@@ -192,15 +190,13 @@ class read_data_RAG:
         try:
             # Assuming conversation_thread is stored in metadata
             filter_metadata = {"conversation_thread": conversation_thread}
-            results = self.manager.get_collection(user_id).query(
-                query_texts=[""],  # Empty query to fetch all documents
-                # n_results=top_k,
-                where=filter_metadata,
-                n_results=top_k
+            results = self.manager.get_collection(user_id).get(
+                limit=top_k,
+                where=filter_metadata
             )
-            ids = results.get("ids", [[]])[0]
-            documents = results.get("documents", [[]])[0]
-            metadatas = results.get("metadatas", [[]])[0]
+            ids = results.get("ids", [])
+            documents = results.get("documents", [])
+            metadatas = results.get("metadatas", [])
             
             chat_history = []
             for id, doc, meta in zip(ids, documents, metadatas):

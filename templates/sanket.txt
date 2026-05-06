@@ -1,0 +1,17 @@
+Hey everyone,
+
+I’ve been leaning pretty heavily on Cursor lately (loving it), but like most people, I’m starting to get a bit paranoid about my token usage and API costs. I’ve started seeing a few products popping up that claim to "compress" or optimize your context to save on tokens.
+
+I saw Gitmem on Product Hunt the other day and have been messing around with it. It definitely feels like it’s doing something, I am seeing a visible reduction in token usage in my logs but I’m still on the fence about whether it’s actually helping my productivity or just adding another step to my workflow.
+
+I also stumbled across Nia, which seems to be playing in the same "inline optimization" space.
+
+My main concerns/questions for anyone else experimenting with these:
+
+Context Loss: Does the "optimization" actually make the AI dumber? I’m worried that by stripping out "unnecessary" tokens, I might be losing the subtle context the model needs for complex logic.
+
+Friction: Is it too early to tell if these tools are actually productive? Sometimes I feel like I spend more time managing the tool than just writing the code.
+
+Real-world Savings: For those using these or similar tools daily, are you seeing a significant drop in your monthly bill, or is it just marginal?
+
+Curious to hear if anyone else has integrated these into their Cursor setup or if you think it's better to just bite the bullet and pay for the raw tokens to keep the context "pure."

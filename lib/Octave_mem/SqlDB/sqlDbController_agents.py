@@ -56,9 +56,9 @@ class Agent_Chat_Manager():
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
         # Fetch current messages
-        response = self.table.select("messages").eq("id", session_id).single().execute()
-        if response.data and response.data['messages'] is not None:
-            current_messages = response.data['messages']
+        response = self.table.select("messages").eq("id", session_id).execute()
+        if response.data and len(response.data) > 0 and response.data[0]['messages'] is not None:
+            current_messages = response.data[0]['messages']
             current_messages.append(new_message)
             # Update messages
             update_response = self.table.update({
@@ -70,9 +70,9 @@ class Agent_Chat_Manager():
     
     def get_session_messages(self, session_id: str) -> list:
         """Retrieve messages from an agent session."""
-        response = self.table.select("messages").eq("id", session_id).single().execute()
-        if response.data and response.data['messages'] is not None:
-            return response.data['messages']
+        response = self.table.select("messages").eq("id", session_id).execute()
+        if response.data and len(response.data) > 0 and response.data[0]['messages'] is not None:
+            return response.data[0]['messages']
         return []
     
     def list_sessions_for_agent(self, agent_id: str, user_id: str) -> list:

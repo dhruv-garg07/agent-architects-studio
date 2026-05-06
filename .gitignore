@@ -31,3 +31,4 @@ venv/
 .env
 **/__pycache__/
 *.pyc
+mcp.json

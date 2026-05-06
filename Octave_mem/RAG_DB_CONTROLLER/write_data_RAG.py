@@ -111,7 +111,7 @@ class RAG_DB_Controller_CHAT_HISTORY:
             Give the response in a few words only."""
         
         metadata_response = stream_chat_response(
-            model="meta-llama/Llama-3.3-70B-Instruct-Turbo-Free", 
+            model="deepseek-ai/deepseek-coder-33b-instruct", 
             max_tokens=20, 
             prompt=metadata_prompt, 
             temperature=0.3

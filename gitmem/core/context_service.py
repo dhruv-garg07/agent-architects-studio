@@ -404,7 +404,7 @@ class UnifiedContextService:
             # Query Manhattan API for memories
             import requests
             API_URL = os.getenv("MANHATTAN_API_URL", "http://127.0.0.1:1078")
-            API_KEY = os.getenv("MANHATTAN_API_KEY", "sk-tg5T-vIyYnuprwVPcgoHGfX37HBsfPwAvHkV3WFyhkE")
+            API_KEY = os.getenv("MANHATTAN_API_KEY")
             
             response = requests.post(
                 f"{API_URL}/read_memory",

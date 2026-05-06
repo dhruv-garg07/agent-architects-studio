@@ -2,14 +2,14 @@ import os
 from typing import List, Dict, Optional
 from dotenv import load_dotenv
 import chromadb
-import httpx
 import logging
-import requests, json
+import numpy as np
+
 # -------------------------------------------------
 # Environment & Logging
 # -------------------------------------------------
 
-load_dotenv()
+load_dotenv(override=True)
 
 logging.basicConfig(level=logging.ERROR)
 
@@ -25,80 +25,72 @@ class DisabledEmbeddingFunction(EmbeddingFunction):
 
     def __call__(self, texts):
         raise RuntimeError(
-            "❌ Local embeddings are disabled. "
+            "[ERROR] Local embeddings are disabled. "
             "Remote embeddings must be provided explicitly."
         )
 
-REMOTE_EMBEDDING_URL = os.getenv("REMOTE_EMBEDDING_URL")
-REMOTE_EMBEDDING_DIMENSION = int(os.getenv("REMOTE_EMBEDDING_DIMENSION", "768"))
+# HF Inference API config
+HF_TOKEN = os.getenv("HF_TOKEN")
+HF_EMBEDDING_MODEL = os.getenv("HF_EMBEDDING_MODEL", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+REMOTE_EMBEDDING_DIMENSION = int(os.getenv("REMOTE_EMBEDDING_DIMENSION", "384"))
 
-if not REMOTE_EMBEDDING_URL:
-    raise RuntimeError("REMOTE_EMBEDDING_URL must be set")
+# Keep REMOTE_EMBEDDING_URL for backward compat but it is no longer required
+REMOTE_EMBEDDING_URL = os.getenv("REMOTE_EMBEDDING_URL", "hf-inference")
+
+if not HF_TOKEN:
+    raise RuntimeError("HF_TOKEN must be set in environment variables")
 
 # -------------------------------------------------
-# Remote Embedding Client
+# Remote Embedding Client (HuggingFace Inference API)
 # -------------------------------------------------
 
 class RemoteEmbeddingClient:
     """
-    Stateless remote embedding client.
-    Chroma never sees text → only vectors.
+    Embedding client using HuggingFace Inference API.
+    Uses huggingface_hub InferenceClient for feature_extraction.
+    No dependency on HF Spaces — uses the official Inference API directly.
     """
 
-    def __init__(self, url: str):
-        self.url = url
-        self.http = httpx.Client(timeout=60)
-
-    
-    REMOTE_EMBEDDING_URL = "https://iotacluster-embedding-model.hf.space/gradio_api/call/embed_dense"
-
-class RemoteEmbeddingClient:
-    """
-    Stateless remote embedding client.
-    HF Space = single-text embedding → loop safely.
-    """
-
-    def __init__(self, url: str):
-        self.url = url
-
-    def _embed_one(self, text: str, timeout: int = 60) -> List[float]:
-        # Step 1: POST
-        resp = requests.post(
-            self.url,
-            json={"data": [text]},
-            headers={"Content-Type": "application/json"},
-            timeout=timeout,
+    def __init__(self, model: str = None, api_key: str = None):
+        from huggingface_hub import InferenceClient
+        self.model = model or HF_EMBEDDING_MODEL
+        self.api_key = api_key or HF_TOKEN
+        self.client = InferenceClient(
+            provider="hf-inference",
+            api_key=self.api_key,
         )
-        resp.raise_for_status()
+        print(f"[RemoteEmbeddingClient] Initialized with model: {self.model}")
 
-        event_id = resp.json().get("event_id")
-        if not event_id:
-            raise RuntimeError("No event_id returned from embedding service")
-
-        # Step 2: Stream
-        stream_url = f"{self.url}/{event_id}"
-
-        with requests.get(stream_url, stream=True, timeout=timeout) as r:
-            r.raise_for_status()
-            for line in r.iter_lines(decode_unicode=True):
-                if not line:
-                    continue
-
-                if line.startswith("data:"):
-                    payload = json.loads(line.replace("data:", "").strip())
-                    return payload[0]["dense_embedding"]
-
-        raise RuntimeError("Embedding stream ended without result")
+    def _embed_one(self, text: str) -> List[float]:
+        """Embed a single text using HF Inference API."""
+        result = self.client.feature_extraction(
+            text,
+            model=self.model,
+        )
+        # result is a numpy array — convert to list
+        vec = np.array(result).flatten().tolist()
+        return vec
 
     def embed_remote(self, texts: List[str]) -> List[List[float]]:
         """
-        Embed multiple texts safely (one-by-one).
+        Embed multiple texts safely (one-by-one with retries).
         """
+        import time
         embeddings = []
+        max_retries = 3
 
         for idx, text in enumerate(texts):
-            vec = self._embed_one(text)
-            embeddings.append(vec)
+            for attempt in range(max_retries):
+                try:
+                    vec = self._embed_one(text)
+                    embeddings.append(vec)
+                    break  # Success
+                except Exception as e:
+                    if attempt < max_retries - 1:
+                        print(f"[WARNING] Embedding failed for text {idx} (attempt {attempt + 1}/{max_retries}): {e}. Retrying in 2 seconds...")
+                        time.sleep(2)
+                    else:
+                        raise RuntimeError(f"Failed to embed text after {max_retries} attempts: {e}")
 
         return embeddings
 
@@ -128,9 +120,9 @@ class ChromaCollectionManager:
     def __init__(self, database: Optional[str] = None):
         self.client = CHROMA_CLIENT
         self.database = database or os.getenv("CHROMA_DATABASE_CHAT_HISTORY")
-        self.embedder = RemoteEmbeddingClient(REMOTE_EMBEDDING_URL)
+        self.embedder = RemoteEmbeddingClient()
 
-        # ✅ SINGLE shared disabled embedding function
+        # [SUCCESS] SINGLE shared disabled embedding function
         self._disabled_ef = DisabledEmbeddingFunction()
 
     # -------------------------------------------------
@@ -143,7 +135,7 @@ class ChromaCollectionManager:
             col = self.client.get_or_create_collection(
                 name=collection_name,
 
-                # 🔥 CRITICAL FIX (never use None)
+                # [HOT] CRITICAL FIX (never use None)
                 embedding_function=self._disabled_ef,
 
                 metadata={"embedding": "remote-only"},
@@ -178,12 +170,12 @@ class ChromaCollectionManager:
     ) -> str:
 
         if self.collection_exists(collection_name):
-            return f"⚠️ Collection '{collection_name}' already exists."
+            return f"[WARNING] Collection '{collection_name}' already exists."
 
         col = self.client.create_collection(
             name=collection_name,
 
-            # 🔥 SAME FIX HERE
+            # [HOT] SAME FIX HERE
             embedding_function=self._disabled_ef,
             metadata={"embedding": "remote-only"},
         )
@@ -192,7 +184,7 @@ class ChromaCollectionManager:
         if ids and documents:
             embeddings = self.embedder.embed_remote(documents)
 
-            # ✅ SAFETY CHECK
+            # [SUCCESS] SAFETY CHECK
             if len(embeddings) != len(ids):
                 raise ValueError("Embedding count mismatch")
 
@@ -202,9 +194,9 @@ class ChromaCollectionManager:
                 embeddings=embeddings,
                 metadatas=metadatas or [{} for _ in ids],
             )
-            return f"✅ Collection '{collection_name}' created with {len(ids)} docs."
+            return f"[SUCCESS] Collection '{collection_name}' created with {len(ids)} docs."
 
-        return f"✅ Empty collection '{collection_name}' created."
+        return f"[SUCCESS] Empty collection '{collection_name}' created."
 
     def create_or_update_collection(
         self,
@@ -217,7 +209,7 @@ class ChromaCollectionManager:
         col = self._get_or_cache(collection_name)
         embeddings = self.embedder.embed_remote(documents)
 
-        # ✅ HARD VALIDATION (prevents silent bugs)
+        # [SUCCESS] HARD VALIDATION (prevents silent bugs)
         if len(embeddings) != len(ids):
             raise ValueError(
                 f"Embedding count mismatch: {len(embeddings)} vs {len(ids)}"
@@ -230,7 +222,7 @@ class ChromaCollectionManager:
             metadatas=metadatas or [{} for _ in ids],
         )
 
-        return f"✅ Collection '{collection_name}' upserted ({len(ids)} items)."
+        return f"[SUCCESS] Collection '{collection_name}' upserted ({len(ids)} items)."
 
     
     def replace_collection(
@@ -248,7 +240,7 @@ class ChromaCollectionManager:
         col = self.client.create_collection(
             name=collection_name,
 
-            # 🔥 SAME FIX
+            # [HOT] SAME FIX
             embedding_function=self._disabled_ef,
             metadata={"embedding": "remote-only"},
         )
@@ -266,23 +258,64 @@ class ChromaCollectionManager:
                 embeddings=embeddings,
                 metadatas=metadatas or [{} for _ in ids],
             )
-            return f"✅ Collection '{collection_name}' replaced with {len(ids)} docs."
+            return f"[SUCCESS] Collection '{collection_name}' replaced with {len(ids)} docs."
 
-        return f"✅ Collection '{collection_name}' replaced (empty)."
+        return f"[SUCCESS] Collection '{collection_name}' replaced (empty)."
 
     def delete_collection(self, collection_name: str) -> str:
         self.client.delete_collection(collection_name)
         self._collection_cache.pop(collection_name, None)
-        return f"✅ Deleted collection '{collection_name}'."
+        return f"[SUCCESS] Deleted collection '{collection_name}'."
 
     # -------------------------------------------------
     # Document Ops
     # -------------------------------------------------
 
+    def update_collection(
+        self,
+        collection_name: str,
+        ids: List[str],
+        documents: List[str],
+        metadatas: Optional[List[Dict]] = None,
+    ) -> str:
+        """Update existing documents in a collection."""
+        try:
+            col = self._get_or_cache(collection_name)
+            embeddings = self.embedder.embed_remote(documents)
+
+            if len(embeddings) != len(ids):
+                raise ValueError(
+                    f"Embedding count mismatch: {len(embeddings)} vs {len(ids)}"
+                )
+
+            col.update(
+                ids=ids,
+                documents=documents,
+                embeddings=embeddings,
+                metadatas=metadatas or [{} for _ in ids],
+            )
+            return f"Updated {len(ids)} documents in '{collection_name}'."
+        except Exception as e:
+            return f"Error updating collection '{collection_name}': {e}"
+
+    def update_collection_metadata(
+        self,
+        collection_name: str,
+        ids: List[str],
+        metadatas: List[Dict],
+    ) -> str:
+        """Update only metadata for existing documents (no re-embedding needed)."""
+        try:
+            col = self._get_or_cache(collection_name)
+            col.update(ids=ids, metadatas=metadatas)
+            return f"Updated metadata for {len(ids)} documents in '{collection_name}'."
+        except Exception as e:
+            return f"Error updating metadata in '{collection_name}': {e}"
+
     def delete_documents(self, collection_name: str, ids: List[str]) -> str:
         col = self.get_collection(collection_name)
         col.delete(ids=ids)
-        return f"✅ Deleted {len(ids)} documents."
+        return f"Deleted {len(ids)} documents."
 
     def query_collection(
         self,
@@ -313,6 +346,7 @@ class ChromaCollectionManager:
         self,
         collection_name: str,
         expected_ids: Optional[List[str]] = None,
+        expected_absent_ids: Optional[List[str]] = None,
     ) -> Dict:
 
         col = self.get_collection(collection_name)
@@ -330,7 +364,13 @@ class ChromaCollectionManager:
 
         if expected_ids is not None:
             data["expected_ids"] = expected_ids
-            data["ids_match"] = set(actual_ids) == set(expected_ids)
+            data["ids_match"] = set(expected_ids).issubset(set(actual_ids))
+
+        if expected_absent_ids is not None:
+            actual_set = set(actual_ids)
+            absent_set = set(expected_absent_ids)
+            data["expected_absent_ids"] = expected_absent_ids
+            data["ids_absent"] = absent_set.isdisjoint(actual_set)
 
         return data
 
@@ -351,29 +391,29 @@ class ChromaCollectionManager:
 #     collections = client.list_collections()
 
 #     if not collections:
-#         print("✅ No collections found. Nothing to delete.")
+#         print("[SUCCESS] No collections found. Nothing to delete.")
 #         return
 
-#     print(f"🔥 Deleting {len(collections)} collections...\n")
+#     print(f"[HOT] Deleting {len(collections)} collections...\n")
 
 #     for c in collections:
 #         try:
-#             print(f"🗑️ Deleting collection: {c.name}")
+#             print(f"[DELETE] Deleting collection: {c.name}")
 #             client.delete_collection(c.name)
 #         except Exception as e:
-#             print(f"❌ Failed to delete {c.name}: {e}")
+#             print(f"[ERROR] Failed to delete {c.name}: {e}")
 
-#     print("\n✅ ALL collections deleted successfully.")
+#     print("\n[SUCCESS] ALL collections deleted successfully.")
 
 # if __name__ == "__main__":
-#     confirm = input("⚠️ Type DELETE-ALL to confirm: ")
+#     confirm = input("[WARNING] Type DELETE-ALL to confirm: ")
 #     if confirm == "DELETE-ALL":
 #         delete_all_collections()
 #     else:
-#         print("❌ Aborted. No collections were deleted.")
+#         print("[ERROR] Aborted. No collections were deleted.")
 
 # if __name__ == "__main__":
-#     print("🚀 Running Chroma Remote Embedding Smoke Test")
+#     print("[START] Running Chroma Remote Embedding Smoke Test")
 
 #     manager = ChromaCollectionManager()
 
@@ -389,7 +429,7 @@ class ChromaCollectionManager:
 #         {"source": "test", "idx": 2},
 #     ]
 
-#     print("\n📦 Creating / Updating collection...")
+#     print("\n[PACKAGE] Creating / Updating collection...")
 #     print(
 #         manager.create_or_update_collection(
 #             collection_name=COLLECTION,
@@ -399,13 +439,13 @@ class ChromaCollectionManager:
 #         )
 #     )
 
-#     print("\n🔍 Verifying stored data...")
+#     print("\n[SEARCH] Verifying stored data...")
 #     print(manager.verify_data_in_collection(COLLECTION, expected_ids=ids))
 
-#     print("\n📊 Collection info...")
+#     print("\n[STATS] Collection info...")
 #     print(manager.get_collection_info(COLLECTION))
 
-#     print("\n🧹 Cleaning up...")
+#     print("\n[CLEAN] Cleaning up...")
 #     print(manager.delete_collection(COLLECTION))
 
-#     print("\n✅ Test completed successfully")
+#     print("\n[SUCCESS] Test completed successfully")

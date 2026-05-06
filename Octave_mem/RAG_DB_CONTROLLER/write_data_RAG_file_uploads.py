@@ -115,7 +115,7 @@ class RAG_DB_Controller_FILE_DATA:
             Give the response in a few words only."""
         
         metadata_response = stream_chat_response(
-            model="ServiceNow-AI/Apriel-1.5-15b-Thinker", 
+            model="deepseek-ai/deepseek-coder-33b-instruct", 
             max_tokens=20, 
             prompt=metadata_prompt, 
             temperature=0.3

@@ -192,6 +192,13 @@ class BatchOperation:
                         agent_ID=op['agent_id'],
                         ids=op['ids']
                     )
+                
+                if isinstance(result, dict):
+                    if result.get('error'):
+                        raise RuntimeError(result.get('error'))
+                    if result.get('success') is False:
+                        raise RuntimeError(result.get('message', 'Unknown error'))
+                
                 self.results.append(result)
             
             return {
@@ -332,6 +339,17 @@ class Agentic_RAG:
     def get_agent_collection_info(self, agent_ID: str) -> Dict:
         """Get information about the agent's collection."""
         return self.wrapper.get_collection_info(collection_name=agent_ID)
+        
+    def get_all_docs(self, agent_ID: str) -> Dict:
+        """Get all documents in the agent's collection."""
+        # Using wrapper's get_collection_info or directly accessing manager to get all data
+        manager = self.wrapper.manager
+        try:
+            col = manager._get_or_cache(agent_ID)
+            return col.get(include=['metadatas', 'documents'])
+        except Exception as e:
+            print(f"[Agentic_Chat_Manager] get_all_docs error for {agent_ID}: {e}")
+            return {"ids": [], "documents": [], "metadatas": []}
     
     def search_agent_collection(self, agent_ID: str, query: str, n_results: int = 5, 
                                include_metadata: bool = True):

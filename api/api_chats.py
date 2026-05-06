@@ -832,12 +832,19 @@ def rag_search():
     if not user_id or not query:
         abort(400, "Missing user_id or query")
     
-    # Because every session has to independent, the main focus now is thread id as its the collection name to search from.
-    rows = get_read_controller_chatH().fetch_related_to_query(
-        user_ID=thread_id,
-        query=query,
-        top_k=top_k
-    )
+    if not thread_id:
+        return jsonify({"results": [], "message": "No thread_id provided"}), 200
+    
+    try:
+        # Because every session has to independent, the main focus now is thread id as its the collection name to search from.
+        rows = get_read_controller_chatH().fetch_related_to_query(
+            user_ID=thread_id,
+            query=query,
+            top_k=top_k
+        )
+    except Exception as e:
+        print(f"[RAG] Error in search: {e}")
+        return jsonify({"results": [], "error": str(e)}), 200
     
     # Allow all to come, no metadata filter as now its different collection.
     # if thread_id:

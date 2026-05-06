@@ -873,12 +873,19 @@ def delete_agent():
             user_id=user_id
         )
         
-        # Try deleting Chroma DB collections for the agent
-        chat_agentic_rag.delete_agent_collection(agent_ID=agent_id)
-        file_agentic_rag.delete_agent_collection(agent_ID=agent_id)
-        
         if not agent:
             return jsonify({'error': 'agent_not_found'}), 404
+        
+        # Best-effort cleanup of Chroma DB collections for the agent
+        try:
+            chat_agentic_rag.delete_agent_collection(agent_ID=agent_id)
+        except Exception as e:
+            print(f"[delete_agent] Chat collection cleanup skipped: {e}")
+        try:
+            file_agentic_rag.delete_agent_collection(agent_ID=agent_id)
+        except Exception as e:
+            print(f"[delete_agent] File collection cleanup skipped: {e}")
+        
         return jsonify({'ok': True, 'message': 'agent_deleted'}), 200   
     except Exception as e:
         return jsonify({'error': str(e)}), 500  
@@ -966,13 +973,13 @@ def add_document():
         return jsonify({'error': 'missing_api_key', 'valid': False}), 401
     try:
         # Add documents to the agent's vector DB
-        for doc, doc_id in zip(document_content, ids):
-            file_agentic_rag.add_docs(
-                agent_ID=agent_id,
-                document_content=doc,
-                document_id=doc_id,
-                metadata=metadata
-            )
+        metadatas_list = [metadata] * len(ids) if metadata else None
+        file_agentic_rag.add_docs(
+            agent_ID=agent_id,
+            ids=ids,
+            documents=document_content,
+            metadatas=metadatas_list
+        )
         return jsonify({'ok': True, 'message': 'documents_added'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500  
@@ -1051,11 +1058,12 @@ def update_document():
             
     try:
         # Update document in the agent's vector DB
+        metadatas_list = [metadata] * len(document_id) if metadata else None
         file_agentic_rag.update_docs(
             agent_ID=agent_id,
             ids=document_id,
             documents=new_content,
-            metadatas=metadata
+            metadatas=metadatas_list
         )
         return jsonify({'ok': True, 'message': 'document_updated'}), 200
     
@@ -1134,8 +1142,8 @@ def update_document_metadata():
         # Update document metadata in the agent's vector DB
         file_agentic_rag.update_doc_metadata(
             agent_ID=agent_id,
-            ids=document_id,
-            metadatas=metadata
+            ids=[document_id],
+            metadatas=[metadata]
         )
         return jsonify({'ok': True, 'message': 'document_metadata_updated'}), 200
     except Exception as e:
@@ -1480,15 +1488,24 @@ def add_memory():
         if entries:
             print(f"[DEBUG /add_memory] Calling vector_store.add_entries with {len(entries)} entries")
             # Add directly to vector store (bypassing LLM)
-            memory_system.vector_store.add_entries(entries)
+            result = memory_system.vector_store.add_entries(entries)
             print(f"[DEBUG /add_memory] add_entries call completed")
+            
+            if result and not result.get('success', True):
+                return jsonify({'error': result.get('error', 'Unknown error during add_entries')}), 500
+                
+            entries_added = result.get('operations_completed', 0) if result and isinstance(result, dict) else 0
+            added_ids = result.get('ids', []) if result and isinstance(result, dict) else []
+        else:
+            entries_added = 0
+            added_ids = []
         
         return jsonify({
             'ok': True,
             'message': 'memories_added',
             'agent_id': agent_id,
-            'entries_added': len(entries),
-            'entry_ids': entry_ids
+            'entries_added': entries_added,
+            'entry_ids': added_ids
         }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -1730,7 +1747,7 @@ def update_memory():
         # Use Agentic_RAG to update the document
         if document_content:
             # Update both document and metadata
-            memory_system.vector_store.rag.update_docs(
+            memory_system.vector_store.agentic_RAG.update_docs(
                 agent_ID=agent_id,
                 ids=[entry_id],
                 documents=[document_content],
@@ -1738,7 +1755,7 @@ def update_memory():
             )
         elif metadata:
             # Update metadata only
-            memory_system.vector_store.rag.update_doc_metadata(
+            memory_system.vector_store.agentic_RAG.update_doc_metadata(
                 agent_ID=agent_id,
                 ids=[entry_id],
                 metadatas=[metadata]
@@ -1779,7 +1796,7 @@ def delete_memory():
         memory_system = _get_or_create_memory_system(agent_id)
         
         # Use Agentic_RAG to delete documents
-        result = memory_system.vector_store.rag.delete_chat_history(
+        result = memory_system.vector_store.agentic_RAG.delete_chat_history(
             agent_ID=agent_id,
             ids=entry_ids
         )
@@ -1949,8 +1966,9 @@ def agent_stats():
         try:
             # Access the underlying vector store
             if hasattr(memory_system, 'vector_store') and memory_system.vector_store:
-                collection = memory_system.vector_store._collection
-                if collection:
+                if hasattr(memory_system.vector_store, 'agentic_RAG'):
+                    manager = memory_system.vector_store.agentic_RAG.wrapper.manager
+                    collection = manager._get_or_cache(agent_id)
                     all_data = collection.get(include=['metadatas'])
                     memory_count = len(all_data.get('ids', []))
                     
@@ -1975,8 +1993,9 @@ def agent_stats():
         doc_count = 0
         try:
             if file_agentic_rag:
-                file_agentic_rag.create_agent_collection(agent_ID=agent_id)
-                docs = file_agentic_rag.get_all_docs(agent_ID=agent_id)
+                manager = file_agentic_rag.wrapper.manager
+                collection = manager._get_or_cache(agent_id)
+                docs = collection.get(include=[])
                 doc_count = len(docs.get('ids', [])) if docs else 0
         except Exception as e:
             print(f"Error getting doc stats: {e}")
@@ -2040,8 +2059,10 @@ def list_memories():
         
         try:
             if hasattr(memory_system, 'vector_store') and memory_system.vector_store:
-                collection = memory_system.vector_store._collection
-                if collection:
+                if hasattr(memory_system.vector_store, 'agentic_RAG'):
+                    manager = memory_system.vector_store.agentic_RAG.wrapper.manager
+                    collection = manager._get_or_cache(agent_id)
+                    
                     # Build where clause for filtering
                     where_clause = None
                     if filter_topic:
@@ -2192,8 +2213,9 @@ def export_memories():
         
         try:
             if hasattr(memory_system, 'vector_store') and memory_system.vector_store:
-                collection = memory_system.vector_store._collection
-                if collection:
+                if hasattr(memory_system.vector_store, 'agentic_RAG'):
+                    manager = memory_system.vector_store.agentic_RAG.wrapper.manager
+                    collection = manager._get_or_cache(agent_id)
                     all_data = collection.get(include=['documents', 'metadatas'])
                     
                     for i, entry_id in enumerate(all_data.get('ids', [])):
@@ -2342,8 +2364,9 @@ def memory_summary():
         all_memories = []
         try:
             if hasattr(memory_system, 'vector_store') and memory_system.vector_store:
-                collection = memory_system.vector_store._collection
-                if collection:
+                if hasattr(memory_system.vector_store, 'agentic_RAG'):
+                    manager = memory_system.vector_store.agentic_RAG.wrapper.manager
+                    collection = manager._get_or_cache(agent_id)
                     all_data = collection.get(include=['documents', 'metadatas'])
                     
                     for i, doc in enumerate(all_data.get('documents', [])):
@@ -2512,5 +2535,5 @@ def health_detailed():
 
 # Test validate_api_key_value function
 if __name__ == '__main__':
-    result = validate_api_key_value("sk-7YqMhfDW_2z25MPSFx84R-jqOZvhtg1qjjZf3PEZdZU", None)
+    result = validate_api_key_value(os.getenv("MANHATTAN_API_KEY_TEST"), None)
     print(f"Validation result: {result}")

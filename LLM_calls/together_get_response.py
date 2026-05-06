@@ -7,7 +7,9 @@ from requests.exceptions import RequestException
 import traceback
 import requests
 # import config
-
+from dotenv import load_dotenv
+load_dotenv()
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
 # External endpoint (optional) - set in SimpleMem/config.py
 # EXTERNAL_LLM_API_URL = getattr(config, 'EXTERNAL_LLM_API_URL', None)
@@ -95,7 +97,7 @@ def clean_response(response: str) -> str:
 
 def stream_chat_response(
     prompt: str,
-    model: str = "ServiceNow-AI/Apriel-1.5-15b-Thinker",
+    model: str = "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo",
     max_tokens: int = 5000,
     temperature: float = 0.7,
     top_p: float = 0.9,
@@ -163,6 +165,46 @@ def stream_chat_response(
                 if verbose:
                     print(f"\nTotal latency: {end_time - start_time:.2f} seconds")
                 break
+
+            # Try OpenRouter First
+            try:
+                if OPENROUTER_API_KEY:
+                    import json
+                    headers = {
+                        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                        "Content-Type": "application/json",
+                    }
+                    payload = {
+                        "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+                        "messages": [{"role": "user", "content": prompt}],
+                        "reasoning": {"enabled": True}
+                    }
+                    response = requests.post(
+                        "https://openrouter.ai/api/v1/chat/completions",
+                        headers=headers,
+                        json=payload,
+                        timeout=EXTERNAL_LLM_API_TIMEOUT
+                    )
+                    response.raise_for_status()
+                    res_json = response.json()
+                    if 'error' in res_json:
+                        raise Exception(f"OpenRouter API Error: {res_json['error']}")
+                    if 'choices' not in res_json:
+                        raise Exception(f"Unexpected OpenRouter response: {res_json}")
+                    message = res_json['choices'][0]['message']
+                    content = message.get('content', '')
+                    
+                    if content:
+                        if "[END FINAL RESPONSE]" in content:
+                            content = content.split("[END FINAL RESPONSE]")[0]
+                        yield content
+                    
+                    end_time = time.time()
+                    if verbose:
+                        print(f"\nTotal latency (OpenRouter): {end_time - start_time:.2f} seconds")
+                    break
+            except Exception as e:
+                print(f"OpenRouter call failed: {e}. Falling back to Together AI.")
 
             # Fallback: use Together SDK streaming
             client = None

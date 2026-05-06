@@ -35,12 +35,12 @@ def add_message(user_id: str, role: str, content: str, session_id: str = None):
     # --- ATTEMPT 1: CHECK FOR EXISTING ROW (The 'R' in Read-Modify-Write) ---
     try:
         # Fetch the messages column for the specific session_id
-        response = table.select("messages").eq("id", session_id).single().execute()
+        response = table.select("messages").eq("id", session_id).execute()
         
         # If the row exists, response.data will contain the current messages
-        if response.data and response.data['messages'] is not None:
+        if response.data and len(response.data) > 0 and response.data[0]['messages'] is not None:
             # --- UPDATE PATH ---
-            current_messages = response.data['messages']
+            current_messages = response.data[0]['messages']
             
             # 2. Modify: Append the new message in Python
             current_messages.append(new_message_obj)
@@ -96,8 +96,10 @@ def get_chat_history_by_session(user_id: str, session_id: str, top_k: int = 10):
     table = supabase.table("chat_sessions")
     print(f"Fetching chat history for session {session_id} and user {user_id}")
     try:
-        response = table.select("messages").eq("id", session_id).eq("user_id", user_id).single().execute()
-        messages = response.data.get("messages", []) if response.data else []
+        response = table.select("messages").eq("id", session_id).eq("user_id", user_id).execute()
+        messages = []
+        if response.data and len(response.data) > 0:
+            messages = response.data[0].get("messages", [])
         # Sort messages by timestamp if present
         messages.sort(key=lambda x: x.get("timestamp", ""))
         if top_k is not None:

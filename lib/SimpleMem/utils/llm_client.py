@@ -84,6 +84,42 @@ class LLMClient:
         # Retry mechanism
         last_exception = None
         for attempt in range(max_retries):
+            # Try OpenRouter First
+            import os
+            import requests
+            openrouter_key = os.getenv("OPENROUTER_API_KEY")
+            try:
+                if openrouter_key:
+                    headers = {
+                        "Authorization": f"Bearer {openrouter_key}",
+                        "Content-Type": "application/json",
+                    }
+                    payload = {
+                        "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+                        "messages": messages,
+                        "temperature": temperature,
+                        "reasoning": {"enabled": True}
+                    }
+                    response = requests.post(
+                        "https://openrouter.ai/api/v1/chat/completions",
+                        headers=headers,
+                        json=payload,
+                        timeout=300
+                    )
+                    response.raise_for_status()
+                    res_json = response.json()
+                    if 'error' in res_json:
+                        raise Exception(f"OpenRouter API Error: {res_json['error']}")
+                    if 'choices' not in res_json:
+                        raise Exception(f"Unexpected OpenRouter response: {res_json}")
+                    content = res_json['choices'][0]['message'].get('content', '')
+                    if content:
+                        if "[END FINAL RESPONSE]" in content:
+                            content = content.split("[END FINAL RESPONSE]")[0]
+                        return content
+            except Exception as e:
+                print(f"OpenRouter call failed: {e}. Falling back to Together AI.")
+
             try:
                 
                     response = self.client.chat.completions.create(**kwargs)
@@ -109,6 +145,43 @@ class LLMClient:
         Handle streaming response and collect full content
         """
         full_content = []
+        
+        # Try OpenRouter First
+        import os
+        import requests
+        openrouter_key = os.getenv("OPENROUTER_API_KEY")
+        try:
+            if openrouter_key:
+                headers = {
+                    "Authorization": f"Bearer {openrouter_key}",
+                    "Content-Type": "application/json",
+                }
+                payload = {
+                    "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+                    "messages": kwargs.get("messages", []),
+                    "temperature": kwargs.get("temperature", 0.2),
+                    "reasoning": {"enabled": True}
+                }
+                response = requests.post(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    headers=headers,
+                    json=payload,
+                    timeout=300
+                )
+                response.raise_for_status()
+                res_json = response.json()
+                if 'error' in res_json:
+                    raise Exception(f"OpenRouter API Error: {res_json['error']}")
+                if 'choices' not in res_json:
+                    raise Exception(f"Unexpected OpenRouter response: {res_json}")
+                content = res_json['choices'][0]['message'].get('content', '')
+                if content:
+                    if "[END FINAL RESPONSE]" in content:
+                        content = content.split("[END FINAL RESPONSE]")[0]
+                    return content
+        except Exception as e:
+            print(f"OpenRouter streaming fallback to Together AI failed: {e}")
+
         stream = self.client.chat.completions.create(**kwargs)
 
         for chunk in stream:

@@ -399,8 +399,14 @@ class VectorStore:
         
         if result.get('success'):
             print(f"[SUCCESS] Added {len(entries)} memory entries to {agent_id_snapshot}")
+            return {
+                "success": True,
+                "operations_completed": result.get("operations", 0),
+                "ids": ids
+            }
         else:
             print(f"[ERROR] Error adding entries: {result.get('error')}")
+            return result
     
     def add_single_entry(self, entry: MemoryEntry) -> bool:
         """Add a single memory entry."""

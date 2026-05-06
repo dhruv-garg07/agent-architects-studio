@@ -5,7 +5,9 @@ import httpx
 import json
 
 API_URL = 'https://www.themanhattanproject.ai'
-API_KEY = 'sk-tg5T-vIyYnuprwVPcgoHGfX37HBsfPwAvHkV3WFyhkE'
+from dotenv import load_dotenv
+load_dotenv()
+API_KEY = os.getenv('MANHATTAN_API_KEY_TEST')
 
 headers = {
     'Content-Type': 'application/json',

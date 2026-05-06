@@ -2,6 +2,8 @@ import requests
 import json
 import time
 import os
+from dotenv import load_dotenv
+load_dotenv()
 
 # Simple validation tests for the running server at the provided base URL.
 # These are pytest-compatible functions but can also be executed directly via `python api_test.py`.
@@ -59,7 +61,7 @@ def test_validate_key_missing():
 
 def test_validate_key_invalid():
     """POST /validate_key with an invalid key should return 401 and valid: False."""
-    r = requests.post(f"{BASE_URL}/validate_key", json={"api_key": "sk-5VagoCihizX6rWtT02L-ZLIfNWDqLV3HhAhdDZ0avW4"}, timeout=10)
+    r = requests.post(f"{BASE_URL}/validate_key", json={"api_key": os.getenv("MANHATTAN_API_KEY_TEST")}, timeout=10)
     print(r.status_code, r.text)
     assert r.status_code == 401, f"Expected 401 for invalid key, got {r.status_code}: {r.text[:300]}"
     try:
@@ -71,7 +73,7 @@ def test_validate_key_invalid():
 
 def test_validate_key_env():
     """Optional: if TEST_API_KEY env var is set, assert server accepts it and returns valid True."""
-    key = "sk-5VagoCihzX6rWtT0u2L-ZLIfNWDqLV3HhAhdDZ0avW4"
+    key = os.getenv("MANHATTAN_API_KEY_TEST")
     if not key:
         print("Skipping test_validate_key_env because TEST_API_KEY not set")
         return
@@ -87,7 +89,7 @@ def test_validate_key_env():
 
 def test_create_agent():
     """Create a sample agent using TEST_API_KEY. Skips if TEST_API_KEY is not set."""
-    key = "sk-5VagoCihzX6rWtT0u2L-ZLIfNWDqLV3HhAhdDZ0avW4"
+    key = os.getenv("MANHATTAN_API_KEY_TEST")
     if not key:
         print("Skipping test_create_agent because TEST_API_KEY not set")
         return
@@ -313,7 +315,7 @@ if __name__ == "__main__":
                 
     #         except Exception as e:
     #             print(f"{t.__name__}: ERROR - {e}\n")
-    api_key  = "sk-5VagoCihzX6rWtT0u2L-ZLIfNWDqLV3HhAhdDZ0avW4"
+    api_key  = os.getenv("MANHATTAN_API_KEY_TEST")
     # ping_server()
     # test_validate_key_env()
     # test_validate_key_invalid()

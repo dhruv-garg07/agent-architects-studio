@@ -112,7 +112,9 @@ DEFAULT_API_URL = "https://themanhattanproject.ai/mcp"
 
 # Get configuration from environment
 API_URL = os.getenv("MANHATTAN_API_URL", DEFAULT_API_URL)
-API_KEY = os.getenv("MANHATTAN_API_KEY", "sk-tg5T-vIyYnuprwVPcgoHGfX37HBsfPwAvHkV3WFyhkE")
+from dotenv import load_dotenv
+load_dotenv()
+API_KEY = os.getenv("MANHATTAN_API_KEY")
 
 # Timeout for API requests (seconds)
 REQUEST_TIMEOUT = 120.0

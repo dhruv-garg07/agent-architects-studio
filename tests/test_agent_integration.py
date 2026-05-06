@@ -11,7 +11,10 @@ from datetime import datetime
 
 # Configuration
 API_URL = "http://127.0.0.1:1078"
-API_KEY = "sk-tg5T-vIyYnuprwVPcgoHGfX37HBsfPwAvHkV3WFyhkE"
+from dotenv import load_dotenv
+import os
+load_dotenv()
+API_KEY = os.getenv("MANHATTAN_API_KEY_TEST")
 
 def test_create_agent():
     """Test creating an agent via API"""

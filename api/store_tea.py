@@ -5,7 +5,10 @@ import os
 
 # Configuration from mcp_memory_client.py
 API_URL = "https://www.themanhattanproject.ai"
-API_KEY = "sk-cc5yYQQXdiN66pADVmlT8vcg_296O0vbX5VcqTec3Ts"
+from dotenv import load_dotenv
+import os
+load_dotenv()
+API_KEY = os.getenv("MANHATTAN_API_KEY_TEST")
 TARGET_AGENT_ID = "84aab1f8-3ea9-4c6a-aa3c-cd8eaa274a5e"
 
 async def call_api(endpoint, payload):
