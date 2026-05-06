@@ -1861,3 +1861,17 @@ def llm_respond():
         else:
             print(f"[LLM_SERVICE] Received response via legacy endpoint for unknown request {request_id}")
             return jsonify({"error": "Request ID not found or timed out"}), 404
+
+
+
+
+if __name__ == '__main__':
+    # MCP SSE is now served via the mcp_bp blueprint (no separate thread needed)
+    if socketio:
+        # Run with SocketIO for WebSocket support
+        print("[STARTUP] Running with Flask-SocketIO (WebSocket enabled)")
+        socketio.run(app, debug=True, host='0.0.0.0', port=1078, allow_unsafe_werkzeug=True)
+    else:
+        # Fallback to standard Flask
+        print("[STARTUP] Running with standard Flask (no WebSocket)")
+        app.run(debug=True, host='0.0.0.0', port=1078)
