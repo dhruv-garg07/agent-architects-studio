@@ -41,9 +41,9 @@ class VCSOrchestrator:
             
         data = {
             "hash": commit.sha,
-            "repo_id": commit.agent_id, # Temporary mapping for repo_id
+            "repo_id": commit.agent_id,  # MemoryCommit stores repo_id in agent_id field
             "workspace_id": workspace_id,
-            "agent_id": commit.agent_id,
+            "agent_id": commit.author,   # The actual actor who made the commit
             "author_id": commit.author,
             "message": commit.message,
             "parents": commit.parents,

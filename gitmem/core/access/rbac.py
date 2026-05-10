@@ -23,12 +23,17 @@ class RBACEngine:
             "workspace:update_billing": [WorkspaceRole.OWNER, WorkspaceRole.ADMIN],
             "workspace:invite_member": [WorkspaceRole.OWNER, WorkspaceRole.ADMIN],
             "workspace:create_repo": [WorkspaceRole.OWNER, WorkspaceRole.ADMIN, WorkspaceRole.MEMBER],
-            
+
             # Repo Actions (Require repo role or workspace admin)
             "repo:delete": [RepoRole.ADMIN, WorkspaceRole.OWNER],
             "repo:settings": [RepoRole.ADMIN, WorkspaceRole.OWNER, WorkspaceRole.ADMIN],
             "repo:commit": [RepoRole.WRITER, RepoRole.ADMIN, WorkspaceRole.OWNER, WorkspaceRole.ADMIN],
-            "repo:read": [RepoRole.READER, RepoRole.WRITER, RepoRole.ADMIN, WorkspaceRole.OWNER, WorkspaceRole.ADMIN, WorkspaceRole.MEMBER]
+            "repo:read": [RepoRole.READER, RepoRole.WRITER, RepoRole.ADMIN, WorkspaceRole.OWNER, WorkspaceRole.ADMIN, WorkspaceRole.MEMBER],
+
+            # CommandHandler commands — mapped to workspace membership roles
+            "retrieve_context": [WorkspaceRole.OWNER, WorkspaceRole.ADMIN, WorkspaceRole.MEMBER, WorkspaceRole.VIEWER],
+            "add_memory": [WorkspaceRole.OWNER, WorkspaceRole.ADMIN, WorkspaceRole.MEMBER],
+            "commit": [WorkspaceRole.OWNER, WorkspaceRole.ADMIN, WorkspaceRole.MEMBER],
         }
 
     def check_permission(self, actor_id: str, workspace_id: str, action: str, resource_id: str = None) -> bool:

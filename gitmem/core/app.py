@@ -95,7 +95,9 @@ class GitMemApp:
     def _register_commands(self):
         """Map command strings to underlying service methods."""
         # --- Workspace Commands ---
-        self.command_handler.register("create_workspace", self.workspace_manager.create_workspace)
+        def create_workspace_cmd(actor_id, workspace_id, name, slug, plan="free"):
+            return self.workspace_manager.create_workspace(name=name, slug=slug, owner_id=actor_id, plan=plan)
+        self.command_handler.register("create_workspace", create_workspace_cmd)
         
         # --- Memory/Ingestion Commands ---
         def add_memory(actor_id, workspace_id, repo_id, text, metadata=None):
