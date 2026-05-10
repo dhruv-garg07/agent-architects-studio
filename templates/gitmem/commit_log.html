@@ -160,7 +160,10 @@
 
 <script>
     function handleBranchChange(branch) {
-        alert(`Switched to branch: ${branch}`);
+        // Reload page with branch filter
+        const url = new URL(window.location);
+        url.searchParams.set('branch', branch);
+        window.location.href = url.toString();
     }
 </script>
 {% endblock %}

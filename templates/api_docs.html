@@ -39,7 +39,7 @@
       </button>
       <button class="filter-chip" data-filter="Agents">Agents</button>
       <button class="filter-chip" data-filter="Documents">Documents</button>
-      <button class="filter-chip" data-filter="LLM">LLM</button>
+      <button class="filter-chip" data-filter="Memory">Memory</button>
     </div>
   </div>
 
@@ -453,33 +453,25 @@
   /* Enhanced API Documentation Styles */
 .api-docs-panels {
   display: grid;
-  /* Use wider columns to fill the space */
-  grid-template-columns: 260px 1fr 480px;
-  gap: 16px;
-  height: 75vh;
-  min-height: 700px;
+  grid-template-columns: 250px 1fr 420px;
+  gap: 14px;
+  height: calc(100vh - 340px);
+  min-height: 520px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-
-  /* Use nearly full width of the container */
   width: 100%;
   max-width: 1600px;
   margin: 0 auto;
   align-items: stretch;
 }
 
-/* Main container should also be wider */
+/* Scope the width override to this page only */
 .max-w-7xl {
-  max-width: 100% !important;
+  max-width: 1700px !important;
   padding-left: 1.5rem !important;
   padding-right: 1.5rem !important;
 }
 
-/* Header container adjustments */
-.mx-auto.px-4.sm\:px-6.lg\:px-8.py-8 {
-  max-width: 100% !important;
-  padding-left: 1rem !important;
-  padding-right: 1rem !important;
-}
+/* Getting Started Hero alignment — visual styles below in the Hero section */
 
 .api-docs-panels .card {
   border: none;
@@ -648,35 +640,25 @@ pre[class*="language-"] {
 /* Responsive adjustments */
 @media (max-width: 1600px) {
   .api-docs-panels {
-    grid-template-columns: 240px 1fr 440px;
-    max-width: 1400px;
-  }
-}
-
-@media (max-width: 1400px) {
-  .api-docs-panels {
-    grid-template-columns: 230px 1fr 420px;
-    max-width: 1300px;
+    grid-template-columns: 230px 1fr 380px;
   }
 }
 
 @media (max-width: 1200px) {
   .api-docs-panels {
-    grid-template-columns: 220px 1fr;
-    max-width: 100%;
+    grid-template-columns: 210px 1fr;
     gap: 12px;
   }
-  
   #api-code {
     grid-column: 1 / -1;
-    margin-top: 1rem;
-    height: 450px;
+    margin-top: 0.75rem;
+    height: 400px;
   }
 }
 
 @media (max-width: 992px) {
   .api-docs-panels {
-    grid-template-columns: 200px 1fr;
+    grid-template-columns: 190px 1fr;
   }
 }
 
@@ -1130,6 +1112,9 @@ table thead {
   border: 1px solid rgba(59,130,246,0.12);
   border-radius: 12px;
   overflow: hidden;
+  max-width: 1600px;
+  margin-left: auto;
+  margin-right: auto;
 }
 .hero-inner {
   display: grid;
@@ -1355,6 +1340,99 @@ table thead {
   .hero-left { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.05); }
   .hero-right { display: none; }
   .examples-plan-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Try It Live API Tester ──────────────────────────────────────────── */
+.tryit-live { display: flex; flex-direction: column; gap: 0.75rem; }
+.tryit-url-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+}
+.tryit-method {
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+.tryit-url-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #e2e8f0;
+  font-family: monospace;
+  font-size: 0.78rem;
+  outline: none;
+}
+.tryit-fields { display: flex; flex-direction: column; gap: 0.5rem; }
+.tryit-field { display: flex; flex-direction: column; gap: 0.25rem; }
+.tryit-label { font-size: 0.7rem; font-weight: 600; color: #94a3b8; }
+.tryit-input {
+  background: rgba(0,0,0,0.2);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  color: #e2e8f0;
+  font-family: monospace;
+  font-size: 0.75rem;
+  outline: none;
+}
+.tryit-input:focus, .tryit-textarea:focus { border-color: rgba(59,130,246,0.4); }
+.tryit-textarea {
+  background: rgba(0,0,0,0.2);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
+  padding: 0.5rem 0.6rem;
+  color: #e2e8f0;
+  font-family: monospace;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 80px;
+  max-height: 200px;
+  outline: none;
+}
+.tryit-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.tryit-send-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 1rem;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.tryit-send-btn:hover { opacity: 0.88; }
+.tryit-status { font-size: 0.72rem; font-weight: 600; }
+.tryit-status.status-ok { color: #10b981; }
+.tryit-status.status-error { color: #ef4444; }
+.tryit-response-wrap { display: flex; flex-direction: column; gap: 0.25rem; }
+.tryit-response-header { display: flex; align-items: center; justify-content: space-between; }
+.tryit-timing { font-size: 0.68rem; color: #64748b; font-family: monospace; }
+.tryit-response-pre {
+  background: rgba(0,0,0,0.3) !important;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
+  padding: 0.75rem !important;
+  font-size: 0.72rem !important;
+  max-height: 220px;
+  overflow: auto;
+  margin: 0 !important;
 }
 </style>
 
@@ -2431,49 +2509,108 @@ table thead {
     }
 
     function renderTryItTab() {
+      const { currentEndpoint: endpoint } = state;
       const tabContent = document.getElementById('tab-content');
       if (!tabContent) return;
-      
+
       tabContent.innerHTML = '';
-      
+      const baseUrl = window.location.origin;
+      const fullUrl = `${baseUrl}${endpoint.path}`;
+      const hasBody = endpoint.method !== 'GET' && endpoint.request;
+      const bodyJson = hasBody ? JSON.stringify(endpoint.request, null, 2) : '';
+
       const content = document.createElement('div');
+      content.className = 'tryit-live';
       content.innerHTML = `
-        <div class="bg-gradient-to-br from-[rgba(59,130,246,0.05)] to-transparent rounded-xl p-6 border border-[rgba(59,130,246,0.1)]">
-          <h3 class="text-lg font-semibold text-white mb-4">Test this endpoint</h3>
-          <p class="text-gray-400 mb-6">Run this endpoint directly from your browser or copy the code to test in your application.</p>
-          
-          <div class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-400 mb-2">API Key</label>
-              <div class="flex gap-2">
-                <input 
-                  type="password" 
-                  placeholder="Enter your API key"
-                  class="flex-1 px-4 py-2 bg-[rgba(0,0,0,0.25)] border border-[rgba(255,255,255,0.08)] rounded-lg text-white placeholder-gray-500"
-                >
-                <button class="px-4 py-2 bg-[rgba(59,130,246,0.2)] text-[#3b82f6] border border-[rgba(59,130,246,0.3)] rounded-lg hover:bg-[rgba(59,130,246,0.3)] transition-colors">
-                  Test
-                </button>
-              </div>
-            </div>
-            
-            <div>
-              <label class="block text-sm font-medium text-gray-400 mb-2">Live Response</label>
-              <div class="bg-[rgba(0,0,0,0.25)] rounded-lg p-4 min-h-[200px] text-gray-400">
-                Click "Test" to see the response here
-              </div>
-            </div>
-          </div>
+        <div class="tryit-url-bar">
+          <span class="tryit-method method-${endpoint.method.toLowerCase()}">${endpoint.method}</span>
+          <input type="text" id="tryit-url" value="${fullUrl}" class="tryit-url-input" spellcheck="false">
         </div>
-      `;
-      
+        <div class="tryit-fields">
+          <div class="tryit-field">
+            <label class="tryit-label">Authorization</label>
+            <input type="text" id="tryit-apikey" placeholder="Bearer <your-api-key>" class="tryit-input" spellcheck="false">
+          </div>
+          ${hasBody ? `
+          <div class="tryit-field">
+            <label class="tryit-label">Request Body <span class="text-gray-500 font-normal">(JSON)</span></label>
+            <textarea id="tryit-body" class="tryit-textarea" spellcheck="false">${bodyJson}</textarea>
+          </div>` : ''}
+        </div>
+        <div class="tryit-actions">
+          <button id="tryit-send" class="tryit-send-btn">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+            Send Request
+          </button>
+          <span id="tryit-status" class="tryit-status"></span>
+        </div>
+        <div class="tryit-response-wrap">
+          <div class="tryit-response-header">
+            <span class="tryit-label">Response</span>
+            <span id="tryit-timing" class="tryit-timing"></span>
+          </div>
+          <pre id="tryit-response" class="tryit-response-pre"><code class="language-json">// Click "Send Request" to execute</code></pre>
+        </div>`;
+
       tabContent.appendChild(content);
-      
-      // Add event listener to test button
-      const testBtn = content.querySelector('button');
-      if (testBtn) {
-        testBtn.addEventListener('click', openApiPlayground);
-      }
+
+      // Wire up the send button
+      const sendBtn = content.querySelector('#tryit-send');
+      sendBtn.addEventListener('click', async () => {
+        const url = content.querySelector('#tryit-url').value.trim();
+        const apiKey = content.querySelector('#tryit-apikey').value.trim();
+        const bodyEl = content.querySelector('#tryit-body');
+        const statusEl = content.querySelector('#tryit-status');
+        const timingEl = content.querySelector('#tryit-timing');
+        const responseEl = content.querySelector('#tryit-response code');
+
+        statusEl.textContent = '';
+        statusEl.className = 'tryit-status';
+        timingEl.textContent = '';
+        responseEl.textContent = '// Sending...';
+
+        const headers = { 'Content-Type': 'application/json' };
+        if (apiKey) headers['Authorization'] = apiKey;
+
+        const fetchOpts = { method: endpoint.method, headers };
+        if (hasBody && bodyEl) {
+          try {
+            JSON.parse(bodyEl.value); // validate
+            fetchOpts.body = bodyEl.value;
+          } catch (e) {
+            responseEl.textContent = '// Invalid JSON in request body';
+            statusEl.textContent = 'JSON Error';
+            statusEl.className = 'tryit-status status-error';
+            return;
+          }
+        }
+
+        const t0 = performance.now();
+        try {
+          const res = await fetch(url, fetchOpts);
+          const elapsed = Math.round(performance.now() - t0);
+          timingEl.textContent = `${elapsed}ms`;
+
+          const ct = res.headers.get('content-type') || '';
+          let body;
+          if (ct.includes('json')) {
+            body = JSON.stringify(await res.json(), null, 2);
+          } else {
+            body = await res.text();
+          }
+
+          statusEl.textContent = `${res.status} ${res.statusText}`;
+          statusEl.className = 'tryit-status ' + (res.ok ? 'status-ok' : 'status-error');
+          responseEl.textContent = body;
+          if (typeof Prism !== 'undefined') Prism.highlightElement(responseEl);
+        } catch (err) {
+          const elapsed = Math.round(performance.now() - t0);
+          timingEl.textContent = `${elapsed}ms`;
+          statusEl.textContent = 'Network Error';
+          statusEl.className = 'tryit-status status-error';
+          responseEl.textContent = `// ${err.message}`;
+        }
+      });
     }
 
     function renderExamplesTab() {
@@ -2738,7 +2875,7 @@ table thead {
     }
 
     function openApiPlayground() {
-      alert('Opening API Playground... In a real implementation, this would launch an interactive API testing environment.');
+      // Legacy stub — replaced by inline tryit-send handler
     }
 
     function clearFilters() {

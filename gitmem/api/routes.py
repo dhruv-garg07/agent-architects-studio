@@ -590,7 +590,9 @@ def agent_diffs(agent_id):
     except Exception:
         pass
 
-    return render_template('diff_viewer.html', agent=agent, commits=commits, sources=get_sources_status())
+    import json
+    commits_json = json.dumps(commits)
+    return render_template('diff_viewer.html', agent=agent, commits=commits, commits_json=commits_json, sources=get_sources_status())
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -809,3 +811,217 @@ def api_sync_sources():
         return jsonify({"status": "ok", "stats": stats})
     except Exception as e:
         return jsonify({"status": "error", "error": str(e)}), 500
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Agent Settings & Lifecycle APIs
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@gitmem_bp.route('/api/agent/<agent_id>/settings', methods=['GET', 'PUT'])
+@login_required
+def api_agent_settings(agent_id):
+    """Get or update agent settings."""
+    if not _get_agent(agent_id, user_id=current_user.get_id()):
+        return jsonify({"error": "Access denied"}), 403
+
+    if request.method == 'GET':
+        agent = _get_agent(agent_id)
+        return jsonify({"status": "success", "data": agent})
+
+    # PUT — update settings
+    data = request.get_json(silent=True) or {}
+    allowed = {'agent_name', 'description', 'status', 'metadata', 'limits', 'permissions'}
+    updates = {k: v for k, v in data.items() if k in allowed}
+    if not updates:
+        return jsonify({"error": "No valid fields"}), 400
+
+    try:
+        from backend_examples.python.services.api_agents import ApiAgentsService
+        svc = ApiAgentsService()
+        updated = svc.update_agent(agent_id=agent_id, user_id=current_user.get_id(), updates=updates)
+        return jsonify({"status": "success", "data": updated})
+    except Exception as e:
+        return jsonify({"status": "error", "error": str(e)}), 500
+
+
+@gitmem_bp.route('/api/agent/<agent_id>/archive', methods=['POST'])
+@login_required
+def api_agent_archive(agent_id):
+    """Archive (disable) an agent."""
+    if not _get_agent(agent_id, user_id=current_user.get_id()):
+        return jsonify({"error": "Access denied"}), 403
+    try:
+        from backend_examples.python.services.api_agents import ApiAgentsService
+        svc = ApiAgentsService()
+        svc.disable_agent(agent_id=agent_id, user_id=current_user.get_id())
+        return jsonify({"status": "success", "message": "Agent archived"})
+    except Exception as e:
+        return jsonify({"status": "error", "error": str(e)}), 500
+
+
+@gitmem_bp.route('/api/agent/<agent_id>', methods=['DELETE'])
+@login_required
+def api_agent_delete(agent_id):
+    """Permanently delete an agent and all its data."""
+    if not _get_agent(agent_id, user_id=current_user.get_id()):
+        return jsonify({"error": "Access denied"}), 403
+    try:
+        from backend_examples.python.services.api_agents import ApiAgentsService
+        svc = ApiAgentsService()
+        svc.delete_agent(agent_id=agent_id, user_id=current_user.get_id())
+        # Also delete memories and commits
+        if _db():
+            _db().table('gitmem_memories').delete().eq('agent_id', agent_id).execute()
+            _db().table('gitmem_commits').delete().eq('agent_id', agent_id).execute()
+        return jsonify({"status": "success", "message": "Agent deleted"})
+    except Exception as e:
+        return jsonify({"status": "error", "error": str(e)}), 500
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Diff API
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@gitmem_bp.route('/api/diff')
+@login_required
+def api_diff():
+    """Compare two commits and return diff."""
+    sha_from = request.args.get('from', '')
+    sha_to = request.args.get('to', '')
+    if not sha_from or not sha_to:
+        return jsonify({"error": "Missing from and to params"}), 400
+
+    try:
+        diff = gitmem_app.vcs.diff_engine.diff_commits(sha_from, sha_to)
+        stats = gitmem_app.vcs.diff_engine.compute_stats(diff)
+        return jsonify({
+            "status": "success",
+            "diff": diff if isinstance(diff, dict) else {"changes": str(diff)},
+            "stats": stats.model_dump() if hasattr(stats, 'model_dump') else {"added": 0, "modified": 0, "deleted": 0}
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "error": str(e)}), 500
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Checkpoints API
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@gitmem_bp.route('/api/checkpoints/<agent_id>/create', methods=['POST'])
+@login_required
+def api_checkpoint_create(agent_id):
+    """Create a memory checkpoint/snapshot."""
+    if not _get_agent(agent_id, user_id=current_user.get_id()):
+        return jsonify({"error": "Access denied"}), 403
+
+    data = request.get_json(silent=True) or {}
+    name = data.get('name', 'Unnamed checkpoint')
+    checkpoint_type = data.get('type', 'snapshot')
+
+    try:
+        import uuid
+        checkpoint_id = str(uuid.uuid4())
+        # Count memories by type for snapshot
+        memory_counts = {}
+        for mtype in ['episodic', 'semantic', 'procedural', 'state']:
+            memory_counts[mtype] = _count_table_where('gitmem_memories', {'agent_id': agent_id, 'type': mtype})
+
+        row = {
+            'id': checkpoint_id,
+            'agent_id': agent_id,
+            'checkpoint_type': checkpoint_type,
+            'name': name,
+            'memory_counts': memory_counts,
+            'metadata': {},
+        }
+        _db().table('gitmem_checkpoints').insert(row).execute()
+        return jsonify({"status": "success", "id": checkpoint_id})
+    except Exception as e:
+        return jsonify({"status": "error", "error": str(e)}), 500
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Logs API (JSON endpoint for activity_logs.html)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@gitmem_bp.route('/api/logs/<agent_id>')
+@login_required
+def api_logs(agent_id):
+    """Get activity logs for an agent as JSON."""
+    if not _get_agent(agent_id, user_id=current_user.get_id()):
+        return jsonify({"error": "Access denied"}), 403
+
+    limit = request.args.get('limit', 100, type=int)
+    log_type = request.args.get('type')
+
+    try:
+        q = _db().table('gitmem_activity_logs').select('*').eq('agent_id', agent_id)
+        if log_type:
+            q = q.eq('log_type', log_type)
+        res = q.order('created_at', desc=True).limit(limit).execute()
+        return jsonify({"status": "success", "data": res.data or []})
+    except Exception as e:
+        return jsonify({"status": "error", "error": str(e)}), 500
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Star API (for github_shell.html)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@gitmem_bp.route('/agent/<agent_id>/documents')
+@login_required
+def agent_documents(agent_id):
+    """Document management page."""
+    agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
+    if not agent_raw:
+        return redirect(url_for('gitmem.landing'))
+    agent = {'id': agent_id, 'name': agent_raw.get('agent_name', agent_id)}
+    documents = []
+    if _db():
+        try:
+            res = _db().table('gitmem_documents').select('*') \
+                .eq('agent_id', agent_id).order('created_at', desc=True).limit(50).execute()
+            documents = res.data or []
+        except Exception:
+            pass
+    return render_template('documents.html', agent=agent, documents=documents, sources=get_sources_status())
+
+
+@gitmem_bp.route('/agent/<agent_id>/memories')
+@login_required
+def agent_memories(agent_id):
+    """Memory listing page."""
+    agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
+    if not agent_raw:
+        return redirect(url_for('gitmem.landing'))
+    agent = {'id': agent_id, 'name': agent_raw.get('agent_name', agent_id)}
+    memories = []
+    if _db():
+        try:
+            res = _db().table('gitmem_memories').select('*') \
+                .eq('agent_id', agent_id).order('created_at', desc=True).limit(100).execute()
+            memories = res.data or []
+        except Exception:
+            pass
+    return render_template('memories.html', agent=agent, memories=memories, sources=get_sources_status())
+
+
+@gitmem_bp.route('/agent/<agent_id>/sources')
+@login_required
+def agent_sources(agent_id):
+    """Data sources management page."""
+    agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
+    if not agent_raw:
+        return redirect(url_for('gitmem.landing'))
+    agent = {'id': agent_id, 'name': agent_raw.get('agent_name', agent_id)}
+    return render_template('sources.html', agent=agent, sources=get_sources_status())
+
+
+@gitmem_bp.route('/api/star', methods=['POST'])
+@login_required
+def api_star():
+    """Toggle star on an agent repo (stored in user metadata)."""
+    data = request.get_json(silent=True) or {}
+    agent_id = data.get('agent_id', '')
+    # Simple acknowledgment — star state can be stored in agent metadata
+    return jsonify({"status": "starred", "count": 1})

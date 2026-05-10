@@ -74,6 +74,18 @@
           "response": {
             "agent": {}
           },
+          "when_to_use": "Call this to retrieve full details of a specific agent, including its configuration, permissions, limits, and current status.",
+          "use_cases": [
+            "Displaying agent settings in an admin dashboard",
+            "Verifying agent configuration before making updates",
+            "Checking whether an agent is enabled or disabled before sending it traffic"
+          ],
+          "notes": "Pass agent_id as a query parameter. The response includes all agent fields including description, permissions, limits, and timestamps. Returns 404 if the agent does not exist.",
+          "errors": [
+            {"code": 400, "message": "Bad request — missing agent_id parameter"},
+            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
+            {"code": 404, "message": "Not found — agent_id does not exist"}
+          ],
           "code": {
             "curl": "curl -X GET '__BASE__/get_agent' -H 'Authorization: <API_KEY>' -G --data-urlencode 'agent_id=<AGENT_ID>'",
             "python": "import requests\n\nurl = \"__BASE__/get_agent\"\nparams = { 'agent_id': '<AGENT_ID>' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.get(url, params=params, headers=headers, timeout=15)\n\nprint(response.text)",
@@ -92,6 +104,20 @@
           "response": {
             "ok": true
           },
+          "when_to_use": "Call this to modify an existing agent's configuration such as its description, permissions, or rate limits without recreating it.",
+          "use_cases": [
+            "Updating an agent's description after a product change",
+            "Adjusting rate limits for an agent that is experiencing higher traffic",
+            "Changing permissions to grant or revoke capabilities",
+            "Renaming an agent for organizational purposes"
+          ],
+          "notes": "Only include fields you want to change in the updates object — omitted fields remain unchanged. agent_slug and agent_id cannot be modified after creation.",
+          "errors": [
+            {"code": 400, "message": "Bad request — missing agent_id or empty updates object"},
+            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
+            {"code": 404, "message": "Not found — agent_id does not exist"},
+            {"code": 422, "message": "Unprocessable entity — attempted to update an immutable field"}
+          ],
           "code": {
             "curl": "curl -X POST '__BASE__/update_agent' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\", \"updates\": {\"description\": \"updated\"}}'",
             "python": "import requests\n\nurl = \"__BASE__/update_agent\"\npayload = { 'agent_id': '<ID>', 'updates': { 'description': 'updated' } }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=15)\n\nprint(response.text)",
@@ -109,6 +135,19 @@
           "response": {
             "ok": true
           },
+          "when_to_use": "Call this to temporarily suspend an agent without deleting it. Disabled agents reject all chat and memory requests but retain their data.",
+          "use_cases": [
+            "Suspending a misbehaving agent while investigating an issue",
+            "Pausing an agent during scheduled maintenance",
+            "Temporarily blocking an agent when a customer's subscription lapses"
+          ],
+          "notes": "Disabling is non-destructive — all documents and memories are preserved. Re-enable with /enable_agent at any time. Disabled agents will return 404 to agent_chat callers.",
+          "errors": [
+            {"code": 400, "message": "Bad request — missing agent_id"},
+            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
+            {"code": 404, "message": "Not found — agent_id does not exist"},
+            {"code": 409, "message": "Conflict — agent is already disabled"}
+          ],
           "code": {
             "curl": "curl -X POST '__BASE__/disable_agent' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\"}'",
             "python": "import requests\n\nurl = \"__BASE__/disable_agent\"\npayload = { 'agent_id': '<ID>' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=15)\n\nprint(response.text)",
@@ -126,6 +165,19 @@
           "response": {
             "ok": true
           },
+          "when_to_use": "Call this to re-activate a previously disabled agent so it can accept chat and memory requests again.",
+          "use_cases": [
+            "Re-enabling an agent after resolving an operational issue",
+            "Restoring service after a customer renews their subscription",
+            "Bringing an agent back online after maintenance"
+          ],
+          "notes": "Only works on agents that are currently disabled. If the agent is already enabled this is a no-op (returns ok). The agent resumes with all its previous documents and memories intact.",
+          "errors": [
+            {"code": 400, "message": "Bad request — missing agent_id"},
+            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
+            {"code": 404, "message": "Not found — agent_id does not exist"},
+            {"code": 409, "message": "Conflict — agent is already enabled"}
+          ],
           "code": {
             "curl": "curl -X POST '__BASE__/enable_agent' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\"}'",
             "python": "import requests\n\nurl = \"__BASE__/enable_agent\"\npayload = { 'agent_id': '<ID>' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=15)\n\nprint(response.text)",
@@ -258,6 +310,19 @@
             "ok": true,
             "message": "document_updated"
           },
+          "when_to_use": "Call this to replace the content of existing documents in an agent's vector store while keeping the same document IDs.",
+          "use_cases": [
+            "Updating a FAQ document after policy changes",
+            "Refreshing product documentation when a new version ships",
+            "Correcting inaccurate content that the agent has been using in responses",
+            "Syncing documents periodically from an external CMS"
+          ],
+          "notes": "document_ids and new_docs arrays must have the same length. The old embeddings are replaced — this is an upsert by ID. If a document_id does not exist, some implementations will insert it as new.",
+          "errors": [
+            {"code": 400, "message": "Bad request — document_ids and new_docs arrays differ in length, or agent_id missing"},
+            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
+            {"code": 404, "message": "Not found — agent or document collection does not exist"}
+          ],
           "code": {
             "curl": "curl -X POST '__BASE__/update_document' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\",\"document_ids\":[\"doc-1\"],\"new_docs\":[\"updated body\"],\"metadata\":{}}'",
             "python": "import requests\n\nurl = \"__BASE__/update_document\"\npayload = { 'agent_id': '<ID>', 'document_ids': ['doc-1'], 'new_docs': ['updated body'], 'metadata': {} }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=20)\n\nprint(response.text)",
@@ -278,6 +343,18 @@
             "ok": true,
             "message": "document_metadata_updated"
           },
+          "when_to_use": "Call this to change metadata (tags, source, category) on a document without re-embedding its content.",
+          "use_cases": [
+            "Tagging documents with a new category for filtered retrieval",
+            "Updating the source URL after a content migration",
+            "Adding version or last-modified timestamps to track freshness"
+          ],
+          "notes": "Only metadata is changed — the document text and its vector embedding remain untouched. This is cheaper and faster than a full document update when only labels need to change.",
+          "errors": [
+            {"code": 400, "message": "Bad request — missing agent_id or document_id"},
+            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
+            {"code": 404, "message": "Not found — document_id does not exist in this agent's collection"}
+          ],
           "code": {
             "curl": "curl -X POST '__BASE__/update_document_metadata' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\",\"document_id\":\"doc-1\",\"metadata\":{\"source\":\"upload\"}}'",
             "python": "import requests\n\nurl = \"__BASE__/update_document_metadata\"\npayload = { 'agent_id': '<ID>', 'document_id': 'doc-1', 'metadata': { 'source': 'upload' } }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=20)\n\nprint(response.text)",
@@ -375,6 +452,20 @@
             "agent_id": "string",
             "dialogues_processed": 0
           },
+          "when_to_use": "Call this when you have raw conversation transcripts or dialogue logs and want the LLM to automatically extract structured memory entries (facts, entities, timestamps) from them.",
+          "use_cases": [
+            "Ingesting chat logs from a customer support platform into agent memory",
+            "Processing meeting transcripts to extract action items and decisions",
+            "Converting unstructured interview notes into searchable memory entries",
+            "Archiving conversation history from another system into structured memory"
+          ],
+          "notes": "This endpoint triggers LLM inference and may take 10-120 seconds depending on dialogue volume. Each dialogue is processed independently. Use add_memory instead if you already have structured data to avoid unnecessary LLM costs.",
+          "errors": [
+            {"code": 400, "message": "Bad request — missing agent_id or empty dialogues array"},
+            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
+            {"code": 404, "message": "Not found — memory system not initialised (call create_memory first)"},
+            {"code": 503, "message": "Service unavailable — LLM processing failed"}
+          ],
           "code": {
             "curl": "curl -X POST '__BASE__/process_raw' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"dialogues\":[{\"speaker\":\"Alice\",\"content\":\"Meeting at Starbucks tomorrow at 2pm\",\"timestamp\":\"2025-01-22T10:00:00\"}]}'",
             "python": "import requests\n\nurl = \"__BASE__/process_raw\"\npayload = {\n    'agent_id': '<AGENT_ID>',\n    'dialogues': [\n        {'speaker': 'Alice', 'content': 'Meeting at Starbucks tomorrow at 2pm', 'timestamp': '2025-01-22T10:00:00'},\n        {'speaker': 'Bob', 'content': 'I will bring the documents', 'timestamp': '2025-01-22T10:01:00'}\n    ]\n}\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=120)\n\nprint(response.json())",
@@ -461,6 +552,19 @@
               }
             ]
           },
+          "when_to_use": "Call this to search an agent's memory using hybrid retrieval (semantic + keyword + metadata). Use it when you need raw memory results without an LLM-generated answer.",
+          "use_cases": [
+            "Building a custom RAG pipeline where you supply your own answer generation",
+            "Debugging memory retrieval quality by inspecting raw results",
+            "Showing users a list of related memories in a UI",
+            "Pre-filtering memories before passing them to a specialized prompt"
+          ],
+          "notes": "Combines vector similarity, keyword matching, and metadata filtering. Set enable_reflection to true for multi-round retrieval that refines results (slower but higher recall). top_k defaults to 5.",
+          "errors": [
+            {"code": 400, "message": "Bad request — missing agent_id or query"},
+            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
+            {"code": 404, "message": "Not found — memory system not initialised (call create_memory first)"}
+          ],
           "code": {
             "curl": "curl -X POST '__BASE__/read_memory' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"query\":\"When is the meeting with Bob?\",\"top_k\":5,\"enable_reflection\":false}'",
             "python": "import requests\n\nurl = \"__BASE__/read_memory\"\npayload = {\n    'agent_id': '<AGENT_ID>',\n    'query': 'When is the meeting with Bob?',\n    'top_k': 5,\n    'enable_reflection': False\n}\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=60)\n\nprint(response.json())",
@@ -539,6 +643,19 @@
             "agent_id": "string",
             "entry_id": "string"
           },
+          "when_to_use": "Call this to correct or enrich an existing memory entry — for example, updating a fact that has changed or adding missing metadata like location or persons.",
+          "use_cases": [
+            "Correcting a memory entry that contains outdated information",
+            "Adding a person's name to a memory after learning who was involved",
+            "Updating a timestamp when a scheduled event is rescheduled",
+            "Enriching a memory with additional keywords to improve future retrieval"
+          ],
+          "notes": "Only include fields you want to change in the updates object. If you update lossless_restatement, the vector embedding is also re-computed. Metadata-only updates are faster since they skip re-embedding.",
+          "errors": [
+            {"code": 400, "message": "Bad request — missing agent_id or entry_id"},
+            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
+            {"code": 404, "message": "Not found — entry_id does not exist in this agent's memory"}
+          ],
           "code": {
             "curl": "curl -X POST '__BASE__/update_memory' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"entry_id\":\"<ENTRY_ID>\",\"updates\":{\"lossless_restatement\":\"Updated: Alice rescheduled the meeting to 3pm\",\"timestamp\":\"2025-01-22T15:00:00\"}}'",
             "python": "import requests\n\nurl = \"__BASE__/update_memory\"\npayload = {\n    'agent_id': '<AGENT_ID>',\n    'entry_id': '<ENTRY_ID>',\n    'updates': {\n        'lossless_restatement': 'Updated: Alice rescheduled the meeting to 3pm',\n        'timestamp': '2025-01-22T15:00:00',\n        'topic': 'meeting rescheduling'\n    }\n}\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=30)\n\nprint(response.json())",
@@ -563,6 +680,19 @@
             "deleted_count": 0,
             "entry_ids": []
           },
+          "when_to_use": "Call this to permanently remove specific memory entries by their IDs. Use for GDPR erasure, correcting bad data, or cleaning up test entries.",
+          "use_cases": [
+            "Honoring a user's right-to-be-forgotten request by deleting specific memories",
+            "Removing incorrect or hallucinated memory entries",
+            "Cleaning up test data from development sessions",
+            "Purging sensitive information that was accidentally stored"
+          ],
+          "notes": "This action is irreversible — deleted memories cannot be recovered. Pass one or more entry_ids. Use list_memories or read_memory first to identify which IDs to delete.",
+          "errors": [
+            {"code": 400, "message": "Bad request — missing agent_id or empty entry_ids array"},
+            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
+            {"code": 404, "message": "Not found — memory system not initialised or entry_ids do not exist"}
+          ],
           "code": {
             "curl": "curl -X POST '__BASE__/delete_memory' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"entry_ids\":[\"<ENTRY_ID_1>\",\"<ENTRY_ID_2>\"]}'",
             "python": "import requests\n\nurl = \"__BASE__/delete_memory\"\npayload = {\n    'agent_id': '<AGENT_ID>',\n    'entry_ids': ['<ENTRY_ID_1>', '<ENTRY_ID_2>']\n}\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=30)\n\nprint(response.json())",
@@ -599,6 +729,19 @@
             "created_at": "string",
             "updated_at": "string"
           },
+          "when_to_use": "Call this to get a comprehensive overview of an agent's data — how many memories and documents it has, topic distribution, and activity timestamps.",
+          "use_cases": [
+            "Displaying an agent health dashboard in an admin panel",
+            "Monitoring memory growth over time for capacity planning",
+            "Auditing which topics and persons an agent knows about",
+            "Verifying that data ingestion pipelines are working correctly"
+          ],
+          "notes": "Statistics are computed on-demand and may be slightly delayed for very large collections. The topics breakdown shows unique topics and their frequency across all memories.",
+          "errors": [
+            {"code": 400, "message": "Bad request — missing agent_id"},
+            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
+            {"code": 404, "message": "Not found — agent_id does not exist"}
+          ],
           "code": {
             "curl": "curl -X POST '__BASE__/agent_stats' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\"}'",
             "python": "import requests\n\nurl = \"__BASE__/agent_stats\"\npayload = { 'agent_id': '<AGENT_ID>' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=30)\n\nprint(response.json())",
@@ -639,6 +782,18 @@
               "requests_per_day": 10000
             }
           },
+          "when_to_use": "Call this to check your account's API consumption, rate limit status, and remaining quota within the current billing period.",
+          "use_cases": [
+            "Displaying a usage meter in your application's billing page",
+            "Alerting when approaching rate limits or quota caps",
+            "Generating monthly usage reports for internal accounting",
+            "Debugging 429 errors by checking remaining request allowance"
+          ],
+          "notes": "Authenticated by API key — returns usage for the key's associated account. Counters reset at the start of each billing period. The rate_limits object shows your current plan's limits.",
+          "errors": [
+            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
+            {"code": 500, "message": "Internal server error — usage tracking service unavailable"}
+          ],
           "code": {
             "curl": "curl -X POST '__BASE__/api_usage' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>'",
             "python": "import requests\n\nurl = \"__BASE__/api_usage\"\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json={}, headers=headers, timeout=30)\n\nprint(response.json())",
@@ -670,6 +825,17 @@
               }
             }
           },
+          "when_to_use": "Call this to verify that all backend services (database, vector store, LLM) are operational before routing traffic or as part of automated monitoring.",
+          "use_cases": [
+            "Automated health checks from an uptime monitoring service",
+            "Pre-flight validation before running a batch data import",
+            "Diagnosing which subsystem is causing failures",
+            "Load balancer health probes to route away from unhealthy instances"
+          ],
+          "notes": "Returns HTTP 200 if all services are healthy, 503 if any critical service is degraded. No authentication required — safe to expose to monitoring tools. Check individual service statuses in the response body.",
+          "errors": [
+            {"code": 503, "message": "Service unavailable — one or more backend services are unhealthy (check response body for details)"}
+          ],
           "code": {
             "curl": "curl -X GET '__BASE__/health_detailed'",
             "python": "import requests\n\nurl = \"__BASE__/health_detailed\"\n\nresponse = requests.get(url, timeout=10)\n\nprint(response.json())",
@@ -702,6 +868,19 @@
             "has_more": false,
             "memories": []
           },
+          "when_to_use": "Call this to paginate through all memory entries for an agent, optionally filtering by topic or person. Use for bulk inspection or export workflows.",
+          "use_cases": [
+            "Building a memory browser UI with pagination",
+            "Auditing all memories stored for a specific person (GDPR subject access request)",
+            "Finding memory entries on a specific topic for review or deletion",
+            "Iterating through all memories for a custom export or transformation pipeline"
+          ],
+          "notes": "Use limit and offset for pagination. Filter by filter_topic or filter_person to narrow results. Returns metadata for each entry including entry_id, which you can use with update_memory or delete_memory.",
+          "errors": [
+            {"code": 400, "message": "Bad request — missing agent_id"},
+            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
+            {"code": 404, "message": "Not found — memory system not initialised for this agent"}
+          ],
           "code": {
             "curl": "curl -X POST '__BASE__/list_memories' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"limit\":50,\"offset\":0}'",
             "python": "import requests\n\nurl = \"__BASE__/list_memories\"\npayload = {\n    'agent_id': '<AGENT_ID>',\n    'limit': 50,\n    'offset': 0,\n    'filter_topic': None  # Optional: filter by topic\n}\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=30)\n\nresult = response.json()\nprint(f\"Total: {result.get('total_count')}, Has More: {result.get('has_more')}\")\nfor mem in result.get('memories', []):\n    print(f\"  - {mem.get('lossless_restatement')[:50]}...\")",
@@ -742,6 +921,20 @@
             "entry_ids": [],
             "errors": null
           },
+          "when_to_use": "Call this when you need to ingest many pre-structured memories at once (up to 100 per request). More efficient than calling /add_memory repeatedly in a loop.",
+          "use_cases": [
+            "Initial data migration from another system into agent memory",
+            "Batch-loading user preferences collected from a form or survey",
+            "Restoring memories from a backup without using /import_memories",
+            "Programmatically seeding an agent with a knowledge base of structured facts"
+          ],
+          "notes": "Maximum 100 memories per request. Set skip_duplicates to true to avoid reinserting memories that already exist (matched by lossless_restatement). Returns per-entry status so you can identify and retry failures.",
+          "errors": [
+            {"code": 400, "message": "Bad request — missing agent_id or memories array, or exceeds 100 entry limit"},
+            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
+            {"code": 404, "message": "Not found — memory system not initialised (call create_memory first)"},
+            {"code": 413, "message": "Payload too large — reduce batch size"}
+          ],
           "code": {
             "curl": "curl -X POST '__BASE__/bulk_add_memory' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"memories\":[{\"lossless_restatement\":\"Memory 1\",\"keywords\":[\"test\"]},{\"lossless_restatement\":\"Memory 2\",\"keywords\":[\"test\"]}]}'",
             "python": "import requests\n\nurl = \"__BASE__/bulk_add_memory\"\npayload = {\n    'agent_id': '<AGENT_ID>',\n    'memories': [\n        {'lossless_restatement': 'Alice prefers morning meetings', 'keywords': ['meetings', 'schedule'], 'persons': ['Alice']},\n        {'lossless_restatement': 'Bob works remotely on Fridays', 'keywords': ['remote', 'schedule'], 'persons': ['Bob']},\n        {'lossless_restatement': 'Team standup is at 9am daily', 'keywords': ['standup', 'team'], 'topic': 'meetings'}\n    ]\n}\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=60)\n\nresult = response.json()\nprint(f\"Added: {result.get('memories_added')}, Errors: {len(result.get('errors') or [])}\")",
@@ -773,6 +966,19 @@
               "memories": []
             }
           },
+          "when_to_use": "Call this to create a full JSON backup of all memories for an agent. Use for data portability, migration between environments, or offline analysis.",
+          "use_cases": [
+            "Creating a backup before running destructive operations",
+            "Migrating an agent's memory from staging to production",
+            "Providing a data export for GDPR data portability requests",
+            "Downloading memories for offline analysis or reporting"
+          ],
+          "notes": "The export includes all memory entries with their full metadata. Large exports may take time — use a generous timeout. The returned format is compatible with /import_memories for restoration.",
+          "errors": [
+            {"code": 400, "message": "Bad request — missing agent_id"},
+            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
+            {"code": 404, "message": "Not found — agent or memory system does not exist"}
+          ],
           "code": {
             "curl": "curl -X POST '__BASE__/export_memories' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\"}'",
             "python": "import requests\nimport json\n\nurl = \"__BASE__/export_memories\"\npayload = { 'agent_id': '<AGENT_ID>' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=120)\n\nresult = response.json()\nexport_data = result.get('export')\nprint(f\"Exported {export_data.get('total_memories')} memories\")\n\n# Save to file\nwith open('memories_backup.json', 'w') as f:\n    json.dump(export_data, f, indent=2)\nprint('Saved to memories_backup.json')",
@@ -802,6 +1008,20 @@
             "entry_ids": [],
             "errors": null
           },
+          "when_to_use": "Call this to restore memories from a previous export or migrate memories from one agent to another. Supports append (additive) or replace (destructive) modes.",
+          "use_cases": [
+            "Restoring memories from a backup after accidental deletion",
+            "Cloning an agent's memory to a new agent in a different environment",
+            "Merging memories from a decommissioned agent into an active one",
+            "Seeding a new agent with memories exported from a template agent"
+          ],
+          "notes": "Use merge_mode \"append\" to add without affecting existing memories, or \"replace\" to clear and reimport. The export_data format must match what /export_memories produces. Large imports may take significant time.",
+          "errors": [
+            {"code": 400, "message": "Bad request — missing agent_id or invalid export_data format"},
+            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
+            {"code": 404, "message": "Not found — target agent or memory system does not exist"},
+            {"code": 422, "message": "Unprocessable entity — export_data version is incompatible"}
+          ],
           "code": {
             "curl": "curl -X POST '__BASE__/import_memories' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<TARGET_AGENT_ID>\",\"export_data\":{\"memories\":[{\"lossless_restatement\":\"Test\"}]},\"merge_mode\":\"append\"}'",
             "python": "import requests\nimport json\n\n# Load backup file\nwith open('memories_backup.json', 'r') as f:\n    export_data = json.load(f)\n\nurl = \"__BASE__/import_memories\"\npayload = {\n    'agent_id': '<TARGET_AGENT_ID>',\n    'export_data': export_data,\n    'merge_mode': 'append'  # or 'replace' to clear existing\n}\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=120)\n\nresult = response.json()\nprint(f\"Imported {result.get('memories_imported')} memories\")\nif result.get('errors'):\n    print(f\"Errors: {len(result.get('errors'))}\")",
@@ -828,6 +1048,20 @@
             "focus_topic": null,
             "summary_length": "medium"
           },
+          "when_to_use": "Call this to get an AI-generated natural language summary of everything an agent remembers, optionally focused on a specific topic.",
+          "use_cases": [
+            "Showing a user a digest of what the agent knows about them",
+            "Generating a briefing document from an agent's accumulated knowledge",
+            "Summarising a project's history from stored memories before a meeting",
+            "Creating a topic-focused report from an agent's memory"
+          ],
+          "notes": "This triggers LLM inference and may take 10-60 seconds. summary_length accepts \"brief\", \"medium\", or \"detailed\". Use focus_topic to narrow the summary to a specific subject. Useful for human review of agent knowledge.",
+          "errors": [
+            {"code": 400, "message": "Bad request — missing agent_id"},
+            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
+            {"code": 404, "message": "Not found — memory system not initialised or no memories exist"},
+            {"code": 503, "message": "Service unavailable — LLM summarisation failed"}
+          ],
           "code": {
             "curl": "curl -X POST '__BASE__/memory_summary' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"summary_length\":\"medium\"}'",
             "python": "import requests\n\nurl = \"__BASE__/memory_summary\"\npayload = {\n    'agent_id': '<AGENT_ID>',\n    'focus_topic': None,  # Optional: focus on specific topic\n    'summary_length': 'medium'  # 'brief', 'medium', or 'detailed'\n}\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=120)\n\nresult = response.json()\nprint('Summary:')\nprint(result.get('summary'))\nprint(f\"\\nBased on {result.get('memory_count')} memories\")\nprint(f\"Topics: {result.get('topics_covered')}\")\nprint(f\"Persons: {result.get('persons_mentioned')}\")",
@@ -848,6 +1082,17 @@
           "response": {
             "html": "string"
           },
+          "when_to_use": "Use this endpoint to load the memory management UI page in a browser. It renders the interactive memory interface for the authenticated user.",
+          "use_cases": [
+            "Navigating to the memory page in a web application",
+            "Testing that the memory UI renders correctly after deployment",
+            "Embedding the memory page in an iframe within a larger admin tool"
+          ],
+          "notes": "Returns HTML, not JSON. Unauthenticated requests may be redirected to a login page. This is a UI endpoint, not an API endpoint — use /read_memory or /list_memories for programmatic access.",
+          "errors": [
+            {"code": 302, "message": "Redirect — user is not authenticated, redirecting to login"},
+            {"code": 401, "message": "Unauthorized — session expired or invalid"}
+          ],
           "code": {
             "curl": "curl -X GET '__BASE__/memory' -v",
             "python": "import requests\n\nurl = \"__BASE__/memory\"\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.get(url, headers=headers, timeout=15)\n\nprint(response.text)",
@@ -865,6 +1110,18 @@
           "response": {
             "sessions": []
           },
+          "when_to_use": "Call this to retrieve chat session metadata by session ID. Use it to look up session details or verify a session exists before sending messages.",
+          "use_cases": [
+            "Loading a previous chat session to display its history",
+            "Verifying that a session ID is valid before calling /web/chat",
+            "Listing all sessions for a user in a session picker UI"
+          ],
+          "notes": "Pass the session id as a query parameter. Returns session metadata including creation time and associated user. If no id is provided, may return all sessions for the authenticated user.",
+          "errors": [
+            {"code": 400, "message": "Bad request — missing or malformed session id parameter"},
+            {"code": 401, "message": "Unauthorized — missing or invalid credentials"},
+            {"code": 404, "message": "Not found — session id does not exist"}
+          ],
           "code": {
             "curl": "curl -G '__BASE__/web/get_sessions' --data-urlencode 'id=51ebe8c7-201b-4275-9bc5-44d7222f3509'",
             "python": "import requests\n\nurl = \"__BASE__/web/get_sessions\"\nparams = { 'id': '51ebe8c7-201b-4275-9bc5-44d7222f3509' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.get(url, params=params, headers=headers, timeout=15)\n\nprint(response.text)",
@@ -884,6 +1141,19 @@
           "response": {
             "results": []
           },
+          "when_to_use": "Call this to perform a RAG-style semantic search against a user's stored data. Returns ranked document chunks without generating an LLM answer.",
+          "use_cases": [
+            "Powering a search bar in the web UI with semantic results",
+            "Fetching relevant context before constructing a custom prompt",
+            "Debugging retrieval quality by inspecting raw search results",
+            "Building a citation list showing which stored content matches a query"
+          ],
+          "notes": "Unlike /get_context, this does not generate an LLM answer — it only retrieves matching chunks. top_k controls how many results to return (default 3). Results are ranked by relevance score.",
+          "errors": [
+            {"code": 400, "message": "Bad request — missing user_id or query"},
+            {"code": 401, "message": "Unauthorized — missing or invalid credentials"},
+            {"code": 404, "message": "Not found — no data exists for this user_id"}
+          ],
           "code": {
             "curl": "curl -X POST '__BASE__/web/rag' -H 'Content-Type: application/json' -d '{\"user_id\":\"51ebe8c7-201b-4275-9bc5-44d7222f3509\",\"query\":\"test query\",\"top_k\":3}'",
             "python": "import requests\n\nurl = \"__BASE__/web/rag\"\npayload = { 'user_id': '51ebe8c7-201b-4275-9bc5-44d7222f3509', 'query': 'test query', 'top_k': 3 }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=15)\n\nprint(response.text)",
@@ -901,6 +1171,17 @@
           "response": {
             "valid": true
           },
+          "when_to_use": "Call this to check whether an API key is valid and active before using it in subsequent requests. Useful for key verification flows in onboarding or settings pages.",
+          "use_cases": [
+            "Validating a user-entered API key in a settings form before saving",
+            "Checking key validity during application startup",
+            "Implementing a key rotation workflow that verifies the new key works"
+          ],
+          "notes": "Returns {valid: true} if the key is active and has not been revoked. Does not reveal which permissions the key has — only that it is recognized. Use this as a lightweight pre-check rather than making a full API call.",
+          "errors": [
+            {"code": 400, "message": "Bad request — missing api_key field in request body"},
+            {"code": 500, "message": "Internal server error — validation service unavailable"}
+          ],
           "code": {
             "curl": "curl -X POST '__BASE__/validate_key' -H 'Content-Type: application/json' -d '{\"api_key\":\"sk-...\"}'",
             "python": "import requests\n\nurl = \"__BASE__/validate_key\"\npayload = { 'api_key': 'sk-...'}\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=10)\n\nprint(response.text)",
@@ -918,6 +1199,18 @@
           "response": {
             "thread_id": "string"
           },
+          "when_to_use": "Call this to initialize a new chat session for a user. The returned thread_id is required by /web/chat to send messages within that session.",
+          "use_cases": [
+            "Starting a new conversation thread when a user clicks \"New Chat\"",
+            "Creating a session programmatically for automated testing",
+            "Initializing a support conversation from an external trigger (e.g., email or webhook)"
+          ],
+          "notes": "Store the returned thread_id — it is required for all subsequent /web/chat calls in this conversation. Each session maintains its own message history independently.",
+          "errors": [
+            {"code": 400, "message": "Bad request — missing user_id"},
+            {"code": 401, "message": "Unauthorized — missing or invalid credentials"},
+            {"code": 500, "message": "Internal server error — session creation failed"}
+          ],
           "code": {
             "curl": "curl -X POST '__BASE__/web/create_session' -H 'Content-Type: application/json' -d '{\"user_id\":\"51ebe8c7-201b-4275-9bc5-44d7222f3509\"}'",
             "python": "import requests\n\nurl = \"__BASE__/web/create_session\"\npayload = { 'user_id': '51ebe8c7-201b-4275-9bc5-44d7222f3509' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=10)\n\nprint(response.text)",
@@ -938,6 +1231,20 @@
           "response": {
             "reply": "string / stream"
           },
+          "when_to_use": "Call this to send a user message and receive an AI response within an established chat session. Supports streaming responses for real-time display.",
+          "use_cases": [
+            "Powering the main chat interface in a web application",
+            "Sending follow-up messages in an ongoing conversation thread",
+            "Building a chatbot widget that streams responses token-by-token",
+            "Automating multi-turn conversations for testing or scripting"
+          ],
+          "notes": "Requires a valid thread_id from /web/create_session. The history array is optional — the server maintains history server-side, but you can pass it for context if needed. Response may be streamed (text/event-stream) depending on client headers.",
+          "errors": [
+            {"code": 400, "message": "Bad request — missing thread_id, user_id, or message"},
+            {"code": 401, "message": "Unauthorized — missing or invalid credentials"},
+            {"code": 404, "message": "Not found — thread_id does not exist or has expired"},
+            {"code": 503, "message": "Service unavailable — LLM provider is temporarily unreachable"}
+          ],
           "code": {
             "curl": "curl -X POST '__BASE__/web/chat' -H 'Content-Type: application/json' -d '{\"thread_id\":\"local_thread_123\",\"user_id\":\"51ebe8c7-201b-4275-9bc5-44d7222f3509\",\"message\":\"Hello\",\"history\":[]}'",
             "python": "import requests\n\nurl = \"__BASE__/web/chat\"\npayload = { 'thread_id': 'local_thread_123', 'user_id': '51ebe8c7-201b-4275-9bc5-44d7222f3509', 'message': 'Hello', 'history': [] }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=120)\n\nprint(response.text)",
@@ -953,6 +1260,16 @@
           "response": {
             "status": "string"
           },
+          "when_to_use": "Call this as a lightweight connectivity check to verify the server is running and reachable. Does not require authentication.",
+          "use_cases": [
+            "Health check probes from a load balancer or container orchestrator",
+            "Client-side connectivity test before making authenticated API calls",
+            "Automated monitoring to detect service outages"
+          ],
+          "notes": "This is the simplest endpoint — no auth required, minimal processing. Returns a status string. Use /health_detailed if you need to verify individual backend service health.",
+          "errors": [
+            {"code": 503, "message": "Service unavailable — server is starting up or shutting down"}
+          ],
           "code": {
             "curl": "curl -X GET '__BASE__/ping' -v",
             "python": "import requests\n\nurl = \"__BASE__/ping\"\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.get(url, headers=headers, timeout=10)\n\nprint(response.text)",
@@ -978,6 +1295,17 @@
             "message": "string",
             "agent_id": "string"
           },
+          "when_to_use": "Use this MCP tool in Claude Desktop to initialize the memory system for an agent before storing any memories via MCP.",
+          "use_cases": [
+            "Setting up a new agent's memory system through Claude Desktop",
+            "Resetting an agent's memory during a Claude-driven development session",
+            "Preparing an agent for memory ingestion as part of an automated MCP workflow"
+          ],
+          "notes": "Must be called before any other memory MCP tools for a given agent. Set clear_db to true only if you want to erase all existing memories. This is the MCP equivalent of the /create_memory HTTP endpoint.",
+          "errors": [
+            {"code": 0, "message": "Tool returned error — agent_id is missing or invalid"},
+            {"code": 0, "message": "Tool returned error — vector database initialization failed"}
+          ],
           "code": {
             "curl": "N/A - This is an MCP tool for Claude Desktop integration",
             "python": "# MCP Tool - Called by Claude directly\n# To use, configure Claude Desktop with:\n# claude_desktop_config.json\n\n# Example invocation from Claude:\n# \"Create a memory system for agent 'my-agent'\"",
@@ -1003,6 +1331,18 @@
             "ok": true,
             "dialogues_processed": 0
           },
+          "when_to_use": "Use this MCP tool to have Claude process raw conversation text into structured memory entries via LLM extraction.",
+          "use_cases": [
+            "Asking Claude to memorize a conversation transcript you paste into the chat",
+            "Processing meeting notes into structured memory through Claude Desktop",
+            "Extracting facts from unstructured text for long-term agent memory"
+          ],
+          "notes": "This triggers LLM processing and may take longer than direct memory tools. Each dialogue object needs at minimum a speaker and content field. Timestamp is optional but improves temporal recall.",
+          "errors": [
+            {"code": 0, "message": "Tool returned error — agent_id is missing or memory system not initialized"},
+            {"code": 0, "message": "Tool returned error — dialogues array is empty or malformed"},
+            {"code": 0, "message": "Tool returned error — LLM processing failed"}
+          ],
           "code": {
             "curl": "N/A - MCP Tool",
             "python": "# MCP Tool - Example Claude prompt:\n# \"Process these dialogues for agent 'my-agent':\n# - Alice: Meeting at 2pm tomorrow\n# - Bob: I'll bring the documents\"",
@@ -1029,6 +1369,17 @@
             "entries_added": 0,
             "entry_ids": []
           },
+          "when_to_use": "Use this MCP tool to store a pre-structured memory entry directly without LLM processing. Ideal when Claude already has the structured data ready.",
+          "use_cases": [
+            "Saving a specific fact the user explicitly states (e.g., \"Remember that I prefer dark mode\")",
+            "Storing structured data from a tool output directly into agent memory",
+            "Adding memories in bulk through a Claude-driven automation script"
+          ],
+          "notes": "Bypasses LLM extraction — the memory is stored exactly as provided. Ensure lossless_restatement is a complete, self-contained statement. Include relevant keywords to improve future retrieval.",
+          "errors": [
+            {"code": 0, "message": "Tool returned error — agent_id is missing or memory system not initialized"},
+            {"code": 0, "message": "Tool returned error — memories array is empty or missing lossless_restatement"}
+          ],
           "code": {
             "curl": "N/A - MCP Tool",
             "python": "# MCP Tool - Example Claude prompt:\n# \"Add this memory for agent 'my-agent':\n# Alice scheduled a meeting with Bob at Starbucks\"",
@@ -1050,6 +1401,17 @@
             "ok": true,
             "results": []
           },
+          "when_to_use": "Use this MCP tool to search an agent's memories by semantic similarity, keywords, or metadata filters from within Claude Desktop.",
+          "use_cases": [
+            "Asking Claude to recall what it knows about a specific topic",
+            "Looking up memories related to a person or event during a conversation",
+            "Verifying whether a fact has already been stored before adding a duplicate"
+          ],
+          "notes": "Uses hybrid retrieval combining semantic search, keyword matching, and metadata filtering. Set enable_reflection to true for deeper multi-pass retrieval at the cost of latency. top_k defaults to 5 results.",
+          "errors": [
+            {"code": 0, "message": "Tool returned error — agent_id is missing or memory system not initialized"},
+            {"code": 0, "message": "Tool returned error — query is empty"}
+          ],
           "code": {
             "curl": "N/A - MCP Tool",
             "python": "# MCP Tool - Example Claude prompt:\n# \"Search memories for 'my-agent' about meetings\"",
@@ -1070,6 +1432,18 @@
             "answer": "string",
             "contexts_used": []
           },
+          "when_to_use": "Use this MCP tool to ask a question and get an LLM-generated answer grounded in the agent's stored memories, including source citations.",
+          "use_cases": [
+            "Asking Claude to answer a question using only what it has memorized for an agent",
+            "Getting a context-aware response that cites specific memory entries",
+            "Querying an agent's knowledge base in a conversational way through MCP"
+          ],
+          "notes": "This runs full RAG: retrieval + LLM answer generation. The response includes contexts_used showing which memories were consulted. Use mcp://search_memory if you only want raw results without answer generation.",
+          "errors": [
+            {"code": 0, "message": "Tool returned error — agent_id is missing or memory system not initialized"},
+            {"code": 0, "message": "Tool returned error — question is empty"},
+            {"code": 0, "message": "Tool returned error — LLM answer generation failed"}
+          ],
           "code": {
             "curl": "N/A - MCP Tool",
             "python": "# MCP Tool - Example Claude prompt:\n# \"For agent 'my-agent', answer: What did Alice discuss?\"",
@@ -1090,6 +1464,18 @@
             "ok": true,
             "message": "memory_updated"
           },
+          "when_to_use": "Use this MCP tool to modify an existing memory entry — correct facts, add metadata, or update timestamps through Claude Desktop.",
+          "use_cases": [
+            "Correcting a stored fact when the user provides updated information",
+            "Adding a person's name to a memory after identifying who was involved",
+            "Updating the topic or keywords of a memory to improve retrieval"
+          ],
+          "notes": "Only include fields you want to change in the updates object. Updating lossless_restatement will re-compute the vector embedding. You need the entry_id which can be obtained from mcp://search_memory or mcp://list_all_memories.",
+          "errors": [
+            {"code": 0, "message": "Tool returned error — agent_id or entry_id is missing"},
+            {"code": 0, "message": "Tool returned error — entry_id does not exist in this agent's memory"},
+            {"code": 0, "message": "Tool returned error — updates object is empty"}
+          ],
           "code": {
             "curl": "N/A - MCP Tool",
             "python": "# MCP Tool - Example Claude prompt:\n# \"Update memory entry XYZ for agent 'my-agent' with new topic\"",
@@ -1111,6 +1497,18 @@
             "ok": true,
             "deleted_count": 0
           },
+          "when_to_use": "Use this MCP tool to permanently remove specific memory entries by ID when a user asks Claude to forget something.",
+          "use_cases": [
+            "User asks Claude to forget a specific piece of information",
+            "Cleaning up incorrect or outdated memories identified during a conversation",
+            "Removing sensitive data that was accidentally stored"
+          ],
+          "notes": "This is irreversible — deleted memories cannot be recovered. Get entry_ids from mcp://search_memory or mcp://list_all_memories first. Confirm with the user before deleting.",
+          "errors": [
+            {"code": 0, "message": "Tool returned error — agent_id is missing or memory system not initialized"},
+            {"code": 0, "message": "Tool returned error — entry_ids array is empty"},
+            {"code": 0, "message": "Tool returned error — one or more entry_ids do not exist"}
+          ],
           "code": {
             "curl": "N/A - MCP Tool",
             "python": "# MCP Tool - Example Claude prompt:\n# \"Delete memory entry XYZ from agent 'my-agent'\"",
@@ -1130,6 +1528,17 @@
             "ok": true,
             "memories": []
           },
+          "when_to_use": "Use this MCP tool to browse all memory entries stored for an agent, useful for auditing or finding specific entry IDs.",
+          "use_cases": [
+            "Showing the user everything the agent remembers about them",
+            "Finding entry_ids for memories that need to be updated or deleted",
+            "Auditing memory contents for quality control or debugging"
+          ],
+          "notes": "Returns up to the limit number of entries (default 50). For agents with many memories, you may not see all entries in one call. Results include entry_ids which are needed for update and delete operations.",
+          "errors": [
+            {"code": 0, "message": "Tool returned error — agent_id is missing or memory system not initialized"},
+            {"code": 0, "message": "Tool returned error — invalid limit value"}
+          ],
           "code": {
             "curl": "N/A - MCP Tool",
             "python": "# MCP Tool - Example Claude prompt:\n# \"List all memories for agent 'my-agent'\"",
