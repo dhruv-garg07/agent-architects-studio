@@ -814,6 +814,138 @@ def api_sync_sources():
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Knowledge Graph API
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+def _build_graph_data(memories):
+    """
+    Convert a list of memory dicts into force-graph {nodes, links}.
+
+    Edges are built from:
+    1. Shared tags — memories sharing >=1 tag get an edge (weight = # shared tags)
+    2. Provenance — if provenance matches another memory ID, directed edge
+    3. metadata.related_ids — explicit edges
+    """
+    TYPE_COLORS = {
+        'episodic':   '#3b82f6',
+        'semantic':   '#8b5cf6',
+        'procedural': '#10b981',
+        'state':      '#6b7280',
+    }
+
+    nodes = []
+    id_set = set()
+    tag_index = {}  # tag → [memory_id, ...]
+
+    for m in memories:
+        mid = m.get('id', '')
+        if not mid:
+            continue
+        id_set.add(mid)
+
+        mtype = m.get('type', 'episodic')
+        importance = float(m.get('importance', 0.5) or 0.5)
+        content = m.get('content', '') or ''
+        tags = m.get('tags') or []
+        if isinstance(tags, str):
+            tags = [t.strip() for t in tags.split(',') if t.strip()]
+
+        nodes.append({
+            'id':         mid,
+            'label':      content[:80].replace('\n', ' '),
+            'type':       mtype,
+            'color':      TYPE_COLORS.get(mtype, '#6b7280'),
+            'importance': importance,
+            'val':        2 + (importance * 6),  # node size
+            'tags':       tags,
+            'created_at': (m.get('created_at') or '')[:10],
+        })
+
+        for tag in tags:
+            tag_index.setdefault(tag, []).append(mid)
+
+    # Build edges
+    links = []
+    seen_edges = set()
+
+    # 1. Tag-based edges
+    for tag, mids in tag_index.items():
+        for i in range(len(mids)):
+            for j in range(i + 1, len(mids)):
+                edge_key = tuple(sorted([mids[i], mids[j]]))
+                if edge_key not in seen_edges:
+                    seen_edges.add(edge_key)
+                    links.append({
+                        'source': mids[i],
+                        'target': mids[j],
+                        'type':   'tag',
+                        'label':  tag,
+                    })
+
+    # 2. Provenance edges
+    for m in memories:
+        mid = m.get('id', '')
+        prov = m.get('provenance', '')
+        if prov and prov in id_set and prov != mid:
+            edge_key = (prov, mid)
+            if edge_key not in seen_edges:
+                seen_edges.add(edge_key)
+                links.append({
+                    'source': prov,
+                    'target': mid,
+                    'type':   'provenance',
+                })
+
+    # 3. metadata.related_ids edges
+    for m in memories:
+        mid = m.get('id', '')
+        meta = m.get('metadata') or {}
+        if isinstance(meta, str):
+            try:
+                import json as _json
+                meta = _json.loads(meta)
+            except Exception:
+                meta = {}
+        related = meta.get('related_ids', [])
+        if isinstance(related, list):
+            for rid in related:
+                if rid in id_set and rid != mid:
+                    edge_key = tuple(sorted([mid, rid]))
+                    if edge_key not in seen_edges:
+                        seen_edges.add(edge_key)
+                        links.append({
+                            'source': mid,
+                            'target': rid,
+                            'type':   'related',
+                        })
+
+    return {'nodes': nodes, 'links': links}
+
+
+@gitmem_bp.route('/api/agent/<agent_id>/graph')
+@login_required
+def api_agent_graph(agent_id):
+    """Return knowledge graph data (nodes + edges) for force-graph visualization."""
+    if not _get_agent(agent_id, user_id=current_user.get_id()):
+        return jsonify({"error": "Access denied"}), 403
+
+    memories = []
+    if _db():
+        try:
+            res = _db().table('gitmem_memories').select('id,content,type,importance,tags,provenance,metadata,created_at') \
+                .eq('agent_id', agent_id) \
+                .order('importance', desc=True) \
+                .limit(200) \
+                .execute()
+            memories = res.data or []
+        except Exception as e:
+            return jsonify({"status": "error", "error": str(e)}), 500
+
+    graph = _build_graph_data(memories)
+    return jsonify(graph)
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # Agent Settings & Lifecycle APIs
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 

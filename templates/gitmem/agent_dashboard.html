@@ -4,16 +4,34 @@
 
 {% block repo_content %}
 <!-- Main Container -->
-<!-- Main Container -->
 <div class="relative z-10">
 
-    <!-- Navigation Pill (Root) -->
-    <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
-        {% set virtual_path = "" %}
-        {% include "components/file_navigation_pill.html" %}
+    <!-- View Toggle: FileSystem | Knowledge Graph -->
+    <div class="flex items-center justify-between mb-6 gap-4">
+        <div class="flex flex-col md:flex-row items-start md:items-center gap-4 flex-1">
+            {% set virtual_path = "" %}
+            {% include "components/file_navigation_pill.html" %}
+        </div>
+
+        <!-- Toggle Switch -->
+        <div class="flex items-center bg-white/5 border border-white/10 rounded-xl p-1 gap-1 flex-shrink-0">
+            <button id="toggle-fs" onclick="switchView('fs')"
+                class="view-toggle-btn active flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                <i data-lucide="folder-tree" class="w-4 h-4"></i>
+                <span class="hidden sm:inline">FileSystem</span>
+            </button>
+            <button id="toggle-graph" onclick="switchView('graph')"
+                class="view-toggle-btn flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all">
+                <i data-lucide="network" class="w-4 h-4"></i>
+                <span class="hidden sm:inline">Knowledge Graph</span>
+            </button>
+        </div>
     </div>
 
 
+
+    <!-- ═══════ FILESYSTEM VIEW ═══════ -->
+    <div id="fs-container">
 
     <!-- Latest Commit Banner -->
     {% if latest_commit %}
@@ -390,5 +408,268 @@
         </div>
     </div>
 
+    </div><!-- /fs-container -->
+
+    <!-- ═══════ KNOWLEDGE GRAPH VIEW ═══════ -->
+    <div id="graph-container" class="hidden">
+        <div class="backdrop-blur-xl bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.1)] rounded-2xl overflow-hidden shadow-xl"
+             style="height: 70vh; min-height: 500px; position: relative;">
+
+            <!-- Graph Toolbar -->
+            <div class="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-5 py-3
+                        bg-gradient-to-b from-[rgba(0,0,0,0.6)] to-transparent pointer-events-none">
+                <div class="pointer-events-auto flex items-center gap-3">
+                    <i data-lucide="network" class="w-5 h-5 text-violet-400"></i>
+                    <span class="text-sm font-semibold text-white">Knowledge Graph</span>
+                    <span id="graph-node-count" class="text-xs text-gray-400 font-mono bg-white/10 px-2 py-0.5 rounded">0 nodes</span>
+                    <span id="graph-edge-count" class="text-xs text-gray-400 font-mono bg-white/10 px-2 py-0.5 rounded">0 edges</span>
+                </div>
+                <div class="pointer-events-auto flex items-center gap-2">
+                    <!-- Legend -->
+                    <div class="flex items-center gap-3 text-[10px] font-semibold uppercase tracking-wider mr-4">
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#3b82f6]"></span> Episodic</span>
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#8b5cf6]"></span> Semantic</span>
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#10b981]"></span> Procedural</span>
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#6b7280]"></span> State</span>
+                    </div>
+                    <button onclick="resetGraphZoom()" class="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-gray-300 text-xs transition-colors">
+                        <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Graph Canvas -->
+            <div id="graph-canvas" style="width:100%; height:100%;"></div>
+
+            <!-- Node Detail Panel (shown on click) -->
+            <div id="node-detail" class="hidden absolute bottom-4 left-4 right-4 z-20
+                        backdrop-blur-xl bg-[rgba(0,0,0,0.85)] border border-white/10 rounded-2xl p-5 shadow-2xl max-w-lg">
+                <button onclick="closeNodeDetail()" class="absolute top-3 right-3 text-gray-500 hover:text-white transition-colors">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+                <div class="flex items-center gap-2 mb-3">
+                    <span id="detail-type-badge" class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"></span>
+                    <span id="detail-id" class="text-xs font-mono text-gray-500"></span>
+                    <span id="detail-date" class="text-xs text-gray-600 ml-auto"></span>
+                </div>
+                <p id="detail-content" class="text-sm text-gray-200 leading-relaxed mb-3"></p>
+                <div id="detail-tags" class="flex flex-wrap gap-1.5"></div>
+            </div>
+
+            <!-- Loading Overlay -->
+            <div id="graph-loading" class="absolute inset-0 flex items-center justify-center bg-[rgba(0,0,0,0.5)] z-30">
+                <div class="flex flex-col items-center gap-3">
+                    <div class="w-8 h-8 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin"></div>
+                    <span class="text-sm text-gray-400">Loading knowledge graph...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
+
+<!-- Force-Graph Library (WebGL, ~18KB gzipped) -->
+<script src="https://unpkg.com/force-graph@1.43/dist/force-graph.min.js"></script>
+
+<script>
+    const graphAgentId = "{{ agent.id }}";
+    let graphInstance = null;
+    let graphLoaded = false;
+
+    // ── View Toggle ──────────────────────────────────────────────
+    function switchView(view) {
+        const fsEl = document.getElementById('fs-container');
+        const graphEl = document.getElementById('graph-container');
+        const btnFs = document.getElementById('toggle-fs');
+        const btnGraph = document.getElementById('toggle-graph');
+
+        if (view === 'graph') {
+            fsEl.classList.add('hidden');
+            graphEl.classList.remove('hidden');
+            btnFs.classList.remove('active');
+            btnGraph.classList.add('active');
+            if (!graphLoaded) loadGraph();
+        } else {
+            fsEl.classList.remove('hidden');
+            graphEl.classList.add('hidden');
+            btnFs.classList.add('active');
+            btnGraph.classList.remove('active');
+        }
+        if (window.lucide) lucide.createIcons();
+    }
+
+    // ── Graph Loading ────────────────────────────────────────────
+    async function loadGraph() {
+        const loading = document.getElementById('graph-loading');
+        try {
+            const resp = await fetch(`/gitmem/api/agent/${graphAgentId}/graph`);
+            if (!resp.ok) throw new Error('Failed to fetch graph data');
+            const data = await resp.json();
+
+            if (data.error) throw new Error(data.error);
+
+            renderGraph(data);
+            graphLoaded = true;
+        } catch (e) {
+            console.error('[Graph] Load failed:', e);
+            loading.innerHTML = `
+                <div class="flex flex-col items-center gap-3">
+                    <i data-lucide="alert-triangle" class="w-8 h-8 text-amber-400"></i>
+                    <span class="text-sm text-gray-400">Failed to load graph</span>
+                    <button onclick="loadGraph()" class="text-xs text-violet-400 hover:text-violet-300">Retry</button>
+                </div>`;
+            if (window.lucide) lucide.createIcons();
+        }
+    }
+
+    // ── Graph Rendering ──────────────────────────────────────────
+    function renderGraph(data) {
+        const container = document.getElementById('graph-canvas');
+        const loading = document.getElementById('graph-loading');
+
+        // Update counters
+        document.getElementById('graph-node-count').textContent = `${data.nodes.length} nodes`;
+        document.getElementById('graph-edge-count').textContent = `${data.links.length} edges`;
+
+        // Highlight state
+        let highlightNodes = new Set();
+        let highlightLinks = new Set();
+        let hoverNode = null;
+
+        graphInstance = ForceGraph()(container)
+            .graphData(data)
+            .backgroundColor('rgba(0,0,0,0)')
+            .width(container.clientWidth)
+            .height(container.clientHeight)
+
+            // Node appearance
+            .nodeVal(n => n.val || 4)
+            .nodeColor(n => {
+                if (highlightNodes.size && !highlightNodes.has(n)) return 'rgba(100,100,100,0.15)';
+                return n.color || '#6b7280';
+            })
+            .nodeLabel(n => '')  // We use custom tooltip instead
+            .nodeCanvasObjectMode(() => 'after')
+            .nodeCanvasObject((node, ctx, globalScale) => {
+                // Draw label only when zoomed in enough
+                if (globalScale < 1.5) return;
+                const label = node.label || '';
+                const maxLen = 20;
+                const text = label.length > maxLen ? label.substring(0, maxLen) + '...' : label;
+                const fontSize = 10 / globalScale;
+                ctx.font = `${fontSize}px Inter, sans-serif`;
+                ctx.fillStyle = highlightNodes.size && !highlightNodes.has(node)
+                    ? 'rgba(150,150,150,0.3)' : 'rgba(255,255,255,0.8)';
+                ctx.textAlign = 'center';
+                ctx.fillText(text, node.x, node.y + (node.val || 4) + fontSize + 1);
+            })
+
+            // Link appearance
+            .linkColor(l => {
+                if (highlightLinks.size && !highlightLinks.has(l)) return 'rgba(60,60,60,0.1)';
+                if (l.type === 'tag') return 'rgba(139,92,246,0.3)';
+                if (l.type === 'provenance') return 'rgba(59,130,246,0.4)';
+                return 'rgba(100,100,100,0.2)';
+            })
+            .linkWidth(l => highlightLinks.has(l) ? 2 : 0.5)
+            .linkDirectionalParticles(l => l.type === 'provenance' ? 2 : 0)
+            .linkDirectionalParticleWidth(2)
+
+            // Interaction
+            .onNodeHover(node => {
+                container.style.cursor = node ? 'pointer' : 'default';
+                highlightNodes.clear();
+                highlightLinks.clear();
+                if (node) {
+                    highlightNodes.add(node);
+                    // Add neighbors
+                    data.links.forEach(l => {
+                        const src = typeof l.source === 'object' ? l.source : data.nodes.find(n => n.id === l.source);
+                        const tgt = typeof l.target === 'object' ? l.target : data.nodes.find(n => n.id === l.target);
+                        if (src === node || tgt === node) {
+                            highlightNodes.add(src);
+                            highlightNodes.add(tgt);
+                            highlightLinks.add(l);
+                        }
+                    });
+                }
+                hoverNode = node;
+            })
+            .onNodeClick(node => {
+                if (node) showNodeDetail(node);
+            })
+
+            // Physics
+            .d3AlphaDecay(0.02)
+            .d3VelocityDecay(0.3)
+            .warmupTicks(50)
+            .cooldownTicks(100);
+
+        // Hide loading
+        loading.classList.add('hidden');
+
+        // Fit to view after warmup
+        setTimeout(() => {
+            if (graphInstance) graphInstance.zoomToFit(400, 40);
+        }, 500);
+    }
+
+    // ── Node Detail Panel ────────────────────────────────────────
+    function showNodeDetail(node) {
+        const panel = document.getElementById('node-detail');
+        const typeBadge = document.getElementById('detail-type-badge');
+        const typeColors = {
+            episodic:   'bg-[rgba(59,130,246,0.2)] text-[#93c5fd] border border-[rgba(59,130,246,0.3)]',
+            semantic:   'bg-[rgba(139,92,246,0.2)] text-[#a78bfa] border border-[rgba(139,92,246,0.3)]',
+            procedural: 'bg-[rgba(16,185,129,0.2)] text-[#34d399] border border-[rgba(16,185,129,0.3)]',
+            state:      'bg-[rgba(107,114,128,0.2)] text-gray-400 border border-[rgba(107,114,128,0.3)]',
+        };
+
+        typeBadge.className = `text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${typeColors[node.type] || typeColors.state}`;
+        typeBadge.textContent = node.type;
+        document.getElementById('detail-id').textContent = node.id.substring(0, 12);
+        document.getElementById('detail-date').textContent = node.created_at || '';
+        document.getElementById('detail-content').textContent = node.label || 'No content';
+
+        const tagsEl = document.getElementById('detail-tags');
+        tagsEl.innerHTML = (node.tags || []).map(t =>
+            `<span class="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-xs text-gray-400">${t}</span>`
+        ).join('');
+
+        panel.classList.remove('hidden');
+        if (window.lucide) lucide.createIcons();
+    }
+
+    function closeNodeDetail() {
+        document.getElementById('node-detail').classList.add('hidden');
+    }
+
+    function resetGraphZoom() {
+        if (graphInstance) graphInstance.zoomToFit(400, 40);
+    }
+
+    // Resize handler
+    window.addEventListener('resize', () => {
+        if (graphInstance) {
+            const container = document.getElementById('graph-canvas');
+            graphInstance.width(container.clientWidth).height(container.clientHeight);
+        }
+    });
+</script>
+
+<style>
+    .view-toggle-btn {
+        color: rgba(156, 163, 175, 1);
+        background: transparent;
+    }
+    .view-toggle-btn.active {
+        color: white;
+        background: rgba(255, 255, 255, 0.1);
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
+    }
+    .view-toggle-btn:hover:not(.active) {
+        background: rgba(255, 255, 255, 0.05);
+        color: rgba(209, 213, 219, 1);
+    }
+</style>
 {% endblock %}

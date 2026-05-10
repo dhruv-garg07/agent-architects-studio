@@ -41,6 +41,24 @@
       <button class="filter-chip" data-filter="Documents">Documents</button>
       <button class="filter-chip" data-filter="Memory">Memory</button>
     </div>
+
+    <!-- Global API Key Bar -->
+    <div class="apikey-bar" id="apikey-bar">
+      <div class="apikey-bar-inner">
+        <svg class="w-4 h-4 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+        </svg>
+        <input
+          type="text"
+          id="global-apikey"
+          placeholder="Paste your API key here — it auto-fills into code samples & Try It"
+          class="apikey-input"
+          spellcheck="false"
+          autocomplete="off"
+        >
+        <span id="apikey-status" class="apikey-status"></span>
+      </div>
+    </div>
   </div>
 
   <!-- Getting Started Hero -->
@@ -1424,6 +1442,39 @@ table thead {
 .tryit-response-wrap { display: flex; flex-direction: column; gap: 0.25rem; }
 .tryit-response-header { display: flex; align-items: center; justify-content: space-between; }
 .tryit-timing { font-size: 0.68rem; color: #64748b; font-family: monospace; }
+/* ── Global API Key Bar ──────────────────────────────────────────────── */
+.apikey-bar {
+  margin-bottom: 0.75rem;
+}
+.apikey-bar-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(0,0,0,0.2);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 0.4rem 0.75rem;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+.apikey-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #10b981;
+  font-family: monospace;
+  font-size: 0.78rem;
+  outline: none;
+}
+.apikey-input::placeholder { color: #475569; font-family: -apple-system, sans-serif; }
+.apikey-input:focus { color: #34d399; }
+.apikey-status {
+  font-size: 0.68rem;
+  color: #10b981;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .tryit-response-pre {
   background: rgba(0,0,0,0.3) !important;
   border: 1px solid rgba(255,255,255,0.08);
@@ -1483,7 +1534,8 @@ table thead {
       currentCategory: null,
       activeFilters: new Set(['all']),
       searchQuery: '',
-      selectedLanguage: config.defaultLanguage
+      selectedLanguage: config.defaultLanguage,
+      apiKey: localStorage.getItem('api_docs_key') || ''
     };
 
     // Initialize
@@ -1885,6 +1937,24 @@ table thead {
         }
       });
       
+      // Global API key input
+      const globalApiKeyInput = document.getElementById('global-apikey');
+      const apiKeyStatus = document.getElementById('apikey-status');
+      if (globalApiKeyInput) {
+        // Restore saved key
+        if (state.apiKey) {
+          globalApiKeyInput.value = state.apiKey;
+          apiKeyStatus.textContent = 'Saved';
+        }
+        globalApiKeyInput.addEventListener('input', debounce(function(e) {
+          state.apiKey = e.target.value.trim();
+          localStorage.setItem('api_docs_key', state.apiKey);
+          apiKeyStatus.textContent = state.apiKey ? 'Saved' : '';
+          // Re-render code sample with the key injected
+          if (state.currentEndpoint) updateCodeSample();
+        }, 400));
+      }
+
       // Getting Started hero collapse
       const heroCollapseBtn = document.getElementById('hero-collapse');
       if (heroCollapseBtn) {
@@ -2176,7 +2246,13 @@ table thead {
       
       // Ensure BASE placeholder is replaced
       code = code.replace(/__BASE__|\{\{BASE\}\}/g, window.location.origin);
-      
+
+      // Inject user's API key if they've set one
+      if (state.apiKey) {
+        code = code.replace(/<API_KEY>|<token>|<your-api-key>/g, state.apiKey);
+        code = code.replace(/Bearer <API_KEY>|Bearer <token>/g, `Bearer ${state.apiKey}`);
+      }
+
       codeBlock.textContent = code;
       if (currentLang) currentLang.textContent = selectedLanguage;
       
@@ -2529,7 +2605,7 @@ table thead {
         <div class="tryit-fields">
           <div class="tryit-field">
             <label class="tryit-label">Authorization</label>
-            <input type="text" id="tryit-apikey" placeholder="Bearer <your-api-key>" class="tryit-input" spellcheck="false">
+            <input type="text" id="tryit-apikey" value="${state.apiKey ? 'Bearer ' + state.apiKey : ''}" placeholder="Bearer <your-api-key>" class="tryit-input" spellcheck="false">
           </div>
           ${hasBody ? `
           <div class="tryit-field">
