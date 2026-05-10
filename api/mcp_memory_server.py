@@ -56,13 +56,11 @@ except ImportError:
     print("Or: uv add mcp")
     sys.exit(1)
 
-# Import SimpleMem components
+# Import GitMem V2 Core
 try:
-    from SimpleMem.main import create_system, SimpleMemSystem
-    from SimpleMem.models.memory_entry import MemoryEntry, Dialogue
+    from gitmem.core.app import gitmem_app
 except ImportError as e:
-    print(f"Error importing SimpleMem: {e}")
-    print("Make sure SimpleMem module is available in the path")
+    print(f"Error importing GitMem V2: {e}")
     sys.exit(1)
 
 # Initialize FastMCP server
@@ -83,8 +81,8 @@ This system is designed to HELP you, not to block you. Use it when it improves y
 """
 )
 
-# Cache for SimpleMem systems per agent
-_memory_systems_cache: Dict[str, SimpleMemSystem] = {}
+# Workspace context for this session
+_current_workspace_id: Optional[str] = os.getenv("DEFAULT_WORKSPACE_ID", "default_workspace")
 
 # Current agent context for this session
 _current_agent_id: Optional[str] = None
@@ -258,11 +256,7 @@ _agents_service = McpAgentsService()
 _default_user_id = os.getenv("MCP_USER_ID", "mcp-default-user")
 
 
-def _get_or_create_memory_system(agent_id: str, clear_db: bool = False) -> SimpleMemSystem:
-    """Get cached SimpleMem system or create new one for the agent."""
-    if agent_id not in _memory_systems_cache or clear_db:
-        _memory_systems_cache[agent_id] = create_system(agent_id=agent_id, clear_db=clear_db)
-    return _memory_systems_cache[agent_id]
+# Removed SimpleMem cache helper
 
 
 # ============================================================================
@@ -311,8 +305,9 @@ async def register_agent(
         _current_agent_id = agent_id
         _agents_service.set_current_agent(_default_user_id, agent_id)
         
-        # Also initialize the memory system
-        _get_or_create_memory_system(agent_id)
+        # Also initialize the workspace/repo in GitMem V2 if needed
+        # We assume the agent_id corresponds to a repo_id in GitMem V2
+        # Future improvement: map these explicitly.
         
         return json.dumps({
             'ok': True,
@@ -430,13 +425,9 @@ async def remove_agent(agent_id: str, delete_memories: bool = False) -> str:
         # Delete from Supabase
         deleted = _agents_service.delete_agent(user_id=_default_user_id, agent_id=agent_id)
         
-        # Optionally delete ChromaDB collection
-        if delete_memories and agent_id in _memory_systems_cache:
-            try:
-                # Clear the memory system
-                del _memory_systems_cache[agent_id]
-            except:
-                pass
+        # Optionally clear memories in GitMem V2
+        # (Command handler delete logic would go here)
+        pass
         
         # Clear current agent if deleted
         if _current_agent_id == agent_id:
@@ -477,8 +468,7 @@ async def switch_to_agent(agent_id: str) -> str:
             _current_agent_id = agent_id
             _agents_service.set_current_agent(_default_user_id, agent_id)
             
-            # Initialize memory system if not already
-            _get_or_create_memory_system(agent_id)
+            # (No local memory cache init needed for V2)
             
             return json.dumps({
                 'ok': True,
@@ -556,7 +546,8 @@ async def create_memory(agent_id: str, clear_db: bool = False) -> str:
         JSON string with creation status
     """
     try:
-        memory_system = _get_or_create_memory_system(agent_id, clear_db=clear_db)
+        # In GitMem V2, repositories/agents are created dynamically or exist in DB.
+        # We don't need to explicitly create a local SimpleMem system anymore.
         return json.dumps({
             'ok': True,
             'message': 'memory_system_created' if clear_db else 'memory_system_initialized',
@@ -592,23 +583,18 @@ async def process_raw_dialogues(
         if not dialogues:
             return json.dumps({'ok': False, 'error': 'dialogues list is required'})
         
-        memory_system = _get_or_create_memory_system(agent_id)
-        
-        memories_created = 0
-        for dlg in dialogues:
-            speaker = dlg.get('speaker', 'unknown')
-            content = dlg.get('content', '')
-            timestamp = dlg.get('timestamp')
-            
-            if content:
-                memory_system.add_dialogue(
-                    speaker=speaker,
-                    content=content,
-                    timestamp=timestamp
-                )
-                memories_created += 1
-        
-        memory_system.finalize()
+        res = gitmem_app.command_handler.execute(
+            command_name="add_memory",
+            actor_id=_default_user_id,
+            workspace_id=_current_workspace_id,
+            payload={
+                "repo_id": agent_id,
+                "text": "\n".join([f"{d.get('speaker', 'unknown')}: {d.get('content', '')}" for d in dialogues]),
+                "metadata": {"source": "dialogue_tool"}
+            },
+            skip_auth=True
+        )
+        memories_created = res.get("data", {}).get("memories_added", 0) if res.get("status") == "success" else 0
         
         return json.dumps({
             'ok': True,
@@ -649,35 +635,38 @@ async def add_memory_direct(
         if not memories:
             return json.dumps({'ok': False, 'error': 'memories list is required'})
         
-        memory_system = _get_or_create_memory_system(agent_id)
-        
-        entries = []
-        entry_ids = []
+        memories_created = 0
         for mem in memories:
             if not mem.get('lossless_restatement'):
                 continue
             
-            entry = MemoryEntry(
-                lossless_restatement=mem.get('lossless_restatement'),
-                keywords=mem.get('keywords', []),
-                timestamp=mem.get('timestamp'),
-                location=mem.get('location'),
-                persons=mem.get('persons', []),
-                entities=mem.get('entities', []),
-                topic=mem.get('topic')
+            res = gitmem_app.command_handler.execute(
+                command_name="add_memory",
+                actor_id=_default_user_id,
+                workspace_id=_current_workspace_id,
+                payload={
+                    "repo_id": agent_id,
+                    "text": mem.get('lossless_restatement'),
+                    "metadata": {
+                        "keywords": mem.get('keywords', []),
+                        "timestamp": mem.get('timestamp'),
+                        "location": mem.get('location'),
+                        "persons": mem.get('persons', []),
+                        "entities": mem.get('entities', []),
+                        "topic": mem.get('topic')
+                    }
+                },
+                skip_auth=True
             )
-            entries.append(entry)
-            entry_ids.append(entry.entry_id)
-        
-        if entries:
-            memory_system.vector_store.add_entries(entries)
+            if res.get("status") == "success":
+                memories_created += res.get("data", {}).get("memories_added", 0)
         
         return json.dumps({
             'ok': True,
             'message': 'memories_added',
             'agent_id': agent_id,
-            'entries_added': len(entries),
-            'entry_ids': entry_ids
+            'entries_added': memories_created,
+            'entry_ids': [] # V2 doesn't return these yet
         })
     except Exception as e:
         return json.dumps({'ok': False, 'error': str(e)})
@@ -708,22 +697,23 @@ async def search_memory(
         JSON string with search results including memory entries
     """
     try:
-        memory_system = _get_or_create_memory_system(agent_id)
+        res = gitmem_app.command_handler.execute(
+            command_name="retrieve_context",
+            actor_id=_default_user_id,
+            workspace_id=_current_workspace_id,
+            payload={
+                "repo_id": agent_id,
+                "query": query,
+                "max_tokens": top_k * 100 # Rough estimate
+            },
+            skip_auth=True
+        )
         
-        contexts = memory_system.hybrid_retriever.retrieve(query, enable_reflection=enable_reflection)
-        
-        results = []
-        for ctx in contexts[:top_k]:
-            results.append({
-                'entry_id': ctx.entry_id,
-                'lossless_restatement': ctx.lossless_restatement,
-                'keywords': ctx.keywords,
-                'timestamp': ctx.timestamp,
-                'location': ctx.location,
-                'persons': ctx.persons,
-                'entities': ctx.entities,
-                'topic': ctx.topic
-            })
+        if res.get("status") != "success":
+            return json.dumps({'ok': False, 'error': res.get('error')})
+            
+        data = res.get("data", {})
+        results = data.get("sources", [])
         
         return json.dumps({
             'ok': True,

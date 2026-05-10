@@ -1,55 +1,24 @@
 """
-GitMem Event Bus - Central event emitter for real-time updates.
-All SDK operations emit events through this bus, which are then
-pushed to connected clients via WebSocket.
+GitMem v2.0 — Event Bus (CENTRAL)
+
+Central event bus for real-time updates and inter-module communication.
+All SDK operations emit events through this bus, which are then:
+1. Persisted to the Event Store (gitmem_events)
+2. Pushed to connected clients via WebSocket
+3. Picked up by background workers (if configured)
 """
 
 from datetime import datetime
 from typing import Any, Dict, List, Callable, Optional
-from enum import Enum
 from dataclasses import dataclass, field
 import threading
 import json
-
-
-class EventType(str, Enum):
-    # Agent Events
-    AGENT_HEARTBEAT = "agent:heartbeat"
-    AGENT_ONLINE = "agent:online"
-    AGENT_OFFLINE = "agent:offline"
-    
-    # Memory Events
-    MEMORY_ADDED = "memory:added"
-    MEMORY_UPDATED = "memory:updated"
-    MEMORY_DELETED = "memory:deleted"
-    
-    # Commit Events  
-    COMMIT_CREATED = "commit:created"
-    COMMIT_REVERTED = "commit:reverted"
-    
-    # Index Events
-    INDEX_UPDATED = "index:updated"
-    INDEX_QUERY = "index:query"
-    
-    # Repo Events
-    REPO_STARRED = "repo:starred"
-    REPO_FORKED = "repo:forked"
-    REPO_WATCHED = "repo:watched"
-    RELEASE_CREATED = "release:created"
-    
-    # Context Events
-    CONTEXT_QUERY = "context:query"
-    
-    # File Events
-    FILE_UPLOADED = "file:uploaded"
-    
-    # Graph Events
-    SEMANTIC_FACT_ADDED = "graph:fact_added"
+from gitmem.core.models import EventType, GitMemEvent
 
 
 @dataclass
 class Event:
-    """Represents a single event in the system."""
+    """Represents an in-memory event in the system (legacy compat & bus passing)."""
     type: EventType
     data: Dict[str, Any]
     timestamp: datetime = field(default_factory=datetime.now)
@@ -57,7 +26,7 @@ class Event:
     
     def to_dict(self) -> Dict[str, Any]:
         return {
-            "type": self.type.value,
+            "type": self.type.value if hasattr(self.type, 'value') else str(self.type),
             "data": self.data,
             "timestamp": self.timestamp.isoformat(),
             "agent_id": self.agent_id
@@ -102,7 +71,7 @@ class EventBus:
     
     def subscribe(self, event_type: EventType, callback: Callable[[Event], None]):
         """Subscribe to specific event type."""
-        key = event_type.value
+        key = event_type.value if hasattr(event_type, 'value') else str(event_type)
         if key not in self._listeners:
             self._listeners[key] = []
         self._listeners[key].append(callback)
@@ -113,7 +82,7 @@ class EventBus:
     
     def unsubscribe(self, event_type: EventType, callback: Callable[[Event], None]):
         """Unsubscribe from specific event type."""
-        key = event_type.value
+        key = event_type.value if hasattr(event_type, 'value') else str(event_type)
         if key in self._listeners and callback in self._listeners[key]:
             self._listeners[key].remove(callback)
     
@@ -128,7 +97,7 @@ class EventBus:
             self._event_history.pop(0)
         
         # Notify type-specific listeners
-        key = event.type.value
+        key = event.type.value if hasattr(event.type, 'value') else str(event.type)
         if key in self._listeners:
             for callback in self._listeners[key]:
                 try:
@@ -171,91 +140,33 @@ class EventBus:
 event_bus = EventBus()
 
 
-# Helper functions for common events
-def emit_memory_added(agent_id: str, memory_id: str, memory_type: str, content: str, importance: float = 0.0, scope: str = "private"):
-    """Emit memory added event."""
+# ============================================================
+# Helper Functions for V2 Events
+# ============================================================
+
+def emit_memory_created(agent_id: str, memory_id: str, memory_type: str, content: str, workspace_id: str, visibility: str = "private"):
+    """Emit memory created event."""
     event_bus.emit_simple(
-        EventType.MEMORY_ADDED,
+        EventType.MEMORY_CREATED,
         {
+            "workspace_id": workspace_id,
             "memory_id": memory_id,
             "memory_type": memory_type,
             "content": content[:100] + ("..." if len(content) > 100 else ""),
-            "importance": importance,
-            "scope": scope
+            "visibility": visibility
         },
         agent_id=agent_id
     )
 
-
-def emit_commit_created(agent_id: str, commit_hash: str, message: str, parent_hash: Optional[str] = None):
+def emit_commit_created(agent_id: str, commit_hash: str, message: str, workspace_id: str, parent_hash: Optional[str] = None):
     """Emit commit created event."""
     event_bus.emit_simple(
         EventType.COMMIT_CREATED,
         {
+            "workspace_id": workspace_id,
             "commit_hash": commit_hash,
             "message": message,
             "parent_hash": parent_hash
-        },
-        agent_id=agent_id
-    )
-
-
-def emit_agent_heartbeat(agent_id: str, model: Optional[str] = None, status: str = "online"):
-    """Emit agent heartbeat event."""
-    event_bus.emit_simple(
-        EventType.AGENT_HEARTBEAT,
-        {
-            "status": status,
-            "model": model,
-            "last_active": datetime.now().isoformat()
-        },
-        agent_id=agent_id
-    )
-
-
-def emit_index_updated(embeddings_count: int, latency_ms: float):
-    """Emit index update event."""
-    event_bus.emit_simple(
-        EventType.INDEX_UPDATED,
-        {
-            "embeddings": embeddings_count,
-            "latency": f"{latency_ms:.1f}ms"
-        }
-    )
-
-
-def emit_context_query(agent_id: str, query: str, tokens_used: int, memories_returned: int):
-    """Emit context query event."""
-    event_bus.emit_simple(
-        EventType.CONTEXT_QUERY,
-        {
-            "query": query[:50] + ("..." if len(query) > 50 else ""),
-            "tokens_used": tokens_used,
-            "memories_returned": memories_returned
-        },
-        agent_id=agent_id
-    )
-
-
-def emit_release_created(version: str, description: str):
-    """Emit release created event."""
-    event_bus.emit_simple(
-        EventType.RELEASE_CREATED,
-        {
-            "version": version,
-            "description": description
-        }
-    )
-
-
-def emit_semantic_fact_added(subject: str, predicate: str, obj: str, agent_id: Optional[str] = None):
-    """Emit semantic fact (knowledge graph node) added."""
-    event_bus.emit_simple(
-        EventType.SEMANTIC_FACT_ADDED,
-        {
-            "subject": subject,
-            "predicate": predicate,
-            "object": obj
         },
         agent_id=agent_id
     )

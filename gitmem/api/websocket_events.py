@@ -88,13 +88,30 @@ def init_websocket(socketio: SocketIO):
         _last_stats_request[client_id] = current_time
 
         # Import here to avoid circular imports
-        from .routes import store, vector_engine, agent_manager
+        from gitmem.core.app import gitmem_app
         
+        # Get count stats
+        agent_count = 0
+        total_memories = 0
+        commits_count = 0
+        try:
+            if gitmem_app.supabase_client:
+                ac_res = gitmem_app.supabase_client.table('gitmem_repos').select('repo_id', count='exact').execute()
+                agent_count = ac_res.count or 0
+                
+                tm_res = gitmem_app.supabase_client.table('gitmem_memories').select('id', count='exact').execute()
+                total_memories = tm_res.count or 0
+                
+                cc_res = gitmem_app.supabase_client.table('gitmem_commits').select('commit_id', count='exact').execute()
+                commits_count = cc_res.count or 0
+        except Exception:
+            pass
+            
         stats = {
-            'agent_count': agent_manager.get_agent_count(),
-            'total_memories': store.count_memories(),
-            'index_stats': vector_engine.get_stats(),
-            'commits_count': len(store.get_commits()),
+            'agent_count': agent_count,
+            'total_memories': total_memories,
+            'index_stats': gitmem_app.vector_engine.get_stats() if gitmem_app.vector_engine else {},
+            'commits_count': commits_count,
             'timestamp': datetime.now().isoformat()
         }
         emit('stats_update', stats)
@@ -102,13 +119,20 @@ def init_websocket(socketio: SocketIO):
     @socketio.on('request_activity_feed', namespace='/gitmem')
     def handle_request_activity_feed(data=None):
         """Client requests activity feed."""
-        from .routes import store
+        from gitmem.core.app import gitmem_app
         
         limit = 10
         if data and 'limit' in data:
             limit = min(data['limit'], 50)  # Cap at 50
         
-        feed = store.get_activity_feed(limit=limit)
+        feed = []
+        try:
+            if gitmem_app.supabase_client:
+                # Fetch recent events
+                res = gitmem_app.supabase_client.table('gitmem_events').select('*').order('created_at', desc=True).limit(limit).execute()
+                feed = res.data or []
+        except Exception:
+            pass
         
         # Serialize timestamps
         for item in feed:

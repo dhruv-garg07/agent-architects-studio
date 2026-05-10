@@ -61,32 +61,64 @@ class VectorEngine:
             print(f"ChromaDB initialization failed: {e}")
             self.client = None
 
-    def add_texts(self, texts: List[str], metadatas: List[Dict[str, Any]], ids: List[str]):
-        if not self.collection:
+    def add_texts(self, texts: List[str], metadatas: List[Dict[str, Any]], ids: List[str], collection_name: str = None):
+        if not self.client:
             return
             
-        # Add to global collection for compatibility
+        target_collection = self.collection
+        if collection_name:
+            try:
+                target_collection = self.client.get_or_create_collection(name=collection_name)
+            except:
+                pass
+
+        if not target_collection:
+            return
+            
         processed_metadatas = []
         for meta in metadatas:
             if not meta:
                 processed_metadatas.append({"_placeholder": "true"})
             else:
                 processed_meta = {}
-                # Ensure agent_id is in metadata if we can find it
                 for k, v in meta.items():
                     if isinstance(v, (list, dict)):
                         processed_meta[k] = str(v)
                     else:
                         processed_meta[k] = v
-                
-                # Use a default agent_id if missing but available elsewhere, 
-                # or ensure it's passed in.
                 processed_metadatas.append(processed_meta)
         
         try:
-            self.collection.add(documents=texts, metadatas=processed_metadatas, ids=ids)
+            target_collection.add(documents=texts, metadatas=processed_metadatas, ids=ids)
         except:
             pass
+
+    def add_vectors(self, collection_name: str, vectors: List[List[float]], documents: List[str], metadatas: List[Dict[str, Any]], ids: List[str]):
+        """Explicit vector ingestion for V2 pipeline."""
+        if not self.client:
+            return
+            
+        try:
+            target_collection = self.client.get_or_create_collection(name=collection_name)
+            
+            processed_metadatas = []
+            for meta in metadatas:
+                processed_meta = {}
+                for k, v in meta.items():
+                    if isinstance(v, (list, dict)):
+                        processed_meta[k] = str(v)
+                    else:
+                        processed_meta[k] = v
+                processed_metadatas.append(processed_meta)
+
+            target_collection.add(
+                embeddings=vectors,
+                documents=documents,
+                metadatas=processed_metadatas,
+                ids=ids
+            )
+        except Exception as e:
+            print(f"[VectorEngine] add_vectors failed: {e}")
 
     def add_memory(self, memory: Any):
         """Helper to add a memory object directly."""
@@ -117,46 +149,43 @@ class VectorEngine:
         except Exception as e:
             print(f"[VectorEngine] Error adding memory: {e}")
 
-    def query(self, query_text: str, n_results: int = 5, where: Dict = None) -> List[Dict]:
+    def query(self, query_text: str = None, n_results: int = 5, where: Dict = None, 
+              collection_name: str = None, query_embeddings: List[List[float]] = None) -> List[Dict]:
         if not self.client:
             return []
         
-        # Determine if we should query global or agent-specific collection
+        # 1. Determine collection
         target_collection = self.collection
-        
-        # Check if we are querying a specific agent
-        agent_id = where.get("agent_id") if where else None
-        
-        # If we are in cloud mode, verify if per-agent collection exists
-        if agent_id and self.is_cloud:
+        if collection_name:
             try:
-                # Try to get agent-specific collection
-                # Note: Manhattan project uses agent_id as collection name often
-                agent_col = self.client.get_collection(name=agent_id)
-                target_collection = agent_col
-                
-                # If we switched to agent collection, remove agent_id from where clause
-                # as it's implicit
-                local_where = where.copy()
-                if "agent_id" in local_where:
-                    del local_where["agent_id"]
-                if not local_where:
-                    where = None # If empty, pass None
-                else:
-                    where = local_where
+                target_collection = self.client.get_collection(name=collection_name)
             except:
-                # Fallback to global collection
                 pass
-                
+        elif where and where.get("agent_id") and self.is_cloud:
+            try:
+                agent_id = where["agent_id"]
+                target_collection = self.client.get_collection(name=agent_id)
+                # Cleanup where if implicit
+                local_where = where.copy()
+                del local_where["agent_id"]
+                where = local_where if local_where else None
+            except:
+                pass
+
         if not target_collection:
             return []
             
         try:
-            results = target_collection.query(
-                query_texts=[query_text],
-                n_results=n_results,
-                where=where
-            )
+            query_args = {
+                "n_results": n_results,
+                "where": where
+            }
+            if query_embeddings:
+                query_args["query_embeddings"] = query_embeddings
+            else:
+                query_args["query_texts"] = [query_text]
+
+            results = target_collection.query(**query_args)
             
             normalized = []
             if results['ids']:

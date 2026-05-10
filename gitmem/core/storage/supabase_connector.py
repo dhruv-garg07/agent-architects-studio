@@ -1,5 +1,7 @@
 import os
 import json
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 from typing import List, Dict, Any, Optional
 from supabase import create_client, Client
 from dotenv import load_dotenv
