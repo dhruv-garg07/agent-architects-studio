@@ -18,6 +18,19 @@
           "response": {
             "agent_id": "string"
           },
+          "when_to_use": "Call this when onboarding a new user, project, or tenant that needs its own isolated AI assistant with separate knowledge and memory.",
+          "use_cases": [
+            "Onboarding a new customer with a dedicated support agent",
+            "Creating a per-user personalised assistant in a SaaS app",
+            "Spinning up a project-specific agent that only knows about that project's documents",
+            "Multi-tenant platforms: one agent per organisation or workspace"
+          ],
+          "notes": "agent_slug must be unique across your account and URL-safe (lowercase letters and hyphens only). Store the returned agent_id — it is required by every other endpoint.",
+          "errors": [
+            {"code": 400, "message": "Bad request — missing required fields (agent_name or agent_slug)"},
+            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
+            {"code": 409, "message": "Conflict — agent_slug already exists in your account"}
+          ],
           "code": {
             "curl": "curl -X POST '__BASE__/create_agent' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_name\":\"test-agent\",\"agent_slug\":\"test-agent\"}'",
             "python": "import requests\n\nurl = \"__BASE__/create_agent\"\npayload = { 'agent_name': 'test-agent', 'agent_slug': 'test-agent', 'permissions': { 'run': True }, 'limits': { 'rpm': 10 }, 'description': 'Created by script' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=15)\n\nprint(response.text)",
@@ -33,6 +46,17 @@
           "response": {
             "agents": []
           },
+          "when_to_use": "Use at app startup to discover existing agents, populate an agent-picker UI, or verify an agent exists before making further calls.",
+          "use_cases": [
+            "Populating an agent dropdown/switcher in your UI",
+            "Auditing all active agents in your account",
+            "Verifying that a specific agent_slug has already been created",
+            "Syncing your local state with the server after a session restart"
+          ],
+          "notes": "Returns only agents associated with the API key used. Both enabled and disabled agents are included — filter on the 'enabled' field client-side if you want active-only results.",
+          "errors": [
+            {"code": 401, "message": "Unauthorized — missing or invalid API key"}
+          ],
           "code": {
             "curl": "curl -X GET '__BASE__/list_agents' -H 'Authorization: <API_KEY>'",
             "python": "import requests\n\nurl = \"__BASE__/list_agents\"\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.get(url, headers=headers, timeout=15)\n\nprint(response.text)",
@@ -120,6 +144,18 @@
             "ok": true,
             "message": "agent_deleted"
           },
+          "when_to_use": "Use only when the agent and all its data (documents, memory, conversations) should be permanently removed. Prefer disable_agent for temporary suspension.",
+          "use_cases": [
+            "GDPR / right-to-erasure request — remove a user's entire AI profile",
+            "Cleaning up test agents in a development environment",
+            "Off-boarding a customer and purging their data"
+          ],
+          "notes": "This action is irreversible. It also attempts to delete the agent's vector DB collections. If vector deletion fails, the agent record is still removed from the database. Consider disable_agent if you may need to restore the agent later.",
+          "errors": [
+            {"code": 400, "message": "Bad request — missing agent_id"},
+            {"code": 401, "message": "Unauthorized — invalid API key"},
+            {"code": 404, "message": "Not found — agent does not exist or was already deleted"}
+          ],
           "code": {
             "curl": "curl -X POST '__BASE__/delete_agent' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\"}'",
             "python": "import requests\n\nurl = \"__BASE__/delete_agent\"\npayload = { 'agent_id': '<ID>' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=15)\n\nprint(response.text)",
@@ -140,6 +176,20 @@
             "reply": "string",
             "conversation_id": "string"
           },
+          "when_to_use": "Call this whenever the end-user sends a message. It is the primary inference endpoint — it combines the agent's documents, memory, and the current conversation to produce a contextual reply.",
+          "use_cases": [
+            "Customer support chat widget backed by a product knowledge base",
+            "Personal AI assistant that recalls previous conversations",
+            "Domain-specific Q&A bot powered by uploaded documents",
+            "Automated email-reply drafting with full conversation context"
+          ],
+          "notes": "This endpoint triggers LLM inference and may take 2–30 seconds. Use a client timeout of at least 120 seconds. Store the returned conversation_id and pass it on subsequent turns to maintain context continuity.",
+          "errors": [
+            {"code": 400, "message": "Bad request — missing agent_id or message"},
+            {"code": 401, "message": "Unauthorized — invalid API key"},
+            {"code": 404, "message": "Not found — agent_id does not exist or is disabled"},
+            {"code": 503, "message": "Service unavailable — LLM provider is temporarily unreachable"}
+          ],
           "code": {
             "curl": "curl -X POST '__BASE__/agent_chat' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"message\":\"Hello\"}'",
             "python": "import requests\n\nurl = \"__BASE__/agent_chat\"\npayload = { 'agent_id': '<AGENT_ID>', 'message': 'Hello' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=120)\n\nprint(response.text)",
@@ -170,6 +220,19 @@
             "ok": true,
             "message": "documents_added"
           },
+          "when_to_use": "Call this to seed an agent's knowledge base. Documents are chunked, embedded, and stored in vector storage for semantic retrieval. Do this before agent_chat to give the agent access to your content.",
+          "use_cases": [
+            "Uploading a product knowledge base to back a support bot",
+            "Feeding legal documents to a contract-analysis agent",
+            "Adding FAQs so the agent can answer common questions precisely",
+            "Syncing content updates when your source documents change"
+          ],
+          "notes": "The documents array and ids array must be the same length. IDs must be unique within the agent — use deterministic IDs (e.g. a filename hash) so you can update documents by ID later. Large documents are automatically chunked.",
+          "errors": [
+            {"code": 400, "message": "Bad request — documents and ids arrays have different lengths, or agent_id is missing"},
+            {"code": 401, "message": "Unauthorized — invalid API key"},
+            {"code": 413, "message": "Payload too large — reduce document size or split into smaller batches"}
+          ],
           "code": {
             "curl": "curl -X POST '__BASE__/add_document' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\",\"documents\":[\"doc 1 body\"],\"ids\":[\"doc-1\"],\"metadata\":{}}'",
             "python": "import requests\n\nurl = \"__BASE__/add_document\"\npayload = { 'agent_id': '<ID>', 'documents': ['doc 1 body'], 'ids': ['doc-1'], 'metadata': {} }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=20)\n\nprint(response.text)",
@@ -234,6 +297,19 @@
           "response": {
             "results": []
           },
+          "when_to_use": "Use when you need to retrieve specific document chunks by semantic similarity — useful for building a custom RAG pipeline or debugging what context the agent can see for a given query.",
+          "use_cases": [
+            "Building a custom RAG pipeline outside of agent_chat",
+            "Debugging why the agent answered incorrectly by inspecting which chunks were retrieved",
+            "Adding a 'search your knowledge base' feature to your UI",
+            "Pre-fetching context before constructing a custom LLM prompt"
+          ],
+          "notes": "top_k defaults to 5. Increasing it improves recall but may add noise. Results are ordered by cosine similarity score (highest first). This endpoint does NOT run LLM inference — it only returns matching document chunks.",
+          "errors": [
+            {"code": 400, "message": "Bad request — missing query or agent_id"},
+            {"code": 401, "message": "Unauthorized — invalid API key"},
+            {"code": 404, "message": "Not found — agent has no documents or the collection does not exist yet"}
+          ],
           "code": {
             "curl": "curl -X POST '__BASE__/search_documents' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\",\"query\":\"what is X\",\"top_k\":5 }'",
             "python": "import requests\n\nurl = \"__BASE__/search_documents\"\npayload = { 'agent_id': '<ID>', 'query': 'what is X', 'top_k': 5 }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=20)\n\nprint(response.text)",
@@ -260,6 +336,18 @@
             "agent_id": "string",
             "cleared": false
           },
+          "when_to_use": "Call once before using any other /memory endpoints for a given agent. This initialises the ChromaDB collection that stores structured memory entries. If the collection already exists it is a no-op unless clear_db is true.",
+          "use_cases": [
+            "First-time setup: call immediately after creating a new agent",
+            "Resetting an agent's memory during development or testing with clear_db: true",
+            "Re-initialising after a database migration or storage reset"
+          ],
+          "notes": "This must be called before add_memory, read_memory, or get_context — those endpoints will fail if the memory system has not been initialised first. Setting clear_db: true permanently erases all stored memories for that agent.",
+          "errors": [
+            {"code": 400, "message": "Bad request — missing agent_id"},
+            {"code": 401, "message": "Unauthorized — invalid API key"},
+            {"code": 500, "message": "Internal server error — vector DB initialisation failed (check server logs)"}
+          ],
           "code": {
             "curl": "curl -X POST '__BASE__/create_memory' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"clear_db\":false}'",
             "python": "import requests\n\nurl = \"__BASE__/create_memory\"\npayload = { 'agent_id': '<AGENT_ID>', 'clear_db': False }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=30)\n\nprint(response.json())",
@@ -325,6 +413,19 @@
             "entries_added": 0,
             "entry_ids": []
           },
+          "when_to_use": "Use to store structured facts directly in the agent's memory, bypassing LLM extraction. Prefer process_raw when you have raw conversation transcripts to process.",
+          "use_cases": [
+            "Storing a user's explicitly stated preference (e.g. 'I prefer Python over JavaScript')",
+            "Saving structured facts from a form submission or structured event",
+            "Persisting key decisions made in a conversation for future sessions",
+            "Building up a user profile incrementally from explicit data"
+          ],
+          "notes": "Unlike process_raw, this bypasses LLM processing — the memory is stored exactly as you provide it. Supply meaningful keywords to improve future recall accuracy. The lossless_restatement field should be a complete, self-contained statement.",
+          "errors": [
+            {"code": 400, "message": "Bad request — missing agent_id or memories array, or memories missing lossless_restatement"},
+            {"code": 401, "message": "Unauthorized — invalid API key"},
+            {"code": 404, "message": "Not found — memory system not initialised (call create_memory first)"}
+          ],
           "code": {
             "curl": "curl -X POST '__BASE__/add_memory' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"memories\":[{\"lossless_restatement\":\"Alice scheduled a meeting with Bob at Starbucks on January 22, 2025 at 2pm\",\"keywords\":[\"meeting\",\"Starbucks\",\"Alice\",\"Bob\"],\"persons\":[\"Alice\",\"Bob\"],\"location\":\"Starbucks\",\"timestamp\":\"2025-01-22T14:00:00\",\"topic\":\"meeting scheduling\"}]}'",
             "python": "import requests\n\nurl = \"__BASE__/add_memory\"\npayload = {\n    'agent_id': '<AGENT_ID>',\n    'memories': [\n        {\n            'lossless_restatement': 'Alice scheduled a meeting with Bob at Starbucks on January 22, 2025 at 2pm',\n            'keywords': ['meeting', 'Starbucks', 'Alice', 'Bob'],\n            'persons': ['Alice', 'Bob'],\n            'location': 'Starbucks',\n            'timestamp': '2025-01-22T14:00:00',\n            'topic': 'meeting scheduling'\n        }\n    ]\n}\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=30)\n\nprint(response.json())",
@@ -388,6 +489,20 @@
               }
             ]
           },
+          "when_to_use": "Call when you need an LLM-generated answer grounded in the agent's stored memories. It handles the full retrieval-augmented generation cycle internally — use it when you want answers, not raw chunks.",
+          "use_cases": [
+            "Answering 'what did we discuss last time?' from a user's perspective",
+            "Showing users what the agent remembers about a specific topic",
+            "Building a memory-backed Q&A interface without a custom RAG pipeline",
+            "Summarising past interactions or decisions on a given subject"
+          ],
+          "notes": "agent_chat already calls this internally — only use get_context if you are building a custom pipeline and want the answer + source contexts separately. The contexts_used array shows exactly which memories were retrieved, useful for debugging or citations.",
+          "errors": [
+            {"code": 400, "message": "Bad request — missing question or agent_id"},
+            {"code": 401, "message": "Unauthorized — invalid API key"},
+            {"code": 404, "message": "Not found — memory system not initialised for this agent"},
+            {"code": 503, "message": "Service unavailable — LLM answer generation failed"}
+          ],
           "code": {
             "curl": "curl -X POST '__BASE__/get_context' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"question\":\"What did Alice and Bob discuss about the meeting?\"}'",
             "python": "import requests\n\nurl = \"__BASE__/get_context\"\npayload = {\n    'agent_id': '<AGENT_ID>',\n    'question': 'What did Alice and Bob discuss about the meeting?'\n}\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=120)\n\nresult = response.json()\nprint('Answer:', result.get('answer'))\nprint('Contexts used:', result.get('contexts_used'))",

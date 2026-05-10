@@ -43,6 +43,82 @@
     </div>
   </div>
 
+  <!-- Getting Started Hero -->
+  <div class="getting-started-hero mb-5" id="getting-started-hero">
+    <div class="hero-inner">
+      <div class="hero-left">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="hero-icon-wrap">
+            <svg class="w-5 h-5 text-[#3b82f6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+          </div>
+          <h2 class="text-white font-semibold text-sm">Quick Start Guide</h2>
+          <button id="hero-collapse" class="ml-auto text-gray-500 hover:text-white text-xs flex items-center gap-1 transition-colors">
+            <span id="hero-toggle-label">Hide</span>
+            <svg class="w-3.5 h-3.5 hero-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+            </svg>
+          </button>
+        </div>
+        <div id="hero-body">
+          <div class="hero-steps">
+            <div class="hero-step">
+              <div class="step-num">1</div>
+              <div>
+                <div class="step-title">Get your API Key</div>
+                <div class="step-desc">Every request requires <code>Authorization: Bearer &lt;key&gt;</code>. Keys are scoped to your account and control which agents you can access.</div>
+              </div>
+            </div>
+            <div class="hero-step">
+              <div class="step-num">2</div>
+              <div>
+                <div class="step-title">Create an Agent</div>
+                <div class="step-desc">Start with <code>POST /create_agent</code>. Agents are the core entity — they own documents, memory, and handle chat conversations.</div>
+              </div>
+            </div>
+            <div class="hero-step">
+              <div class="step-num">3</div>
+              <div>
+                <div class="step-title">Seed Knowledge &amp; Query</div>
+                <div class="step-desc">Add context with <code>POST /add_document</code>, store facts with <code>POST /add_memory</code>, then query via <code>POST /agent_chat</code>.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="hero-right" id="hero-auth-box">
+        <div class="auth-box">
+          <div class="auth-box-title">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+            </svg>
+            Authentication
+          </div>
+          <div class="auth-box-body">
+            <div class="auth-item">
+              <span class="auth-label">Scheme</span>
+              <span class="auth-value">Bearer Token</span>
+            </div>
+            <div class="auth-item">
+              <span class="auth-label">Header</span>
+              <code class="auth-code">Authorization</code>
+            </div>
+            <div class="auth-item">
+              <span class="auth-label">Format</span>
+              <code class="auth-code">Bearer &lt;key&gt;</code>
+            </div>
+            <div class="auth-item">
+              <span class="auth-label">Content-Type</span>
+              <code class="auth-code">application/json</code>
+            </div>
+          </div>
+          <div class="auth-box-note">Keys are account-scoped. Never expose them in client-side code or version control.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="api-docs-panels">
     <!-- Left: Navigation Panel -->
     <aside id="api-nav" class="panel nav-panel card">
@@ -145,6 +221,12 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                 </svg>
                 Try it
+              </button>
+              <button class="tab-btn" data-tab="examples">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                </svg>
+                Examples
               </button>
             </nav>
           </div>
@@ -1041,6 +1123,239 @@ table thead {
 #api-nav .p-4, #categories-list {
   backdrop-filter: blur(4px);
 }
+
+/* ── Getting Started Hero ─────────────────────────────────────────────── */
+.getting-started-hero {
+  background: linear-gradient(135deg, rgba(59,130,246,0.06) 0%, rgba(139,92,246,0.04) 50%, rgba(0,0,0,0.1) 100%);
+  border: 1px solid rgba(59,130,246,0.12);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.hero-inner {
+  display: grid;
+  grid-template-columns: 1fr 260px;
+}
+.hero-left {
+  padding: 1.1rem 1.4rem;
+  border-right: 1px solid rgba(255,255,255,0.05);
+}
+.hero-right {
+  padding: 1.1rem 1.25rem;
+}
+.hero-icon-wrap {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(59,130,246,0.15);
+  border: 1px solid rgba(59,130,246,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.hero-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.hero-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+.step-num {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(59,130,246,0.12);
+  border: 1px solid rgba(59,130,246,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #3b82f6;
+  margin-top: 1px;
+}
+.step-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  margin-bottom: 1px;
+}
+.step-desc {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  line-height: 1.45;
+}
+.step-desc code {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 3px;
+  padding: 0 4px;
+  font-size: 0.68rem;
+  color: #93c5fd;
+}
+.hero-chevron { transition: transform 0.2s ease; }
+.hero-chevron.collapsed { transform: rotate(180deg); }
+
+/* Auth box inside hero */
+.auth-box {
+  background: rgba(0,0,0,0.2);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+  padding: 0.85rem;
+  height: 100%;
+  box-sizing: border-box;
+}
+.auth-box-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #93c5fd;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.65rem;
+}
+.auth-box-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.65rem;
+}
+.auth-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.auth-label { font-size: 0.68rem; color: #64748b; flex-shrink: 0; }
+.auth-value { font-size: 0.72rem; color: #94a3b8; }
+.auth-code {
+  font-size: 0.68rem;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 3px;
+  padding: 1px 5px;
+  color: #10b981;
+}
+.auth-box-note {
+  font-size: 0.67rem;
+  color: #475569;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  padding-top: 0.45rem;
+  line-height: 1.4;
+}
+
+/* ── Info Callouts (When to Use / Notes) ─────────────────────────────── */
+.info-callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.8rem 1rem;
+  border-radius: 8px;
+}
+.callout-blue {
+  background: rgba(59,130,246,0.07);
+  border: 1px solid rgba(59,130,246,0.18);
+}
+.callout-yellow {
+  background: rgba(245,158,11,0.07);
+  border: 1px solid rgba(245,158,11,0.18);
+}
+.callout-icon { flex-shrink: 0; margin-top: 1px; }
+.callout-blue .callout-icon { color: #3b82f6; }
+.callout-yellow .callout-icon { color: #f59e0b; }
+.callout-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.2rem;
+}
+.callout-blue .callout-title { color: #60a5fa; }
+.callout-yellow .callout-title { color: #fbbf24; }
+.callout-text { font-size: 0.78rem; color: #94a3b8; line-height: 1.5; }
+
+/* ── Use Case List Items ──────────────────────────────────────────────── */
+.use-case-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  padding: 0.2rem 0;
+}
+.use-case-bullet {
+  flex-shrink: 0;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #8b5cf6;
+  margin-top: 6px;
+}
+
+/* ── Examples Tab ─────────────────────────────────────────────────────── */
+.examples-coming-soon-box {
+  text-align: center;
+  padding: 2rem 1.5rem;
+  background: rgba(59,130,246,0.03);
+  border: 1px dashed rgba(59,130,246,0.15);
+  border-radius: 10px;
+}
+.examples-placeholder-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: rgba(59,130,246,0.1);
+  border: 1px solid rgba(59,130,246,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 0.75rem;
+}
+.examples-plan-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+  text-align: left;
+}
+.example-plan-item {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+  padding: 0.65rem 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.example-plan-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #3b82f6;
+  background: rgba(59,130,246,0.1);
+  border: 1px solid rgba(59,130,246,0.2);
+  border-radius: 3px;
+  padding: 1px 6px;
+  display: inline-block;
+  width: fit-content;
+}
+.example-plan-text {
+  font-size: 0.72rem;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+@media (max-width: 900px) {
+  .hero-inner { grid-template-columns: 1fr; }
+  .hero-left { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .hero-right { display: none; }
+  .examples-plan-grid { grid-template-columns: 1fr; }
+}
 </style>
 
 <!-- Include Prism.js for syntax highlighting -->
@@ -1492,6 +1807,23 @@ table thead {
         }
       });
       
+      // Getting Started hero collapse
+      const heroCollapseBtn = document.getElementById('hero-collapse');
+      if (heroCollapseBtn) {
+        heroCollapseBtn.addEventListener('click', function() {
+          const heroBody = document.getElementById('hero-body');
+          const heroAuthBox = document.getElementById('hero-auth-box');
+          const heroLabel = document.getElementById('hero-toggle-label');
+          const heroChevron = document.querySelector('.hero-chevron');
+          if (!heroBody) return;
+          const isHidden = heroBody.style.display === 'none';
+          heroBody.style.display = isHidden ? '' : 'none';
+          if (heroAuthBox) heroAuthBox.style.display = isHidden ? '' : 'none';
+          if (heroLabel) heroLabel.textContent = isHidden ? 'Hide' : 'Show';
+          if (heroChevron) heroChevron.classList.toggle('collapsed', !isHidden);
+        });
+      }
+
       // Clear filters
       const clearFiltersBtn = document.getElementById('clear-filters');
       if (clearFiltersBtn) {
@@ -1807,6 +2139,9 @@ table thead {
         case 'tryit':
           renderTryItTab();
           break;
+        case 'examples':
+          renderExamplesTab();
+          break;
       }
     }
 
@@ -1814,61 +2149,144 @@ table thead {
       const { currentEndpoint: endpoint } = state;
       const tabContent = document.getElementById('tab-content');
       if (!tabContent) return;
-      
+
       tabContent.innerHTML = '';
-      
+
       const content = document.createElement('div');
-      content.className = 'space-y-4';
-      
-      // Description
+      content.className = 'space-y-5';
+
+      // ── Description ──────────────────────────────────────────────────────
       const descriptionDiv = document.createElement('div');
-      descriptionDiv.className = 'prose prose-invert max-w-none';
-      descriptionDiv.innerHTML = `<p class="text-white">${endpoint.description || 'No description provided.'}</p>`;
+      descriptionDiv.innerHTML = `<p class="text-gray-300 text-sm leading-relaxed">${endpoint.description || 'No description provided.'}</p>`;
       content.appendChild(descriptionDiv);
-      
-      // Parameters section
+
+      // ── When to Use callout ───────────────────────────────────────────────
+      if (endpoint.when_to_use) {
+        const wtuDiv = document.createElement('div');
+        wtuDiv.className = 'info-callout callout-blue';
+        wtuDiv.innerHTML = `
+          <div class="callout-icon">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.347.346A3.99 3.99 0 0112 16.003a3.99 3.99 0 01-2.828-1.172l-.346-.346z"/>
+            </svg>
+          </div>
+          <div class="callout-body">
+            <div class="callout-title">When to Use</div>
+            <div class="callout-text">${endpoint.when_to_use}</div>
+          </div>`;
+        content.appendChild(wtuDiv);
+      }
+
+      // ── Common Use Cases ──────────────────────────────────────────────────
+      if (endpoint.use_cases && endpoint.use_cases.length > 0) {
+        const ucDiv = document.createElement('div');
+        ucDiv.innerHTML = `
+          <h4 class="text-xs font-semibold text-gray-300 mb-2 flex items-center gap-2 uppercase tracking-wider">
+            <svg class="w-3.5 h-3.5 text-[#8b5cf6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+            Common Use Cases
+          </h4>
+          <ul class="space-y-1.5">
+            ${endpoint.use_cases.map(uc => `<li class="use-case-item"><span class="use-case-bullet"></span><span>${uc}</span></li>`).join('')}
+          </ul>`;
+        content.appendChild(ucDiv);
+      }
+
+      // ── Important Notes callout ───────────────────────────────────────────
+      if (endpoint.notes) {
+        const notesDiv = document.createElement('div');
+        notesDiv.className = 'info-callout callout-yellow';
+        notesDiv.innerHTML = `
+          <div class="callout-icon">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+          </div>
+          <div class="callout-body">
+            <div class="callout-title">Important Note</div>
+            <div class="callout-text">${endpoint.notes}</div>
+          </div>`;
+        content.appendChild(notesDiv);
+      }
+
+      // ── Error Responses ───────────────────────────────────────────────────
+      if (endpoint.errors && endpoint.errors.length > 0) {
+        const errDiv = document.createElement('div');
+        errDiv.innerHTML = `
+          <h4 class="text-xs font-semibold text-gray-300 mb-2 flex items-center gap-2 uppercase tracking-wider">
+            <svg class="w-3.5 h-3.5 text-[#ef4444]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            Error Responses
+          </h4>
+          <div class="overflow-hidden rounded-lg border border-[rgba(239,68,68,0.15)]">
+            <table class="w-full text-sm">
+              <thead style="background:rgba(239,68,68,0.05)">
+                <tr>
+                  <th class="text-left py-2 px-3 font-medium text-gray-400 text-xs w-16">Code</th>
+                  <th class="text-left py-2 px-3 font-medium text-gray-400 text-xs">Description</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-[rgba(255,255,255,0.03)]">
+                ${endpoint.errors.map(err => `
+                  <tr>
+                    <td class="py-2 px-3 font-mono text-xs font-semibold ${err.code >= 500 ? 'text-red-400' : err.code >= 400 ? 'text-yellow-400' : 'text-green-400'}">${err.code}</td>
+                    <td class="py-2 px-3 text-xs text-gray-400">${err.message}</td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>`;
+        content.appendChild(errDiv);
+      }
+
+      // ── Parameters ────────────────────────────────────────────────────────
       if (endpoint.parameters && endpoint.parameters.length > 0) {
         const paramsSection = document.createElement('div');
-        paramsSection.className = 'mt-6';
         paramsSection.innerHTML = `
-          <h3 class="text-lg font-semibold text-white mb-4">Parameters</h3>
+          <h4 class="text-xs font-semibold text-gray-300 mb-2 flex items-center gap-2 uppercase tracking-wider">
+            <svg class="w-3.5 h-3.5 text-[#10b981]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"/>
+            </svg>
+            Parameters
+          </h4>
           <div class="overflow-hidden rounded-lg border border-[rgba(255,255,255,0.08)]">
             <table class="w-full text-sm">
               <thead class="bg-[rgba(255,255,255,0.02)]">
                 <tr>
-                  <th class="text-left py-3 px-4 font-medium text-gray-300">Name</th>
-                  <th class="text-left py-3 px-4 font-medium text-gray-300">Type</th>
-                  <th class="text-left py-3 px-4 font-medium text-gray-300">Required</th>
-                  <th class="text-left py-3 px-4 font-medium text-gray-300">Description</th>
+                  <th class="text-left py-2 px-3 font-medium text-gray-400 text-xs">Name</th>
+                  <th class="text-left py-2 px-3 font-medium text-gray-400 text-xs">Type</th>
+                  <th class="text-left py-2 px-3 font-medium text-gray-400 text-xs">In</th>
+                  <th class="text-left py-2 px-3 font-medium text-gray-400 text-xs">Req.</th>
+                  <th class="text-left py-2 px-3 font-medium text-gray-400 text-xs">Description</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-[rgba(255,255,255,0.03)]">
+              <tbody class="divide-y divide-[rgba(255,255,255,0.03)]" id="ov-params-tbody">
               </tbody>
             </table>
-          </div>
-        `;
-        
-        const tbody = paramsSection.querySelector('tbody');
+          </div>`;
+
+        const tbody = paramsSection.querySelector('#ov-params-tbody');
         endpoint.parameters.forEach(param => {
           const row = document.createElement('tr');
           row.innerHTML = `
-            <td class="py-3 px-4 font-mono text-sm text-white">${param.name}</td>
-            <td class="py-3 px-4">
-              <span class="px-2 py-1 rounded text-xs bg-[rgba(59,130,246,0.1)] text-[#3b82f6]">${param.type}</span>
+            <td class="py-2 px-3 font-mono text-xs text-white">${param.name}</td>
+            <td class="py-2 px-3">
+              <span class="px-1.5 py-0.5 rounded text-xs bg-[rgba(59,130,246,0.1)] text-[#3b82f6]">${param.type}</span>
             </td>
-            <td class="py-3 px-4">
-              ${param.required ? 
-                '<span class="px-2 py-1 rounded text-xs bg-[rgba(239,68,68,0.1)] text-[#ef4444]">Required</span>' : 
-                '<span class="px-2 py-1 rounded text-xs bg-[rgba(100,116,139,0.1)] text-gray-400">Optional</span>'}
+            <td class="py-2 px-3 text-xs text-gray-500">${param.location || 'body'}</td>
+            <td class="py-2 px-3">
+              ${param.required ?
+                '<span class="px-1.5 py-0.5 rounded text-xs bg-[rgba(239,68,68,0.1)] text-[#ef4444]">Yes</span>' :
+                '<span class="text-xs text-gray-600">—</span>'}
             </td>
-            <td class="py-3 px-4 text-gray-300">${param.description}</td>
-          `;
+            <td class="py-2 px-3 text-gray-400 text-xs">${param.description || ''}</td>`;
           tbody.appendChild(row);
         });
-        
+
         content.appendChild(paramsSection);
       }
-      
+
       tabContent.appendChild(content);
     }
 
@@ -2056,6 +2474,57 @@ table thead {
       if (testBtn) {
         testBtn.addEventListener('click', openApiPlayground);
       }
+    }
+
+    function renderExamplesTab() {
+      const { currentEndpoint: endpoint } = state;
+      const tabContent = document.getElementById('tab-content');
+      if (!tabContent) return;
+
+      tabContent.innerHTML = '';
+
+      const content = document.createElement('div');
+      content.innerHTML = `
+        <div>
+          <div class="mb-4">
+            <div class="flex items-center gap-2 mb-1">
+              <svg class="w-4 h-4 text-[#3b82f6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+              </svg>
+              <h3 class="text-sm font-semibold text-white">Live Examples</h3>
+            </div>
+            <p class="text-xs text-gray-400">Full runnable examples for <code class="text-xs bg-[rgba(0,0,0,0.3)] px-1.5 py-0.5 rounded text-blue-300 border border-[rgba(255,255,255,0.08)]">${endpoint ? endpoint.path : ''}</code></p>
+          </div>
+          <div class="examples-coming-soon-box">
+            <div class="examples-placeholder-icon">
+              <svg class="w-5 h-5 text-[#3b82f6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+              </svg>
+            </div>
+            <p class="text-white font-medium text-sm mb-1">Full Examples Coming Soon</p>
+            <p class="text-gray-400 text-xs max-w-xs mx-auto mb-4">Step-by-step runnable examples are being prepared. Each will show a complete real-world workflow using this endpoint.</p>
+            <div class="examples-plan-grid">
+              <div class="example-plan-item">
+                <span class="example-plan-badge">Python</span>
+                <span class="example-plan-text">Complete script with env setup, auth, and error handling</span>
+              </div>
+              <div class="example-plan-item">
+                <span class="example-plan-badge">JavaScript</span>
+                <span class="example-plan-text">Browser &amp; Node.js async/await with retry logic</span>
+              </div>
+              <div class="example-plan-item">
+                <span class="example-plan-badge">cURL</span>
+                <span class="example-plan-text">Shell one-liner ready for CLI and CI pipelines</span>
+              </div>
+              <div class="example-plan-item">
+                <span class="example-plan-badge">Workflow</span>
+                <span class="example-plan-text">Multi-step sequence showing this endpoint in a larger flow</span>
+              </div>
+            </div>
+          </div>
+        </div>`;
+
+      tabContent.appendChild(content);
     }
 
     function updateParametersTable() {
