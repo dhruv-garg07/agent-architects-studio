@@ -1870,8 +1870,9 @@ if __name__ == '__main__':
     if socketio:
         # Run with SocketIO for WebSocket support
         print("[STARTUP] Running with Flask-SocketIO (WebSocket enabled)")
-        socketio.run(app, debug=True, host='0.0.0.0', port=1078, allow_unsafe_werkzeug=True)
+        # Disable reloader to avoid watchdog bug on Windows
+        socketio.run(app, debug=True, use_reloader=False, host='0.0.0.0', port=1078, allow_unsafe_werkzeug=True)
     else:
         # Fallback to standard Flask
         print("[STARTUP] Running with standard Flask (no WebSocket)")
-        app.run(debug=True, host='0.0.0.0', port=1078)
+        app.run(debug=True, use_reloader=False, host='0.0.0.0', port=1078)

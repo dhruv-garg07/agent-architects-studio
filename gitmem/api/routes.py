@@ -458,7 +458,8 @@ def agent_file_view(agent_id, virtual_path=''):
 
     # Parse path to figure out source: context/{type}/{id}, docs/{folder}/{id}, vectors/{type}/{id}
     parts = [p for p in virtual_path.strip('/').split('/') if p]
-    content = {'raw': 'Item not found', 'metadata': {}}
+    file_content = 'Item not found'
+    metadata = {}
 
     if len(parts) >= 3 and _db():
         root, subfolder, item_id = parts[0], parts[1], parts[2]
@@ -466,31 +467,53 @@ def agent_file_view(agent_id, virtual_path=''):
             if root == 'context':
                 res = _db().table('gitmem_memories').select('*').eq('id', item_id).execute()
                 if res.data:
-                    content = res.data[0]
+                    row = res.data[0]
+                    file_content = row.get('content', '')
+                    metadata = row.get('metadata', {}) if isinstance(row.get('metadata'), dict) else {}
+                    metadata.update({
+                        'id': row.get('id'),
+                        'type': row.get('type'),
+                        'importance': row.get('importance'),
+                        'created_at': row.get('created_at')
+                    })
             elif root in ('docs', 'documents'):
                 res = _db().table('gitmem_documents').select('*').eq('id', item_id).execute()
                 if res.data:
-                    content = res.data[0]
+                    row = res.data[0]
+                    file_content = row.get('content', '')
+                    metadata = row.get('metadata', {}) if isinstance(row.get('metadata'), dict) else {}
+                    metadata.update({
+                        'filename': row.get('filename'),
+                        'folder': row.get('folder'),
+                        'created_at': row.get('created_at')
+                    })
             elif root == 'vectors':
                 v = gitmem_app.vector_engine.get_vector(item_id, agent_id)
                 if v:
-                    content = v
+                    file_content = v.get('content', '')
+                    metadata = v.get('metadata', {})
             elif root == 'checkpoints':
                 res = _db().table('gitmem_checkpoints').select('*').eq('id', item_id).execute()
                 if res.data:
-                    content = res.data[0]
+                    row = res.data[0]
+                    file_content = row.get('data', row.get('content', 'No content available'))
+                    metadata = row.get('metadata', {}) if isinstance(row.get('metadata'), dict) else {}
+                    metadata.update({'id': row.get('id'), 'name': row.get('name')})
             elif root == 'logs':
                 res = _db().table('gitmem_activity_logs').select('*').eq('id', item_id).execute()
                 if res.data:
-                    content = res.data[0]
-        except Exception:
-            pass
+                    row = res.data[0]
+                    file_content = f"{row.get('action', '')} {row.get('resource_type', '')}\nID: {row.get('id')}"
+                    metadata = row
+        except Exception as e:
+            file_content = f"Error retrieving item: {e}"
 
     return render_template(
         'file_view.html',
         agent=agent,
         path=virtual_path,
-        content=content,
+        content=file_content,
+        metadata=metadata,
         sources=get_sources_status(),
     )
 

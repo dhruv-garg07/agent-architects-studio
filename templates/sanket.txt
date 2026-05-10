@@ -1,6 +1,6 @@
 Hey everyone,
 
-I’ve been leaning pretty heavily on Cursor lately (loving it), but like most people, I’m starting to get a bit paranoid about my token usage and API costs. I’ve started seeing a few products popping up that claim to "compress" or optimize your context to save on tokens.
+I’ve been leaning pretty heavily on Claude lately (loving it), but like most people, I’m starting to get a bit paranoid about my token usage and API costs. I’ve started seeing a few products popping up that claim to "compress" or optimize your context to save on tokens.
 
 I saw Gitmem on Product Hunt the other day and have been messing around with it. It definitely feels like it’s doing something, I am seeing a visible reduction in token usage in my logs but I’m still on the fence about whether it’s actually helping my productivity or just adding another step to my workflow.
 
@@ -14,4 +14,4 @@ Friction: Is it too early to tell if these tools are actually productive? Someti
 
 Real-world Savings: For those using these or similar tools daily, are you seeing a significant drop in your monthly bill, or is it just marginal?
 
-Curious to hear if anyone else has integrated these into their Cursor setup or if you think it's better to just bite the bullet and pay for the raw tokens to keep the context "pure."
+Curious to hear if anyone else has integrated these into their Claude setup or if you think it's better to just bite the bullet and pay for the raw tokens to keep the context "pure."

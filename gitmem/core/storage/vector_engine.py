@@ -276,20 +276,20 @@ class VectorEngine:
             
             normalized = []
             if results and results.get('ids'):
+                metadatas = results.get('metadatas') or []
+                documents = results.get('documents') or []
+                
                 for i, vid in enumerate(results['ids']):
-                    metadata = results['metadatas'][i] if results.get('metadatas') else {}
-                    if not metadata: metadata = {} # Handler None
+                    metadata = metadatas[i] if i < len(metadatas) and metadatas[i] is not None else {}
                     metadata["agent_id"] = agent_id
                     
-                    doc_content = ""
-                    if results.get('documents') and len(results['documents']) > i:
-                        doc_content = results['documents'][i] or ""
+                    doc_content = documents[i] if i < len(documents) else ""
                     
                     normalized.append({
                         "id": vid,
                         "content": doc_content,
                         "metadata": metadata,
-                        "embedding": None # Skip returning heavy embedding data
+                        "embedding": None
                     })
             return normalized
 
