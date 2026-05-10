@@ -51,7 +51,7 @@ def _count_table(table, col, val):
     if not _db():
         return 0
     try:
-        res = _db().table(table).select('id', count='exact').eq(col, val).limit(1).execute()
+        res = _db().table(table).select('*', count='exact').eq(col, val).limit(1).execute()
         return res.count or 0
     except Exception:
         return 0
@@ -62,7 +62,7 @@ def _count_table_where(table, filters: dict):
     if not _db():
         return 0
     try:
-        q = _db().table(table).select('id', count='exact')
+        q = _db().table(table).select('*', count='exact')
         for col, val in filters.items():
             q = q.eq(col, val)
         res = q.limit(1).execute()
@@ -262,7 +262,7 @@ def landing():
     if _db():
         try:
             res = _db().table('api_agents').select('*') \
-                .eq('user_id', current_user.id) \
+                .eq('user_id', current_user.get_id()) \
                 .order('created_at', desc=True).execute()
             agents_raw = res.data or []
         except Exception as e:
@@ -321,7 +321,7 @@ def agent_dashboard(agent_id):
         flash("Database disconnected", "error")
         return redirect(url_for('gitmem.landing'))
 
-    agent_raw = _get_agent(agent_id, user_id=current_user.id)
+    agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
     if not agent_raw:
         flash("Repository not found or access denied.", "error")
         return redirect(url_for('gitmem.landing'))
@@ -415,7 +415,7 @@ def agent_dashboard(agent_id):
 @login_required
 def agent_fs_view(agent_id, virtual_path=''):
     """Virtual filesystem browser."""
-    agent_raw = _get_agent(agent_id, user_id=current_user.id)
+    agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
     if not agent_raw:
         flash("Repository not found.", "error")
         return redirect(url_for('gitmem.landing'))
@@ -445,7 +445,7 @@ def agent_fs_view(agent_id, virtual_path=''):
 @login_required
 def agent_file_view(agent_id, virtual_path=''):
     """View a single memory item or document."""
-    agent_raw = _get_agent(agent_id, user_id=current_user.id)
+    agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
     if not agent_raw:
         flash("Repository not found.", "error")
         return redirect(url_for('gitmem.landing'))
@@ -503,7 +503,7 @@ def agent_file_view(agent_id, virtual_path=''):
 @login_required
 def agent_commits(agent_id):
     """Commit history page."""
-    agent_raw = _get_agent(agent_id, user_id=current_user.id)
+    agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
     if not agent_raw:
         flash("Repository not found.", "error")
         return redirect(url_for('gitmem.landing'))
@@ -551,7 +551,7 @@ def agent_commits(agent_id):
 @login_required
 def agent_diffs(agent_id):
     """Diff viewer between commits."""
-    agent_raw = _get_agent(agent_id, user_id=current_user.id)
+    agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
     if not agent_raw:
         return redirect(url_for('gitmem.landing'))
 
@@ -577,7 +577,7 @@ def agent_diffs(agent_id):
 @gitmem_bp.route('/agent/<agent_id>/pulls')
 @login_required
 def pulls(agent_id):
-    agent_raw = _get_agent(agent_id, user_id=current_user.id)
+    agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
     agent = {'id': agent_id, 'name': (agent_raw or {}).get('agent_name', agent_id)}
     return render_template('pulls.html', agent=agent, pulls=[], sources=get_sources_status())
 
@@ -585,7 +585,7 @@ def pulls(agent_id):
 @gitmem_bp.route('/agent/<agent_id>/issues')
 @login_required
 def issues(agent_id):
-    agent_raw = _get_agent(agent_id, user_id=current_user.id)
+    agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
     agent = {'id': agent_id, 'name': (agent_raw or {}).get('agent_name', agent_id)}
     return render_template('issues.html', agent=agent, issues=[], sources=get_sources_status())
 
@@ -593,7 +593,7 @@ def issues(agent_id):
 @gitmem_bp.route('/agent/<agent_id>/settings')
 @login_required
 def settings(agent_id):
-    agent_raw = _get_agent(agent_id, user_id=current_user.id)
+    agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
     if not agent_raw:
         return redirect(url_for('gitmem.landing'))
     agent = {'id': agent_id, 'name': agent_raw.get('agent_name', agent_id)}
@@ -603,9 +603,41 @@ def settings(agent_id):
 @gitmem_bp.route('/agent/<agent_id>/wiki')
 @login_required
 def wiki(agent_id):
-    agent_raw = _get_agent(agent_id, user_id=current_user.id)
+    agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
     agent = {'id': agent_id, 'name': (agent_raw or {}).get('agent_name', agent_id)}
     return render_template('wiki.html', agent=agent, sources=get_sources_status())
+
+
+@gitmem_bp.route('/agent/<agent_id>/checkpoints')
+@login_required
+def agent_checkpoints(agent_id):
+    agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
+    agent = {'id': agent_id, 'name': (agent_raw or {}).get('agent_name', agent_id)}
+    checkpoints = []
+    if _db():
+        try:
+            res = _db().table('gitmem_checkpoints').select('*') \
+                .eq('agent_id', agent_id).order('created_at', desc=True).limit(50).execute()
+            checkpoints = res.data or []
+        except Exception:
+            pass
+    return render_template('checkpoints.html', agent=agent, checkpoints=checkpoints, sources=get_sources_status())
+
+
+@gitmem_bp.route('/agent/<agent_id>/logs')
+@login_required
+def agent_logs(agent_id):
+    agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
+    agent = {'id': agent_id, 'name': (agent_raw or {}).get('agent_name', agent_id)}
+    logs = []
+    if _db():
+        try:
+            res = _db().table('gitmem_activity_logs').select('*') \
+                .eq('agent_id', agent_id).order('created_at', desc=True).limit(100).execute()
+            logs = res.data or []
+        except Exception:
+            pass
+    return render_template('activity_logs.html', agent=agent, logs=logs, sources=get_sources_status())
 
 
 # Backward compat: /repo/<id> → /agent/<id>
@@ -645,7 +677,7 @@ def api_create_agent():
         from backend_examples.python.services.api_agents import ApiAgentsService
         svc = ApiAgentsService()
         agent_id, _ = svc.create_agent(
-            user_id=current_user.id,
+            user_id=current_user.get_id(),
             agent_name=agent_name,
             agent_slug=agent_slug,
             description=description,
@@ -655,7 +687,7 @@ def api_create_agent():
         )
         # Create default branch
         try:
-            gitmem_app.vcs.branch_manager.create_branch(agent_id, 'main', 'HEAD', current_user.id)
+            gitmem_app.vcs.branch_manager.create_branch(agent_id, 'main', 'HEAD', current_user.get_id())
         except Exception:
             pass
 
@@ -678,7 +710,7 @@ def api_search():
     if not query or not agent_id:
         return jsonify({"error": "Missing q and repo_id/agent_id"}), 400
 
-    if not _get_agent(agent_id, user_id=current_user.id):
+    if not _get_agent(agent_id, user_id=current_user.get_id()):
         return jsonify({"error": "Access denied"}), 403
 
     try:
@@ -702,7 +734,7 @@ def api_add_memory():
     if not agent_id or not content:
         return jsonify({"error": "agent_id and content required"}), 400
 
-    if not _get_agent(agent_id, user_id=current_user.id):
+    if not _get_agent(agent_id, user_id=current_user.get_id()):
         return jsonify({"error": "Access denied"}), 403
 
     try:
@@ -737,7 +769,7 @@ def api_delete_memory(memory_id):
         if not res.data:
             return jsonify({"error": "Not found"}), 404
         agent_id = res.data[0]['agent_id']
-        if not _get_agent(agent_id, user_id=current_user.id):
+        if not _get_agent(agent_id, user_id=current_user.get_id()):
             return jsonify({"error": "Access denied"}), 403
 
         _db().table('gitmem_memories').delete().eq('id', memory_id).execute()
