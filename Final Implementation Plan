@@ -1,0 +1,574 @@
+# GitMem v2.0 — Final Architecture Design
+
+## Design Principles
+- **Cloud-native**: Supabase + ChromaDB only. No local filesystem.
+- **No premature abstraction**: No unused adapters.
+- **Event-driven core**: Command Handler → Event Bus → Workers.
+- **Middle-out development**: Data model → VCS → Retrieval → Collab → MCP → GUI.
+- **Workspace-first**: Every entity belongs to a workspace.
+
+---
+
+## Master Block Diagram
+
+```mermaid
+graph TD
+    classDef L1 fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1
+    classDef L2 fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#4a148c
+    classDef L3 fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20
+    classDef L4 fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#bf360c
+    classDef L5 fill:#fce4ec,stroke:#c2185b,stroke-width:2px,color:#880e4f
+    classDef L6 fill:#e0f7fa,stroke:#00838f,stroke-width:2px,color:#006064
+    classDef infra fill:#f5f5f5,stroke:#616161,stroke-width:2px,color:#212121
+
+    subgraph "LAYER 1 — Interface"
+        UI["Web UI"]:::L1
+        SDK["Agent SDK"]:::L1
+        CLI["CLI"]:::L1
+        MCP["MCP Server"]:::L1
+    end
+
+    subgraph "LAYER 2 — Command & Event Core"
+        RESTAPI["REST API Gateway\n(api/routes.py)"]:::L2
+        CmdHandler["Command Handler\n(core/command_handler.py)"]:::L2
+        EventBus["Event Bus — CENTRAL\n(core/event_bus.py)"]:::L2
+        EventStore["Event Store\n(gitmem_events table)"]:::L2
+    end
+
+    subgraph "LAYER 3 — Access & Workspace"
+        WkspMgr["Workspace Manager\n(core/workspace.py)"]:::L3
+        AuthN["AuthN (JWT/API Key)\n(core/auth.py)"]:::L3
+        RBAC["RBAC + Quotas\n(core/rbac.py)"]:::L3
+        CollabMgr["Collab Manager\n(core/collab_manager.py)"]:::L3
+        UserSearch["User Search\n(core/user_search.py)"]:::L3
+    end
+
+    subgraph "LAYER 4 — Version Control"
+        VCS["VCS Orchestrator\n(core/vcs_orchestrator.py)"]:::L4
+        ObjStore["Object Store\n→ Supabase Buckets"]:::L4
+        BranchMgr["Branch Manager"]:::L4
+        MergeEng["Merge Engine\n(semantic policies)"]:::L4
+        DiffEng["Diff Engine"]:::L4
+        RefLog["RefLog"]:::L4
+        Compactor["Snapshot Compactor\n(core/compaction.py)"]:::L4
+        Cache["Hot Object Cache\n(core/cache.py)"]:::L4
+    end
+
+    subgraph "LAYER 5 — Ingestion"
+        Ingestor["Ingestion Pipeline"]:::L5
+        Chunker["Chunker"]:::L5
+        Embedder["Embedder"]:::L5
+        Classifier["Classifier"]:::L5
+    end
+
+    subgraph "LAYER 6 — Retrieval Pipeline (THE MOAT)"
+        RetPipe["Retrieval Orchestrator\n(core/retrieval.py)"]:::L6
+        SemSearch["Semantic Search\n(ChromaDB)"]:::L6
+        RecencySearch["Recency Retrieval\n(Supabase)"]:::L6
+        ImpSearch["Importance Retrieval"]:::L6
+        EpiSearch["Episodic Retrieval"]:::L6
+        GraphTrav["Graph Traversal"]:::L6
+        Reranker["Reranker"]:::L6
+        TokenPack["Token Packer"]:::L6
+        Summarizer["AI Summarizer"]:::L6
+    end
+
+    subgraph "INFRA — Background Jobs"
+        JobQueue["Job Queue\n(core/jobs/queue.py)"]:::infra
+        Workers["Workers\n(core/jobs/workers.py)"]:::infra
+        Retry["Retry Manager\n(core/jobs/retry_manager.py)"]:::infra
+    end
+
+    subgraph "STORAGE — Supabase + ChromaDB"
+        SupaPG["Supabase Postgres"]:::infra
+        SupaBucket["Supabase Storage\nBuckets"]:::infra
+        ChromaDB["ChromaDB Cloud"]:::infra
+    end
+
+    %% Interface → Command Core
+    UI --> RESTAPI
+    SDK --> RESTAPI
+    CLI --> RESTAPI
+    MCP --> RESTAPI
+
+    %% Command Core flow
+    RESTAPI --> CmdHandler
+    CmdHandler --> EventBus
+    EventBus --> EventStore
+    EventBus --> Workers
+
+    %% Auth flow
+    CmdHandler --> AuthN
+    AuthN --> RBAC
+    RBAC --> WkspMgr
+    RBAC --> CollabMgr
+    CollabMgr --> UserSearch
+
+    %% VCS (sync path from CmdHandler)
+    CmdHandler --> VCS
+    VCS --> ObjStore
+    VCS --> BranchMgr
+    VCS --> MergeEng
+    VCS --> DiffEng
+    VCS --> RefLog
+    VCS --> Compactor
+    ObjStore --> Cache
+
+    %% Ingestion (async via workers)
+    Workers --> Ingestor
+    Ingestor --> Chunker
+    Ingestor --> Embedder
+    Ingestor --> Classifier
+
+    %% Retrieval Pipeline
+    CmdHandler --> RetPipe
+    RetPipe --> SemSearch
+    RetPipe --> RecencySearch
+    RetPipe --> ImpSearch
+    RetPipe --> EpiSearch
+    RetPipe --> GraphTrav
+    RetPipe --> Reranker
+    Reranker --> TokenPack
+    TokenPack --> Summarizer
+
+    %% Storage connections
+    ObjStore --> SupaBucket
+    VCS --> SupaPG
+    Ingestor --> SupaPG
+    Ingestor --> ChromaDB
+    SemSearch --> ChromaDB
+    RecencySearch --> SupaPG
+    Cache --> SupaBucket
+    EventStore --> SupaPG
+    Workers --> SupaPG
+```
+
+---
+
+## Detailed Layer Designs
+
+---
+
+### LAYER 1 — Interface
+
+Same as before. UI, SDK, CLI, MCP. No changes.
+
+---
+
+### LAYER 2 — Command & Event Core (NEW — CENTRAL)
+
+> *"Everything flows through commands and events. This is the spine."*
+
+```mermaid
+graph LR
+    classDef cmd fill:#e8eaf6,stroke:#283593,stroke-width:2px
+    classDef evt fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+
+    REQ["HTTP/WS Request"] --> CMD["Command Handler"]:::cmd
+    CMD --> |"validates + authorizes"| AUTH["Auth + RBAC"]
+    CMD --> |"executes"| BIZ["Business Logic\n(VCS / Retrieval)"]
+    BIZ --> |"emits"| EVT["Event Bus"]:::evt
+    EVT --> |"persists"| STORE["gitmem_events"]
+    EVT --> |"async"| WORKERS["Job Workers"]
+    EVT --> |"realtime"| WS["WebSocket Push"]
+    EVT --> |"log"| REFLOG["RefLog"]
+```
+
+**Event Store Table** — `gitmem_events`:
+```sql
+CREATE TABLE gitmem_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    workspace_id TEXT NOT NULL,
+    event_type TEXT NOT NULL,   -- MEMORY_CREATED, COMMIT_CREATED, BRANCH_CREATED, etc.
+    actor_id TEXT NOT NULL,     -- user_id or agent_id
+    entity_type TEXT NOT NULL,  -- memory, commit, branch, repo
+    entity_id TEXT NOT NULL,
+    payload JSONB DEFAULT '{}',
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX idx_events_workspace ON gitmem_events(workspace_id, created_at DESC);
+CREATE INDEX idx_events_type ON gitmem_events(event_type, created_at DESC);
+```
+
+**Event Types**:
+`MEMORY_CREATED`, `MEMORY_UPDATED`, `MEMORY_DELETED`, `COMMIT_CREATED`, `BRANCH_CREATED`, `BRANCH_DELETED`, `MERGE_COMPLETED`, `CHERRY_PICK_COMPLETED`, `COLLAB_ADDED`, `COLLAB_REMOVED`, `REPO_FORKED`, `ROLLBACK_EXECUTED`, `COMPACTION_RUN`
+
+---
+
+### LAYER 3 — Workspace, Access & Collaboration
+
+#### Workspace (NEW — CRITICAL)
+
+```mermaid
+graph TD
+    classDef ws fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+
+    WS["Workspace"]:::ws --> Repos["Repos (agents)"]
+    WS --> Users["Members"]
+    WS --> Billing["Plan & Quotas"]
+    WS --> Settings["Settings"]
+
+    Repos --> Memories
+    Repos --> Commits
+    Repos --> Branches
+```
+
+**Workspace Model**:
+```python
+class Workspace(BaseModel):
+    workspace_id: str
+    name: str
+    slug: str                    # URL-friendly name
+    owner_id: str                # user_id of creator
+    plan: Literal["free", "pro", "enterprise"] = "free"
+    created_at: datetime
+    settings: dict = {}
+```
+
+**Supabase Table** — `gitmem_workspaces`:
+```sql
+CREATE TABLE gitmem_workspaces (
+    workspace_id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    slug TEXT UNIQUE NOT NULL,
+    owner_id TEXT NOT NULL,
+    plan TEXT DEFAULT 'free',
+    settings JSONB DEFAULT '{}',
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+```
+
+**Membership Table** — `gitmem_workspace_members`:
+```sql
+CREATE TABLE gitmem_workspace_members (
+    workspace_id TEXT REFERENCES gitmem_workspaces(workspace_id),
+    user_id TEXT NOT NULL,
+    role TEXT DEFAULT 'member',   -- owner, admin, member, viewer
+    joined_at TIMESTAMPTZ DEFAULT now(),
+    PRIMARY KEY (workspace_id, user_id)
+);
+```
+
+**Hierarchy**:
+```
+Workspace
+  ├── Members (users with roles)
+  ├── Repos (agent memory repositories)
+  │     ├── Branches
+  │     ├── Commits
+  │     └── Memories
+  ├── Plan & Quotas
+  └── Settings
+```
+
+#### Quotas (NEW — CRITICAL)
+
+```python
+PLAN_QUOTAS = {
+    "free":       {"max_repos": 3,   "max_memories_per_repo": 1000,  "max_vectors": 5000,   "max_object_size_mb": 5,   "max_monthly_embeddings": 10000},
+    "pro":        {"max_repos": 25,  "max_memories_per_repo": 50000, "max_vectors": 100000, "max_object_size_mb": 50,  "max_monthly_embeddings": 500000},
+    "enterprise": {"max_repos": -1,  "max_memories_per_repo": -1,    "max_vectors": -1,     "max_object_size_mb": 500, "max_monthly_embeddings": -1},
+}
+```
+
+#### Visibility (CHANGED)
+
+Removed `shared` and `global`. GitHub-like semantics only:
+
+| Scope | Who can access |
+|---|---|
+| `private` | Only the owner |
+| `workspace` | All workspace members |
+| `public` | Anyone (read-only) |
+
+---
+
+### LAYER 4 — Version Control
+
+Same components as v2, with two critical additions:
+
+#### Snapshot Compaction (NEW)
+
+```python
+# core/compaction.py
+class SnapshotCompactor:
+    """Like Git packfiles. Prevents infinite DAG growth."""
+    
+    def compact(self, repo_id: str, before_date: datetime):
+        """
+        1. Find all commits before cutoff
+        2. Compute delta-compressed packfile
+        3. Replace individual objects with pack
+        4. Update refs to point to pack index
+        """
+    
+    def gc(self, repo_id: str):
+        """Remove unreachable objects (orphaned blobs/trees)."""
+```
+
+Runs as a **background job** (not inline).
+
+#### Semantic Merge Policies (NEW)
+
+```python
+class MergePolicy(str, Enum):
+    LAST_WRITE_WINS = "last_write_wins"       # Default. Latest timestamp wins.
+    IMPORTANCE_PRIORITY = "importance_priority" # Higher importance score wins.
+    SEMANTIC_MERGE = "semantic_merge"           # AI merges conflicting content.
+    MANUAL_CONFLICT = "manual_conflict"         # Flag for human resolution.
+
+class MergeEngine:
+    def merge(self, source_sha, target_sha, policy: MergePolicy = MergePolicy.LAST_WRITE_WINS):
+        conflicts = self._detect_conflicts(source_sha, target_sha)
+        if not conflicts:
+            return self._fast_forward(source_sha, target_sha)
+        return self._resolve(conflicts, policy)
+```
+
+---
+
+### LAYER 5 — Ingestion
+
+Same as before, but **all heavy work goes through the Job Queue**:
+
+| Operation | Sync/Async | Why |
+|---|---|---|
+| Memory creation (metadata) | **Sync** | Fast Supabase insert |
+| Embedding generation | **Async (Job)** | Slow API call |
+| Large file ingestion | **Async (Job)** | Could take minutes |
+| Summarization | **Async (Job)** | LLM call |
+| Repo re-indexing | **Async (Job)** | Full vector rebuild |
+| Snapshot compaction | **Async (Job)** | Heavy DAG walk |
+| Garbage collection | **Async (Job)** | Scan + delete |
+
+---
+
+### LAYER 6 — Retrieval Pipeline (THE MOAT)
+
+> *"This is what makes GitMem valuable. Not the database. The retrieval intelligence."*
+
+```mermaid
+graph TD
+    classDef step fill:#e0f7fa,stroke:#00838f,stroke-width:2px
+    classDef core fill:#fce4ec,stroke:#c2185b,stroke-width:3px
+
+    Q["User Query"] --> RET["Retrieval Orchestrator"]:::core
+
+    RET --> S1["1. Semantic Search\n(ChromaDB)"]:::step
+    RET --> S2["2. Recency Retrieval\n(Supabase ORDER BY created_at)"]:::step
+    RET --> S3["3. Importance Retrieval\n(Supabase ORDER BY importance)"]:::step
+    RET --> S4["4. Episodic Retrieval\n(time-windowed events)"]:::step
+    RET --> S5["5. Graph Traversal\n(related memories)"]:::step
+
+    S1 --> MERGE["Candidate Pool\n(deduplicated)"]
+    S2 --> MERGE
+    S3 --> MERGE
+    S4 --> MERGE
+    S5 --> MERGE
+
+    MERGE --> RERANK["6. Reranker\n(multi-signal scoring)"]:::core
+    RERANK --> PACK["7. Token Packer\n(fit to budget)"]:::step
+    PACK --> SUMM["8. Summarizer\n(compress if needed)"]:::step
+    SUMM --> OUT["Context Window\n(ready for LLM)"]
+```
+
+**Scoring formula**:
+```
+score = (w1 × cosine_sim) + (w2 × recency_decay) + (w3 × importance) + (w4 × access_freq) + (w5 × scope_boost)
+```
+
+Weights are configurable per workspace/repo.
+
+---
+
+### INFRA — Background Job System (NEW)
+
+```
+core/jobs/
+    ├── queue.py           # Job queue interface
+    ├── workers.py         # Worker pool
+    └── retry_manager.py   # Retry + dead letter
+```
+
+**v2.0 Implementation**: Simple Supabase-backed queue (no Redis/Celery yet):
+
+```sql
+CREATE TABLE gitmem_jobs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    workspace_id TEXT NOT NULL,
+    job_type TEXT NOT NULL,        -- embed, summarize, compact, gc, reindex
+    payload JSONB NOT NULL,
+    status TEXT DEFAULT 'pending', -- pending, running, completed, failed, dead
+    attempts INT DEFAULT 0,
+    max_attempts INT DEFAULT 3,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    started_at TIMESTAMPTZ,
+    completed_at TIMESTAMPTZ,
+    error TEXT
+);
+CREATE INDEX idx_jobs_pending ON gitmem_jobs(status, created_at) WHERE status = 'pending';
+```
+
+Workers poll this table. Simple, cloud-native, no Redis needed for v2.
+
+---
+
+### INFRA — Hot Object Cache (NEW)
+
+```python
+# core/cache.py
+class ObjectCache:
+    """In-memory LRU cache for frequently accessed objects.
+    Redis-ready interface, in-process dict for v2.0."""
+    
+    def __init__(self, max_size: int = 1000):
+        self._cache: OrderedDict = OrderedDict()
+        self._max_size = max_size
+    
+    def get(self, sha: str) -> Optional[dict]: ...
+    def set(self, sha: str, data: dict): ...
+    def invalidate(self, sha: str): ...
+```
+
+When Redis is needed later, swap the implementation. Same interface.
+
+---
+
+## Complete Supabase Schema
+
+| Table | Layer | Purpose |
+|---|---|---|
+| `gitmem_workspaces` | L3 | Workspaces/organizations |
+| `gitmem_workspace_members` | L3 | User ↔ workspace membership |
+| `gitmem_collaborators` | L3 | Repo-level collaborators |
+| `gitmem_repos` (was `api_agents`) | L3 | Agent/memory repositories |
+| `gitmem_memories` | L5 | All memory items |
+| `gitmem_commits` | L4 | Commit DAG metadata |
+| `gitmem_refs` | L4 | Branch/tag pointers |
+| `gitmem_reflog` | L4 | Ref change audit trail |
+| `gitmem_events` | L2 | Immutable event log |
+| `gitmem_jobs` | Infra | Background job queue |
+| `gitmem_repo_meta` | L3 | Repository settings & quotas |
+
+| Storage Bucket | Layer | Purpose |
+|---|---|---|
+| `gitmem-objects` | L4 | SHA-addressed compressed blobs |
+
+| ChromaDB Collection | Layer | Purpose |
+|---|---|---|
+| `gitmem_global` | L6 | Global vector index |
+| `{agent_id}` | L6 | Per-agent vectors |
+
+---
+
+## Directory Structure (Final)
+
+```
+gitmem/
+├── api/
+│   ├── routes.py                 # REST gateway (existing)
+│   └── websocket_events.py       # WebSocket (existing)
+│
+├── sdk/
+│   ├── client.py                 # SDK (existing, extend)
+│   ├── cli.py                    # [NEW] CLI
+│   └── models.py                 # SDK models (existing)
+│
+├── core/
+│   ├── models.py                 # All data models
+│   │
+│   │   # — Command & Event Core (L2) —
+│   ├── command_handler.py        # [NEW] Central command dispatcher
+│   ├── event_bus.py              # Event Bus (existing, make CENTRAL)
+│   ├── event_store.py            # [NEW] Persist events to gitmem_events
+│   │
+│   │   # — Workspace & Access (L3) —
+│   ├── workspace.py              # [NEW] Workspace CRUD
+│   ├── auth.py                   # [NEW] AuthN
+│   ├── rbac.py                   # [NEW] RBAC + quota enforcement
+│   ├── collab_manager.py         # [NEW] Collaborators
+│   ├── user_search.py            # [NEW] User search
+│   │
+│   │   # — Version Control (L4) —
+│   ├── vcs_orchestrator.py       # [NEW] VCS facade
+│   ├── object_store.py           # REFACTOR → Supabase Buckets
+│   ├── branch_manager.py         # [NEW]
+│   ├── merge_engine.py           # [NEW] + semantic merge policies
+│   ├── diff_engine.py            # [NEW]
+│   ├── reflog.py                 # [NEW]
+│   ├── compaction.py             # [NEW] Snapshot compaction
+│   │
+│   │   # — Ingestion (L5) —
+│   ├── ingestion.py              # [NEW] Pipeline
+│   ├── chunker.py                # [NEW]
+│   ├── embedder.py               # [NEW]
+│   ├── classifier.py             # [NEW]
+│   │
+│   │   # — Retrieval Pipeline (L6 — THE MOAT) —
+│   ├── retrieval.py              # [NEW] Orchestrator
+│   ├── ranker.py                 # [NEW] Multi-signal reranker
+│   ├── token_packer.py           # [NEW]
+│   ├── summarizer.py             # [NEW]
+│   ├── context_service.py        # Existing → wraps retrieval.py
+│   ├── agent_manager.py          # Existing
+│   │
+│   │   # — Infrastructure —
+│   ├── cache.py                  # [NEW] LRU cache (Redis-ready)
+│   ├── supabase_connector.py     # Existing (Supabase adapter)
+│   ├── vector_engine.py          # Existing (ChromaDB adapter)
+│   │
+│   │   # — Background Jobs —
+│   └── jobs/
+│       ├── queue.py              # [NEW] Job queue
+│       ├── workers.py            # [NEW] Worker pool
+│       └── retry_manager.py      # [NEW] Retry + DLQ
+│
+└── config.yaml
+```
+
+### Files to DELETE
+| File | Reason |
+|---|---|
+| `core/file_system.py` | Local FS — replaced by Supabase Buckets |
+| `core/folder_manager.py` | Local folders — replaced by virtual FS |
+
+---
+
+## Development Phases (Middle-Out)
+
+### Phase 1 — Core Data Model
+Build all Supabase tables + Pydantic models:
+- Workspaces, members, repos, branches, commits, objects, memories, events, jobs
+
+### Phase 2 — VCS Engine (Pure Backend)
+- Object Store → Supabase Buckets
+- Commit, checkout, branch, merge (with policies), diff, rollback, cherry-pick
+- RefLog, compaction, cache
+- No UI.
+
+### Phase 3 — Retrieval Pipeline (The Moat)
+- Semantic + recency + importance + episodic + graph retrieval
+- Reranker, token packer, summarizer
+- Ingestion pipeline (chunker, embedder, classifier)
+
+### Phase 4 — Collaboration & Access
+- Workspace management
+- RBAC, quotas, scope enforcement
+- Collaborator invites, user search
+
+### Phase 5 — MCP Integration
+- Only after APIs stabilize
+
+### Phase 6 — GUI
+- Last. APIs change, models change, workflows change.
+- Building UI too early causes constant rewrites.
+
+---
+
+## Open Questions
+
+> [!IMPORTANT]
+> **Q1**: For the job queue — should we use Supabase's built-in `pg_cron` + polling, or a simple Python thread pool polling `gitmem_jobs`? pg_cron is cleaner but less flexible.
+
+> [!IMPORTANT]
+> **Q2**: For the workspace migration — every existing agent/repo needs a `workspace_id`. Should we auto-create a "default" workspace per existing user and assign all their agents to it?
