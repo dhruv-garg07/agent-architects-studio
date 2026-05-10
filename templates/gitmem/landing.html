@@ -148,20 +148,23 @@
                     <div
                         class="mt-auto border-t border-white/5 pt-4 flex items-center justify-between text-xs text-gray-500 relative z-10">
                         <div class="flex items-center gap-4">
-                            <span class="flex items-center gap-1.5 group-hover:text-gray-300 transition-colors">
-                                <i data-lucide="git-branch" class="w-4 h-4"></i>
-                                {{ repo.default_branch or 'main' }}
+                            <span class="flex items-center gap-1.5 group-hover:text-gray-300 transition-colors" title="Memories">
+                                <i data-lucide="brain-circuit" class="w-4 h-4 text-violet-400/60"></i>
+                                {{ repo.memory_count or 0 }}
                             </span>
-                            <span class="flex items-center gap-1.5 group-hover:text-gray-300 transition-colors">
-                                <i data-lucide="clock" class="w-4 h-4"></i>
-                                {{ (repo.updated_at or repo.created_at or '')[:10] }}
+                            <span class="flex items-center gap-1.5 group-hover:text-gray-300 transition-colors" title="Commits">
+                                <i data-lucide="git-commit" class="w-4 h-4 text-cyan-400/60"></i>
+                                {{ repo.commit_count or 0 }}
+                            </span>
+                            <span class="flex items-center gap-1.5 group-hover:text-gray-300 transition-colors" title="Vectors">
+                                <i data-lucide="layers" class="w-4 h-4 text-indigo-400/60"></i>
+                                {{ repo.vector_count or 0 }}
                             </span>
                         </div>
 
-                        <div class="flex items-center gap-1.5 text-violet-400/70">
-                            <i data-lucide="database" class="w-3.5 h-3.5"></i>
-                            <span class="opacity-60">Supabase</span>
-                        </div>
+                        <span class="text-xs font-mono text-gray-700">
+                            {{ (repo.updated_at or repo.created_at or '')[:10] }}
+                        </span>
                     </div>
                 </div>
             </a>
