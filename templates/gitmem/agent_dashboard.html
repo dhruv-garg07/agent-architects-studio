@@ -427,10 +427,11 @@
                 <div class="pointer-events-auto flex items-center gap-2">
                     <!-- Legend -->
                     <div class="flex items-center gap-3 text-[10px] font-semibold uppercase tracking-wider mr-4">
-                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#3b82f6]"></span> Episodic</span>
-                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#8b5cf6]"></span> Semantic</span>
-                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#10b981]"></span> Procedural</span>
-                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#6b7280]"></span> State</span>
+                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-[#3b82f6]"></span> Episodic</span>
+                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-[#8b5cf6]"></span> Semantic</span>
+                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-[#10b981]"></span> Procedural</span>
+                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-[#6b7280]"></span> State</span>
+                        <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-[#f59e0b]"></span> Vector</span>
                     </div>
                     <button onclick="resetGraphZoom()" class="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-gray-300 text-xs transition-colors">
                         <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i>
@@ -501,22 +502,50 @@
     // ── Graph Loading ────────────────────────────────────────────
     async function loadGraph() {
         const loading = document.getElementById('graph-loading');
+        loading.classList.remove('hidden');
+        loading.innerHTML = `
+            <div class="flex flex-col items-center gap-3">
+                <div class="w-8 h-8 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin"></div>
+                <span class="text-sm text-gray-400">Loading knowledge graph...</span>
+            </div>`;
+
         try {
             const resp = await fetch(`/gitmem/api/agent/${graphAgentId}/graph`);
-            if (!resp.ok) throw new Error('Failed to fetch graph data');
             const data = await resp.json();
 
-            if (data.error) throw new Error(data.error);
+            // Always expect {nodes:[], links:[]} — even on error the API returns these
+            const nodes = data.nodes || [];
+            const links = data.links || [];
 
-            renderGraph(data);
+            if (nodes.length === 0) {
+                // Empty graph — show friendly message, not an error
+                loading.innerHTML = `
+                    <div class="flex flex-col items-center gap-4">
+                        <div class="w-16 h-16 rounded-2xl bg-violet-500/10 flex items-center justify-center">
+                            <i data-lucide="network" class="w-8 h-8 text-violet-400"></i>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-white font-semibold mb-1">No memories yet</p>
+                            <p class="text-sm text-gray-500 max-w-xs">Add memories to this agent to see the knowledge graph. Each memory becomes a node, and shared tags create edges.</p>
+                        </div>
+                        <button onclick="addMemory()" class="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium transition-colors">
+                            Add First Memory
+                        </button>
+                    </div>`;
+                if (window.lucide) lucide.createIcons();
+                graphLoaded = true;
+                return;
+            }
+
+            renderGraph({nodes, links});
             graphLoaded = true;
         } catch (e) {
             console.error('[Graph] Load failed:', e);
             loading.innerHTML = `
                 <div class="flex flex-col items-center gap-3">
                     <i data-lucide="alert-triangle" class="w-8 h-8 text-amber-400"></i>
-                    <span class="text-sm text-gray-400">Failed to load graph</span>
-                    <button onclick="loadGraph()" class="text-xs text-violet-400 hover:text-violet-300">Retry</button>
+                    <span class="text-sm text-gray-400">Could not load graph: ${e.message}</span>
+                    <button onclick="graphLoaded=false;loadGraph()" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs text-violet-400 transition-colors">Retry</button>
                 </div>`;
             if (window.lucide) lucide.createIcons();
         }

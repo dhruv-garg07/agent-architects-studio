@@ -817,35 +817,39 @@ def api_sync_sources():
 # Knowledge Graph API
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-def _build_graph_data(memories):
+def _build_graph_data(memories, vectors):
     """
-    Convert a list of memory dicts into force-graph {nodes, links}.
-
-    Edges are built from:
-    1. Shared tags — memories sharing >=1 tag get an edge (weight = # shared tags)
-    2. Provenance — if provenance matches another memory ID, directed edge
-    3. metadata.related_ids — explicit edges
+    Convert memory dicts + vector dicts into force-graph {nodes, links}.
+    Nodes: memories (by type) + vectors (separate color).
+    Edges: shared tags, provenance, metadata.related_ids, type-clustering.
     """
     TYPE_COLORS = {
         'episodic':   '#3b82f6',
         'semantic':   '#8b5cf6',
         'procedural': '#10b981',
         'state':      '#6b7280',
+        'vector':     '#f59e0b',
     }
 
     nodes = []
     id_set = set()
-    tag_index = {}  # tag → [memory_id, ...]
+    tag_index = {}   # tag → [node_id, ...]
+    type_index = {}  # type → [node_id, ...]
 
+    # ── Add memory nodes ──────────────────────────────────────────
     for m in memories:
         mid = m.get('id', '')
-        if not mid:
+        if not mid or mid in id_set:
             continue
         id_set.add(mid)
 
-        mtype = m.get('type', 'episodic')
-        importance = float(m.get('importance', 0.5) or 0.5)
-        content = m.get('content', '') or ''
+        mtype = (m.get('type') or 'episodic').lower()
+        importance = 0.5
+        try:
+            importance = float(m.get('importance') or 0.5)
+        except (ValueError, TypeError):
+            pass
+        content = (m.get('content') or '')
         tags = m.get('tags') or []
         if isinstance(tags, str):
             tags = [t.strip() for t in tags.split(',') if t.strip()]
@@ -853,48 +857,75 @@ def _build_graph_data(memories):
         nodes.append({
             'id':         mid,
             'label':      content[:80].replace('\n', ' '),
-            'type':       mtype,
+            'group':      mtype,
             'color':      TYPE_COLORS.get(mtype, '#6b7280'),
             'importance': importance,
-            'val':        2 + (importance * 6),  # node size
+            'val':        3 + (importance * 8),
             'tags':       tags,
             'created_at': (m.get('created_at') or '')[:10],
         })
 
         for tag in tags:
-            tag_index.setdefault(tag, []).append(mid)
+            tag_lower = tag.lower().strip()
+            if tag_lower:
+                tag_index.setdefault(tag_lower, []).append(mid)
+        type_index.setdefault(mtype, []).append(mid)
 
-    # Build edges
+    # ── Add vector nodes (from ChromaDB) ──────────────────────────
+    for v in vectors:
+        vid = v.get('id', '')
+        if not vid or vid in id_set:
+            continue
+        id_set.add(vid)
+
+        meta = v.get('metadata') or {}
+        vtype = (meta.get('memory_type') or meta.get('type') or 'vector').lower()
+        content = (v.get('content') or '')
+        importance = 0.4
+        try:
+            importance = float(meta.get('importance') or 0.4)
+        except (ValueError, TypeError):
+            pass
+
+        # Use memory-type color if it matches, else vector amber
+        color = TYPE_COLORS.get(vtype, TYPE_COLORS['vector'])
+
+        nodes.append({
+            'id':         vid,
+            'label':      content[:80].replace('\n', ' '),
+            'group':      vtype if vtype in TYPE_COLORS else 'vector',
+            'color':      color,
+            'importance': importance,
+            'val':        2 + (importance * 6),
+            'tags':       [],
+            'created_at': (meta.get('timestamp') or meta.get('created_at') or '')[:10],
+        })
+        type_index.setdefault(vtype if vtype in TYPE_COLORS else 'vector', []).append(vid)
+
+    # ── Build edges ───────────────────────────────────────────────
     links = []
     seen_edges = set()
 
+    def add_edge(src, tgt, etype, label=''):
+        key = tuple(sorted([src, tgt]))
+        if key not in seen_edges and src != tgt:
+            seen_edges.add(key)
+            links.append({'source': src, 'target': tgt, 'type': etype, 'label': label})
+
     # 1. Tag-based edges
     for tag, mids in tag_index.items():
+        if len(mids) > 20:
+            continue  # skip very common tags to avoid hairball
         for i in range(len(mids)):
             for j in range(i + 1, len(mids)):
-                edge_key = tuple(sorted([mids[i], mids[j]]))
-                if edge_key not in seen_edges:
-                    seen_edges.add(edge_key)
-                    links.append({
-                        'source': mids[i],
-                        'target': mids[j],
-                        'type':   'tag',
-                        'label':  tag,
-                    })
+                add_edge(mids[i], mids[j], 'tag', tag)
 
     # 2. Provenance edges
     for m in memories:
         mid = m.get('id', '')
-        prov = m.get('provenance', '')
-        if prov and prov in id_set and prov != mid:
-            edge_key = (prov, mid)
-            if edge_key not in seen_edges:
-                seen_edges.add(edge_key)
-                links.append({
-                    'source': prov,
-                    'target': mid,
-                    'type':   'provenance',
-                })
+        prov = m.get('provenance') or ''
+        if prov and prov in id_set:
+            add_edge(prov, mid, 'provenance')
 
     # 3. metadata.related_ids edges
     for m in memories:
@@ -906,18 +937,17 @@ def _build_graph_data(memories):
                 meta = _json.loads(meta)
             except Exception:
                 meta = {}
-        related = meta.get('related_ids', [])
-        if isinstance(related, list):
-            for rid in related:
-                if rid in id_set and rid != mid:
-                    edge_key = tuple(sorted([mid, rid]))
-                    if edge_key not in seen_edges:
-                        seen_edges.add(edge_key)
-                        links.append({
-                            'source': mid,
-                            'target': rid,
-                            'type':   'related',
-                        })
+        for rid in (meta.get('related_ids') or []):
+            if isinstance(rid, str) and rid in id_set:
+                add_edge(mid, rid, 'related')
+
+    # 4. Type-clustering edges (connect first few of same type to form clusters)
+    for mtype, mids in type_index.items():
+        if len(mids) >= 2:
+            # Star topology: connect all to first node of the type (lightweight)
+            hub = mids[0]
+            for m in mids[1:min(len(mids), 15)]:
+                add_edge(hub, m, 'cluster')
 
     return {'nodes': nodes, 'links': links}
 
@@ -927,21 +957,30 @@ def _build_graph_data(memories):
 def api_agent_graph(agent_id):
     """Return knowledge graph data (nodes + edges) for force-graph visualization."""
     if not _get_agent(agent_id, user_id=current_user.get_id()):
-        return jsonify({"error": "Access denied"}), 403
+        return jsonify({"nodes": [], "links": [], "error": "Access denied"}), 200
 
+    # 1. Fetch memories from Supabase
     memories = []
     if _db():
         try:
-            res = _db().table('gitmem_memories').select('id,content,type,importance,tags,provenance,metadata,created_at') \
+            res = _db().table('gitmem_memories') \
+                .select('id,content,type,importance,tags,provenance,metadata,created_at') \
                 .eq('agent_id', agent_id) \
-                .order('importance', desc=True) \
+                .order('created_at', desc=True) \
                 .limit(200) \
                 .execute()
             memories = res.data or []
         except Exception as e:
-            return jsonify({"status": "error", "error": str(e)}), 500
+            print(f"[Graph] Memory fetch error: {e}")
 
-    graph = _build_graph_data(memories)
+    # 2. Fetch vectors from ChromaDB
+    vectors = []
+    try:
+        vectors = gitmem_app.vector_engine.get_agent_vectors(agent_id, limit=100)
+    except Exception as e:
+        print(f"[Graph] Vector fetch error: {e}")
+
+    graph = _build_graph_data(memories, vectors)
     return jsonify(graph)
 
 
