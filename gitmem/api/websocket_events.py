@@ -7,7 +7,8 @@ real-time dashboard. Clients connect here to receive live updates.
 
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask import request
-from ..core.event_bus import event_bus, EventType
+from ..core.events.event_bus import event_bus
+from ..core.models import EventType
 from datetime import datetime
 
 
