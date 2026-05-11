@@ -163,6 +163,9 @@ class MemoryItem(BaseModel):
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dict for storage/indexing (excludes embedding)."""
         res = self.model_dump(mode='json', exclude={'embedding'})
+        # Ensure V2 core fields are explicitly present
+        res['repo_id'] = self.repo_id
+        res['workspace_id'] = self.workspace_id
         res['agent_id'] = self.agent_id
         res['type'] = self.type.value if hasattr(self.type, 'value') else str(self.type)
         return res

@@ -775,7 +775,7 @@ def api_add_memory():
             importance=importance,
             tags=tags,
         )
-        _db().table('gitmem_memories').insert(mem.model_dump(mode='json', exclude={'embedding'})).execute()
+        _db().table('gitmem_memories').insert(mem.to_dict()).execute()
 
         # Also index in vector store
         gitmem_app.vector_engine.add_memory(mem)

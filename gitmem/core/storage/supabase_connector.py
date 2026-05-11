@@ -53,6 +53,12 @@ class SupabaseConnector:
             # Flatten metadata for jsonb if needed, Pydantic .dict() usually handles it
             # Ensure created_at is string
             data = memory_data.copy()
+            # Ensure V2 fields are present for schema compatibility
+            if 'repo_id' not in data and 'agent_id' in data:
+                data['repo_id'] = data['agent_id']
+            if 'workspace_id' not in data:
+                data['workspace_id'] = 'default'
+                
             if 'created_at' in data:
                 data['created_at'] = str(data['created_at'])
                 
