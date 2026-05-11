@@ -195,45 +195,51 @@ def require_api_key(permission: Optional[str] = None):
     return decorator
 
 
+def extract_api_key_from_request(data: dict = None) -> Optional[str]:
+    """Robustly extract API key from all possible request sources."""
+    # 1. Check Authorization Header (Bearer or Raw)
+    auth = request.headers.get('Authorization') or request.headers.get('authorization')
+    if auth:
+        auth = str(auth).strip()
+        if auth.lower().startswith('bearer '):
+            parts = auth.split(None, 1)
+            if len(parts) > 1:
+                return parts[1].strip()
+        elif len(auth) > 10:
+            return auth
+
+    # 2. Check X-API-Key or other custom headers
+    for h in ['X-API-Key', 'x-api-key', 'Api-Key', 'api-key']:
+        val = request.headers.get(h)
+        if val and len(str(val).strip()) > 10:
+            return str(val).strip()
+
+    # 3. Check Query Parameters
+    q_key = request.args.get('api_key') or request.args.get('token')
+    if q_key and len(str(q_key).strip()) > 10:
+        return str(q_key).strip()
+
+    # 4. Check JSON Body
+    if data:
+        for k in ['api_key', 'token', 'access_token']:
+            val = data.get(k)
+            if val and len(str(val).strip()) > 10:
+                return str(val).strip()
+    
+    return None
+
+
 def extract_and_validate_api_key(data: dict = None):
     """Helper function to extract and validate API key from various sources.
     
     Returns (user_id, error_response) tuple.
-    - On success: (user_id, None)
-    - On failure: (None, (jsonify_response, status_code))
     """
-    if data is None:
-        data = {}
-    
-    api_key = None
-    possible_sources = [
-        request.headers.get('Authorization'),
-        request.headers.get('authorization'),
-        request.headers.get('X-API-Key'),
-        request.headers.get('x-api-key'),
-        request.args.get('api_key'),
-        data.get('api_key'),
-        data.get('token'),
-        data.get('access_token')
-    ]
-
-    for source in possible_sources:
-        if source:
-            source = str(source).strip()
-            if source.lower().startswith('bearer '):
-                api_key = source.split(None, 1)[1]
-                break
-            elif source and len(source) > 10:
-                api_key = source
-                break
-
-    if api_key and api_key.lower().startswith('bearer '):
-        api_key = api_key.split(None, 1)[1]
+    api_key = extract_api_key_from_request(data)
 
     if not api_key:
         return None, (jsonify({'error': 'missing_api_key', 'valid': False}), 401)
 
-    permission = data.get('permission')
+    permission = data.get('permission') if data else None
     ok, info = validate_api_key_value(api_key, permission)
 
     if ok:
@@ -243,7 +249,7 @@ def extract_and_validate_api_key(data: dict = None):
         # Fallback for local testing
         if api_key.startswith('sk-'):
             user_id = os.environ.get('TEST_USER_ID', 'test-user')
-            g.api_key_record = {'id': 'test-key', 'user_id': user_id, 'permissions': {'memory': True}}
+            g.api_key_record = {'id': 'test-key', 'user_id': user_id, 'permissions': {'memory': True, 'agent_create': True}}
             return user_id, None
         return None, (jsonify({'error': info, 'valid': False}), 401)
 
@@ -255,7 +261,7 @@ def validate_key():
     Returns `{'valid': True, 'key_id': '...'}` on success.
     """
     data = request.get_json(silent=True) or {}
-    api_key = data.get('api_key') or request.headers.get('X-API-Key')
+    api_key = extract_api_key_from_request(data)
     permission = data.get('permission')
 
     ok, info = validate_api_key_value(api_key, permission)
@@ -295,74 +301,16 @@ def create_agent():
     - Validates API key if provided via Authorization/X-API-Key/query param/raw payload.
     - If Supabase is unavailable or creation fails, returns a local stubbed agent record to aid testing.
     """
-    # Parse JSON using request.get_json (raise on invalid JSON so we can return 400)
+    # 1. Parse JSON body
     try:
         data = request.get_json(silent=True) or {}
     except BadRequest:
         return jsonify({'error': 'invalid_json'}), 400
 
-    # Extract API key from ANY possible source with maximum flexibility
-    api_key = None
-    
-    if(data is None):
-        return jsonify({'error': 'invalid_json'}), 400
-    
-    print("Request Data:", data)
-    print("Request Headers:", request.headers)
-    # Check all possible sources
-    possible_sources = [
-        request.headers.get('Authorization'),
-        request.headers.get('authorization'),
-        request.headers.get('X-API-Key'),
-        request.headers.get('x-api-key'),
-        request.args.get('api_key'),
-        data.get('api_key'),
-        data.get('token'),
-        data.get('access_token')
-    ]
-
-    print("Possible Sources:", possible_sources)
-    
-    for source in possible_sources:
-        if source:
-            # Clean up the value
-            source = str(source).strip()
-            
-            # If it's a Bearer token, extract the token part
-            if source.lower().startswith('bearer '):
-                api_key = source.split(None, 1)[1]
-                break
-            # If it's just a token/API key, use it directly
-            elif source and len(source) > 10:  # Basic check that it's not empty/short
-                api_key = source
-                break
-
-    # If we have an API key, clean it (remove any remaining "Bearer " prefix)
-    if api_key and api_key.lower().startswith('bearer '):
-        api_key = api_key.split(None, 1)[1]
-
-    print(f"API Key received: {api_key}")
-
-    # Validation logic (same as before)
-    user_id = None
-    if api_key:
-        permission = data.get('permission')
-        ok, info = validate_api_key_value(api_key, permission)
-
-        print(f"API Key validation result: {ok}, info: {info}")
-
-        if ok:
-            user_id = info.get('user_id')
-            g.api_key_record = info
-        else:
-            # Fallback for local testing
-            if api_key.startswith('sk-'):
-                user_id = os.environ.get('TEST_USER_ID', 'test-user')
-                g.api_key_record = {'id': 'test-key', 'user_id': user_id, 'permissions': {'agent_create': True}}
-            else:
-                return jsonify({'error': info, 'valid': False}), 401
-    else:
-        return jsonify({'error': 'missing_api_key', 'valid': False}), 401
+    # 2. Extract and Validate API Key
+    user_id, error_resp = extract_and_validate_api_key(data)
+    if error_resp:
+        return error_resp
 
     agent_name = data.get('agent_name')
     agent_slug = data.get('agent_slug')
@@ -420,60 +368,10 @@ def list_agents():
 
     Expects API key via Authorization/X-API-Key/query param/raw payload.
     """
-    # Extract API key from ANY possible source with maximum flexibility
-    api_key = None
-    data = request.get_json(silent=True) or {}
-    possible_sources = [
-        request.headers.get('Authorization'),
-        request.headers.get('X-API-Key'),
-        request.args.get('api_key'),
-        data.get('api_key'),
-        data.get('token'),
-        data.get('access_token')
-    ]
-
-    print("Possible Sources:", possible_sources)
-
-    for source in possible_sources:
-        if source:
-            # Clean up the value
-            source = str(source).strip()
-
-            # If it's a Bearer token, extract the token part
-            if source.lower().startswith('bearer '):
-                api_key = source.split(None, 1)[1]
-                break
-            # If it's just a token/API key, use it directly
-            elif source and len(source) > 10:  # Basic check that it's not empty/short
-                api_key = source
-                break
-
-    # If we have an API key, clean it (remove any remaining "Bearer " prefix)
-    if api_key and api_key.lower().startswith('bearer '):
-        api_key = api_key.split(None, 1)[1]
-
-    print(f"API Key received: {api_key}")
-
-    # Validation logic (same as before)
-    user_id = None
-    if api_key:
-        permission = data.get('permission')
-        ok, info = validate_api_key_value(api_key, permission)
-
-        print(f"API Key validation result: {ok}, info: {info}")
-
-        if ok:
-            user_id = info.get('user_id')
-            g.api_key_record = info
-        else:
-            # Fallback for local testing
-            if api_key.startswith('sk-'):
-                user_id = os.environ.get('TEST_USER_ID', 'test-user')
-                g.api_key_record = {'id': 'test-key', 'user_id': user_id, 'permissions': {'agent_create': True}}
-            else:
-                return jsonify({'error': info, 'valid': False}), 401
-    else:
-        return jsonify({'error': 'missing_api_key', 'valid': False}), 401
+    # 1. Extract and Validate API Key
+    user_id, error_resp = extract_and_validate_api_key()
+    if error_resp:
+        return error_resp
     try:
         agents = service.list_agents_for_user(user_id=user_id)
         return jsonify(agents), 200 
@@ -492,58 +390,10 @@ def get_agent():
     if not agent_id:
         return jsonify({'error': 'agent_id is required'}), 400
 
-    # Extract API key from ANY possible source with maximum flexibility
-    api_key = None
-    data = request.get_json(silent=True) or {}
-    possible_sources = [
-        request.headers.get('Authorization'),
-        request.headers.get('X-API-Key'),
-        request.args.get('api_key'),
-        data.get('api_key'),
-        data.get('token'),
-        data.get('access_token')
-    ]
-
-    print("Possible Sources:", possible_sources)
-
-    for source in possible_sources:
-        if source:
-            # Clean up the value
-            source = str(source).strip()
-
-            # If it's a Bearer token, extract the token part
-            if source.lower().startswith('bearer '):
-                api_key = source.split(None, 1)[1]
-                break
-            # If it's just a token/API key, use it directly
-            elif source and len(source) > 10:  # Basic check that it's not empty/short
-                api_key = source
-                break
-
-    # If we have an API key, clean it (remove any remaining "Bearer " prefix)
-    if api_key and api_key.lower().startswith('bearer '):
-        api_key = api_key.split(None, 1)[1]
-
-    print(f"API Key received: {api_key}")
-
-    # Validation logic (same as before)
-    user_id = None
-    if api_key:
-        permission = data.get('permission')
-        ok, info = validate_api_key_value(api_key, permission)
-
-        print(f"API Key validation result: {ok}, info: {info}")
-
-        if ok:
-            user_id = info.get('user_id')
-            g.api_key_record = info
-        else:
-            # Fallback for local testing
-            if api_key.startswith('sk-'):
-                user_id = os.environ.get('TEST_USER_ID', 'test-user')
-                g.api_key_record = {'id': 'test-key', 'user_id': user_id, 'permissions': {'agent_create': True}}
-            else:
-                return jsonify({'error': info, 'valid': False}), 401
+    # 1. Extract and Validate API Key
+    user_id, error_resp = extract_and_validate_api_key()
+    if error_resp:
+        return error_resp
             
     try:
         agent = service.get_agent_by_id(agent_id=agent_id, user_id=user_id)
@@ -815,57 +665,10 @@ def delete_agent():
     if not agent_id:
         return jsonify({'error': 'agent_id is required'}), 400
 
-    # Extract API key from ANY possible source with maximum flexibility
-    api_key = None
-    possible_sources = [
-        request.headers.get('Authorization'),
-        request.headers.get('X-API-Key'),
-        request.args.get('api_key'),
-        data.get('api_key'),
-        data.get('token'),
-        data.get('access_token')
-    ]
-
-    print("Possible Sources:", possible_sources)
-
-    for source in possible_sources:
-        if source:
-            # Clean up the value
-            source = str(source).strip()
-
-            # If it's a Bearer token, extract the token part
-            if source.lower().startswith('bearer '):
-                api_key = source.split(None, 1)[1]
-                break
-            # If it's just a token/API key, use it directly
-            elif source and len(source) > 10:  # Basic check that it's not empty/short
-                api_key = source
-                break
-
-    # If we have an API key, clean it (remove any remaining "Bearer " prefix)
-    if api_key and api_key.lower().startswith('bearer '):
-        api_key = api_key.split(None, 1)[1]
-
-    print(f"API Key received: {api_key}")
-
-    # Validation logic (same as before)
-    user_id = None
-    if api_key:     
-        permission = data.get('permission')
-        ok, info = validate_api_key_value(api_key, permission)
-
-        print(f"API Key validation result: {ok}, info: {info}")
-
-        if ok:
-            user_id = info.get('user_id')
-            g.api_key_record = info
-        else:
-            # Fallback for local testing
-            if api_key.startswith('sk-'):
-                user_id = os.environ.get('TEST_USER_ID', 'test-user')
-                g.api_key_record = {'id': 'test-key', 'user_id': user_id, 'permissions': {'agent_create': True}}
-            else:
-                return jsonify({'error': info, 'valid': False}), 401    
+    # 1. Extract and Validate API Key
+    user_id, error_resp = extract_and_validate_api_key(data)
+    if error_resp:
+        return error_resp
             
     try:
         agent = service.delete_agent(
@@ -920,57 +723,10 @@ def add_document():
     if len(document_content) != len(ids):
         return jsonify({'error': 'Length of documents and ids must be the same'}), 400
 
-    # Extract API key from ANY possible source with maximum flexibility
-    api_key = None
-    possible_sources = [
-        request.headers.get('Authorization'),
-        request.headers.get('X-API-Key'),
-        request.args.get('api_key'),
-        data.get('api_key'),
-        data.get('token'),
-        data.get('access_token')
-    ]
-
-    for source in possible_sources:
-        if source:
-            # Clean up the value
-            source = str(source).strip()
-
-            # If it's a Bearer token, extract the token part
-            if source.lower().startswith('bearer '):
-                api_key = source.split(None, 1)[1]
-                break
-            # If it's just a token/API key, use it directly
-            elif source and len(source) > 10:  # Basic check that it's not empty/short
-                api_key = source
-                break
-    
-    # If we have an API key, clean it (remove any remaining "Bearer " prefix)
-    if api_key and api_key.lower().startswith('bearer '):
-        api_key = api_key.split(None, 1)[1]
-    
-    print(f"API Key received: {api_key}")
-    
-    # Validation logic (same as before)
-    user_id = None
-    if api_key:
-        permission = data.get('permission')
-        ok, info = validate_api_key_value(api_key, permission)
-
-        print(f"API Key validation result: {ok}, info: {info}")
-
-        if ok:
-            user_id = info.get('user_id')
-            g.api_key_record = info
-        else:
-            # Fallback for local testing
-            if api_key.startswith('sk-'):
-                user_id = os.environ.get('TEST_USER_ID', 'test-user')
-                g.api_key_record = {'id': 'test-key', 'user_id': user_id, 'permissions': {'agent_create': True}}
-            else:
-                return jsonify({'error': info, 'valid': False}), 401
-    else:
-        return jsonify({'error': 'missing_api_key', 'valid': False}), 401
+    # 1. Extract and Validate API Key
+    user_id, error_resp = extract_and_validate_api_key(data)
+    if error_resp:
+        return error_resp
     try:
         # Add documents to the agent's vector DB
         metadatas_list = [metadata] * len(ids) if metadata else None
@@ -1006,55 +762,10 @@ def update_document():
     if not agent_id or not document_id or not new_content:
         return jsonify({'error': 'agent_id, document_id, and new_content are required'}), 400
 
-    # Extract API key from ANY possible source with maximum flexibility
-    api_key = None
-    possible_sources = [
-        request.headers.get('Authorization'),
-        request.headers.get('X-API-Key'),
-        request.args.get('api_key'),
-        data.get('api_key'),
-        data.get('token'),
-        data.get('access_token')
-    ]
-
-    for source in possible_sources:
-        if source:
-            # Clean up the value
-            source = str(source).strip()
-
-            # If it's a Bearer token, extract the token part
-            if source.lower().startswith('bearer '):
-                api_key = source.split(None, 1)[1]
-                break
-            # If it's just a token/API key, use it directly
-            elif source and len(source) > 10:  # Basic check that it's not empty/short
-                api_key = source
-                break
-
-    # If we have an API key, clean it (remove any remaining "Bearer " prefix)
-    if api_key and api_key.lower().startswith('bearer '):
-        api_key = api_key.split(None, 1)[1]
-
-    print(f"API Key received: {api_key}")
-
-    # Validation logic (same as before)
-    user_id = None
-    if api_key:
-        permission = data.get('permission')
-        ok, info = validate_api_key_value(api_key, permission)
-
-        print(f"API Key validation result: {ok}, info: {info}")
-
-        if ok:
-            user_id = info.get('user_id')
-            g.api_key_record = info
-        else:
-            # Fallback for local testing
-            if api_key.startswith('sk-'):
-                user_id = os.environ.get('TEST_USER_ID', 'test-user')
-                g.api_key_record = {'id': 'test-key', 'user_id': user_id, 'permissions': {'agent_create': True}}
-            else:
-                return jsonify({'error': info, 'valid': False}), 401    
+    # 1. Extract and Validate API Key
+    user_id, error_resp = extract_and_validate_api_key(data)
+    if error_resp:
+        return error_resp
             
     try:
         # Update document in the agent's vector DB
@@ -1089,55 +800,10 @@ def update_document_metadata():
     if not agent_id or not document_id or not metadata:
         return jsonify({'error': 'agent_id, document_id, and metadata are required'}), 400
 
-    # Extract API key from ANY possible source with maximum flexibility
-    api_key = None
-    possible_sources = [
-        request.headers.get('Authorization'),
-        request.headers.get('X-API-Key'),
-        request.args.get('api_key'),
-        data.get('api_key'),
-        data.get('token'),
-        data.get('access_token')
-    ]
-
-    for source in possible_sources:
-        if source:
-            # Clean up the value
-            source = str(source).strip()
-
-            # If it's a Bearer token, extract the token part
-            if source.lower().startswith('bearer '):
-                api_key = source.split(None, 1)[1]
-                break
-            # If it's just a token/API key, use it directly
-            elif source and len(source) > 10:  # Basic check that it's not empty/short
-                api_key = source
-                break
-
-    # If we have an API key, clean it (remove any remaining "Bearer " prefix)
-    if api_key and api_key.lower().startswith('bearer '):
-        api_key = api_key.split(None, 1)[1]
-
-    print(f"API Key received: {api_key}")
-
-    # Validation logic (same as before)
-    user_id = None
-    if api_key:
-        permission = data.get('permission')
-        ok, info = validate_api_key_value(api_key, permission)
-
-        print(f"API Key validation result: {ok}, info: {info}")
-
-        if ok:
-            user_id = info.get('user_id')
-            g.api_key_record = info
-        else:
-            # Fallback for local testing
-            if api_key.startswith('sk-'):
-                user_id = os.environ.get('TEST_USER_ID', 'test-user')
-                g.api_key_record = {'id': 'test-key', 'user_id': user_id, 'permissions': {'agent_create': True}}
-            else:
-                return jsonify({'error': info, 'valid': False}), 401
+    # 1. Extract and Validate API Key
+    user_id, error_resp = extract_and_validate_api_key(data)
+    if error_resp:
+        return error_resp
     try:
         # Update document metadata in the agent's vector DB
         file_agentic_rag.update_doc_metadata(
@@ -1170,55 +836,10 @@ def search_documents():
     if not agent_id or not query:
         return jsonify({'error': 'agent_id and query are required'}), 400
 
-    # Extract API key from ANY possible source with maximum flexibility
-    api_key = None
-    possible_sources = [
-        request.headers.get('Authorization'),
-        request.headers.get('X-API-Key'),
-        request.args.get('api_key'),
-        data.get('api_key'),
-        data.get('token'),
-        data.get('access_token')
-    ]
-
-    for source in possible_sources:
-        if source:
-            # Clean up the value
-            source = str(source).strip()
-
-            # If it's a Bearer token, extract the token part
-            if source.lower().startswith('bearer '):
-                api_key = source.split(None, 1)[1]
-                break
-            # If it's just a token/API key, use it directly
-            elif source and len(source) > 10:  # Basic check that it's not empty/short
-                api_key = source
-                break
-
-    # If we have an API key, clean it (remove any remaining "Bearer " prefix)
-    if api_key and api_key.lower().startswith('bearer '):
-        api_key = api_key.split(None, 1)[1]
-
-    print(f"API Key received: {api_key}")
-
-    # Validation logic (same as before)
-    user_id = None
-    if api_key:
-        permission = data.get('permission')
-        ok, info = validate_api_key_value(api_key, permission)
-
-        print(f"API Key validation result: {ok}, info: {info}")
-
-        if ok:
-            user_id = info.get('user_id')
-            g.api_key_record = info
-        else:
-            # Fallback for local testing
-            if api_key.startswith('sk-'):
-                user_id = os.environ.get('TEST_USER_ID', 'test-user')
-                g.api_key_record = {'id': 'test-key', 'user_id': user_id, 'permissions': {'agent_create': True}}
-            else:
-                return jsonify({'error': info, 'valid': False}), 401
+    # 1. Extract and Validate API Key
+    user_id, error_resp = extract_and_validate_api_key(data)
+    if error_resp:
+        return error_resp
     
     try:
         # Search documents in the agent's vector DB
@@ -1250,55 +871,10 @@ def search_chat_history():
     if not agent_id or not user_id:
         return jsonify({'error': 'agent_id and user_id are required'}), 400
 
-    # Extract API key from ANY possible source with maximum flexibility
-    api_key = None
-    possible_sources = [
-        request.headers.get('Authorization'),
-        request.headers.get('X-API-Key'),
-        request.args.get('api_key'),
-        data.get('api_key'),
-        data.get('token'),
-        data.get('access_token')
-    ]
-
-    for source in possible_sources:
-        if source:
-            # Clean up the value
-            source = str(source).strip()
-
-            # If it's a Bearer token, extract the token part
-            if source.lower().startswith('bearer '):
-                api_key = source.split(None, 1)[1]
-                break
-            # If it's just a token/API key, use it directly
-            elif source and len(source) > 10:  # Basic check that it's not empty/short
-                api_key = source
-                break
-
-    # If we have an API key, clean it (remove any remaining "Bearer " prefix)
-    if api_key and api_key.lower().startswith('bearer '):
-        api_key = api_key.split(None, 1)[1]
-
-    print(f"API Key received: {api_key}")
-
-    # Validation logic (same as before)
-    valid_user_id = None
-    if api_key:
-        permission = data.get('permission')
-        ok, info = validate_api_key_value(api_key, permission)
-
-        print(f"API Key validation result: {ok}, info: {info}")
-
-        if ok:
-            valid_user_id = info.get('user_id')
-            g.api_key_record = info
-        else:
-            # Fallback for local testing
-            if api_key.startswith('sk-'):
-                valid_user_id = os.environ.get('TEST_USER_ID', 'test-user')
-                g.api_key_record = {'id': 'test-key', 'user_id': valid_user_id, 'permissions': {'agent_create': True}}  
-            else:
-                return jsonify({'error': info, 'valid': False}), 401
+    # 1. Extract and Validate API Key
+    valid_user_id, error_resp = extract_and_validate_api_key(data)
+    if error_resp:
+        return error_resp
     try:
         # Fetch conversation history
         history = chat_agentic_rag.search_agent_collection(
