@@ -767,19 +767,21 @@ def api_add_memory():
         mem_id = str(uuid.uuid4())
 
         # Insert only V1 schema columns (gitmem_memories table)
+        # Only include fields that have values — let DB defaults handle the rest
         row = {
             'id': mem_id,
             'agent_id': agent_id,
             'type': mtype,
             'content': content,
             'importance': importance,
-            'tags': tags if isinstance(tags, list) else [],
-            'scope': 'private',
-            'metadata': {},
         }
+        # Only add tags if non-empty (TEXT[] column)
+        if tags and isinstance(tags, list) and len(tags) > 0:
+            row['tags'] = tags
+
         _db().table('gitmem_memories').insert(row).execute()
 
-        # Also index in vector store
+        # Also index in vector store (best-effort)
         try:
             gitmem_app.vector_engine.add_texts(
                 texts=[content],
@@ -787,10 +789,11 @@ def api_add_memory():
                 ids=[mem_id]
             )
         except Exception:
-            pass  # Vector indexing is best-effort
+            pass
 
         return jsonify({"status": "success", "id": mem_id})
     except Exception as e:
+        print(f"[GitMem] Memory insert failed: {e}")
         return jsonify({"status": "error", "error": str(e)}), 500
 
 

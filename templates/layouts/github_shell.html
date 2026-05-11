@@ -271,11 +271,12 @@
                 body: JSON.stringify(data)
             });
 
-            if (resp.ok) {
+            const result = await resp.json();
+            if (resp.ok && result.status === 'success') {
                 closeModal();
                 window.location.reload();
             } else {
-                alert('Failed to save memory');
+                alert('Failed to save memory: ' + (result.error || result.message || `HTTP ${resp.status}`));
             }
         } catch (e) {
             console.error('Failed to add memory:', e);
