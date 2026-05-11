@@ -2728,7 +2728,9 @@ table thead {
     }
 
     function handleFilterClick(e) {
-      const filter = e.target.dataset.filter;
+      const chip = e.target.closest('.filter-chip');
+      if (!chip) return;
+      const filter = chip.dataset.filter;
       console.log('Filter clicked:', filter);
       
       if (filter === 'all') {
@@ -2741,6 +2743,10 @@ table thead {
         } else {
           state.activeFilters.add(filter);
         }
+        // If nothing selected, revert to "all"
+        if (state.activeFilters.size === 0) {
+          state.activeFilters.add('all');
+        }
       }
       
       // Update UI
@@ -2752,7 +2758,9 @@ table thead {
     }
 
     function handleLanguageChange(e) {
-      const lang = e.target.dataset.lang;
+      const btn = e.target.closest('.lang-btn');
+      if (!btn) return;
+      const lang = btn.dataset.lang;
       console.log('Language changed to:', lang);
       state.selectedLanguage = lang;
       updateCodeSample();
@@ -2760,9 +2768,11 @@ table thead {
     }
 
     function handleTabChange(e) {
-      const tab = e.target.dataset.tab;
+      const tabBtn = e.target.closest('.tab-btn');
+      if (!tabBtn) return;
+      const tab = tabBtn.dataset.tab;
       console.log('Tab changed to:', tab);
-      
+
       // Update active tab
       document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.tab === tab);
