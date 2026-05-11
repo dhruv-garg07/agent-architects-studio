@@ -47,6 +47,26 @@
                 </div>
             </div>
 
+            <!-- Workspace -->
+            <div class="card p-6">
+                <h2 class="font-semibold mb-4 flex items-center gap-2">
+                    <i data-lucide="users" class="w-5 h-5 text-primary"></i>
+                    Workspace
+                </h2>
+                <p class="text-sm text-muted-foreground mb-3">
+                    Assign this agent to a workspace/team. Members of the workspace will be able to access this agent.
+                </p>
+                <select name="workspace_id" class="w-full bg-secondary/50 border border-border rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50">
+                    <option value="">No workspace (personal)</option>
+                    {% for ws in workspaces %}
+                    <option value="{{ ws.workspace_id }}" {% if selected_workspace_id == ws.workspace_id %}selected{% endif %}>{{ ws.name }}</option>
+                    {% endfor %}
+                </select>
+                {% if not workspaces %}
+                <p class="text-xs text-muted-foreground mt-2">No workspaces yet. <a href="{{ url_for('gitmem.landing') }}" class="text-primary hover:underline">Create one first</a> on the landing page.</p>
+                {% endif %}
+            </div>
+
             <!-- Description -->
             <div class="card p-6">
                 <h2 class="font-semibold mb-4 flex items-center gap-2">

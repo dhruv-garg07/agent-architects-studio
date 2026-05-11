@@ -280,6 +280,13 @@ def landing():
         except Exception:
             pass
 
+        agent_meta = agent.get('metadata') or {}
+        if isinstance(agent_meta, str):
+            try:
+                import json as _json
+                agent_meta = _json.loads(agent_meta)
+            except Exception:
+                agent_meta = {}
         repos.append({
             'repo_id':       aid,
             'name':          agent.get('agent_name') or agent.get('agent_slug') or aid,
@@ -292,6 +299,7 @@ def landing():
             'memory_count':  mem_count,
             'commit_count':  commit_count,
             'vector_count':  vec_count,
+            'workspace_id':  agent_meta.get('workspace_id', ''),
         })
         total_memories += mem_count
         total_commits += commit_count
@@ -681,7 +689,19 @@ def repo_dashboard(repo_id):
 @gitmem_bp.route('/new', methods=['GET'])
 @login_required
 def create_agent_form():
-    return render_template('create_agent.html', workspaces=[], sources=get_sources_status())
+    # Fetch user's workspaces for the selector
+    workspaces = []
+    if _db():
+        try:
+            mem_res = _db().table('gitmem_workspace_members').select('workspace_id, role').eq('user_id', current_user.get_id()).execute()
+            if mem_res.data:
+                ws_ids = [m['workspace_id'] for m in mem_res.data]
+                ws_res = _db().table('gitmem_workspaces').select('*').in_('workspace_id', ws_ids).execute()
+                workspaces = ws_res.data or []
+        except Exception:
+            pass
+    ws_id = request.args.get('workspace_id', '')
+    return render_template('create_agent.html', workspaces=workspaces, selected_workspace_id=ws_id, sources=get_sources_status())
 
 
 @gitmem_bp.route('/api/create-agent', methods=['POST'])
@@ -700,6 +720,8 @@ def api_create_agent():
         flash("Database disconnected.", "error")
         return redirect(url_for('gitmem.create_agent_form'))
 
+    workspace_id = data.get('workspace_id', '').strip()
+
     try:
         from backend_examples.python.services.api_agents import ApiAgentsService
         svc = ApiAgentsService()
@@ -710,7 +732,7 @@ def api_create_agent():
             description=description,
             permissions={"read": True, "write": True},
             limits={"max_memories": 10000},
-            metadata={"capabilities": [], "status": "active"},
+            metadata={"capabilities": [], "status": "active", "workspace_id": workspace_id},
         )
         # Create default branch
         try:

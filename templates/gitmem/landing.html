@@ -43,7 +43,7 @@
                     </div>
                 </div>
 
-                <a href="{{ url_for('gitmem.create_agent_form') }}"
+                <a id="new-repo-btn" href="{{ url_for('gitmem.create_agent_form') }}"
                     class="btn-primary flex items-center gap-2 px-5 py-3 rounded-xl shadow-lg shadow-violet-500/20 hover:scale-105 transition-transform">
                     <i data-lucide="plus" class="w-5 h-5"></i>
                     <span class="font-semibold">New Repository</span>
@@ -128,7 +128,7 @@
         <!-- Repositories Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
             {% for repo in repos %}
-            <a href="{{ url_for('gitmem.agent_dashboard', agent_id=repo.repo_id) }}" class="group block h-full">
+            <a href="{{ url_for('gitmem.agent_dashboard', agent_id=repo.repo_id) }}" class="group block h-full" data-workspace-id="{{ repo.workspace_id or '' }}">
                 <div
                     class="h-full backdrop-blur-md bg-[#1a1a1a]/60 border border-white/5 rounded-2xl p-6 hover:border-violet-500/40 transition-all duration-300 hover:shadow-2xl hover:shadow-violet-500/10 hover:-translate-y-1 relative overflow-hidden flex flex-col">
 
@@ -374,7 +374,10 @@
 
     function renderWsList() {
         const list = document.getElementById('ws-list');
-        list.innerHTML = workspaces.map(ws => `
+        const allBtn = `<button onclick="selectWorkspace({workspace_id:'all',name:'All Workspaces',user_role:''})" class="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-white/5 ${!currentWsId || currentWsId === 'all' ? 'text-violet-400' : 'text-gray-300'}">
+            <span>All Workspaces</span><span class="text-xs text-gray-500">${workspaces.length}</span>
+        </button>`;
+        list.innerHTML = allBtn + workspaces.map(ws => `
             <button onclick="selectWorkspace(${JSON.stringify(ws).replace(/"/g, '&quot;')})" class="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-white/5 ${ws.workspace_id === currentWsId ? 'text-violet-400' : 'text-gray-300'}">
                 <span class="truncate">${ws.name}</span>
                 <span class="text-xs text-gray-500">${ws.user_role || ''}</span>
@@ -389,6 +392,25 @@
         badge.textContent = ws.user_role || 'member';
         badge.classList.remove('hidden');
         document.getElementById('ws-dropdown').classList.add('hidden');
+        filterReposByWorkspace();
+    }
+
+    function filterReposByWorkspace() {
+        // Filter repo cards by workspace_id stored in data attribute
+        const cards = document.querySelectorAll('[data-workspace-id]');
+        cards.forEach(card => {
+            if (!currentWsId || currentWsId === 'all') {
+                card.style.display = '';
+            } else {
+                card.style.display = (card.dataset.workspaceId === currentWsId) ? '' : 'none';
+            }
+        });
+        // Update "New Repository" link to pass workspace_id
+        const newBtn = document.getElementById('new-repo-btn');
+        if (newBtn) {
+            const base = '{{ url_for("gitmem.create_agent_form") }}';
+            newBtn.href = currentWsId ? base + '?workspace_id=' + currentWsId : base;
+        }
     }
 
     function toggleWsDropdown() {
