@@ -692,23 +692,13 @@
             .linkDirectionalParticleColor(l => l.type === 'semantic' ? '#a78bfa' : '#60a5fa')
 
             // ── Link distance: semantic strength → proximity ──
-            .d3Force('link', d3.forceLink()
-                .id(d => d.id)
-                .distance(l => {
-                    if (l.type === 'semantic') return 30 + (1 - (l.strength || 0.5)) * 120;  // high sim → close
-                    if (l.type === 'tag')      return 60;
-                    if (l.type === 'provenance') return 50;
-                    if (l.type === 'cluster')  return 150;
-                    return 80;
-                })
-                .strength(l => {
-                    if (l.type === 'semantic') return 0.1 + (l.strength || 0.5) * 0.3;
-                    if (l.type === 'cluster')  return 0.02;
-                    return 0.1;
-                })
-            )
-            .d3Force('charge', d3.forceManyBody().strength(-80).distanceMax(300))
-            .d3Force('center', d3.forceCenter())
+            .linkDistance(l => {
+                if (l.type === 'semantic') return 30 + (1 - (l.strength || 0.5)) * 120;
+                if (l.type === 'tag')      return 60;
+                if (l.type === 'provenance') return 50;
+                if (l.type === 'cluster')  return 150;
+                return 80;
+            })
             .d3AlphaDecay(0.025)
             .d3VelocityDecay(0.35)
             .warmupTicks(80)
