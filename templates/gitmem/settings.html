@@ -4,140 +4,119 @@
 
 {% block content %}
 <div class="relative min-h-screen bg-transparent text-foreground overflow-hidden">
-    <!-- Mesh Gradients Background -->
     <div class="absolute inset-0 pointer-events-none">
         <div class="absolute top-0 left-1/4 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl"></div>
-        <div class="absolute bottom-0 right-1/4 w-80 h-80 bg-red-500/5 rounded-full blur-3xl"></div>
     </div>
 
-    <!-- Main Container -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
-
-        <!-- Breadcrumb & Header -->
-        <div class="mb-8">
+        <!-- Breadcrumb -->
+        <div class="mb-6">
             <nav class="flex items-center text-sm text-gray-400 mb-2 space-x-2">
                 <a href="{{ url_for('gitmem.landing') }}" class="hover:text-white transition-colors">GitMem</a>
-                <i data-lucide="chevron-right" class="w-4 h-4"></i>
-                <a href="{{ url_for('gitmem.agent_dashboard', agent_id=agent.id) }}"
-                    class="hover:text-white transition-colors">Repository</a>
-                <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                <span class="text-gray-600">/</span>
+                <a href="{{ url_for('gitmem.agent_dashboard', agent_id=agent.id) }}" class="hover:text-white transition-colors">{{ agent.name }}</a>
+                <span class="text-gray-600">/</span>
                 <span class="text-white font-medium">Settings</span>
             </nav>
-            <div class="flex items-center gap-4">
-                <div
-                    class="w-14 h-14 rounded-2xl bg-gradient-to-br from-gray-800 to-gray-900 border border-white/10 flex items-center justify-center text-xl font-bold text-white shadow-inner">
-                    {{ agent.name[:2]|upper if agent and agent.name else (agent.id[:2]|upper if agent and agent.id else
-                    '??') }}
-                </div>
-                <div>
-                    <h1 class="text-3xl font-bold text-white tracking-tight">{{ agent.name if agent else 'Unknown Agent'
-                        }}</h1>
-                    <p class="text-sm text-gray-400 mt-1">Repository Settings</p>
-                </div>
-            </div>
+            <h1 class="text-2xl font-bold text-white">{{ agent.name }} — Settings</h1>
         </div>
 
-        <!-- Repository Navigation -->
-        <div class="border-b border-white/10 mb-8">
-            <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-                <a href="{{ url_for('gitmem.agent_dashboard', agent_id=agent.id) }}"
-                    class="border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300 group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm transition-all duration-200">
-                    <i data-lucide="brain" class="mr-2 -ml-0.5 h-4 w-4 text-gray-500 group-hover:text-gray-400"></i>
-                    <span>Context</span>
-                </a>
-
-                <a href="{{ url_for('gitmem.agent_commits', agent_id=agent.id) }}"
-                    class="border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300 group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm transition-all duration-200">
-                    <i data-lucide="git-commit"
-                        class="mr-2 -ml-0.5 h-4 w-4 text-gray-500 group-hover:text-gray-400"></i>
-                    <span>Commits</span>
-                </a>
-
-                <a href="{{ url_for('gitmem.pulls', agent_id=agent.id) }}"
-                    class="border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300 group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm transition-all duration-200">
-                    <i data-lucide="git-pull-request"
-                        class="mr-2 -ml-0.5 h-4 w-4 text-gray-500 group-hover:text-gray-400"></i>
-                    <span>Pulls</span>
-                </a>
-
-                <a href="{{ url_for('gitmem.issues', agent_id=agent.id) }}"
-                    class="border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300 group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm transition-all duration-200">
-                    <i data-lucide="circle-dot"
-                        class="mr-2 -ml-0.5 h-4 w-4 text-gray-500 group-hover:text-gray-400"></i>
-                    <span>Issues</span>
-                </a>
-
-                <a href="{{ url_for('gitmem.settings', agent_id=agent.id) }}"
-                    class="border-violet-500 text-white group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm">
-                    <i data-lucide="settings" class="mr-2 -ml-0.5 h-4 w-4 text-violet-400"></i>
-                    <span>Settings</span>
-                </a>
-            </nav>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <!-- Sidebar -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- Sidebar Tabs -->
             <div class="lg:col-span-3 space-y-1">
-                <a href="#"
-                    class="flex items-center gap-3 px-4 py-2 text-sm font-medium bg-white/10 text-white rounded-xl border border-white/5">
-                    <i data-lucide="user" class="w-4 h-4 text-violet-400"></i> General
-                </a>
-                <a href="#"
-                    class="flex items-center gap-3 px-4 py-2 text-sm font-medium text-gray-400 hover:bg-white/5 hover:text-white transition-all rounded-xl">
-                    <i data-lucide="shield" class="w-4 h-4"></i> Security
-                </a>
-                <a href="#"
-                    class="flex items-center gap-3 px-4 py-2 text-sm font-medium text-gray-400 hover:bg-white/5 hover:text-white transition-all rounded-xl">
-                    <i data-lucide="zap" class="w-4 h-4"></i> Integrations
-                </a>
+                <button onclick="switchSettingsTab('general')" id="tab-general"
+                    class="settings-tab active w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-lg text-left">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    General
+                </button>
+                <button onclick="switchSettingsTab('members')" id="tab-members"
+                    class="settings-tab w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-lg text-left">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                    Members
+                </button>
+                <button onclick="switchSettingsTab('collaborators')" id="tab-collaborators"
+                    class="settings-tab w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-lg text-left">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                    Collaborators
+                </button>
+                <button onclick="switchSettingsTab('danger')" id="tab-danger"
+                    class="settings-tab w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium rounded-lg text-left text-red-400">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    Danger Zone
+                </button>
             </div>
 
-            <!-- Content -->
-            <div class="lg:col-span-9 space-y-6">
-                <!-- General Settings -->
-                <div class="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 shadow-xl">
-                    <h3 class="text-lg font-semibold text-white mb-6">General Settings</h3>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-400 mb-2">Repository Name</label>
-                            <input type="text" id="agent-name" value="{{ agent.name if agent else '' }}"
-                                class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-all">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-400 mb-2">Description</label>
-                            <textarea rows="3" id="agent-description"
-                                class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-all">{{ agent.description if agent else '' }}</textarea>
-                        </div>
-                        <div class="pt-4">
+            <!-- Content Panels -->
+            <div class="lg:col-span-9">
+
+                <!-- General Panel -->
+                <div id="panel-general" class="settings-panel">
+                    <div class="bg-white/5 border border-white/10 rounded-xl p-6">
+                        <h3 class="text-lg font-semibold text-white mb-4">General Settings</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-1">Repository Name</label>
+                                <input type="text" id="agent-name" value="{{ agent.name if agent else '' }}"
+                                    class="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/50">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-1">Description</label>
+                                <textarea rows="3" id="agent-description"
+                                    class="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/50">{{ agent.description if agent else '' }}</textarea>
+                            </div>
                             <button onclick="saveSettings()" id="save-btn"
-                                class="px-6 py-2.5 bg-violet-600 hover:bg-violet-500 text-white font-medium rounded-xl shadow-lg shadow-violet-500/20 transition-all">Save
-                                Changes</button>
+                                class="px-5 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg transition-colors">Save Changes</button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Danger Zone -->
-                <div class="backdrop-blur-xl bg-red-500/5 border border-red-500/20 rounded-2xl p-6 shadow-xl">
-                    <h3 class="text-lg font-semibold text-red-400 mb-6 flex items-center gap-2">
-                        <i data-lucide="alert-triangle" class="w-5 h-5"></i> Danger Zone
-                    </h3>
-                    <div class="divide-y divide-red-500/10">
-                        <div class="py-4 flex items-center justify-between">
-                            <div>
-                                <h4 class="text-sm font-semibold text-gray-200">Archive this repository</h4>
-                                <p class="text-xs text-gray-500">Mark this repository as read-only.</p>
-                            </div>
-                            <button onclick="archiveRepo()"
-                                class="px-4 py-2 border border-red-500/30 text-red-400 text-sm font-medium rounded-xl hover:bg-red-500/10 transition-all">Archive</button>
+                <!-- Members Panel -->
+                <div id="panel-members" class="settings-panel hidden">
+                    <div class="bg-white/5 border border-white/10 rounded-xl p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-white">Team Members</h3>
+                            <button onclick="showInviteModal()" class="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg transition-colors">Invite Member</button>
                         </div>
-                        <div class="py-4 flex items-center justify-between">
-                            <div>
-                                <h4 class="text-sm font-semibold text-red-400">Delete this repository</h4>
-                                <p class="text-xs text-gray-500">Permanently remove the repository and all its context.
-                                </p>
+                        <p class="text-xs text-gray-500 mb-4">Workspace members can access all repositories in this workspace based on their role.</p>
+                        <div id="members-list" class="space-y-2">
+                            <div class="text-gray-400 text-sm py-4 text-center">Loading members...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Collaborators Panel -->
+                <div id="panel-collaborators" class="settings-panel hidden">
+                    <div class="bg-white/5 border border-white/10 rounded-xl p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-white">Repository Collaborators</h3>
+                            <button onclick="showCollabModal()" class="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg transition-colors">Add Person</button>
+                        </div>
+                        <p class="text-xs text-gray-500 mb-4">Collaborators have direct access to this specific repository regardless of workspace membership.</p>
+                        <div id="collabs-list" class="space-y-2">
+                            <div class="text-gray-400 text-sm py-4 text-center">Loading collaborators...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Danger Zone Panel -->
+                <div id="panel-danger" class="settings-panel hidden">
+                    <div class="bg-red-500/5 border border-red-500/20 rounded-xl p-6">
+                        <h3 class="text-lg font-semibold text-red-400 mb-4">Danger Zone</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between py-3 border-b border-red-500/10">
+                                <div>
+                                    <h4 class="text-sm font-semibold text-gray-200">Archive this repository</h4>
+                                    <p class="text-xs text-gray-500">Mark as read-only. Can be reversed.</p>
+                                </div>
+                                <button onclick="archiveRepo()" class="px-4 py-1.5 border border-red-500/30 text-red-400 text-sm rounded-lg hover:bg-red-500/10 transition-colors">Archive</button>
                             </div>
-                            <button onclick="deleteRepo()"
-                                class="px-4 py-2 bg-red-600 hover:bg-red-500 text-white text-sm font-medium rounded-xl shadow-lg shadow-red-500/20 transition-all">Delete</button>
+                            <div class="flex items-center justify-between py-3">
+                                <div>
+                                    <h4 class="text-sm font-semibold text-red-400">Delete this repository</h4>
+                                    <p class="text-xs text-gray-500">Permanently remove all memories and context.</p>
+                                </div>
+                                <button onclick="deleteRepo()" class="px-4 py-1.5 bg-red-600 hover:bg-red-500 text-white text-sm rounded-lg transition-colors">Delete</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -146,80 +125,282 @@
     </div>
 </div>
 
+<!-- Invite Member Modal -->
+<div id="invite-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div class="bg-[#1a1a2e] border border-white/10 rounded-xl p-6 w-full max-w-md shadow-2xl">
+        <h3 class="text-lg font-semibold text-white mb-4">Invite to Workspace</h3>
+        <div class="space-y-4">
+            <div class="relative">
+                <input type="text" id="invite-search" placeholder="Search by email or name..."
+                    class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+                    oninput="searchUsers(this.value, 'invite-results')">
+                <div id="invite-results" class="absolute top-full left-0 right-0 mt-1 bg-[#1a1a2e] border border-white/10 rounded-lg overflow-hidden hidden z-10 max-h-40 overflow-y-auto"></div>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Role</label>
+                <select id="invite-role" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2 text-white text-sm">
+                    <option value="member">Member — can create & contribute</option>
+                    <option value="viewer">Viewer — read-only access</option>
+                    <option value="admin">Admin — manage team & repos</option>
+                </select>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="hideModal('invite-modal')" class="px-4 py-2 text-gray-400 text-sm hover:text-white transition-colors">Cancel</button>
+                <button onclick="inviteMember()" id="invite-btn" class="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg transition-colors">Send Invite</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Collaborator Modal -->
+<div id="collab-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div class="bg-[#1a1a2e] border border-white/10 rounded-xl p-6 w-full max-w-md shadow-2xl">
+        <h3 class="text-lg font-semibold text-white mb-4">Add Collaborator</h3>
+        <div class="space-y-4">
+            <div class="relative">
+                <input type="text" id="collab-search" placeholder="Search by email or name..."
+                    class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+                    oninput="searchUsers(this.value, 'collab-results')">
+                <div id="collab-results" class="absolute top-full left-0 right-0 mt-1 bg-[#1a1a2e] border border-white/10 rounded-lg overflow-hidden hidden z-10 max-h-40 overflow-y-auto"></div>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Role</label>
+                <select id="collab-role" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2 text-white text-sm">
+                    <option value="reader">Reader — view memories only</option>
+                    <option value="writer">Writer — commit & add memories</option>
+                    <option value="admin">Admin — full repo control</option>
+                </select>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="hideModal('collab-modal')" class="px-4 py-2 text-gray-400 text-sm hover:text-white transition-colors">Cancel</button>
+                <button onclick="addCollaborator()" id="collab-btn" class="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg transition-colors">Add</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.settings-tab { color: #94a3b8; transition: all 0.15s; }
+.settings-tab:hover { background: rgba(255,255,255,0.05); color: #e2e8f0; }
+.settings-tab.active { background: rgba(139,92,246,0.1); color: #fff; border: 1px solid rgba(139,92,246,0.2); }
+.member-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.75rem; border-radius: 0.5rem; transition: background 0.15s; }
+.member-row:hover { background: rgba(255,255,255,0.03); }
+</style>
+
 <script>
-    const agentId = "{{ agent.id if agent else '' }}";
+const agentId = "{{ agent.id if agent else '' }}";
+const workspaceId = "{{ workspace_id }}";
+let selectedInviteEmail = '';
+let selectedCollabEmail = '';
 
-    async function saveSettings() {
-        const btn = document.getElementById('save-btn');
-        const name = document.getElementById('agent-name').value;
-        const description = document.getElementById('agent-description').value;
+// ── Tab Switching ────────────────────────────────────────────────────────
+function switchSettingsTab(tab) {
+    document.querySelectorAll('.settings-panel').forEach(p => p.classList.add('hidden'));
+    document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('panel-' + tab).classList.remove('hidden');
+    document.getElementById('tab-' + tab).classList.add('active');
+    if (tab === 'members') loadMembers();
+    if (tab === 'collaborators') loadCollaborators();
+}
 
-        btn.disabled = true;
-        btn.textContent = 'Saving...';
-
-        try {
-            const resp = await fetch(`/gitmem/api/agent/${agentId}/settings`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ agent_name: name, description: description })
-            });
-
-            if (resp.ok) {
-                btn.textContent = 'Saved!';
-                btn.classList.add('bg-green-600');
-                setTimeout(() => {
-                    btn.textContent = 'Save Changes';
-                    btn.classList.remove('bg-green-600');
-                    btn.disabled = false;
-                }, 2000);
-            } else {
-                throw new Error('Save failed');
-            }
-        } catch (e) {
-            console.error('Save failed:', e);
-            btn.textContent = 'Error!';
-            btn.classList.add('bg-red-600');
-            setTimeout(() => {
-                btn.textContent = 'Save Changes';
-                btn.classList.remove('bg-red-600');
-                btn.disabled = false;
-            }, 2000);
+// ── Members ──────────────────────────────────────────────────────────────
+async function loadMembers() {
+    const container = document.getElementById('members-list');
+    try {
+        const res = await fetch(`/gitmem/api/workspaces/${workspaceId}/members`);
+        const members = await res.json();
+        if (!Array.isArray(members) || members.length === 0) {
+            container.innerHTML = '<div class="text-gray-500 text-sm py-4 text-center">No members yet</div>';
+            return;
         }
+        container.innerHTML = members.map(m => `
+            <div class="member-row">
+                <div class="w-8 h-8 rounded-full bg-violet-500/20 border border-violet-500/30 flex items-center justify-center text-xs font-bold text-violet-300">
+                    ${(m.full_name || m.email || '?')[0].toUpperCase()}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="text-sm text-white font-medium truncate">${m.full_name || 'Unknown'}</div>
+                    <div class="text-xs text-gray-500 truncate">${m.email || m.user_id}</div>
+                </div>
+                ${m.role === 'owner' ? '<span class="text-xs bg-yellow-500/10 text-yellow-400 px-2 py-0.5 rounded">Owner</span>' : `
+                <select onchange="updateMemberRole('${m.user_id}', this.value)" class="bg-black/30 border border-white/10 rounded px-2 py-1 text-xs text-gray-300">
+                    <option value="admin" ${m.role === 'admin' ? 'selected' : ''}>Admin</option>
+                    <option value="member" ${m.role === 'member' ? 'selected' : ''}>Member</option>
+                    <option value="viewer" ${m.role === 'viewer' ? 'selected' : ''}>Viewer</option>
+                </select>
+                <button onclick="removeMember('${m.user_id}')" class="text-red-400 hover:text-red-300 p-1 rounded hover:bg-red-500/10" title="Remove">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>`}
+            </div>
+        `).join('');
+    } catch (e) {
+        container.innerHTML = '<div class="text-red-400 text-sm py-4 text-center">Failed to load members</div>';
     }
+}
 
-    async function archiveRepo() {
-        if (!confirm('Are you sure you want to archive this repository? It will become read-only.')) return;
+async function updateMemberRole(userId, role) {
+    await fetch(`/gitmem/api/workspaces/${workspaceId}/members/${userId}`, {
+        method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({role})
+    });
+}
 
-        try {
-            const resp = await fetch(`/gitmem/api/agent/${agentId}/archive`, { method: 'POST' });
-            if (resp.ok) {
-                alert('Repository archived successfully.');
-                window.location.reload();
-            } else {
-                alert('Failed to archive repository.');
-            }
-        } catch (e) {
-            console.error('Archive failed:', e);
-            alert('Archive operation failed.');
+async function removeMember(userId) {
+    if (!confirm('Remove this member from the workspace?')) return;
+    await fetch(`/gitmem/api/workspaces/${workspaceId}/members/${userId}`, {method: 'DELETE'});
+    loadMembers();
+}
+
+async function inviteMember() {
+    const email = selectedInviteEmail || document.getElementById('invite-search').value.trim();
+    const role = document.getElementById('invite-role').value;
+    if (!email) return;
+    const btn = document.getElementById('invite-btn');
+    btn.textContent = 'Sending...'; btn.disabled = true;
+    try {
+        const res = await fetch(`/gitmem/api/workspaces/${workspaceId}/members`, {
+            method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({email, role})
+        });
+        const data = await res.json();
+        if (res.ok) { hideModal('invite-modal'); loadMembers(); }
+        else { alert(data.error || 'Failed to invite'); }
+    } finally { btn.textContent = 'Send Invite'; btn.disabled = false; }
+}
+
+// ── Collaborators ────────────────────────────────────────────────────────
+async function loadCollaborators() {
+    const container = document.getElementById('collabs-list');
+    try {
+        const res = await fetch(`/gitmem/api/agent/${agentId}/collaborators`);
+        const collabs = await res.json();
+        if (!Array.isArray(collabs) || collabs.length === 0) {
+            container.innerHTML = '<div class="text-gray-500 text-sm py-4 text-center">No collaborators — only workspace members can access this repo</div>';
+            return;
         }
+        container.innerHTML = collabs.map(c => `
+            <div class="member-row">
+                <div class="w-8 h-8 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-xs font-bold text-blue-300">
+                    ${(c.full_name || c.email || '?')[0].toUpperCase()}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="text-sm text-white font-medium truncate">${c.full_name || 'Unknown'}</div>
+                    <div class="text-xs text-gray-500 truncate">${c.email || c.user_id}</div>
+                </div>
+                <select onchange="updateCollabRole('${c.user_id}', this.value)" class="bg-black/30 border border-white/10 rounded px-2 py-1 text-xs text-gray-300">
+                    <option value="admin" ${c.role === 'admin' ? 'selected' : ''}>Admin</option>
+                    <option value="writer" ${c.role === 'writer' ? 'selected' : ''}>Writer</option>
+                    <option value="reader" ${c.role === 'reader' ? 'selected' : ''}>Reader</option>
+                </select>
+                <button onclick="removeCollaborator('${c.user_id}')" class="text-red-400 hover:text-red-300 p-1 rounded hover:bg-red-500/10" title="Remove">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+        `).join('');
+    } catch (e) {
+        container.innerHTML = '<div class="text-red-400 text-sm py-4 text-center">Failed to load collaborators</div>';
     }
+}
 
-    async function deleteRepo() {
-        if (!confirm('⚠️ WARNING: This will permanently delete all memories and context for this agent. This cannot be undone. Continue?')) return;
-        if (!confirm('Are you absolutely sure? Type the agent name to confirm would be safer...')) return;
+async function updateCollabRole(userId, role) {
+    await fetch(`/gitmem/api/agent/${agentId}/collaborators/${userId}`, {
+        method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({role})
+    });
+}
 
+async function removeCollaborator(userId) {
+    if (!confirm('Remove this collaborator?')) return;
+    await fetch(`/gitmem/api/agent/${agentId}/collaborators/${userId}`, {method: 'DELETE'});
+    loadCollaborators();
+}
+
+async function addCollaborator() {
+    const email = selectedCollabEmail || document.getElementById('collab-search').value.trim();
+    const role = document.getElementById('collab-role').value;
+    if (!email) return;
+    const btn = document.getElementById('collab-btn');
+    btn.textContent = 'Adding...'; btn.disabled = true;
+    try {
+        const res = await fetch(`/gitmem/api/agent/${agentId}/collaborators`, {
+            method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({email, role})
+        });
+        const data = await res.json();
+        if (res.ok) { hideModal('collab-modal'); loadCollaborators(); }
+        else { alert(data.error || 'Failed to add collaborator'); }
+    } finally { btn.textContent = 'Add'; btn.disabled = false; }
+}
+
+// ── User Search ──────────────────────────────────────────────────────────
+let searchTimeout = null;
+function searchUsers(query, resultsId) {
+    clearTimeout(searchTimeout);
+    const container = document.getElementById(resultsId);
+    if (query.length < 2) { container.classList.add('hidden'); return; }
+    searchTimeout = setTimeout(async () => {
         try {
-            const resp = await fetch(`/gitmem/api/agent/${agentId}`, { method: 'DELETE' });
-            if (resp.ok) {
-                alert('Repository deleted.');
-                window.location.href = '/gitmem/';
+            const res = await fetch(`/gitmem/api/users/search?q=${encodeURIComponent(query)}`);
+            const users = await res.json();
+            if (!Array.isArray(users) || users.length === 0) {
+                container.innerHTML = '<div class="px-3 py-2 text-xs text-gray-500">No users found</div>';
             } else {
-                alert('Failed to delete repository.');
+                container.innerHTML = users.map(u => `
+                    <button type="button" onclick="selectUser('${u.email}', '${resultsId}')" class="w-full flex items-center gap-2 px-3 py-2 hover:bg-white/5 text-left">
+                        <div class="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-xs text-gray-300">${(u.full_name || u.email)[0].toUpperCase()}</div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-sm text-white truncate">${u.full_name || ''}</div>
+                            <div class="text-xs text-gray-500 truncate">${u.email}</div>
+                        </div>
+                    </button>
+                `).join('');
             }
-        } catch (e) {
-            console.error('Delete failed:', e);
-            alert('Delete operation failed.');
-        }
+            container.classList.remove('hidden');
+        } catch (e) { container.classList.add('hidden'); }
+    }, 300);
+}
+
+function selectUser(email, resultsId) {
+    if (resultsId === 'invite-results') {
+        selectedInviteEmail = email;
+        document.getElementById('invite-search').value = email;
+    } else {
+        selectedCollabEmail = email;
+        document.getElementById('collab-search').value = email;
     }
+    document.getElementById(resultsId).classList.add('hidden');
+}
+
+// ── Modals ───────────────────────────────────────────────────────────────
+function showInviteModal() { selectedInviteEmail = ''; document.getElementById('invite-search').value = ''; document.getElementById('invite-modal').classList.remove('hidden'); }
+function showCollabModal() { selectedCollabEmail = ''; document.getElementById('collab-search').value = ''; document.getElementById('collab-modal').classList.remove('hidden'); }
+function hideModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+// ── General Settings ─────────────────────────────────────────────────────
+async function saveSettings() {
+    const btn = document.getElementById('save-btn');
+    const name = document.getElementById('agent-name').value;
+    const description = document.getElementById('agent-description').value;
+    btn.disabled = true; btn.textContent = 'Saving...';
+    try {
+        const resp = await fetch(`/gitmem/api/agent/${agentId}/settings`, {
+            method: 'PUT', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({agent_name: name, description: description})
+        });
+        btn.textContent = resp.ok ? 'Saved!' : 'Error';
+        setTimeout(() => { btn.textContent = 'Save Changes'; btn.disabled = false; }, 2000);
+    } catch (e) { btn.textContent = 'Error'; setTimeout(() => { btn.textContent = 'Save Changes'; btn.disabled = false; }, 2000); }
+}
+
+async function archiveRepo() {
+    if (!confirm('Archive this repository? It will become read-only.')) return;
+    const resp = await fetch(`/gitmem/api/agent/${agentId}/archive`, {method: 'POST'});
+    if (resp.ok) { alert('Archived.'); window.location.reload(); }
+    else alert('Failed to archive.');
+}
+
+async function deleteRepo() {
+    if (!confirm('WARNING: This will permanently delete all memories and context. Continue?')) return;
+    if (!confirm('Are you absolutely sure? This cannot be undone.')) return;
+    const resp = await fetch(`/gitmem/api/agent/${agentId}`, {method: 'DELETE'});
+    if (resp.ok) { window.location.href = '/gitmem/'; }
+    else alert('Failed to delete.');
+}
 </script>
 {% endblock %}

@@ -621,8 +621,10 @@ def settings(agent_id):
     agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
     if not agent_raw:
         return redirect(url_for('gitmem.landing'))
-    agent = {'id': agent_id, 'name': agent_raw.get('agent_name', agent_id)}
-    return render_template('settings.html', agent=agent, sources=get_sources_status())
+    agent = {'id': agent_id, 'name': agent_raw.get('agent_name', agent_id), 'description': agent_raw.get('description', '')}
+    # Get workspace_id for team management (default workspace if not set)
+    workspace_id = agent_raw.get('workspace_id', 'default')
+    return render_template('settings.html', agent=agent, workspace_id=workspace_id, sources=get_sources_status())
 
 
 @gitmem_bp.route('/agent/<agent_id>/wiki')
@@ -1268,3 +1270,292 @@ def api_star():
     agent_id = data.get('agent_id', '')
     # Simple acknowledgment — star state can be stored in agent metadata
     return jsonify({"status": "starred", "count": 1})
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# WORKSPACE & TEAM MANAGEMENT
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@gitmem_bp.route('/api/workspaces', methods=['GET'])
+@login_required
+def api_list_workspaces():
+    """List all workspaces the current user belongs to."""
+    db = _db()
+    if not db:
+        return jsonify([])
+    try:
+        # Get membership records
+        mem_res = db.table('gitmem_workspace_members').select('workspace_id, role').eq('user_id', current_user.get_id()).execute()
+        memberships = mem_res.data or []
+        if not memberships:
+            return jsonify([])
+        ws_ids = [m['workspace_id'] for m in memberships]
+        ws_res = db.table('gitmem_workspaces').select('*').in_('workspace_id', ws_ids).execute()
+        workspaces = ws_res.data or []
+        # Attach user's role to each workspace
+        role_map = {m['workspace_id']: m['role'] for m in memberships}
+        for ws in workspaces:
+            ws['user_role'] = role_map.get(ws['workspace_id'], 'viewer')
+        return jsonify(workspaces)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@gitmem_bp.route('/api/workspaces', methods=['POST'])
+@login_required
+def api_create_workspace():
+    """Create a new workspace. Current user becomes owner."""
+    data = request.get_json(silent=True) or {}
+    name = data.get('name', '').strip()
+    slug = data.get('slug', '').strip()
+    if not name or not slug:
+        return jsonify({'error': 'name and slug are required'}), 400
+    # Sanitize slug
+    slug = re.sub(r'[^a-z0-9-]', '', slug.lower())
+    if not slug:
+        return jsonify({'error': 'invalid slug'}), 400
+    db = _db()
+    if not db:
+        return jsonify({'error': 'database unavailable'}), 503
+    try:
+        import uuid
+        from datetime import datetime
+        ws_id = str(uuid.uuid4())
+        user_id = current_user.get_id()
+        # Create workspace
+        db.table('gitmem_workspaces').insert({
+            'workspace_id': ws_id,
+            'name': name,
+            'slug': slug,
+            'owner_id': user_id,
+            'plan': 'free',
+            'settings': {},
+            'created_at': datetime.utcnow().isoformat(),
+            'updated_at': datetime.utcnow().isoformat(),
+        }).execute()
+        # Add owner as member
+        db.table('gitmem_workspace_members').insert({
+            'workspace_id': ws_id,
+            'user_id': user_id,
+            'role': 'owner',
+            'invited_by': user_id,
+            'joined_at': datetime.utcnow().isoformat(),
+        }).execute()
+        return jsonify({'ok': True, 'workspace_id': ws_id}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@gitmem_bp.route('/api/workspaces/<ws_id>/members', methods=['GET'])
+@login_required
+def api_list_members(ws_id):
+    """List all members of a workspace."""
+    db = _db()
+    if not db:
+        return jsonify([])
+    try:
+        res = db.table('gitmem_workspace_members').select('*').eq('workspace_id', ws_id).execute()
+        members = res.data or []
+        # Enrich with user profile info
+        user_ids = [m['user_id'] for m in members]
+        if user_ids:
+            profiles_res = db.table('profiles').select('id, email, full_name, avatar_url').in_('id', user_ids).execute()
+            profile_map = {p['id']: p for p in (profiles_res.data or [])}
+            for m in members:
+                profile = profile_map.get(m['user_id'], {})
+                m['email'] = profile.get('email', '')
+                m['full_name'] = profile.get('full_name', '')
+                m['avatar_url'] = profile.get('avatar_url', '')
+        return jsonify(members)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@gitmem_bp.route('/api/workspaces/<ws_id>/members', methods=['POST'])
+@login_required
+def api_invite_member(ws_id):
+    """Invite a user to a workspace by email."""
+    data = request.get_json(silent=True) or {}
+    email = data.get('email', '').strip()
+    role = data.get('role', 'member')
+    if not email:
+        return jsonify({'error': 'email is required'}), 400
+    if role not in ('admin', 'member', 'viewer'):
+        return jsonify({'error': 'role must be admin, member, or viewer'}), 400
+    db = _db()
+    if not db:
+        return jsonify({'error': 'database unavailable'}), 503
+    try:
+        from datetime import datetime
+        # Find user by email
+        user_res = db.table('profiles').select('id, email, full_name').eq('email', email).limit(1).execute()
+        if not user_res.data:
+            return jsonify({'error': f'No user found with email {email}'}), 404
+        target_user = user_res.data[0]
+        # Check not already a member
+        existing = db.table('gitmem_workspace_members').select('user_id').eq('workspace_id', ws_id).eq('user_id', target_user['id']).execute()
+        if existing.data:
+            return jsonify({'error': 'User is already a member of this workspace'}), 409
+        # Add member
+        db.table('gitmem_workspace_members').insert({
+            'workspace_id': ws_id,
+            'user_id': target_user['id'],
+            'role': role,
+            'invited_by': current_user.get_id(),
+            'joined_at': datetime.utcnow().isoformat(),
+        }).execute()
+        return jsonify({'ok': True, 'user_id': target_user['id'], 'email': email, 'role': role}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@gitmem_bp.route('/api/workspaces/<ws_id>/members/<user_id>', methods=['PUT'])
+@login_required
+def api_update_member_role(ws_id, user_id):
+    """Update a workspace member's role."""
+    data = request.get_json(silent=True) or {}
+    role = data.get('role', '')
+    if role not in ('admin', 'member', 'viewer'):
+        return jsonify({'error': 'role must be admin, member, or viewer'}), 400
+    db = _db()
+    if not db:
+        return jsonify({'error': 'database unavailable'}), 503
+    try:
+        db.table('gitmem_workspace_members').update({'role': role}).eq('workspace_id', ws_id).eq('user_id', user_id).execute()
+        return jsonify({'ok': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@gitmem_bp.route('/api/workspaces/<ws_id>/members/<user_id>', methods=['DELETE'])
+@login_required
+def api_remove_member(ws_id, user_id):
+    """Remove a member from a workspace."""
+    db = _db()
+    if not db:
+        return jsonify({'error': 'database unavailable'}), 503
+    try:
+        db.table('gitmem_workspace_members').delete().eq('workspace_id', ws_id).eq('user_id', user_id).execute()
+        return jsonify({'ok': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# REPOSITORY COLLABORATORS
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@gitmem_bp.route('/api/agent/<agent_id>/collaborators', methods=['GET'])
+@login_required
+def api_list_collaborators(agent_id):
+    """List collaborators for a repository (agent)."""
+    db = _db()
+    if not db:
+        return jsonify([])
+    try:
+        res = db.table('gitmem_collaborators').select('*').eq('repo_id', agent_id).execute()
+        collabs = res.data or []
+        # Enrich with profile info
+        user_ids = [c['user_id'] for c in collabs]
+        if user_ids:
+            profiles_res = db.table('profiles').select('id, email, full_name, avatar_url').in_('id', user_ids).execute()
+            profile_map = {p['id']: p for p in (profiles_res.data or [])}
+            for c in collabs:
+                profile = profile_map.get(c['user_id'], {})
+                c['email'] = profile.get('email', '')
+                c['full_name'] = profile.get('full_name', '')
+                c['avatar_url'] = profile.get('avatar_url', '')
+        return jsonify(collabs)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@gitmem_bp.route('/api/agent/<agent_id>/collaborators', methods=['POST'])
+@login_required
+def api_add_collaborator(agent_id):
+    """Add a collaborator to a repository by email."""
+    data = request.get_json(silent=True) or {}
+    email = data.get('email', '').strip()
+    role = data.get('role', 'reader')
+    if not email:
+        return jsonify({'error': 'email is required'}), 400
+    if role not in ('admin', 'writer', 'reader'):
+        return jsonify({'error': 'role must be admin, writer, or reader'}), 400
+    db = _db()
+    if not db:
+        return jsonify({'error': 'database unavailable'}), 503
+    try:
+        from datetime import datetime
+        # Find user
+        user_res = db.table('profiles').select('id, email, full_name').eq('email', email).limit(1).execute()
+        if not user_res.data:
+            return jsonify({'error': f'No user found with email {email}'}), 404
+        target_user = user_res.data[0]
+        # Check not already added
+        existing = db.table('gitmem_collaborators').select('user_id').eq('repo_id', agent_id).eq('user_id', target_user['id']).execute()
+        if existing.data:
+            return jsonify({'error': 'User is already a collaborator on this repo'}), 409
+        db.table('gitmem_collaborators').insert({
+            'repo_id': agent_id,
+            'user_id': target_user['id'],
+            'role': role,
+            'added_by': current_user.get_id(),
+            'accepted': True,
+            'created_at': datetime.utcnow().isoformat(),
+        }).execute()
+        return jsonify({'ok': True, 'user_id': target_user['id'], 'email': email, 'role': role}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@gitmem_bp.route('/api/agent/<agent_id>/collaborators/<user_id>', methods=['PUT'])
+@login_required
+def api_update_collaborator_role(agent_id, user_id):
+    """Update a collaborator's role on a repository."""
+    data = request.get_json(silent=True) or {}
+    role = data.get('role', '')
+    if role not in ('admin', 'writer', 'reader'):
+        return jsonify({'error': 'role must be admin, writer, or reader'}), 400
+    db = _db()
+    if not db:
+        return jsonify({'error': 'database unavailable'}), 503
+    try:
+        db.table('gitmem_collaborators').update({'role': role}).eq('repo_id', agent_id).eq('user_id', user_id).execute()
+        return jsonify({'ok': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@gitmem_bp.route('/api/agent/<agent_id>/collaborators/<user_id>', methods=['DELETE'])
+@login_required
+def api_remove_collaborator(agent_id, user_id):
+    """Remove a collaborator from a repository."""
+    db = _db()
+    if not db:
+        return jsonify({'error': 'database unavailable'}), 503
+    try:
+        db.table('gitmem_collaborators').delete().eq('repo_id', agent_id).eq('user_id', user_id).execute()
+        return jsonify({'ok': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# USER SEARCH
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@gitmem_bp.route('/api/users/search', methods=['GET'])
+@login_required
+def api_search_users():
+    """Search users by email or name for invite flows."""
+    q = request.args.get('q', '').strip()
+    if len(q) < 2:
+        return jsonify([])
+    db = _db()
+    if not db:
+        return jsonify([])
+    try:
+        res = db.table('profiles').select('id, email, full_name, avatar_url').or_(f"email.ilike.%{q}%,full_name.ilike.%{q}%").limit(8).execute()
+        return jsonify(res.data or [])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
