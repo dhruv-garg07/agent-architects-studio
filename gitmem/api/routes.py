@@ -782,6 +782,7 @@ def api_add_memory():
 
         return jsonify({"status": "success", "id": mem.id})
     except Exception as e:
+        print(f"[GitMem] Memory insert failed: {e}")
         return jsonify({"status": "error", "error": str(e)}), 500
 
 
