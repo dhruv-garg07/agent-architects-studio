@@ -1938,16 +1938,13 @@ table thead {
       let hasVisibleCategories = false;
       
       state.docs.categories.forEach(category => {
-        // Skip if category doesn't match active filters
-        if (state.activeFilters.size > 0 && !state.activeFilters.has('all')) {
-          if (!state.activeFilters.has(category.name)) {
-            return;
-          }
-        }
-        
-        hasVisibleCategories = true;
+        // Let createCategoryElement + filterEndpoint handle all filtering
+        // (categories with no matching endpoints return an empty fragment)
         const categoryEl = createCategoryElement(category);
-        categoriesContainer.appendChild(categoryEl);
+        if (categoryEl.childNodes.length > 0) {
+          hasVisibleCategories = true;
+          categoriesContainer.appendChild(categoryEl);
+        }
       });
       
       if (!hasVisibleCategories) {
