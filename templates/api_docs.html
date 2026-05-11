@@ -55,6 +55,7 @@
           class="apikey-input"
           spellcheck="false"
           autocomplete="off"
+          {% if demo_api_key %}value="{{ demo_api_key }}"{% endif %}
         >
         <span id="apikey-status" class="apikey-status"></span>
       </div>
@@ -1535,7 +1536,7 @@ table thead {
       activeFilters: new Set(['all']),
       searchQuery: '',
       selectedLanguage: config.defaultLanguage,
-      apiKey: localStorage.getItem('api_docs_key') || ''
+      apiKey: localStorage.getItem('api_docs_key') || (document.getElementById('global-apikey') ? document.getElementById('global-apikey').value : '') || ''
     };
 
     // Initialize

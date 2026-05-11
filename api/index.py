@@ -1756,7 +1756,9 @@ def api_docs():
         print('[STARTUP] Could not load static/index.json:', e)
 
     # Pass serialized JSON (or null) to the template. The template will use this as INITIAL_DOCS.
-    return render_template('api_docs.html', docs_json=json.dumps(docs_json) if docs_json is not None else None)
+    # Provide a demo API key so users can try endpoints immediately
+    demo_key = os.getenv('MANHATTAN_API_KEY_TEST', '')
+    return render_template('api_docs.html', docs_json=json.dumps(docs_json) if docs_json is not None else None, demo_api_key=demo_key)
 
 
 # MCP SSE endpoint is now handled by the mcp_bp blueprint registered above
