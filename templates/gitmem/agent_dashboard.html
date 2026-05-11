@@ -671,34 +671,42 @@
                 ctx.fill();
             })
 
-            // ── Links: semantic = bright, cluster = faint ──
-            .linkColor(l => {
-                const dim = highlightLinks.size > 0 && !highlightLinks.has(l);
-                if (dim) return 'rgba(40,40,50,0.08)';
-                if (l.type === 'semantic')   return `rgba(139,92,246,${0.15 + (l.strength || 0.5) * 0.4})`;
-                if (l.type === 'tag')        return 'rgba(99,102,241,0.25)';
-                if (l.type === 'provenance') return 'rgba(59,130,246,0.35)';
-                if (l.type === 'related')    return 'rgba(236,72,153,0.3)';
-                return 'rgba(255,255,255,0.04)';  // cluster edges nearly invisible
-            })
-            .linkWidth(l => {
-                if (highlightLinks.has(l)) return 1.5;
-                if (l.type === 'semantic') return 0.3 + (l.strength || 0.5) * 1.2;
-                if (l.type === 'cluster') return 0.15;
-                return 0.4;
-            })
-            .linkDirectionalParticles(l => (l.type === 'semantic' && (l.strength||0) > 0.7) ? 2 : l.type === 'provenance' ? 1 : 0)
-            .linkDirectionalParticleWidth(1.5)
-            .linkDirectionalParticleColor(l => l.type === 'semantic' ? '#a78bfa' : '#60a5fa')
+            // ── Links: custom Canvas paint ──
+            .linkCanvasObject((link, ctx, globalScale) => {
+                const start = link.source;
+                const end = link.target;
+                if (!start || !end || typeof start.x === 'undefined') return;
 
-            // ── Link distance: semantic strength → proximity ──
-            .linkDistance(l => {
-                if (l.type === 'semantic') return 30 + (1 - (l.strength || 0.5)) * 120;
-                if (l.type === 'tag')      return 60;
-                if (l.type === 'provenance') return 50;
-                if (l.type === 'cluster')  return 150;
-                return 80;
+                const isHL = highlightLinks.size > 0;
+                const lit = highlightLinks.has(link);
+                const t = link.type || 'cluster';
+                const str = link.strength || 0.5;
+
+                // Color + width by type
+                let alpha, color, width;
+                if (isHL && !lit) {
+                    alpha = 0.04; color = '50,50,60'; width = 0.2;
+                } else if (t === 'semantic') {
+                    alpha = 0.15 + str * 0.45; color = '139,92,246'; width = 0.4 + str * 1.5;
+                } else if (t === 'tag') {
+                    alpha = 0.25; color = '99,102,241'; width = 0.6;
+                } else if (t === 'provenance') {
+                    alpha = 0.35; color = '59,130,246'; width = 0.7;
+                } else if (t === 'related') {
+                    alpha = 0.3; color = '236,72,153'; width = 0.5;
+                } else {
+                    alpha = 0.03; color = '255,255,255'; width = 0.15;
+                }
+
+                ctx.beginPath();
+                ctx.moveTo(start.x, start.y);
+                ctx.lineTo(end.x, end.y);
+                ctx.strokeStyle = `rgba(${color},${alpha})`;
+                ctx.lineWidth = width / globalScale;
+                ctx.stroke();
             })
+            .linkCanvasObjectMode(() => 'replace')
+
             .d3AlphaDecay(0.025)
             .d3VelocityDecay(0.35)
             .warmupTicks(80)
@@ -725,6 +733,26 @@
             })
             .onNodeClick(node => { if (node) showDetail(node); })
             .onBackgroundClick(() => { document.getElementById('node-detail').classList.add('hidden'); });
+
+        // Configure link force distance (semantic similarity → proximity)
+        const linkForce = graph.d3Force('link');
+        if (linkForce) {
+            linkForce.distance(l => {
+                const t = l.type || 'cluster';
+                if (t === 'semantic') return 40 + (1 - (l.strength || 0.5)) * 100;
+                if (t === 'tag') return 70;
+                if (t === 'provenance') return 55;
+                if (t === 'cluster') return 160;
+                return 90;
+            }).strength(l => {
+                const t = l.type || 'cluster';
+                if (t === 'semantic') return 0.1 + (l.strength || 0.5) * 0.25;
+                if (t === 'cluster') return 0.015;
+                return 0.08;
+            });
+        }
+        const chargeForce = graph.d3Force('charge');
+        if (chargeForce) chargeForce.strength(-70).distanceMax(350);
 
         // Track mouse for tooltip
         container.addEventListener('mousemove', e => {
