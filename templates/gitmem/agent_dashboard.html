@@ -734,25 +734,31 @@
             .onNodeClick(node => { if (node) showDetail(node); })
             .onBackgroundClick(() => { document.getElementById('node-detail').classList.add('hidden'); });
 
-        // Configure link force distance (semantic similarity → proximity)
+        // Configure forces: tight clusters, nodes close together
         const linkForce = graph.d3Force('link');
         if (linkForce) {
             linkForce.distance(l => {
                 const t = l.type || 'cluster';
-                if (t === 'semantic') return 40 + (1 - (l.strength || 0.5)) * 100;
-                if (t === 'tag') return 70;
-                if (t === 'provenance') return 55;
-                if (t === 'cluster') return 160;
-                return 90;
+                if (t === 'semantic') return 15 + (1 - (l.strength || 0.5)) * 35;
+                if (t === 'tag') return 25;
+                if (t === 'provenance') return 20;
+                if (t === 'cluster') return 40;
+                return 30;
             }).strength(l => {
                 const t = l.type || 'cluster';
-                if (t === 'semantic') return 0.1 + (l.strength || 0.5) * 0.25;
-                if (t === 'cluster') return 0.015;
-                return 0.08;
+                if (t === 'semantic') return 0.3 + (l.strength || 0.5) * 0.5;
+                if (t === 'tag') return 0.4;
+                if (t === 'provenance') return 0.5;
+                if (t === 'cluster') return 0.15;
+                return 0.2;
             });
         }
+        // Weak repulsion so nodes stay compact but don't overlap
         const chargeForce = graph.d3Force('charge');
-        if (chargeForce) chargeForce.strength(-70).distanceMax(350);
+        if (chargeForce) chargeForce.strength(-25).distanceMax(120);
+        // Pull everything toward center so the graph doesn't fly apart
+        const centerForce = graph.d3Force('center');
+        if (centerForce) centerForce.strength(0.05);
 
         // Track mouse for tooltip
         container.addEventListener('mousemove', e => {
