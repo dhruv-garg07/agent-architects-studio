@@ -817,11 +817,27 @@ def api_sync_sources():
 # Knowledge Graph API
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-def _build_graph_data(memories, vectors):
+def _cosine_sim(a, b):
+    """Compute cosine similarity between two float lists. Returns 0-1."""
+    dot = sum(x * y for x, y in zip(a, b))
+    mag_a = sum(x * x for x in a) ** 0.5
+    mag_b = sum(x * x for x in b) ** 0.5
+    if mag_a == 0 or mag_b == 0:
+        return 0.0
+    return dot / (mag_a * mag_b)
+
+
+def _build_graph_data(memories, vectors_with_embeddings):
     """
-    Convert memory dicts + vector dicts into force-graph {nodes, links}.
-    Nodes: memories (by type) + vectors (separate color).
-    Edges: shared tags, provenance, metadata.related_ids, type-clustering.
+    Build a semantically-aware knowledge graph.
+
+    Nodes: memories + vectors, colored by type.
+    Edges (5 kinds):
+      1. semantic — cosine similarity > threshold (strength = similarity score)
+      2. tag      — shared tags between memories
+      3. provenance — parent/source chains
+      4. related  — explicit metadata.related_ids
+      5. cluster  — lightweight type grouping
     """
     TYPE_COLORS = {
         'episodic':   '#3b82f6',
@@ -833,8 +849,9 @@ def _build_graph_data(memories, vectors):
 
     nodes = []
     id_set = set()
-    tag_index = {}   # tag → [node_id, ...]
-    type_index = {}  # type → [node_id, ...]
+    tag_index = {}
+    type_index = {}
+    embeddings = {}  # id → embedding vector (for semantic edges)
 
     # ── Add memory nodes ──────────────────────────────────────────
     for m in memories:
@@ -856,23 +873,23 @@ def _build_graph_data(memories, vectors):
 
         nodes.append({
             'id':         mid,
-            'label':      content[:80].replace('\n', ' '),
+            'label':      content[:100].replace('\n', ' '),
             'group':      mtype,
             'color':      TYPE_COLORS.get(mtype, '#6b7280'),
             'importance': importance,
-            'val':        3 + (importance * 8),
+            'val':        3 + (importance * 10),
             'tags':       tags,
             'created_at': (m.get('created_at') or '')[:10],
         })
 
         for tag in tags:
-            tag_lower = tag.lower().strip()
-            if tag_lower:
-                tag_index.setdefault(tag_lower, []).append(mid)
+            t = tag.lower().strip()
+            if t:
+                tag_index.setdefault(t, []).append(mid)
         type_index.setdefault(mtype, []).append(mid)
 
-    # ── Add vector nodes (from ChromaDB) ──────────────────────────
-    for v in vectors:
+    # ── Add vector nodes (from ChromaDB with embeddings) ──────────
+    for v in vectors_with_embeddings:
         vid = v.get('id', '')
         if not vid or vid in id_set:
             continue
@@ -887,47 +904,73 @@ def _build_graph_data(memories, vectors):
         except (ValueError, TypeError):
             pass
 
-        # Use memory-type color if it matches, else vector amber
         color = TYPE_COLORS.get(vtype, TYPE_COLORS['vector'])
+        group = vtype if vtype in TYPE_COLORS else 'vector'
 
         nodes.append({
             'id':         vid,
-            'label':      content[:80].replace('\n', ' '),
-            'group':      vtype if vtype in TYPE_COLORS else 'vector',
+            'label':      content[:100].replace('\n', ' '),
+            'group':      group,
             'color':      color,
             'importance': importance,
-            'val':        2 + (importance * 6),
+            'val':        2 + (importance * 8),
             'tags':       [],
             'created_at': (meta.get('timestamp') or meta.get('created_at') or '')[:10],
         })
-        type_index.setdefault(vtype if vtype in TYPE_COLORS else 'vector', []).append(vid)
+        type_index.setdefault(group, []).append(vid)
+
+        # Store embedding for semantic edge computation
+        emb = v.get('embedding')
+        if emb and isinstance(emb, list) and len(emb) > 10:
+            embeddings[vid] = emb
 
     # ── Build edges ───────────────────────────────────────────────
     links = []
     seen_edges = set()
 
-    def add_edge(src, tgt, etype, label=''):
+    def add_edge(src, tgt, etype, strength=0.5, label=''):
         key = tuple(sorted([src, tgt]))
         if key not in seen_edges and src != tgt:
             seen_edges.add(key)
-            links.append({'source': src, 'target': tgt, 'type': etype, 'label': label})
+            links.append({
+                'source': src, 'target': tgt,
+                'type': etype, 'strength': round(strength, 3), 'label': label,
+            })
 
-    # 1. Tag-based edges
+    # 1. SEMANTIC SIMILARITY edges (the core feature)
+    #    Compute pairwise cosine similarity for vectors that have embeddings.
+    #    Higher similarity → stronger edge → nodes rendered closer.
+    emb_ids = list(embeddings.keys())
+    SIM_THRESHOLD = 0.55
+    MAX_SEMANTIC_EDGES = 300
+    sem_edge_count = 0
+    for i in range(len(emb_ids)):
+        if sem_edge_count >= MAX_SEMANTIC_EDGES:
+            break
+        for j in range(i + 1, len(emb_ids)):
+            if sem_edge_count >= MAX_SEMANTIC_EDGES:
+                break
+            sim = _cosine_sim(embeddings[emb_ids[i]], embeddings[emb_ids[j]])
+            if sim >= SIM_THRESHOLD:
+                add_edge(emb_ids[i], emb_ids[j], 'semantic', strength=sim)
+                sem_edge_count += 1
+
+    # 2. Tag-based edges
     for tag, mids in tag_index.items():
         if len(mids) > 20:
-            continue  # skip very common tags to avoid hairball
+            continue
         for i in range(len(mids)):
             for j in range(i + 1, len(mids)):
-                add_edge(mids[i], mids[j], 'tag', tag)
+                add_edge(mids[i], mids[j], 'tag', strength=0.6, label=tag)
 
-    # 2. Provenance edges
+    # 3. Provenance edges
     for m in memories:
         mid = m.get('id', '')
         prov = m.get('provenance') or ''
         if prov and prov in id_set:
-            add_edge(prov, mid, 'provenance')
+            add_edge(prov, mid, 'provenance', strength=0.8)
 
-    # 3. metadata.related_ids edges
+    # 4. metadata.related_ids
     for m in memories:
         mid = m.get('id', '')
         meta = m.get('metadata') or {}
@@ -939,25 +982,27 @@ def _build_graph_data(memories, vectors):
                 meta = {}
         for rid in (meta.get('related_ids') or []):
             if isinstance(rid, str) and rid in id_set:
-                add_edge(mid, rid, 'related')
+                add_edge(mid, rid, 'related', strength=0.7)
 
-    # 4. Type-clustering edges (connect first few of same type to form clusters)
+    # 5. Type-clustering (light gravity toward type hub)
     for mtype, mids in type_index.items():
         if len(mids) >= 2:
-            # Star topology: connect all to first node of the type (lightweight)
             hub = mids[0]
-            for m in mids[1:min(len(mids), 15)]:
-                add_edge(hub, m, 'cluster')
+            for m in mids[1:min(len(mids), 12)]:
+                add_edge(hub, m, 'cluster', strength=0.2)
 
-    return {'nodes': nodes, 'links': links}
+    # Stats for the frontend
+    type_counts = {k: len(v) for k, v in type_index.items()}
+
+    return {'nodes': nodes, 'links': links, 'stats': type_counts}
 
 
 @gitmem_bp.route('/api/agent/<agent_id>/graph')
 @login_required
 def api_agent_graph(agent_id):
-    """Return knowledge graph data (nodes + edges) for force-graph visualization."""
+    """Return semantically-aware knowledge graph for force-graph visualization."""
     if not _get_agent(agent_id, user_id=current_user.get_id()):
-        return jsonify({"nodes": [], "links": [], "error": "Access denied"}), 200
+        return jsonify({"nodes": [], "links": [], "stats": {}}), 200
 
     # 1. Fetch memories from Supabase
     memories = []
@@ -973,12 +1018,38 @@ def api_agent_graph(agent_id):
         except Exception as e:
             print(f"[Graph] Memory fetch error: {e}")
 
-    # 2. Fetch vectors from ChromaDB
+    # 2. Fetch vectors WITH embeddings from ChromaDB (for semantic similarity)
     vectors = []
     try:
-        vectors = gitmem_app.vector_engine.get_agent_vectors(agent_id, limit=100)
+        ve = gitmem_app.vector_engine
+        if ve and ve.client:
+            target = ve.collection
+            if ve.is_cloud:
+                try:
+                    target = ve.client.get_collection(name=agent_id)
+                except Exception:
+                    pass
+            if target:
+                results = target.get(
+                    where={"agent_id": agent_id} if target == ve.collection else None,
+                    limit=150,
+                    include=["documents", "metadatas", "embeddings"]
+                )
+                if results and results.get('ids'):
+                    for i, vid in enumerate(results['ids']):
+                        vectors.append({
+                            'id': vid,
+                            'content': (results.get('documents') or [])[i] if results.get('documents') and len(results['documents']) > i else '',
+                            'metadata': (results.get('metadatas') or [])[i] if results.get('metadatas') and len(results['metadatas']) > i else {},
+                            'embedding': (results.get('embeddings') or [])[i] if results.get('embeddings') and len(results['embeddings']) > i else None,
+                        })
     except Exception as e:
         print(f"[Graph] Vector fetch error: {e}")
+        # Fallback: try without embeddings
+        try:
+            vectors = gitmem_app.vector_engine.get_agent_vectors(agent_id, limit=100)
+        except Exception:
+            pass
 
     graph = _build_graph_data(memories, vectors)
     return jsonify(graph)
