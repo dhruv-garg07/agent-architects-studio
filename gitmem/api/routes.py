@@ -763,24 +763,33 @@ def api_add_memory():
         return jsonify({"error": "Access denied"}), 403
 
     try:
-        from gitmem.core.models import MemoryItem
         import uuid
-        mem = MemoryItem(
-            id=str(uuid.uuid4()),
-            repo_id=agent_id,
-            workspace_id='default',
-            agent_id=agent_id,
-            type=mtype,
-            content=content,
-            importance=importance,
-            tags=tags,
-        )
-        _db().table('gitmem_memories').insert(mem.model_dump(mode='json', exclude={'embedding'})).execute()
+        mem_id = str(uuid.uuid4())
+
+        # Insert only V1 schema columns (gitmem_memories table)
+        row = {
+            'id': mem_id,
+            'agent_id': agent_id,
+            'type': mtype,
+            'content': content,
+            'importance': importance,
+            'tags': tags if isinstance(tags, list) else [],
+            'scope': 'private',
+            'metadata': {},
+        }
+        _db().table('gitmem_memories').insert(row).execute()
 
         # Also index in vector store
-        gitmem_app.vector_engine.add_memory(mem)
+        try:
+            gitmem_app.vector_engine.add_texts(
+                texts=[content],
+                metadatas=[{'agent_id': agent_id, 'memory_type': mtype, 'importance': importance}],
+                ids=[mem_id]
+            )
+        except Exception:
+            pass  # Vector indexing is best-effort
 
-        return jsonify({"status": "success", "id": mem.id})
+        return jsonify({"status": "success", "id": mem_id})
     except Exception as e:
         return jsonify({"status": "error", "error": str(e)}), 500
 
