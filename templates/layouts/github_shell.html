@@ -44,11 +44,13 @@
                     class="gh-nav-pill flex items-center gap-1 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
                     {% set nav_items = [
                     ('code', 'code-2', 'Code', 'gitmem.agent_dashboard' if agent else 'gitmem.landing'),
+                    ('commits', 'git-commit', 'Commits', 'gitmem.agent_commits'),
                     ('issues', 'circle-dot', 'Issues', 'gitmem.issues'),
                     ('pulls', 'git-pull-request', 'Pulls', 'gitmem.pulls'),
+                    ('settings', 'settings', 'Settings', 'gitmem.settings'),
                     ] %}
 
-                    {% set repo_routes = ['gitmem.agent_dashboard', 'gitmem.issues', 'gitmem.pulls', 'gitmem.actions',
+                    {% set repo_routes = ['gitmem.agent_dashboard', 'gitmem.agent_commits', 'gitmem.issues', 'gitmem.pulls', 'gitmem.actions',
                     'gitmem.projects', 'gitmem.insights', 'gitmem.settings'] %}
 
                     {% for id, icon, label, route in nav_items %}
