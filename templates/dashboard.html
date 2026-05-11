@@ -649,6 +649,7 @@
             document.getElementById('agent-slug').value = '';
             document.getElementById('agent-description').value = '';
             document.getElementById('modal-title').textContent = 'Create New Agent';
+            document.getElementById('delete-agent-btn').classList.add('hidden');
             toggleModal(agentModal, true);
         });
 
@@ -715,6 +716,7 @@
                         document.getElementById('agent-slug').value = agent.agent_slug;
                         document.getElementById('agent-description').value = agent.description;
                         document.getElementById('modal-title').textContent = 'Edit Agent';
+                        document.getElementById('delete-agent-btn').classList.remove('hidden');
                         toggleModal(agentModal, true);
                     });
 
@@ -760,6 +762,34 @@
         }
 
         if (refreshAgentsBtn) refreshAgentsBtn.addEventListener('click', loadAgents);
+        
+        // Agent Delete Handler
+        const deleteAgentBtn = document.getElementById('delete-agent-btn');
+        if (deleteAgentBtn) {
+            deleteAgentBtn.addEventListener('click', async () => {
+                const id = document.getElementById('agent-id').value;
+                if (!id) return;
+                
+                if (confirm('Are you sure you want to permanently delete this agent and all its associated data? This action cannot be undone.')) {
+                    try {
+                        const res = await fetch(`/dashboard/delete/${id}`, {
+                            method: 'DELETE',
+                            credentials: 'same-origin'
+                        });
+                        const data = await res.json();
+                        if (res.ok) {
+                            toggleModal(agentModal, false);
+                            loadAgents();
+                        } else {
+                            alert("Failed to delete agent: " + (data.message || 'Unknown error'));
+                        }
+                    } catch (e) {
+                        console.error(e);
+                        alert("An error occurred while deleting the agent.");
+                    }
+                }
+            });
+        }
 
         // Initial Load
         loadAgents();
@@ -805,19 +835,33 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">${key.name}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400 font-mono">${key.masked_key}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${key.expiration || 'Never'}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400 text-center">Active</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400 text-center">
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${key.status === 'active' ? 'bg-green-500/10 text-green-500' : 'bg-yellow-500/10 text-yellow-500'}">
+                                ${key.status || 'Active'}
+                            </span>
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-right">
-                             <button class="text-red-400 hover:text-red-300 delete-key-btn" data-id="${key.id}">
+                             <button class="text-red-400 hover:text-red-300 delete-key-btn p-2 hover:bg-red-500/10 rounded-lg transition-all" data-id="${key.id}" title="Revoke Key">
                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
                             </button>
                         </td>
                     `;
                     // Delete handler
                     row.querySelector('.delete-key-btn').addEventListener('click', async function () {
-                        if (confirm('Revoke this API Key?')) {
-                            const id = this.getAttribute('data-id');
-                            await fetch(`/api/keys/${id}`, { method: 'DELETE', credentials: 'same-origin' });
-                            loadApiKeys();
+                        if (confirm('Are you sure you want to revoke this API key? It will be immediately deactivated.')) {
+                            try {
+                                const id = this.getAttribute('data-id');
+                                const res = await fetch(`/api/keys/${id}`, { method: 'DELETE', credentials: 'same-origin' });
+                                if (res.ok) {
+                                    loadApiKeys();
+                                } else {
+                                    const err = await res.json();
+                                    alert("Failed to revoke key: " + (err.error || 'Unknown error'));
+                                }
+                            } catch (e) {
+                                console.error(e);
+                                alert("An error occurred while revoking the key.");
+                            }
                         }
                     });
 

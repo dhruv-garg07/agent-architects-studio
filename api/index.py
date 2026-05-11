@@ -1137,7 +1137,7 @@ def list_api_keys():
     List API keys for the logged-in user. Returns masked keys only.
     """
     try:
-        resp = supabase.table('api_keys').select('id, name, masked_key, expiration, expires_at, created_at').eq('user_id', current_user.id).order('created_at', desc=True).execute()
+        resp = supabase.table('api_keys').select('id, name, masked_key, expiration, expires_at, created_at, status').eq('user_id', current_user.id).neq('status', 'revoked').order('created_at', desc=True).execute()
         # Supabase client returns a response with .data property
         data = getattr(resp, 'data', None) or (resp.data if hasattr(resp, 'data') else None) or resp
         # Ensure we return an array
