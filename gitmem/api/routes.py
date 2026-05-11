@@ -1130,7 +1130,7 @@ def api_agent_delete(agent_id):
 @gitmem_bp.route('/api/diff')
 @login_required
 def api_diff():
-    """Compare two commits and return diff."""
+    """Compare two commits and return diff with summary matching frontend expectations."""
     sha_from = request.args.get('from', '')
     sha_to = request.args.get('to', '')
     if not sha_from or not sha_to:
@@ -1139,13 +1139,136 @@ def api_diff():
     try:
         diff = gitmem_app.vcs.diff_engine.diff_commits(sha_from, sha_to)
         stats = gitmem_app.vcs.diff_engine.compute_stats(diff)
+        stats_dict = stats.model_dump() if hasattr(stats, 'model_dump') else {"added": 0, "modified": 0, "deleted": 0}
+        diff_dict = diff if isinstance(diff, dict) else {"added": [], "modified": [], "deleted": []}
+        # Return shape the frontend diff_viewer.html expects
         return jsonify({
             "status": "success",
-            "diff": diff if isinstance(diff, dict) else {"changes": str(diff)},
-            "stats": stats.model_dump() if hasattr(stats, 'model_dump') else {"added": 0, "modified": 0, "deleted": 0}
+            "diff": {
+                "summary": {"added": stats_dict.get("added", 0), "removed": stats_dict.get("deleted", 0), "modified": stats_dict.get("modified", 0)},
+                "added": diff_dict.get("added", []),
+                "modified": diff_dict.get("modified", []),
+                "removed": diff_dict.get("deleted", []),
+            },
+            "stats": stats_dict
         })
     except Exception as e:
         return jsonify({"status": "error", "error": str(e)}), 500
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# VCS OPERATIONS — Branch, Merge, Rollback
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@gitmem_bp.route('/api/agent/<agent_id>/branches', methods=['GET'])
+@login_required
+def api_list_branches(agent_id):
+    """List all branches for an agent/repo."""
+    db = _db()
+    if not db:
+        return jsonify([])
+    try:
+        res = db.table('gitmem_refs').select('*').eq('repo_id', agent_id).eq('ref_type', 'branch').execute()
+        return jsonify(res.data or [])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@gitmem_bp.route('/api/agent/<agent_id>/branches', methods=['POST'])
+@login_required
+def api_create_branch(agent_id):
+    """Create a new branch from an existing branch or commit hash."""
+    if not _get_agent(agent_id, user_id=current_user.get_id()):
+        return jsonify({"error": "Access denied"}), 403
+    data = request.get_json(silent=True) or {}
+    branch_name = data.get('name', '').strip()
+    source = data.get('source', 'main')  # branch name or commit hash
+    if not branch_name:
+        return jsonify({"error": "Branch name is required"}), 400
+    # Sanitize
+    branch_name = re.sub(r'[^a-zA-Z0-9._/-]', '', branch_name)
+    if not branch_name:
+        return jsonify({"error": "Invalid branch name"}), 400
+    try:
+        result = gitmem_app.vcs.branch(
+            repo_id=agent_id,
+            branch_name=branch_name,
+            target_branch_or_hash=source,
+            actor_id=current_user.get_id()
+        )
+        return jsonify({"ok": True, "branch": branch_name, "created": bool(result)}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@gitmem_bp.route('/api/agent/<agent_id>/branches/<branch_name>', methods=['DELETE'])
+@login_required
+def api_delete_branch(agent_id, branch_name):
+    """Delete a branch (cannot delete 'main')."""
+    if not _get_agent(agent_id, user_id=current_user.get_id()):
+        return jsonify({"error": "Access denied"}), 403
+    if branch_name == 'main':
+        return jsonify({"error": "Cannot delete the main branch"}), 400
+    try:
+        result = gitmem_app.vcs.branch_manager.delete_branch(
+            repo_id=agent_id, branch_name=branch_name, actor_id=current_user.get_id()
+        )
+        return jsonify({"ok": True, "deleted": bool(result)})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@gitmem_bp.route('/api/agent/<agent_id>/merge', methods=['POST'])
+@login_required
+def api_merge_branches(agent_id):
+    """Merge source branch into target branch."""
+    if not _get_agent(agent_id, user_id=current_user.get_id()):
+        return jsonify({"error": "Access denied"}), 403
+    data = request.get_json(silent=True) or {}
+    target = data.get('target', 'main')
+    source = data.get('source', '')
+    policy = data.get('policy', 'last_write_wins')
+    if not source:
+        return jsonify({"error": "source branch is required"}), 400
+    try:
+        from gitmem.core.models import MergePolicy
+        policy_enum = MergePolicy(policy)
+        result = gitmem_app.vcs.merge(
+            repo_id=agent_id,
+            target_branch=target,
+            source_branch=source,
+            actor_id=current_user.get_id(),
+            workspace_id='default',
+            policy=policy_enum
+        )
+        if result.get('status') == 'error':
+            return jsonify({"error": result.get('error', 'Merge failed')}), 400
+        return jsonify({"ok": True, "commit_hash": result.get('commit_hash', '')})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@gitmem_bp.route('/api/agent/<agent_id>/rollback', methods=['POST'])
+@login_required
+def api_rollback(agent_id):
+    """Rollback a branch to a specific commit hash."""
+    if not _get_agent(agent_id, user_id=current_user.get_id()):
+        return jsonify({"error": "Access denied"}), 403
+    data = request.get_json(silent=True) or {}
+    branch = data.get('branch', 'main')
+    target_hash = data.get('target_hash', '')
+    if not target_hash:
+        return jsonify({"error": "target_hash is required"}), 400
+    try:
+        result = gitmem_app.vcs.rollback(
+            repo_id=agent_id,
+            branch_name=branch,
+            target_hash=target_hash,
+            actor_id=current_user.get_id()
+        )
+        return jsonify({"ok": True, "rolled_back": bool(result), "branch": branch, "target": target_hash})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

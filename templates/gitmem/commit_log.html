@@ -43,21 +43,27 @@
                 </div>
 
                 <!-- Actions Toolbar -->
-                <div class="flex items-center gap-3 w-full md:w-auto">
-                    <div class="relative group">
-                        <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                            <i data-lucide="git-branch" class="w-4 h-4 text-gray-400"></i>
-                        </div>
-                        <select onchange="handleBranchChange(this.value)"
-                            class="appearance-none bg-white/5 border border-white/10 hover:border-violet-500/50 text-gray-200 text-sm rounded-xl pl-10 pr-8 py-2.5 focus:ring-1 focus:ring-violet-500 focus:outline-none cursor-pointer transition-all min-w-[140px]">
+                <div class="flex items-center gap-2 w-full md:w-auto flex-wrap">
+                    <!-- Branch Selector -->
+                    <div class="relative">
+                        <select id="branch-select" onchange="handleBranchChange(this.value)"
+                            class="appearance-none bg-white/5 border border-white/10 text-gray-200 text-sm rounded-lg pl-3 pr-8 py-2 focus:ring-1 focus:ring-violet-500 focus:outline-none cursor-pointer min-w-[120px]">
                             <option value="main">main</option>
                             {% for branch in branches %}
                             {% if branch != 'main' %}<option value="{{ branch }}">{{ branch }}</option>{% endif %}
                             {% endfor %}
                         </select>
-                        <i data-lucide="chevron-down"
-                            class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none"></i>
                     </div>
+                    <!-- New Branch -->
+                    <button onclick="showNewBranchModal()" class="px-3 py-2 bg-white/5 border border-white/10 text-gray-300 text-sm rounded-lg hover:bg-white/10 transition-colors flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        Branch
+                    </button>
+                    <!-- Compare -->
+                    <a href="{{ url_for('gitmem.agent_diffs', agent_id=agent.id) }}" class="px-3 py-2 bg-white/5 border border-white/10 text-gray-300 text-sm rounded-lg hover:bg-white/10 transition-colors flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        Compare
+                    </a>
                 </div>
             </div>
         </div>
@@ -139,10 +145,16 @@
                                 commit.author_id or 'system' }}</span>
                         </div>
                     </div>
-                    <button
-                        class="p-2 rounded-lg bg-white/5 border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/10">
-                        <i data-lucide="copy" class="w-4 h-4 text-gray-400"></i>
-                    </button>
+                    <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onclick="copyHash('{{ commit.hash }}')" title="Copy hash"
+                            class="p-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10">
+                            <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                        </button>
+                        <button onclick="rollbackTo('{{ commit.hash }}')" title="Rollback to this commit"
+                            class="p-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-red-500/10 hover:border-red-500/30">
+                            <svg class="w-3.5 h-3.5 text-gray-400 hover:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+                        </button>
+                    </div>
                 </div>
                 {% else %}
                 <div class="py-20 text-center">
@@ -158,12 +170,82 @@
     </div>
 </div>
 
+<!-- New Branch Modal -->
+<div id="new-branch-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div class="bg-[#1a1a2e] border border-white/10 rounded-xl p-6 w-full max-w-sm shadow-2xl">
+        <h3 class="text-lg font-semibold text-white mb-4">Create Branch</h3>
+        <div class="space-y-3">
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Branch name</label>
+                <input type="text" id="new-branch-name" placeholder="feature/my-branch"
+                    class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm font-mono focus:outline-none focus:ring-2 focus:ring-violet-500/50">
+            </div>
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Branch from</label>
+                <select id="new-branch-source" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm">
+                    <option value="main">main</option>
+                    {% for branch in branches %}
+                    {% if branch != 'main' %}<option value="{{ branch }}">{{ branch }}</option>{% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="document.getElementById('new-branch-modal').classList.add('hidden')" class="px-4 py-2 text-gray-400 text-sm hover:text-white">Cancel</button>
+                <button onclick="createBranch()" id="create-branch-btn" class="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg">Create</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+    const agentId = "{{ agent.id }}";
+
     function handleBranchChange(branch) {
-        // Reload page with branch filter
         const url = new URL(window.location);
         url.searchParams.set('branch', branch);
         window.location.href = url.toString();
+    }
+
+    function showNewBranchModal() {
+        document.getElementById('new-branch-name').value = '';
+        document.getElementById('new-branch-modal').classList.remove('hidden');
+    }
+
+    async function createBranch() {
+        const name = document.getElementById('new-branch-name').value.trim();
+        const source = document.getElementById('new-branch-source').value;
+        if (!name) return;
+        const btn = document.getElementById('create-branch-btn');
+        btn.disabled = true; btn.textContent = 'Creating...';
+        try {
+            const res = await fetch(`/gitmem/api/agent/${agentId}/branches`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name, source})
+            });
+            const data = await res.json();
+            if (res.ok) { window.location.reload(); }
+            else { alert(data.error || 'Failed to create branch'); }
+        } finally { btn.disabled = false; btn.textContent = 'Create'; }
+    }
+
+    async function rollbackTo(hash) {
+        const branch = document.getElementById('branch-select').value;
+        if (!confirm(`Rollback "${branch}" to commit ${hash.slice(0,7)}? This will move the branch pointer back.`)) return;
+        try {
+            const res = await fetch(`/gitmem/api/agent/${agentId}/rollback`, {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({branch, target_hash: hash})
+            });
+            const data = await res.json();
+            if (res.ok) { alert('Rollback successful.'); window.location.reload(); }
+            else { alert(data.error || 'Rollback failed'); }
+        } catch (e) { alert('Rollback failed: ' + e.message); }
+    }
+
+    function copyHash(hash) {
+        navigator.clipboard.writeText(hash).then(() => {
+            // Brief visual feedback could go here
+        });
     }
 </script>
 {% endblock %}
