@@ -51,11 +51,11 @@
         <input
           type="text"
           id="global-apikey"
-          placeholder="Paste your API key here — it auto-fills into code samples & Try It"
+          placeholder="{% if user_masked_key %}Your latest key: {{ user_masked_key }} — full key auto-loaded{% else %}Paste your API key here — auto-fills code samples & Try It{% endif %}"
           class="apikey-input"
           spellcheck="false"
           autocomplete="off"
-          {% if demo_api_key %}value="{{ demo_api_key }}"{% endif %}
+          {% if demo_api_key %}data-demo-key="{{ demo_api_key }}"{% endif %}
         >
         <span id="apikey-status" class="apikey-status"></span>
       </div>
@@ -1461,7 +1461,7 @@ table thead {
       activeFilters: new Set(['all']),
       searchQuery: '',
       selectedLanguage: config.defaultLanguage,
-      apiKey: localStorage.getItem('api_docs_key') || (document.getElementById('global-apikey') ? document.getElementById('global-apikey').value : '') || ''
+      apiKey: localStorage.getItem('api_docs_key') || (document.getElementById('global-apikey') ? document.getElementById('global-apikey').dataset.demoKey : '') || ''
     };
 
     // Initialize
@@ -1867,10 +1867,10 @@ table thead {
       const globalApiKeyInput = document.getElementById('global-apikey');
       const apiKeyStatus = document.getElementById('apikey-status');
       if (globalApiKeyInput) {
-        // Restore saved key
+        // Restore saved key (localStorage has priority over demo key)
         if (state.apiKey) {
           globalApiKeyInput.value = state.apiKey;
-          apiKeyStatus.textContent = 'Saved';
+          apiKeyStatus.textContent = 'Ready';
         }
         globalApiKeyInput.addEventListener('input', debounce(function(e) {
           state.apiKey = e.target.value.trim();

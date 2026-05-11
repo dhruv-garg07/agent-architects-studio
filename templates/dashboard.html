@@ -894,6 +894,9 @@
                         // Show the secret key
                         document.getElementById('show-key-value').textContent = data.key;
                         toggleModal(showKeyModal, true);
+
+                        // Persist key so API Docs page can auto-fill it
+                        try { localStorage.setItem('api_docs_key', data.key); } catch(e) {}
                     } else {
                         alert("Failed to create key");
                     }

@@ -1756,9 +1756,18 @@ def api_docs():
         print('[STARTUP] Could not load static/index.json:', e)
 
     # Pass serialized JSON (or null) to the template. The template will use this as INITIAL_DOCS.
-    # Provide a demo API key so users can try endpoints immediately
+    # Try to get the logged-in user's latest active API key (masked) as a hint
     demo_key = os.getenv('MANHATTAN_API_KEY_TEST', '')
-    return render_template('api_docs.html', docs_json=json.dumps(docs_json) if docs_json is not None else None, demo_api_key=demo_key)
+    user_masked_key = ''
+    if current_user.is_authenticated:
+        try:
+            resp = supabase_backend.table('api_keys').select('masked_key').eq('user_id', current_user.id).eq('status', 'active').order('created_at', desc=True).limit(1).execute()
+            rows = getattr(resp, 'data', None) or []
+            if rows:
+                user_masked_key = rows[0].get('masked_key', '')
+        except Exception:
+            pass
+    return render_template('api_docs.html', docs_json=json.dumps(docs_json) if docs_json is not None else None, demo_api_key=demo_key, user_masked_key=user_masked_key)
 
 
 # MCP SSE endpoint is now handled by the mcp_bp blueprint registered above
