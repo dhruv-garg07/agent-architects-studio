@@ -1,0 +1,1103 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Agent Architects Studio API",
+    "description": "OpenAPI specification for the Agent Architects Studio platform, enabling complete management of AI agents, document stores, long-term memory, and multi-agent workflows.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "API Support",
+      "url": "https://themanhattanproject.ai"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://themanhattanproject.ai",
+      "description": "Production Server"
+    },
+    {
+      "url": "http://localhost:1078",
+      "description": "Local Development Server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Enter your API key as a Bearer token in the Authorization header. Example: Bearer sk-..."
+      }
+    }
+  },
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "paths": {
+    "/create_agent": {
+      "post": {
+        "tags": ["Agents"],
+        "summary": "Create agent",
+        "description": "Create a new isolated AI assistant agent with separate knowledge and memory.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["agent_name", "agent_slug"],
+                "properties": {
+                  "agent_name": {
+                    "type": "string",
+                    "example": "Customer Support Assistant"
+                  },
+                  "agent_slug": {
+                    "type": "string",
+                    "example": "support-agent-v1"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Handles billing and account support queries."
+                  },
+                  "permissions": {
+                    "type": "object",
+                    "example": { "chat": true, "embeddings": true }
+                  },
+                  "limits": {
+                    "type": "object",
+                    "example": { "rpm": 60, "tpm": 100000 }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Agent successfully created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "agent_id": {
+                      "type": "string",
+                      "example": "ag_9f8e7d6c5b4a3"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/list_agents": {
+      "get": {
+        "tags": ["Agents"],
+        "summary": "List agents",
+        "description": "List all agents available to the authenticated API key account.",
+        "responses": {
+          "200": {
+            "description": "List of agents",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "agents": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/get_agent": {
+      "get": {
+        "tags": ["Agents"],
+        "summary": "Get agent by ID",
+        "description": "Retrieve configuration and metadata for a single agent by its unique ID.",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "ag_9f8e7d6c5b4a3"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agent details retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "agent": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/update_agent": {
+      "post": {
+        "tags": ["Agents"],
+        "summary": "Update agent details",
+        "description": "Modify configurable parameters of an existing agent.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["agent_id", "updates"],
+                "properties": {
+                  "agent_id": {
+                    "type": "string",
+                    "example": "ag_9f8e7d6c5b4a3"
+                  },
+                  "updates": {
+                    "type": "object",
+                    "example": {
+                      "description": "Updated description for support assistant."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Agent updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean", "example": true }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/disable_agent": {
+      "post": {
+        "tags": ["Agents"],
+        "summary": "Disable agent",
+        "description": "Temporarily suspend an agent from serving inference traffic.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["agent_id"],
+                "properties": {
+                  "agent_id": { "type": "string", "example": "ag_9f8e7d6c5b4a3" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Agent disabled successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean", "example": true }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/enable_agent": {
+      "post": {
+        "tags": ["Agents"],
+        "summary": "Enable agent",
+        "description": "Re-activate a previously disabled agent.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["agent_id"],
+                "properties": {
+                  "agent_id": { "type": "string", "example": "ag_9f8e7d6c5b4a3" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Agent enabled successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean", "example": true }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/delete_agent": {
+      "post": {
+        "tags": ["Agents"],
+        "summary": "Delete agent",
+        "description": "Permanently erase an agent and its vector storage collections.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["agent_id"],
+                "properties": {
+                  "agent_id": { "type": "string", "example": "ag_9f8e7d6c5b4a3" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Agent permanently deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "agent_deleted" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent_chat": {
+      "post": {
+        "tags": ["Agents"],
+        "summary": "Chat with agent",
+        "description": "Send a conversation message to a specific agent and receive a context-aware LLM reply.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["agent_id", "message"],
+                "properties": {
+                  "agent_id": { "type": "string", "example": "ag_9f8e7d6c5b4a3" },
+                  "message": { "type": "string", "example": "Hello, can you help me check my balance?" },
+                  "options": { "type": "object", "example": { "temperature": 0.7 } }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Agent response generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "reply": { "type": "string", "example": "Certainly! Please provide your account identifier." },
+                    "conversation_id": { "type": "string", "example": "conv_1a2b3c4d5e" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/add_document": {
+      "post": {
+        "tags": ["Documents"],
+        "summary": "Add document to agent",
+        "description": "Chunk, embed, and ingest documents into the agent's vector knowledge database.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["agent_id", "documents", "ids"],
+                "properties": {
+                  "agent_id": { "type": "string", "example": "ag_9f8e7d6c5b4a3" },
+                  "documents": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "example": ["Our return policy allows refunds within 30 days of purchase."]
+                  },
+                  "ids": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "example": ["doc-return-policy-v1"]
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "example": { "category": "Policies", "author": "Admin" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Documents successfully indexed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "documents_added" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/update_document": {
+      "post": {
+        "tags": ["Documents"],
+        "summary": "Update existing document",
+        "description": "Replace content of existing documents in the vector store by ID.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["agent_id", "document_ids", "new_docs"],
+                "properties": {
+                  "agent_id": { "type": "string", "example": "ag_9f8e7d6c5b4a3" },
+                  "document_ids": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "example": ["doc-return-policy-v1"]
+                  },
+                  "new_docs": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "example": ["Updated policy: refunds allowed within 14 days of purchase."]
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "example": { "updated": true }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Document updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "document_updated" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/update_document_metadata": {
+      "post": {
+        "tags": ["Documents"],
+        "summary": "Update document metadata",
+        "description": "Modify metadata tags of a document without re-embedding its text content.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["agent_id", "document_id", "metadata"],
+                "properties": {
+                  "agent_id": { "type": "string", "example": "ag_9f8e7d6c5b4a3" },
+                  "document_id": { "type": "string", "example": "doc-return-policy-v1" },
+                  "metadata": {
+                    "type": "object",
+                    "example": { "status": "archived" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Metadata updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "document_metadata_updated" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/search_documents": {
+      "post": {
+        "tags": ["Documents"],
+        "summary": "Search agent documents",
+        "description": "Perform semantic vector search against an agent's document store.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["agent_id", "query"],
+                "properties": {
+                  "agent_id": { "type": "string", "example": "ag_9f8e7d6c5b4a3" },
+                  "query": { "type": "string", "example": "refund conditions" },
+                  "top_k": { "type": "integer", "example": 5 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Matching document chunks retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": { "type": "object" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/create_memory": {
+      "post": {
+        "tags": ["Memory"],
+        "summary": "Initialize memory system",
+        "description": "Create or initialize the vector DB collection for storing long-term agent memory units.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["agent_id"],
+                "properties": {
+                  "agent_id": { "type": "string", "example": "ag_9f8e7d6c5b4a3" },
+                  "clear_db": { "type": "boolean", "example": false }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Memory system initialized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "memory_system_initialized" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/process_raw": {
+      "post": {
+        "tags": ["Memory"],
+        "summary": "Process raw dialogues",
+        "description": "Extract structured facts, entities, and timestamps from raw conversation text via LLM pipeline.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["agent_id", "dialogues"],
+                "properties": {
+                  "agent_id": { "type": "string", "example": "ag_9f8e7d6c5b4a3" },
+                  "dialogues": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "speaker": { "type": "string", "example": "User" },
+                        "content": { "type": "string", "example": "I live in Seattle and love hiking." },
+                        "timestamp": { "type": "string", "example": "2026-05-12T10:00:00Z" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Dialogues successfully processed into memory",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean", "example": true },
+                    "dialogues_processed": { "type": "integer", "example": 1 }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/add_memory": {
+      "post": {
+        "tags": ["Memory"],
+        "summary": "Direct memory save",
+        "description": "Save pre-structured memory blocks directly to the agent's vector database bypassing LLM parsing.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["agent_id", "memories"],
+                "properties": {
+                  "agent_id": { "type": "string", "example": "ag_9f8e7d6c5b4a3" },
+                  "memories": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["lossless_restatement"],
+                      "properties": {
+                        "lossless_restatement": { "type": "string", "example": "The user's preferred contact channel is email." },
+                        "keywords": { "type": "array", "items": { "type": "string" }, "example": ["contact", "preference", "email"] },
+                        "topic": { "type": "string", "example": "Preferences" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Memories added successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean", "example": true },
+                    "entries_added": { "type": "integer", "example": 1 }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/read_memory": {
+      "post": {
+        "tags": ["Memory"],
+        "summary": "Hybrid memory search",
+        "description": "Perform semantic, keyword, and metadata filtering to retrieve matching long-term memories.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["agent_id", "query"],
+                "properties": {
+                  "agent_id": { "type": "string", "example": "ag_9f8e7d6c5b4a3" },
+                  "query": { "type": "string", "example": "user preferences" },
+                  "top_k": { "type": "integer", "example": 5 },
+                  "enable_reflection": { "type": "boolean", "example": false }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Retrieved memory matching results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean", "example": true },
+                    "results": { "type": "array", "items": { "type": "object" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/get_context": {
+      "post": {
+        "tags": ["Memory"],
+        "summary": "Q&A with memory context",
+        "description": "Ask a direct question and get an LLM-generated response synthesized from retrieved memory contexts.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["agent_id", "question"],
+                "properties": {
+                  "agent_id": { "type": "string", "example": "ag_9f8e7d6c5b4a3" },
+                  "question": { "type": "string", "example": "What city does the user live in?" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Contextual answer returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean", "example": true },
+                    "answer": { "type": "string", "example": "The user lives in Seattle." },
+                    "contexts_used": { "type": "array", "items": { "type": "object" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/update_memory": {
+      "post": {
+        "tags": ["Memory"],
+        "summary": "Update memory unit",
+        "description": "Modify the factual statement or metadata labels of an existing memory entry by ID.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["agent_id", "entry_id", "updates"],
+                "properties": {
+                  "agent_id": { "type": "string", "example": "ag_9f8e7d6c5b4a3" },
+                  "entry_id": { "type": "string", "example": "mem_12345" },
+                  "updates": {
+                    "type": "object",
+                    "example": { "topic": "Updated Preferences" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Memory unit updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean", "example": true }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/delete_memory": {
+      "post": {
+        "tags": ["Memory"],
+        "summary": "Delete memory entries",
+        "description": "Permanently erase specific memory blocks by their unique entry identifiers.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["agent_id", "entry_ids"],
+                "properties": {
+                  "agent_id": { "type": "string", "example": "ag_9f8e7d6c5b4a3" },
+                  "entry_ids": { "type": "array", "items": { "type": "string" }, "example": ["mem_12345"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Memory entries erased",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean", "example": true },
+                    "deleted_count": { "type": "integer", "example": 1 }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent_stats": {
+      "post": {
+        "tags": ["Analytics & Stats"],
+        "summary": "Get agent statistics",
+        "description": "Retrieve volume, distribution, and temporal metrics for an agent's accumulated data.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["agent_id"],
+                "properties": {
+                  "agent_id": { "type": "string", "example": "ag_9f8e7d6c5b4a3" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Agent stats object",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean", "example": true },
+                    "statistics": { "type": "object" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api_usage": {
+      "post": {
+        "tags": ["Analytics & Stats"],
+        "summary": "Get API usage stats",
+        "description": "Retrieve real-time token consumption, rate limit status, and monthly billing tracking.",
+        "responses": {
+          "200": {
+            "description": "Usage metrics retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean", "example": true },
+                    "api_calls": { "type": "object" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/list_memories": {
+      "post": {
+        "tags": ["Bulk Operations"],
+        "summary": "List all memories (paginated)",
+        "description": "Retrieve a paginated list of all stored memories with topic and subject filtering.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["agent_id"],
+                "properties": {
+                  "agent_id": { "type": "string", "example": "ag_9f8e7d6c5b4a3" },
+                  "limit": { "type": "integer", "example": 50 },
+                  "offset": { "type": "integer", "example": 0 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Paginated memory results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean", "example": true },
+                    "memories": { "type": "array", "items": { "type": "object" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bulk_add_memory": {
+      "post": {
+        "tags": ["Bulk Operations"],
+        "summary": "Bulk add memories",
+        "description": "Ingest a high-volume array of pre-structured memory entries in a single batch request.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["agent_id", "memories"],
+                "properties": {
+                  "agent_id": { "type": "string", "example": "ag_9f8e7d6c5b4a3" },
+                  "memories": { "type": "array", "items": { "type": "object" } },
+                  "skip_duplicates": { "type": "boolean", "example": true }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Batch processing outcome",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean", "example": true },
+                    "memories_added": { "type": "integer", "example": 10 }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/export_memories": {
+      "post": {
+        "tags": ["Data Portability"],
+        "summary": "Export all memories",
+        "description": "Download a complete transportable schema dump of all memories associated with an agent.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["agent_id"],
+                "properties": {
+                  "agent_id": { "type": "string", "example": "ag_9f8e7d6c5b4a3" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Export payload returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean", "example": true },
+                    "export": { "type": "object" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/import_memories": {
+      "post": {
+        "tags": ["Data Portability"],
+        "summary": "Import memories from backup",
+        "description": "Restore or merge memories from a standard exported JSON snapshot.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["agent_id", "export_data"],
+                "properties": {
+                  "agent_id": { "type": "string", "example": "ag_9f8e7d6c5b4a3" },
+                  "export_data": { "type": "object" },
+                  "merge_mode": { "type": "string", "example": "append" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Import successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean", "example": true },
+                    "memories_imported": { "type": "integer", "example": 25 }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/memory_summary": {
+      "post": {
+        "tags": ["Data Portability"],
+        "summary": "AI memory summary",
+        "description": "Generate a cohesive natural-language summary narrative of everything stored in an agent's long-term memory.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["agent_id"],
+                "properties": {
+                  "agent_id": { "type": "string", "example": "ag_9f8e7d6c5b4a3" },
+                  "summary_length": { "type": "string", "example": "detailed" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Narrative summary response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean", "example": true },
+                    "summary": { "type": "string", "example": "The user is a software engineer focused on cloud architectures." }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ping": {
+      "get": {
+        "tags": ["API Test Examples"],
+        "summary": "Ping server",
+        "description": "Simple public health check utility to verify server readiness.",
+        "responses": {
+          "200": {
+            "description": "Server is up and running",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "example": "ok" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
