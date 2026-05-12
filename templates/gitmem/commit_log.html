@@ -1,176 +1,133 @@
-{% extends "base.html" %}
+{% extends "gitmem/base.html" %}
+{% set active_page = "commits" %}
 
-{% block title %}Commits - {{ agent.name or agent.id }} | GitMem{% endblock %}
+{% block repo_content %}
+<div class="space-y-4">
 
-{% block content %}
-<div class="relative min-h-screen bg-transparent text-foreground overflow-hidden">
-    <!-- Mesh Gradients Background -->
-    <div class="absolute inset-0 pointer-events-none">
-        <div class="absolute top-0 left-1/4 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl"></div>
-        <div class="absolute bottom-0 right-1/4 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl"></div>
+    <!-- Branch Management Bar -->
+    <div class="bg-white/[0.02] border border-white/10 rounded-xl p-4">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div class="flex items-center gap-2 flex-wrap">
+                <!-- Branch Selector -->
+                <div class="relative">
+                    <select id="branch-select" onchange="handleBranchChange(this.value)"
+                        class="appearance-none bg-white/5 border border-white/10 text-white text-sm rounded-lg pl-8 pr-8 py-2 focus:ring-1 focus:ring-violet-500 focus:outline-none cursor-pointer">
+                        {% for branch in branches %}
+                        <option value="{{ branch }}" {% if branch == current_branch %}selected{% endif %}>{{ branch }}</option>
+                        {% endfor %}
+                        {% if not branches %}<option value="main" selected>main</option>{% endif %}
+                    </select>
+                    <svg class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                </div>
+                <span class="text-xs text-gray-500">{{ commit_count }} commits</span>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+                <button onclick="showNewBranchModal()" class="px-3 py-1.5 bg-white/5 border border-white/10 text-gray-300 text-xs rounded-lg hover:bg-white/10 transition-colors flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    Branch
+                </button>
+                {% if branches|length > 1 %}
+                <button onclick="showMergeModal()" class="px-3 py-1.5 bg-violet-500/10 border border-violet-500/20 text-violet-400 text-xs rounded-lg hover:bg-violet-500/20 transition-colors flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                    Merge
+                </button>
+                {% if current_branch != 'main' %}
+                <button onclick="deleteBranch()" class="px-3 py-1.5 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-lg hover:bg-red-500/20 transition-colors flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    Delete Branch
+                </button>
+                {% endif %}
+                {% endif %}
+                <a href="{{ url_for('gitmem.agent_diffs', agent_id=agent.id) }}" class="px-3 py-1.5 bg-white/5 border border-white/10 text-gray-300 text-xs rounded-lg hover:bg-white/10 transition-colors flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    Compare
+                </a>
+            </div>
+        </div>
     </div>
 
-    <!-- Main Container -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
-
-        <!-- Breadcrumb & Header -->
-        <div class="mb-8">
-            <nav class="flex items-center text-sm text-gray-400 mb-2 space-x-2">
-                <a href="{{ url_for('gitmem.landing') }}" class="hover:text-white transition-colors">GitMem</a>
-                <i data-lucide="chevron-right" class="w-4 h-4"></i>
-                <a href="{{ url_for('gitmem.agent_dashboard', agent_id=agent.id) }}"
-                    class="hover:text-white transition-colors">Repository</a>
-                <i data-lucide="chevron-right" class="w-4 h-4"></i>
-                <span class="text-white font-medium">Commits</span>
-            </nav>
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div class="flex items-center gap-4">
-                    <div
-                        class="w-14 h-14 rounded-2xl bg-gradient-to-br from-gray-800 to-gray-900 border border-white/10 flex items-center justify-center text-xl font-bold text-white shadow-inner">
-                        {{ agent.name[:2]|upper if agent.name else agent.id[:2]|upper }}
-                    </div>
-                    <div>
-                        <h1 class="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
-                            {{ agent.name or agent.id }}
-                        </h1>
-                        <div class="flex items-center gap-4 text-sm text-gray-400 mt-1">
-                            <span class="font-mono bg-white/5 px-2 py-0.5 rounded text-xs border border-white/5">{{
-                                agent.id }}</span>
-                            <span class="flex items-center gap-1.5"><i data-lucide="git-commit" class="w-3.5 h-3.5"></i>
-                                {{ commit_count }} commits</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Actions Toolbar -->
-                <div class="flex items-center gap-2 w-full md:w-auto flex-wrap">
-                    <!-- Branch Selector -->
-                    <div class="relative">
-                        <select id="branch-select" onchange="handleBranchChange(this.value)"
-                            class="appearance-none bg-white/5 border border-white/10 text-gray-200 text-sm rounded-lg pl-3 pr-8 py-2 focus:ring-1 focus:ring-violet-500 focus:outline-none cursor-pointer min-w-[120px]">
-                            <option value="main">main</option>
-                            {% for branch in branches %}
-                            {% if branch != 'main' %}<option value="{{ branch }}">{{ branch }}</option>{% endif %}
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <!-- New Branch -->
-                    <button onclick="showNewBranchModal()" class="px-3 py-2 bg-white/5 border border-white/10 text-gray-300 text-sm rounded-lg hover:bg-white/10 transition-colors flex items-center gap-1.5">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                        Branch
-                    </button>
-                    <!-- Compare -->
-                    <a href="{{ url_for('gitmem.agent_diffs', agent_id=agent.id) }}" class="px-3 py-2 bg-white/5 border border-white/10 text-gray-300 text-sm rounded-lg hover:bg-white/10 transition-colors flex items-center gap-1.5">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                        Compare
-                    </a>
-                </div>
-            </div>
+    <!-- Commit Timeline -->
+    <div class="bg-white/[0.02] border border-white/10 rounded-xl overflow-hidden">
+        <div class="px-4 py-3 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
+            <span class="text-sm font-medium text-white flex items-center gap-2">
+                <svg class="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Commit History
+            </span>
+            <span class="text-xs text-gray-500">{{ current_branch }}</span>
         </div>
 
-        <!-- Repository Navigation -->
-        <div class="border-b border-white/10 mb-8">
-            <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-                <a href="{{ url_for('gitmem.agent_dashboard', agent_id=agent.id) }}"
-                    class="border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300 group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm transition-all duration-200">
-                    <i data-lucide="brain" class="mr-2 -ml-0.5 h-4 w-4 text-gray-500 group-hover:text-gray-400"></i>
-                    <span>Context</span>
-                    <span
-                        class="ml-2 py-0.5 px-2.5 rounded-full text-xs font-medium bg-white/5 text-gray-400 group-hover:bg-white/10 group-hover:text-gray-300">{{
-                        memory_count }}</span>
-                </a>
-
-                <a href="{{ url_for('gitmem.agent_commits', agent_id=agent.id) }}"
-                    class="border-violet-500 text-white group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm transition-all duration-200">
-                    <i data-lucide="git-commit" class="mr-2 -ml-0.5 h-4 w-4 text-violet-400"></i>
-                    <span>Commits</span>
-                    <span class="ml-2 py-0.5 px-2.5 rounded-full text-xs font-medium bg-white/10 text-violet-300">{{
-                        commit_count }}</span>
-                </a>
-
-                <a href="{{ url_for('gitmem.pulls', agent_id=agent.id) }}"
-                    class="border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300 group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm transition-all duration-200">
-                    <i data-lucide="git-pull-request"
-                        class="mr-2 -ml-0.5 h-4 w-4 text-gray-500 group-hover:text-gray-400"></i>
-                    <span>Pulls</span>
-                    <span
-                        class="ml-2 py-0.5 px-2.5 rounded-full text-xs font-medium bg-white/5 text-gray-400 group-hover:bg-white/10 group-hover:text-gray-300">0</span>
-                </a>
-
-                <a href="{{ url_for('gitmem.issues', agent_id=agent.id) }}"
-                    class="border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300 group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm transition-all duration-200">
-                    <i data-lucide="circle-dot"
-                        class="mr-2 -ml-0.5 h-4 w-4 text-gray-500 group-hover:text-gray-400"></i>
-                    <span>Issues</span>
-                </a>
-
-                <a href="{{ url_for('gitmem.settings', agent_id=agent.id) }}"
-                    class="border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300 group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm transition-all duration-200">
-                    <i data-lucide="settings" class="mr-2 -ml-0.5 h-4 w-4 text-gray-500 group-hover:text-gray-400"></i>
-                    <span>Settings</span>
-                </a>
-            </nav>
-        </div>
-
-        <!-- Commits List -->
-        <div class="backdrop-blur-xl bg-[#0d1117]/60 border border-white/10 rounded-2xl overflow-hidden shadow-xl">
-            <div class="px-6 py-4 border-b border-white/5 bg-white/5 flex items-center justify-between">
-                <h3 class="font-semibold text-white flex items-center gap-2">
-                    <i data-lucide="list" class="w-5 h-5 text-violet-400"></i>
-                    Commit History
-                </h3>
-                <span class="text-xs font-medium px-2 py-1 rounded-md bg-white/10 text-gray-400">{{ commits|length }}
-                    Commits</span>
-            </div>
-
-            <div class="divide-y divide-white/5">
-                {% for commit in commits %}
-                <div class="px-6 py-4 flex items-start gap-4 hover:bg-white/5 transition-colors group">
-                    <div
-                        class="w-10 h-10 rounded-full bg-violet-500/10 flex items-center justify-center flex-shrink-0 border border-violet-500/20">
-                        <i data-lucide="git-commit" class="w-5 h-5 text-violet-400"></i>
+        <div class="divide-y divide-white/5">
+            {% for commit in commits %}
+            <div class="group">
+                <!-- Commit Row -->
+                <div class="px-4 py-3 flex items-center gap-3 hover:bg-white/[0.02] transition-colors cursor-pointer"
+                     onclick="toggleCommitDetail('{{ commit.hash }}', '{{ commit.parents[0] if commit.parents else '' }}')">
+                    <!-- Timeline dot -->
+                    <div class="relative flex-shrink-0">
+                        <div class="w-3 h-3 rounded-full bg-violet-500 border-2 border-[#0d1117] z-10 relative"></div>
+                        {% if not loop.last %}
+                        <div class="absolute top-3 left-1.5 w-px h-8 bg-white/10 -translate-x-1/2"></div>
+                        {% endif %}
                     </div>
+                    <!-- Commit info -->
                     <div class="flex-1 min-w-0">
-                        <div class="flex items-center justify-between mb-1">
-                            <h4
-                                class="text-sm font-semibold text-gray-200 group-hover:text-white transition-colors truncate">
-                                {{ commit.message }}</h4>
-                            <span class="text-xs text-gray-500 whitespace-nowrap">{{ commit.timestamp }}</span>
-                        </div>
-                        <div class="flex items-center gap-3 text-xs text-gray-400">
-                            <span
-                                class="font-mono text-violet-300 bg-violet-500/10 px-1.5 py-0.5 rounded border border-violet-500/10">{{
-                                commit.hash[:7] if commit.hash else 'unknown' }}</span>
-                            <span class="flex items-center gap-1"><i data-lucide="user" class="w-3 h-3"></i> {{
-                                commit.author_id or 'system' }}</span>
+                        <div class="text-sm text-white font-medium truncate">{{ commit.message }}</div>
+                        <div class="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
+                            <code class="text-violet-300 bg-violet-500/10 px-1.5 py-0.5 rounded text-[10px] border border-violet-500/10">{{ commit.hash[:7] if commit.hash else '?' }}</code>
+                            <span>{{ commit.author_id or 'system' }}</span>
+                            <span>{{ commit.timestamp[:16] if commit.timestamp else '' }}</span>
+                            {% if commit.stats %}
+                            <span class="flex items-center gap-1">
+                                {% if commit.stats.added %}<span class="text-green-400">+{{ commit.stats.added }}</span>{% endif %}
+                                {% if commit.stats.modified %}<span class="text-yellow-400">~{{ commit.stats.modified }}</span>{% endif %}
+                                {% if commit.stats.deleted %}<span class="text-red-400">-{{ commit.stats.deleted }}</span>{% endif %}
+                            </span>
+                            {% endif %}
                         </div>
                     </div>
-                    <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onclick="copyHash('{{ commit.hash }}')" title="Copy hash"
-                            class="p-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10">
-                            <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                    <!-- Actions -->
+                    <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                        <button onclick="event.stopPropagation(); copyHash('{{ commit.hash }}')" title="Copy hash"
+                            class="p-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-gray-400">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                         </button>
-                        <button onclick="rollbackTo('{{ commit.hash }}')" title="Rollback to this commit"
-                            class="p-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-red-500/10 hover:border-red-500/30">
-                            <svg class="w-3.5 h-3.5 text-gray-400 hover:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+                        <button onclick="event.stopPropagation(); rollbackTo('{{ commit.hash }}')" title="Rollback to this commit"
+                            class="p-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-red-500/10 hover:border-red-500/20 text-gray-400 hover:text-red-400">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
                         </button>
                     </div>
                 </div>
-                {% else %}
-                <div class="py-20 text-center">
-                    <div class="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
-                        <i data-lucide="git-branch" class="w-8 h-8 text-gray-600"></i>
+                <!-- Inline Diff Detail (hidden, expanded on click) -->
+                <div id="detail-{{ commit.hash }}" class="hidden bg-black/20 border-t border-white/5 px-4 py-3">
+                    <div class="text-xs text-gray-500 flex items-center gap-2">
+                        <svg class="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        Loading diff...
                     </div>
-                    <p class="text-gray-500">No commits found for this agent.</p>
                 </div>
-                {% endfor %}
             </div>
+            {% else %}
+            <div class="py-16 text-center">
+                <svg class="w-12 h-12 text-gray-700 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <p class="text-gray-500 text-sm">No commits yet. Add a memory and it will be committed automatically.</p>
+            </div>
+            {% endfor %}
         </div>
-
     </div>
+
+    <!-- Branch Info Footer -->
+    {% if branches %}
+    <div class="flex items-center gap-4 text-xs text-gray-500 px-1">
+        <span class="flex items-center gap-1.5">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+            {{ branches|length }} branch{{ 'es' if branches|length > 1 else '' }}
+        </span>
+        <span>{{ commit_count }} total commits</span>
+        {% if current_branch == 'main' %}<span class="text-violet-400">Default branch</span>{% endif %}
+    </div>
+    {% endif %}
 </div>
 
-<!-- New Branch Modal -->
+<!-- Create Branch Modal -->
 <div id="new-branch-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm">
     <div class="bg-[#1a1a2e] border border-white/10 rounded-xl p-6 w-full max-w-sm shadow-2xl">
         <h3 class="text-lg font-semibold text-white mb-4">Create Branch</h3>
@@ -183,69 +140,202 @@
             <div>
                 <label class="block text-xs text-gray-400 mb-1">Branch from</label>
                 <select id="new-branch-source" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm">
-                    <option value="main">main</option>
-                    {% for branch in branches %}
-                    {% if branch != 'main' %}<option value="{{ branch }}">{{ branch }}</option>{% endif %}
-                    {% endfor %}
+                    {% for branch in branches %}<option value="{{ branch }}" {% if branch == current_branch %}selected{% endif %}>{{ branch }}</option>{% endfor %}
                 </select>
             </div>
             <div class="flex justify-end gap-2 pt-2">
-                <button onclick="document.getElementById('new-branch-modal').classList.add('hidden')" class="px-4 py-2 text-gray-400 text-sm hover:text-white">Cancel</button>
+                <button onclick="hideModal('new-branch-modal')" class="px-4 py-2 text-gray-400 text-sm hover:text-white">Cancel</button>
                 <button onclick="createBranch()" id="create-branch-btn" class="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg">Create</button>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Merge Branch Modal -->
+<div id="merge-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div class="bg-[#1a1a2e] border border-white/10 rounded-xl p-6 w-full max-w-md shadow-2xl">
+        <h3 class="text-lg font-semibold text-white mb-4">Merge Branches</h3>
+        <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Source (merge from)</label>
+                    <select id="merge-source" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm">
+                        {% for branch in branches %}
+                        {% if branch != current_branch %}<option value="{{ branch }}">{{ branch }}</option>{% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Target (merge into)</label>
+                    <select id="merge-target" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm">
+                        {% for branch in branches %}<option value="{{ branch }}" {% if branch == current_branch %}selected{% endif %}>{{ branch }}</option>{% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Merge Policy</label>
+                <select id="merge-policy" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm">
+                    <option value="last_write_wins">Last Write Wins (newer overwrites)</option>
+                    <option value="importance_priority">Importance Priority (higher importance wins)</option>
+                    <option value="manual_conflict">Manual Conflict (fail on conflicts)</option>
+                </select>
+                <p class="text-[10px] text-gray-600 mt-1">Determines how conflicts between divergent memories are resolved.</p>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="hideModal('merge-modal')" class="px-4 py-2 text-gray-400 text-sm hover:text-white">Cancel</button>
+                <button onclick="mergeBranches()" id="merge-btn" class="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg">Merge</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
-    const agentId = "{{ agent.id }}";
+const agentId = "{{ agent.id }}";
+const currentBranch = "{{ current_branch }}";
+const diffCache = {};
 
-    function handleBranchChange(branch) {
-        const url = new URL(window.location);
-        url.searchParams.set('branch', branch);
-        window.location.href = url.toString();
-    }
+// ── Navigation ───────────────────────────────────────────────────────
+function handleBranchChange(branch) {
+    const url = new URL(window.location);
+    url.searchParams.set('branch', branch);
+    window.location.href = url.toString();
+}
 
-    function showNewBranchModal() {
-        document.getElementById('new-branch-name').value = '';
-        document.getElementById('new-branch-modal').classList.remove('hidden');
-    }
+function hideModal(id) { document.getElementById(id).classList.add('hidden'); }
+function showNewBranchModal() { document.getElementById('new-branch-name').value = ''; document.getElementById('new-branch-modal').classList.remove('hidden'); }
+function showMergeModal() { document.getElementById('merge-modal').classList.remove('hidden'); }
 
-    async function createBranch() {
-        const name = document.getElementById('new-branch-name').value.trim();
-        const source = document.getElementById('new-branch-source').value;
-        if (!name) return;
-        const btn = document.getElementById('create-branch-btn');
-        btn.disabled = true; btn.textContent = 'Creating...';
-        try {
-            const res = await fetch(`/gitmem/api/agent/${agentId}/branches`, {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({name, source})
-            });
-            const data = await res.json();
-            if (res.ok) { window.location.reload(); }
-            else { alert(data.error || 'Failed to create branch'); }
-        } finally { btn.disabled = false; btn.textContent = 'Create'; }
-    }
-
-    async function rollbackTo(hash) {
-        const branch = document.getElementById('branch-select').value;
-        if (!confirm(`Rollback "${branch}" to commit ${hash.slice(0,7)}? This will move the branch pointer back.`)) return;
-        try {
-            const res = await fetch(`/gitmem/api/agent/${agentId}/rollback`, {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({branch, target_hash: hash})
-            });
-            const data = await res.json();
-            if (res.ok) { alert('Rollback successful.'); window.location.reload(); }
-            else { alert(data.error || 'Rollback failed'); }
-        } catch (e) { alert('Rollback failed: ' + e.message); }
-    }
-
-    function copyHash(hash) {
-        navigator.clipboard.writeText(hash).then(() => {
-            // Brief visual feedback could go here
+// ── Branch Operations ────────────────────────────────────────────────
+async function createBranch() {
+    const name = document.getElementById('new-branch-name').value.trim();
+    const source = document.getElementById('new-branch-source').value;
+    if (!name) return;
+    const btn = document.getElementById('create-branch-btn');
+    btn.disabled = true; btn.textContent = 'Creating...';
+    try {
+        const res = await fetch(`/gitmem/api/agent/${agentId}/branches`, {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({name, source})
         });
+        if (res.ok) window.location.reload();
+        else { const d = await res.json(); alert(d.error || 'Failed'); }
+    } finally { btn.disabled = false; btn.textContent = 'Create'; }
+}
+
+async function deleteBranch() {
+    if (!confirm(`Delete branch "${currentBranch}"? This cannot be undone.`)) return;
+    const res = await fetch(`/gitmem/api/agent/${agentId}/branches/${currentBranch}`, {method: 'DELETE'});
+    if (res.ok) { window.location.href = window.location.pathname + '?branch=main'; }
+    else { const d = await res.json(); alert(d.error || 'Failed'); }
+}
+
+async function mergeBranches() {
+    const source = document.getElementById('merge-source').value;
+    const target = document.getElementById('merge-target').value;
+    const policy = document.getElementById('merge-policy').value;
+    if (!source) return alert('Select a source branch');
+    const btn = document.getElementById('merge-btn');
+    btn.disabled = true; btn.textContent = 'Merging...';
+    try {
+        const res = await fetch(`/gitmem/api/agent/${agentId}/merge`, {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({source, target, policy})
+        });
+        const data = await res.json();
+        if (res.ok) { alert(`Merge complete! Commit: ${(data.commit_hash || '').slice(0,7)}`); window.location.reload(); }
+        else { alert(data.error || 'Merge failed'); }
+    } finally { btn.disabled = false; btn.textContent = 'Merge'; }
+}
+
+async function rollbackTo(hash) {
+    if (!confirm(`Rollback "${currentBranch}" to commit ${hash.slice(0,7)}?\nThis moves the branch pointer back. Commits after this point are not deleted but no longer reachable from this branch.`)) return;
+    const res = await fetch(`/gitmem/api/agent/${agentId}/rollback`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({branch: currentBranch, target_hash: hash})
+    });
+    if (res.ok) { window.location.reload(); }
+    else { const d = await res.json(); alert(d.error || 'Rollback failed'); }
+}
+
+function copyHash(hash) {
+    navigator.clipboard.writeText(hash);
+}
+
+// ── Inline Diff Expansion ────────────────────────────────────────────
+async function toggleCommitDetail(hash, parentHash) {
+    const el = document.getElementById('detail-' + hash);
+    if (!el) return;
+    // Toggle visibility
+    if (!el.classList.contains('hidden')) {
+        el.classList.add('hidden');
+        return;
     }
+    el.classList.remove('hidden');
+
+    // If already loaded, skip fetch
+    if (diffCache[hash]) {
+        el.innerHTML = diffCache[hash];
+        return;
+    }
+
+    // No parent means initial commit — show "Initial commit" info
+    if (!parentHash) {
+        const html = renderDiffDetail({added: [], modified: [], removed: []}, {added: 0, modified: 0, deleted: 0}, true);
+        diffCache[hash] = html;
+        el.innerHTML = html;
+        return;
+    }
+
+    // Fetch diff from parent → this commit
+    try {
+        const res = await fetch(`/gitmem/api/diff?from=${parentHash}&to=${hash}`);
+        const data = await res.json();
+        if (data.status === 'success') {
+            const html = renderDiffDetail(data.diff, data.stats, false);
+            diffCache[hash] = html;
+            el.innerHTML = html;
+        } else {
+            el.innerHTML = `<div class="text-xs text-red-400">${data.error || 'Diff failed'}</div>`;
+        }
+    } catch (e) {
+        el.innerHTML = `<div class="text-xs text-red-400">Failed to load diff: ${e.message}</div>`;
+    }
+}
+
+function renderDiffDetail(diff, stats, isInitial) {
+    if (isInitial) {
+        return `<div class="text-xs text-gray-400 flex items-center gap-2">
+            <svg class="w-3 h-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            Initial commit — repository created
+        </div>`;
+    }
+
+    const s = stats || {};
+    let html = `<div class="flex items-center gap-3 mb-2">`;
+    if (s.added) html += `<span class="text-xs text-green-400 flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> ${s.added} added</span>`;
+    if (s.modified) html += `<span class="text-xs text-yellow-400 flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg> ${s.modified} modified</span>`;
+    if (s.deleted) html += `<span class="text-xs text-red-400 flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg> ${s.deleted} deleted</span>`;
+    if (!s.added && !s.modified && !s.deleted) html += `<span class="text-xs text-gray-500">No changes detected</span>`;
+    html += `</div>`;
+
+    // Show added items
+    const added = diff.added || [];
+    const removed = diff.removed || [];
+    const modified = diff.modified || [];
+    const items = [...added.slice(0, 5).map(a => ({type: 'add', item: a})), ...modified.slice(0, 3).map(m => ({type: 'mod', item: m})), ...removed.slice(0, 3).map(r => ({type: 'del', item: r}))];
+
+    if (items.length > 0) {
+        html += `<div class="space-y-1 max-h-32 overflow-auto">`;
+        items.forEach(({type, item}) => {
+            const content = typeof item === 'string' ? item : (item.content || item.lossless_restatement || item.name || JSON.stringify(item)).slice(0, 120);
+            const color = type === 'add' ? 'text-green-400 bg-green-500/5 border-green-500/10' : type === 'mod' ? 'text-yellow-400 bg-yellow-500/5 border-yellow-500/10' : 'text-red-400 bg-red-500/5 border-red-500/10';
+            const prefix = type === 'add' ? '+' : type === 'mod' ? '~' : '-';
+            html += `<div class="text-[11px] ${color} border rounded px-2 py-1 font-mono truncate">${prefix} ${content}</div>`;
+        });
+        html += `</div>`;
+    }
+
+    return html;
+}
 </script>
 {% endblock %}

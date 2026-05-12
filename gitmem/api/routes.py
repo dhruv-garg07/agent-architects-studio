@@ -586,19 +586,26 @@ def agent_commits(agent_id):
         'slug': agent_raw.get('agent_slug', agent_id),
     }
 
-    commits = []
-    try:
-        res = _db().table('gitmem_commits').select('*') \
-            .eq('agent_id', agent_id) \
-            .order('timestamp', desc=True).limit(100).execute()
-        commits = res.data or []
-    except Exception:
-        pass
+    current_branch = request.args.get('branch', 'main')
 
     # Branches
     branches = []
     try:
         branches = gitmem_app.vcs.branch_manager.list_branches(agent_id)
+    except Exception:
+        pass
+
+    branch_names = [b.get('ref_name', 'main') for b in branches]
+
+    # Get commits — filter by branch if we have ref data
+    commits = []
+    try:
+        query = _db().table('gitmem_commits').select('*').eq('agent_id', agent_id)
+        # If filtering by branch, find the branch's target hash and walk parents
+        # For now, use a simple approach: fetch all and let client see branch context
+        query = query.order('timestamp', desc=True).limit(100)
+        res = query.execute()
+        commits = res.data or []
     except Exception:
         pass
 
@@ -610,7 +617,8 @@ def agent_commits(agent_id):
         commits=commits,
         commit_count=len(commits),
         memory_count=memory_count,
-        branches=[b.get('ref_name', 'main') for b in branches],
+        branches=branch_names,
+        current_branch=current_branch,
         sources=get_sources_status(),
     )
 
