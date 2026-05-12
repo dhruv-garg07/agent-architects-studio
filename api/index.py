@@ -1772,13 +1772,17 @@ def api_docs():
 
 @app.route('/api/openapi.json')
 def openapi_spec():
-    """Return the OpenAPI specification JSON."""
-    openapi_path = os.path.join(STATIC_DIR, 'openapi.json')
+    """Dynamically generate OpenAPI specification from the master static/index.json."""
     try:
-        with open(openapi_path, 'r', encoding='utf-8') as f:
-            return jsonify(json.load(f))
+        from openapi_builder import build_openapi_spec
+        openapi = build_openapi_spec(STATIC_DIR)
+        return app.response_class(
+            response=json.dumps(openapi, sort_keys=False, indent=2),
+            status=200,
+            mimetype='application/json'
+        )
     except Exception as e:
-        return jsonify({"error": f"Could not load openapi.json: {e}"}), 500
+        return jsonify({"error": f"Could not generate OpenAPI specification: {e}"}), 500
 
 
 @app.route('/api/swagger')
