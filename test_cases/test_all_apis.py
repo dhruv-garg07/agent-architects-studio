@@ -11,12 +11,12 @@ import sys
 from datetime import datetime
 
 # BASE_URL = "https://www.themanhattanproject.ai"
-BASE_URL = "http://localhost:1079"
+BASE_URL = "http://localhost:1078"
 # BASE_URL = "http://192.168.0.9:5000"
 from dotenv import load_dotenv
 import os
 load_dotenv()
-API_KEY = os.getenv("MANHATTAN_API_KEY_TEST")
+API_KEY = "sk-4V8___QOM3ktVACbniXwdpxK7TXK_Zx39GnGWNFiyvI"
 HEADERS = {"Authorization": API_KEY, "Content-Type": "application/json"}
 TIMEOUT = 30
 
@@ -82,7 +82,7 @@ def test_create_agent():
         "agent_slug": f"test-agent-{ts}",
         "permissions": {"run": True},
         "limits": {"rpm": 10},
-        "description": "Auto-test agent",
+        "system-prompt": "Auto-test agent system prompt",
         "metadata": {"created_by": "test_all_apis"}
     }
     r = requests.post(f"{BASE_URL}/create_agent", json=payload, headers=HEADERS, timeout=TIMEOUT)
@@ -110,7 +110,7 @@ def test_get_agent():
 def test_update_agent():
     if not STATE["agent_id"]:
         raise AssertionError("No agent_id")
-    payload = {"agent_id": STATE["agent_id"], "updates": {"description": f"Updated at {datetime.utcnow().isoformat()}"}}
+    payload = {"agent_id": STATE["agent_id"], "updates": {"system_prompt": f"Updated at {datetime.utcnow().isoformat()}"}}
     r = requests.post(f"{BASE_URL}/update_agent", json=payload, headers=HEADERS, timeout=TIMEOUT)
     assert r.status_code == 200, f"Expected 200, got {r.status_code}: {r.text[:200]}"
 

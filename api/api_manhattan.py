@@ -316,7 +316,7 @@ def create_agent():
     agent_slug = data.get('agent_slug')
     permissions = data.get('permissions', {})
     limits = data.get('limits', {})
-    description = data.get('description')
+    system_prompt = data.get('system_prompt') or data.get('system-prompt')
     metadata = data.get('metadata', {})
 
     if not agent_name or not agent_slug:
@@ -329,7 +329,7 @@ def create_agent():
         'agent_slug': agent_slug,
         'permissions': permissions,
         'limits': limits,
-        'description': description,
+        'system_prompt': system_prompt,
         'metadata': metadata or {},
         'status': 'pending',
         'created_at': datetime.utcnow().isoformat(),
@@ -344,7 +344,7 @@ def create_agent():
             agent_slug=agent_slug,
             permissions=permissions,
             limits=limits,
-            description=description,
+            system_prompt=system_prompt,
             metadata=metadata
         )
         
@@ -472,7 +472,7 @@ def update_agent():
             else:
                 return jsonify({'error': info, 'valid': False}), 401
     try:
-        updatable_fields = ['agent_name', 'agent_slug', 'status', 'description', 'metadata']
+        updatable_fields = ['agent_name', 'agent_slug', 'status', 'system_prompt', 'metadata']
         provided_fields = data.get('updates')
         
         print("Provided fields for update:", provided_fields)

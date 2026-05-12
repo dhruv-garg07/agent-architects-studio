@@ -43,7 +43,7 @@ class ApiAgentsService:
         agent_slug: str,
         permissions: Dict[str, Any],
         limits: Dict[str, Any],
-        description: Optional[str] = None,
+        system_prompt: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         # Generate a unique agent_id
@@ -55,7 +55,7 @@ class ApiAgentsService:
             "agent_slug": agent_slug,
             "permissions": permissions,
             "limits": limits,
-            "description": description,
+            "system_prompt": system_prompt,
             "metadata": metadata or {},
         }
 

@@ -41,7 +41,7 @@ def test_create_agent():
             "requests_per_day": 10000,
             "max_memory_items": 100000
         },
-        "description": "An agent for sharing and collaboration - created via API test",
+        "system-prompt": "An agent for sharing and collaboration - created via API test",
         "metadata": {
             "created_via": "test_script",
             "test_timestamp": datetime.now().isoformat()

@@ -24,9 +24,9 @@ class AgentService:
             # print(f"query: {query}")
             # Apply filters
             if filters.search:
-                # Search in name and description
+                # Search in name and system_prompt
                 search_term = f"%{filters.search}%"
-                query = query.or_(f"name.ilike.{search_term},description.ilike.{search_term}")
+                query = query.or_(f"name.ilike.{search_term},system_prompt.ilike.{search_term}")
             
             if filters.category:
                 query = query.eq('category', filters.category)

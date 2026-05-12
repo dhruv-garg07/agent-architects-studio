@@ -8,7 +8,7 @@ load_dotenv()
 # Simple validation tests for the running server at the provided base URL.
 # These are pytest-compatible functions but can also be executed directly via `python api_test.py`.
 
-BASE_URL = "https://www.themanhattanproject.ai"
+BASE_URL = "http://localhost:1078"
 # BASE_URL = "http://192.168.0.9:5000"
 
 def test_memory_get():
@@ -89,7 +89,7 @@ def test_validate_key_env():
 
 def test_create_agent():
     """Create a sample agent using TEST_API_KEY. Skips if TEST_API_KEY is not set."""
-    key = os.getenv("MANHATTAN_API_KEY_TEST")
+    key = "sk-4V8___QOM3ktVACbniXwdpxK7TXK_Zx39GnGWNFiyvI"
     if not key:
         print("Skipping test_create_agent because TEST_API_KEY not set")
         return
@@ -101,7 +101,7 @@ def test_create_agent():
         "agent_slug": f"test-agent-{ts}",
         "permissions": {"run": True},
         "limits": {"rpm": 10},
-        "description": "Created by api_test",
+        "system-prompt": "Created by api_test",
         "metadata": {"created_by": "api_test"}
     }
 
@@ -315,7 +315,7 @@ if __name__ == "__main__":
                 
     #         except Exception as e:
     #             print(f"{t.__name__}: ERROR - {e}\n")
-    api_key  = os.getenv("MANHATTAN_API_KEY_TEST")
+    api_key = "sk-4V8___QOM3ktVACbniXwdpxK7TXK_Zx39GnGWNFiyvI"
     # ping_server()
     # test_validate_key_env()
     # test_validate_key_invalid()
@@ -330,7 +330,7 @@ if __name__ == "__main__":
     
     # Update the UPDATABLE things for the first agent:
     updates = {
-        "description": "Updated description via api_test.py",
+        "system_prompt": "Updated description via api_test.py",
         "metadata": {"last_updated_by": "api_test.py"},
         "agent_name": "Updated Agent Name via api_test.py"
     }
@@ -340,7 +340,7 @@ if __name__ == "__main__":
     
     # Get new updates for non updatable and updatable fields mixed:
     updates = {
-        "description": "Another description update via api_test.py",
+        "system_prompt": "Another description update via api_test.py",
         "permissions": {"run": False}  # This is NOT updatable and should be ignored
     }
     update_agent_details(api_key, first_agent_id, updates)
