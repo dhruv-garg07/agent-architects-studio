@@ -1770,6 +1770,27 @@ def api_docs():
     return render_template('api_docs.html', docs_json=json.dumps(docs_json) if docs_json is not None else None, demo_api_key=demo_key, user_masked_key=user_masked_key)
 
 
+@app.route('/api/openapi.json')
+def openapi_spec():
+    """Dynamically generate OpenAPI specification from the master static/index.json."""
+    try:
+        from openapi_builder import build_openapi_spec
+        openapi = build_openapi_spec(STATIC_DIR)
+        return app.response_class(
+            response=json.dumps(openapi, sort_keys=False, indent=2),
+            status=200,
+            mimetype='application/json'
+        )
+    except Exception as e:
+        return jsonify({"error": f"Could not generate OpenAPI specification: {e}"}), 500
+
+
+@app.route('/api/swagger')
+def swagger_ui():
+    """Render the standalone Swagger UI page."""
+    return render_template('swagger_ui.html')
+
+
 # MCP SSE endpoint is now handled by the mcp_bp blueprint registered above
 # See mcp_socketio_gateway.py for implementation
 
