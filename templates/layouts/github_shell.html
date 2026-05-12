@@ -68,6 +68,16 @@
 
                 <!-- Right: Tool Drawer -->
                 <div class="flex items-center gap-3 ml-auto shrink-0">
+                    <!-- Quick Search -->
+                    {% if agent %}
+                    <div class="hidden md:block relative">
+                        <input type="text" id="nav-memory-search" placeholder="Search memories..."
+                            class="h-8 w-36 lg:w-48 bg-white/5 border border-white/10 rounded-lg pl-8 pr-3 text-xs text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-violet-500/50 focus:w-56 transition-all"
+                            onkeydown="if(event.key==='Enter')navSearch()">
+                        <i data-lucide="search" class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-500"></i>
+                    </div>
+                    {% endif %}
+
                     <div class="hidden lg:flex items-center gap-2 bg-white/5 p-1 rounded-xl border border-white/5 mr-2">
                         <button onclick="syncAgent()"
                             class="h-8 px-3 rounded-lg text-gray-400 hover:text-white transition-all text-[11px] font-bold flex items-center gap-1.5">
@@ -227,6 +237,13 @@
 
     function handleBranchChange(branch) {
         console.log('Switching branch:', branch);
+    }
+
+    function navSearch() {
+        const q = document.getElementById('nav-memory-search').value.trim();
+        if (!q || !agentId) return;
+        // Navigate to the memories page with search query
+        window.location.href = `/gitmem/agent/${agentId}/memories?q=${encodeURIComponent(q)}`;
     }
 
     async function syncAgent() {

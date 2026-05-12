@@ -2,70 +2,94 @@
 {% set active_page = "memories" %}
 
 {% block repo_content %}
-<div class="card overflow-hidden border border-border/50 shadow-sm">
-    <div class="bg-secondary/30 p-4 border-b border-border/50 flex justify-between items-center backdrop-blur-sm">
-        <h2 class="font-semibold text-foreground flex items-center gap-2">
-            <i data-lucide="brain" class="w-4 h-4 text-purple-400"></i>
-            Memory Browser
-        </h2>
+<div class="space-y-4">
+    <!-- Search + Actions Bar -->
+    <div class="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+        <div class="relative flex-1 max-w-md">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input type="text" id="memory-search" placeholder="Search memories (semantic)..."
+                class="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+                onkeydown="if(event.key==='Enter')searchMemories()">
+        </div>
         <div class="flex items-center gap-2">
-            <span class="text-xs text-muted-foreground">{{ memories|length }} memories</span>
+            <select id="type-filter" onchange="filterByType()" class="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-300">
+                <option value="">All Types</option>
+                <option value="episodic">Episodic</option>
+                <option value="semantic">Semantic</option>
+                <option value="procedural">Procedural</option>
+                <option value="state">State</option>
+            </select>
+            <span class="text-xs text-gray-500" id="memory-count">{{ memories|length }} memories</span>
         </div>
     </div>
 
-    <div class="overflow-x-auto">
-        <table class="w-full text-sm text-left">
-            <thead class="text-xs text-muted-foreground uppercase bg-secondary/20 border-b border-border/50">
+    <!-- Search Results (hidden by default) -->
+    <div id="search-results" class="hidden">
+        <div class="flex items-center justify-between mb-2">
+            <h3 class="text-sm font-semibold text-white">Search Results</h3>
+            <button onclick="clearSearch()" class="text-xs text-violet-400 hover:text-violet-300">Clear search</button>
+        </div>
+        <div id="search-results-list" class="space-y-2"></div>
+    </div>
+
+    <!-- Memory Table -->
+    <div id="memory-table-wrap" class="bg-white/[0.02] border border-white/10 rounded-xl overflow-hidden">
+        <table class="w-full text-sm">
+            <thead class="bg-white/5 border-b border-white/10">
                 <tr>
-                    <th class="px-4 py-3 font-medium">ID</th>
-                    <th class="px-4 py-3 font-medium">Type</th>
-                    <th class="px-4 py-3 font-medium w-1/2">Content</th>
-                    <th class="px-4 py-3 font-medium">Agent</th>
-                    <th class="px-4 py-3 font-medium">Time</th>
-                    <th class="px-4 py-3 font-medium text-right">Actions</th>
+                    <th class="text-left px-4 py-2.5 text-xs font-medium text-gray-400 uppercase tracking-wider">Type</th>
+                    <th class="text-left px-4 py-2.5 text-xs font-medium text-gray-400 uppercase tracking-wider w-1/2">Content</th>
+                    <th class="text-left px-4 py-2.5 text-xs font-medium text-gray-400 uppercase tracking-wider">Importance</th>
+                    <th class="text-left px-4 py-2.5 text-xs font-medium text-gray-400 uppercase tracking-wider">Created</th>
+                    <th class="text-right px-4 py-2.5 text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-border/30">
+            <tbody class="divide-y divide-white/5" id="memory-tbody">
                 {% for mem in memories %}
-                <tr class="hover:bg-secondary/10 transition-colors group">
-                    <td
-                        class="px-4 py-3 font-mono text-xs text-muted-foreground group-hover:text-primary transition-colors">
-                        {{ mem.id[:8] }}
-                    </td>
+                <tr class="hover:bg-white/[0.03] transition-colors group" data-type="{{ mem.type }}" data-id="{{ mem.id }}">
                     <td class="px-4 py-3">
-                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium 
-                            {% if mem.type == 'episodic' %}bg-blue-400/10 text-blue-400 border border-blue-400/20
-                            {% elif mem.type == 'semantic' %}bg-green-400/10 text-green-400 border border-green-400/20
-                            {% else %}bg-secondary text-muted-foreground{% endif %}">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                            {% if mem.type == 'episodic' %}bg-blue-500/10 text-blue-400 border border-blue-500/20
+                            {% elif mem.type == 'semantic' %}bg-violet-500/10 text-violet-400 border border-violet-500/20
+                            {% elif mem.type == 'procedural' %}bg-green-500/10 text-green-400 border border-green-500/20
+                            {% else %}bg-gray-500/10 text-gray-400 border border-gray-500/20{% endif %}">
                             {{ mem.type }}
                         </span>
                     </td>
-                    <td class="px-4 py-3 text-foreground truncate max-w-xs" title="{{ mem.content }}">
-                        {{ mem.content }}
-                    </td>
-                    <td class="px-4 py-3 text-muted-foreground">
-                        <div class="flex items-center gap-1.5">
-                            <div
-                                class="w-4 h-4 rounded-full bg-secondary border border-border flex items-center justify-center text-[10px]">
-                                {{ mem.agent_id[:1] }}
-                            </div>
-                            <span class="text-xs">{{ mem.agent_id }}</span>
+                    <td class="px-4 py-3 text-gray-300 text-sm">
+                        <div class="truncate max-w-md cursor-pointer hover:text-white" title="{{ mem.content }}"
+                            onclick="openEditModal('{{ mem.id }}', `{{ mem.content|replace('`','\\`')|replace('\n',' ') }}`, '{{ mem.type }}', {{ mem.importance|default(0.5) }}, {{ mem.tags|default([])|tojson }})">
+                            {{ mem.content[:120] }}{% if mem.content|length > 120 %}...{% endif %}
                         </div>
                     </td>
-                    <td class="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
-                        {{ mem.created_at.strftime('%Y-%m-%d %H:%M') if mem.created_at else 'N/A' }}
+                    <td class="px-4 py-3">
+                        <div class="flex items-center gap-1">
+                            <div class="w-16 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                <div class="h-full bg-violet-500 rounded-full" style="width:{{ (mem.importance|default(0.5)) * 100 }}%"></div>
+                            </div>
+                            <span class="text-xs text-gray-500">{{ '%.1f'|format(mem.importance|default(0.5)) }}</span>
+                        </div>
+                    </td>
+                    <td class="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
+                        {{ mem.created_at[:16] if mem.created_at else 'N/A' }}
                     </td>
                     <td class="px-4 py-3 text-right">
-                        <button
-                            class="p-1 hover:bg-secondary rounded text-muted-foreground hover:text-foreground transition-colors">
-                            <i data-lucide="more-horizontal" class="w-3.5 h-3.5"></i>
-                        </button>
+                        <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onclick="openEditModal('{{ mem.id }}', `{{ mem.content|replace('`','\\`')|replace('\n',' ') }}`, '{{ mem.type }}', {{ mem.importance|default(0.5) }}, {{ mem.tags|default([])|tojson }})"
+                                class="p-1.5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white" title="Edit">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            </button>
+                            <button onclick="deleteMemory('{{ mem.id }}')"
+                                class="p-1.5 rounded-lg hover:bg-red-500/10 text-gray-400 hover:text-red-400" title="Delete">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            </button>
+                        </div>
                     </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="6" class="px-4 py-8 text-center text-muted-foreground">
-                        No memories found. Time to make some!
+                    <td colspan="5" class="px-4 py-12 text-center text-gray-500">
+                        No memories yet. Click "Add Memory" in the navigation bar to create one.
                     </td>
                 </tr>
                 {% endfor %}
@@ -73,4 +97,132 @@
         </table>
     </div>
 </div>
+
+<!-- Edit Memory Modal -->
+<div id="edit-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div class="bg-[#1a1a2e] border border-white/10 rounded-xl p-6 w-full max-w-lg shadow-2xl">
+        <h3 class="text-lg font-semibold text-white mb-4">Edit Memory</h3>
+        <input type="hidden" id="edit-id">
+        <div class="space-y-4">
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Content</label>
+                <textarea id="edit-content" rows="4" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/50"></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Type</label>
+                    <select id="edit-type" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm">
+                        <option value="episodic">Episodic</option>
+                        <option value="semantic">Semantic</option>
+                        <option value="procedural">Procedural</option>
+                        <option value="state">State</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Importance <span id="edit-imp-val" class="text-violet-400">0.5</span></label>
+                    <input type="range" id="edit-importance" min="0" max="1" step="0.1" value="0.5"
+                        class="w-full accent-violet-500" oninput="document.getElementById('edit-imp-val').textContent=this.value">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Tags <span class="text-gray-600">(comma-separated)</span></label>
+                <input type="text" id="edit-tags" placeholder="tag1, tag2, tag3"
+                    class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/50">
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="document.getElementById('edit-modal').classList.add('hidden')" class="px-4 py-2 text-gray-400 text-sm hover:text-white">Cancel</button>
+                <button onclick="saveMemory()" id="save-mem-btn" class="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const agentId = "{{ agent.id if agent else '' }}";
+
+function openEditModal(id, content, type, importance, tags) {
+    document.getElementById('edit-id').value = id;
+    document.getElementById('edit-content').value = content;
+    document.getElementById('edit-type').value = type;
+    document.getElementById('edit-importance').value = importance;
+    document.getElementById('edit-imp-val').textContent = importance;
+    document.getElementById('edit-tags').value = Array.isArray(tags) ? tags.join(', ') : '';
+    document.getElementById('edit-modal').classList.remove('hidden');
+}
+
+async function saveMemory() {
+    const id = document.getElementById('edit-id').value;
+    const btn = document.getElementById('save-mem-btn');
+    btn.disabled = true; btn.textContent = 'Saving...';
+    try {
+        const tags = document.getElementById('edit-tags').value.split(',').map(t => t.trim()).filter(Boolean);
+        const res = await fetch(`/gitmem/api/memory/${id}`, {
+            method: 'PUT', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                content: document.getElementById('edit-content').value,
+                type: document.getElementById('edit-type').value,
+                importance: parseFloat(document.getElementById('edit-importance').value),
+                tags: tags,
+            })
+        });
+        if (res.ok) { window.location.reload(); }
+        else { const d = await res.json(); alert(d.error || 'Save failed'); }
+    } finally { btn.disabled = false; btn.textContent = 'Save Changes'; }
+}
+
+async function deleteMemory(id) {
+    if (!confirm('Delete this memory? This cannot be undone.')) return;
+    const res = await fetch(`/gitmem/api/memory/${id}`, {method: 'DELETE'});
+    if (res.ok) { window.location.reload(); }
+    else { alert('Delete failed'); }
+}
+
+function filterByType() {
+    const type = document.getElementById('type-filter').value;
+    document.querySelectorAll('#memory-tbody tr[data-type]').forEach(row => {
+        row.style.display = (!type || row.dataset.type === type) ? '' : 'none';
+    });
+}
+
+async function searchMemories() {
+    const q = document.getElementById('memory-search').value.trim();
+    if (!q) return;
+    const resultsWrap = document.getElementById('search-results');
+    const resultsList = document.getElementById('search-results-list');
+    resultsList.innerHTML = '<div class="text-gray-500 text-sm py-2">Searching...</div>';
+    resultsWrap.classList.remove('hidden');
+    document.getElementById('memory-table-wrap').classList.add('hidden');
+    try {
+        const res = await fetch(`/gitmem/api/search?q=${encodeURIComponent(q)}&agent_id=${agentId}`);
+        const data = await res.json();
+        const ctx = data.context_string || data.context || '';
+        const sources = data.sources || [];
+        const count = data.memories_used || sources.length || 0;
+        if (!ctx && count === 0) {
+            resultsList.innerHTML = '<div class="text-gray-500 text-sm py-4 text-center">No results found</div>';
+            return;
+        }
+        let html = `<div class="text-xs text-gray-500 mb-2">${count} memories matched</div>`;
+        if (sources.length > 0) {
+            html += sources.map(s => `
+                <div class="bg-white/[0.03] border border-white/10 rounded-lg p-3 mb-2">
+                    <div class="text-sm text-gray-200">${s.content || s.lossless_restatement || s}</div>
+                    <div class="text-xs text-gray-500 mt-1">${s.type || ''} | importance: ${s.importance || '?'}</div>
+                </div>
+            `).join('');
+        } else if (ctx) {
+            html += `<div class="bg-white/[0.03] border border-white/10 rounded-lg p-3 text-sm text-gray-200 whitespace-pre-wrap">${ctx}</div>`;
+        }
+        resultsList.innerHTML = html;
+    } catch (e) {
+        resultsList.innerHTML = `<div class="text-red-400 text-sm py-2">Search failed: ${e.message}</div>`;
+    }
+}
+
+function clearSearch() {
+    document.getElementById('search-results').classList.add('hidden');
+    document.getElementById('memory-table-wrap').classList.remove('hidden');
+    document.getElementById('memory-search').value = '';
+}
+</script>
 {% endblock %}

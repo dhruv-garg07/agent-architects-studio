@@ -823,6 +823,109 @@ def api_delete_memory(memory_id):
             return jsonify({"error": "Access denied"}), 403
 
         _db().table('gitmem_memories').delete().eq('id', memory_id).execute()
+        # Clean up vector index
+        try:
+            gitmem_app.vector_engine.delete_memory(memory_id)
+        except Exception:
+            pass  # Vector cleanup is best-effort
+        return jsonify({"status": "success"})
+    except Exception as e:
+        return jsonify({"status": "error", "error": str(e)}), 500
+
+
+@gitmem_bp.route('/api/memory/<memory_id>', methods=['PUT'])
+@login_required
+def api_update_memory(memory_id):
+    """Update an existing memory's content, type, importance, or tags."""
+    data = request.get_json(silent=True) or {}
+
+    try:
+        res = _db().table('gitmem_memories').select('*').eq('id', memory_id).execute()
+        if not res.data:
+            return jsonify({"error": "Not found"}), 404
+        existing = res.data[0]
+        agent_id = existing['agent_id']
+        if not _get_agent(agent_id, user_id=current_user.get_id()):
+            return jsonify({"error": "Access denied"}), 403
+
+        # Build update payload from provided fields only
+        updates = {}
+        if 'content' in data:
+            updates['content'] = data['content'].strip()
+        if 'type' in data and data['type'] in ('episodic', 'semantic', 'procedural', 'state'):
+            updates['type'] = data['type']
+        if 'importance' in data:
+            updates['importance'] = max(0.0, min(1.0, float(data['importance'])))
+        if 'tags' in data:
+            updates['tags'] = data['tags'] if isinstance(data['tags'], list) else []
+
+        if not updates:
+            return jsonify({"error": "No fields to update"}), 400
+
+        from datetime import datetime
+        updates['updated_at'] = datetime.utcnow().isoformat()
+        _db().table('gitmem_memories').update(updates).eq('id', memory_id).execute()
+
+        # Re-index in vector if content changed
+        if 'content' in updates:
+            try:
+                from gitmem.core.models import MemoryItem
+                updated = {**existing, **updates}
+                mem = MemoryItem(**{k: v for k, v in updated.items() if k != 'embedding'})
+                gitmem_app.vector_engine.delete_memory(memory_id)
+                gitmem_app.vector_engine.add_memory(mem)
+            except Exception:
+                pass  # Vector re-index is best-effort
+
+        return jsonify({"status": "success", "id": memory_id})
+    except Exception as e:
+        return jsonify({"status": "error", "error": str(e)}), 500
+
+
+@gitmem_bp.route('/api/documents/<agent_id>/upload', methods=['POST'])
+@login_required
+def api_document_upload(agent_id):
+    """Upload a document (text file) to an agent's document store."""
+    if not _get_agent(agent_id, user_id=current_user.get_id()):
+        return jsonify({"error": "Access denied"}), 403
+
+    file = request.files.get('file')
+    folder = request.form.get('folder', 'uploads')
+    description = request.form.get('description', '')
+
+    if not file or not file.filename:
+        return jsonify({"error": "No file provided"}), 400
+
+    try:
+        import uuid
+        from datetime import datetime
+        content = file.read().decode('utf-8', errors='replace')
+        doc = {
+            'id': str(uuid.uuid4()),
+            'agent_id': agent_id,
+            'folder': folder,
+            'filename': file.filename,
+            'content_type': file.content_type or 'text/plain',
+            'size_bytes': len(content.encode('utf-8')),
+            'content': content,
+            'description': description,
+            'storage_path': f'{agent_id}/{folder}/{file.filename}',
+            'created_at': datetime.utcnow().isoformat(),
+        }
+        _db().table('gitmem_documents').insert(doc).execute()
+        return jsonify({"status": "success", "id": doc['id'], "filename": file.filename}), 201
+    except Exception as e:
+        return jsonify({"status": "error", "error": str(e)}), 500
+
+
+@gitmem_bp.route('/api/documents/<agent_id>/<doc_id>', methods=['DELETE'])
+@login_required
+def api_document_delete(agent_id, doc_id):
+    """Delete a document from an agent's store."""
+    if not _get_agent(agent_id, user_id=current_user.get_id()):
+        return jsonify({"error": "Access denied"}), 403
+    try:
+        _db().table('gitmem_documents').delete().eq('id', doc_id).eq('agent_id', agent_id).execute()
         return jsonify({"status": "success"})
     except Exception as e:
         return jsonify({"status": "error", "error": str(e)}), 500
