@@ -25,6 +25,35 @@ class IngestionPipeline:
         self.event_bus = event_bus
         self._table = "gitmem_memories"
 
+    def _ensure_repo(self, repo_id: str, workspace_id: str):
+        """Ensure a repo exists before inserting dependent records."""
+        if not self.client: return
+        try:
+            res = self.client.table("gitmem_repos").select("repo_id").eq("repo_id", repo_id).execute()
+            if not res.data:
+                # Provision workspace
+                ws_res = self.client.table("gitmem_workspaces").select("workspace_id").eq("workspace_id", workspace_id).execute()
+                if not ws_res.data:
+                    try:
+                        self.client.table("gitmem_workspaces").insert({
+                            "workspace_id": workspace_id,
+                            "name": "Default Workspace",
+                            "slug": workspace_id,
+                            "owner_id": "system"
+                        }).execute()
+                    except: pass
+                
+                # Provision repo
+                self.client.table("gitmem_repos").insert({
+                    "repo_id": repo_id,
+                    "workspace_id": workspace_id,
+                    "name": f"Agent {repo_id[:8]}",
+                    "slug": repo_id,
+                    "owner_id": "system"
+                }).execute()
+        except Exception as e:
+            print(f"[Ingestion] Warning: Could not ensure repo {repo_id} exists: {e}")
+
     def process_raw_input(self, repo_id: str, workspace_id: str, agent_id: str, 
                           text: str, metadata: Dict[str, Any] = None) -> List[MemoryItem]:
         """
@@ -72,6 +101,7 @@ class IngestionPipeline:
         # 1. Save metadata to Supabase
         if self.client:
             try:
+                self._ensure_repo(item.repo_id, item.workspace_id)
                 self.client.table(self._table).insert(item.to_dict()).execute()
             except Exception as e:
                 print(f"[Ingestion] Supabase insert failed: {e}")

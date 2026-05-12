@@ -71,6 +71,47 @@ def _count_table_where(table, filters: dict):
         return 0
 
 
+def _ensure_gitmem_repo(agent_id, workspace_id='default'):
+    """Ensure a repo exists in gitmem_repos for this agent_id. 
+    Required for V2 schema compatibility when agents are created outside GitMem core."""
+    if not _db(): return
+    try:
+        # Check if repo exists
+        res = _db().table('gitmem_repos').select('repo_id').eq('repo_id', agent_id).execute()
+        if not res.data:
+            print(f"[GitMem] Provisioning missing repo for agent {agent_id} in workspace {workspace_id}")
+            
+            # Ensure workspace exists
+            ws_res = _db().table('gitmem_workspaces').select('workspace_id').eq('workspace_id', workspace_id).execute()
+            if not ws_res.data:
+                try:
+                    _db().table('gitmem_workspaces').insert({
+                        'workspace_id': workspace_id,
+                        'name': 'Default Workspace',
+                        'slug': workspace_id,
+                        'owner_id': 'system'
+                    }).execute()
+                except Exception as we:
+                    print(f"[GitMem] Workspace insert warning (might exist): {we}")
+            
+            # Get agent info if possible to populate repo name
+            agent = _get_agent(agent_id)
+            repo_name = agent.get('agent_name', f"Agent {agent_id[:8]}") if agent else f"Agent {agent_id[:8]}"
+            repo_slug = agent.get('agent_slug', agent_id) if agent else agent_id
+            owner_id = agent.get('user_id', 'system') if agent else 'system'
+            
+            _db().table('gitmem_repos').insert({
+                'repo_id': agent_id,
+                'workspace_id': workspace_id,
+                'name': repo_name,
+                'slug': repo_slug,
+                'owner_id': owner_id,
+                'visibility': 'private'
+            }).execute()
+    except Exception as e:
+        print(f"[GitMem] Failed to ensure repo exists: {e}")
+
+
 def _build_folder_structure(agent_id):
     """
     Build the virtual file-system hierarchy for agent_dashboard.html.
@@ -787,6 +828,9 @@ def api_add_memory():
         return jsonify({"error": "Access denied"}), 403
 
     try:
+        # Ensure V2 repo structure exists
+        _ensure_gitmem_repo(agent_id)
+
         from gitmem.core.models import MemoryItem
         import uuid
         mem = MemoryItem(

@@ -47,6 +47,34 @@ class SupabaseConnector:
             print("[Supabase] Please run 'gitmem/schema.sql' in your Supabase SQL Editor to create tables.")
             self._disabled = True
 
+    def _ensure_repo(self, repo_id: str, workspace_id: str):
+        """Ensure a repo exists before inserting dependent records."""
+        if self._disabled or not self.client: return
+        try:
+            res = self.client.table("gitmem_repos").select("repo_id").eq("repo_id", repo_id).execute()
+            if not res.data:
+                # Provision workspace
+                ws_res = self.client.table("gitmem_workspaces").select("workspace_id").eq("workspace_id", workspace_id).execute()
+                if not ws_res.data:
+                    try:
+                        self.client.table("gitmem_workspaces").insert({
+                            "workspace_id": workspace_id,
+                            "name": "Default Workspace",
+                            "slug": workspace_id,
+                            "owner_id": "system"
+                        }).execute()
+                    except: pass
+                
+                # Provision repo
+                self.client.table("gitmem_repos").insert({
+                    "repo_id": repo_id,
+                    "workspace_id": workspace_id,
+                    "name": f"Agent {repo_id[:8]}",
+                    "slug": repo_id,
+                    "owner_id": "system"
+                }).execute()
+        except: pass
+
     def add_memory(self, memory_data: Dict[str, Any]):
         if self._disabled or not self.client: return
         try:
@@ -62,6 +90,7 @@ class SupabaseConnector:
             if 'created_at' in data:
                 data['created_at'] = str(data['created_at'])
                 
+            self._ensure_repo(data['repo_id'], data['workspace_id'])
             self.client.table("gitmem_memories").insert(data).execute()
             self._error_count = 0 # Reset on success
         except Exception as e:
