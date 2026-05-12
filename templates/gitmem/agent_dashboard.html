@@ -289,6 +289,33 @@
         <!-- RIGHT COLUMN: Stats & Widgets -->
         <div class="lg:col-span-4 space-y-6">
 
+            <!-- Quick Links -->
+            <div class="backdrop-blur-xl bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-2xl p-5">
+                <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                    <i data-lucide="layout-grid" class="w-4 h-4"></i> Pages
+                </h3>
+                <div class="space-y-1">
+                    <a href="{{ url_for('gitmem.agent_memories', agent_id=agent.id) }}" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm text-gray-300 hover:bg-white/5 hover:text-white transition-colors">
+                        <i data-lucide="brain" class="w-3.5 h-3.5 text-violet-400"></i> Memories
+                    </a>
+                    <a href="{{ url_for('gitmem.agent_documents', agent_id=agent.id) }}" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm text-gray-300 hover:bg-white/5 hover:text-white transition-colors">
+                        <i data-lucide="file-text" class="w-3.5 h-3.5 text-blue-400"></i> Documents
+                    </a>
+                    <a href="{{ url_for('gitmem.agent_checkpoints', agent_id=agent.id) }}" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm text-gray-300 hover:bg-white/5 hover:text-white transition-colors">
+                        <i data-lucide="save" class="w-3.5 h-3.5 text-green-400"></i> Checkpoints
+                    </a>
+                    <a href="{{ url_for('gitmem.agent_logs', agent_id=agent.id) }}" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm text-gray-300 hover:bg-white/5 hover:text-white transition-colors">
+                        <i data-lucide="activity" class="w-3.5 h-3.5 text-yellow-400"></i> Activity Logs
+                    </a>
+                    <a href="{{ url_for('gitmem.agent_sources', agent_id=agent.id) }}" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm text-gray-300 hover:bg-white/5 hover:text-white transition-colors">
+                        <i data-lucide="link" class="w-3.5 h-3.5 text-cyan-400"></i> Data Sources
+                    </a>
+                    <a href="{{ url_for('gitmem.agent_diffs', agent_id=agent.id) }}" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm text-gray-300 hover:bg-white/5 hover:text-white transition-colors">
+                        <i data-lucide="git-compare" class="w-3.5 h-3.5 text-orange-400"></i> Diff Viewer
+                    </a>
+                </div>
+            </div>
+
             <!-- About Card -->
             <div
                 class="backdrop-blur-xl bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] rounded-2xl p-6">

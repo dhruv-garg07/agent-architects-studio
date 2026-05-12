@@ -45,11 +45,14 @@
                     {% set nav_items = [
                     ('code', 'code-2', 'Code', 'gitmem.agent_dashboard' if agent else 'gitmem.landing'),
                     ('commits', 'git-commit', 'Commits', 'gitmem.agent_commits'),
+                    ('memories', 'brain', 'Memories', 'gitmem.agent_memories'),
+                    ('documents', 'file-text', 'Docs', 'gitmem.agent_documents'),
                     ('settings', 'settings', 'Settings', 'gitmem.settings'),
                     ] %}
 
-                    {% set repo_routes = ['gitmem.agent_dashboard', 'gitmem.agent_commits', 'gitmem.issues', 'gitmem.pulls', 'gitmem.actions',
-                    'gitmem.projects', 'gitmem.insights', 'gitmem.settings'] %}
+                    {% set repo_routes = ['gitmem.agent_dashboard', 'gitmem.agent_commits', 'gitmem.agent_memories',
+                    'gitmem.agent_documents', 'gitmem.agent_checkpoints', 'gitmem.agent_logs', 'gitmem.agent_sources',
+                    'gitmem.settings'] %}
 
                     {% for id, icon, label, route in nav_items %}
                     <a href="{{ url_for(route, agent_id=agent.id) if agent and route in repo_routes else url_for(route) }}"

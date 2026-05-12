@@ -4,6 +4,15 @@
 {% block repo_content %}
 <div class="space-y-6">
 
+    <!-- Breadcrumb -->
+    <nav class="flex items-center text-xs text-gray-400 gap-1.5">
+        <a href="{{ url_for('gitmem.agent_dashboard', agent_id=agent.id) }}" class="hover:text-white">Dashboard</a>
+        <span>/</span>
+        <a href="{{ url_for('gitmem.agent_commits', agent_id=agent.id) }}" class="hover:text-white">Commits</a>
+        <span>/</span>
+        <span class="text-white">Compare</span>
+    </nav>
+
     <!-- Header -->
     <div class="flex items-center justify-between">
         <div>
