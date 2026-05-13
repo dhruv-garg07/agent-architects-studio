@@ -3,12 +3,12 @@
 {% block title %}MCP Documentation – GitMem MCP (Manhattan){% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" style="max-width: 100% !important; margin: 0 !important;">
   <!-- Header -->
   <div class="mb-8">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
       <div>
-        <h1 class="text-3xl font-bold text-white mb-2">MCP Documentation</h1>
+        <h1 class="text-3xl font-bold text-white mb-2 cyber-title">MCP Documentation</h1>
         <p class="text-gray-400">GitMem MCP (Manhattan) – Persistent AI memory that reduces token costs by 37%</p>
       </div>
       <div class="relative w-full sm:w-80">
@@ -42,6 +42,11 @@
         <!-- JS populated -->
       </div>
     </aside>
+
+    <!-- Resizer Splitter -->
+    <div class="panel-resizer" id="mcp-resizer">
+      <div class="resizer-handle"></div>
+    </div>
 
     <!-- Right: Details & Content Panel -->
     <section id="mcp-details" class="panel middle-panel card">
@@ -151,14 +156,14 @@
 /* ── MCP Docs Panel Layout (2 columns) ── */
 .mcp-docs-panels {
   display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: 20px;
-  height: 78vh;
+  grid-template-columns: var(--left-panel-width, 280px) 12px 1fr;
+  gap: 0px;
+  height: calc(100vh - 200px);
   min-height: 700px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   align-items: stretch;
 }
 .mcp-docs-panels .card {
@@ -282,6 +287,7 @@
 
 /* ── Responsive ── */
 @media (max-width: 768px) {
+  .panel-resizer { display: none !important; }
   .mcp-docs-panels { grid-template-columns: 1fr; height: auto; min-height: auto; gap: 10px; }
   #mcp-nav {
     position: fixed;
@@ -303,7 +309,9 @@
   #mcp-details { margin-bottom: 1rem; height: auto; }
   .nav-panel, .middle-panel { border-radius: 12px; }
 }
+
 </style>
+{% include "components/docs_shared_styles.html" %}
 
 <!-- Include Prism.js -->
 <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
@@ -893,6 +901,50 @@ python3 -m pip install gitmem-mcp</code></pre>
   // ── Auto-select Overview ──
   const firstBtn = document.querySelector('.mcp-nav-item[data-section="overview"]');
   if (firstBtn) { firstBtn.classList.add('active'); }
+
+  // ── Trigger enter animation ──
+  const detailContent = document.getElementById('mcp-detail-content');
+  if (detailContent) {
+    detailContent.classList.add('tab-animated');
+  }
+
+  // ── Panel Dragging and Resizing Logic ──
+  const container = document.querySelector('.mcp-docs-panels');
+  const resizer = document.getElementById('mcp-resizer');
+  let isDragging = false;
+  let startX = 0;
+  let startWidth = 0;
+
+  if (resizer && container) {
+    resizer.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      isDragging = true;
+      resizer.classList.add('dragging');
+      startX = e.clientX;
+      const navPanel = document.getElementById('mcp-nav');
+      startWidth = navPanel.getBoundingClientRect().width;
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    });
+  }
+
+  document.addEventListener('mousemove', function(e) {
+    if (!isDragging) return;
+    const containerWidth = container.getBoundingClientRect().width;
+    const delta = e.clientX - startX;
+    let newWidth = startWidth + delta;
+    newWidth = Math.max(200, Math.min(newWidth, containerWidth * 0.5));
+    container.style.setProperty('--left-panel-width', `${newWidth}px`);
+  });
+
+  document.addEventListener('mouseup', function() {
+    if (isDragging) {
+      isDragging = false;
+      if (resizer) resizer.classList.remove('dragging');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
+  });
 
   // Highlight default syntax blocks inside HTML
   if (typeof Prism !== 'undefined') Prism.highlightAll();

@@ -1,0 +1,114 @@
+<style>
+/* ==================================================
+   ✨ Classy, Sophisticated Premium Shared Styling
+   ================================================== */
+
+/* Scope width overrides for full-monitor horizontal spans */
+.max-w-7xl {
+  max-width: 100% !important;
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
+}
+
+/* Classy, Refined Splitter Bars Styling */
+.panel-resizer {
+  cursor: col-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  z-index: 10;
+  user-select: none;
+}
+.panel-resizer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1px;
+  background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.12), transparent);
+  transition: all 0.3s ease;
+}
+.panel-resizer:hover::before,
+.panel-resizer.dragging::before {
+  width: 2px;
+  background: linear-gradient(to bottom, transparent, rgba(59, 130, 246, 0.5), transparent);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+}
+.resizer-handle {
+  width: 4px;
+  height: 24px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.15);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.panel-resizer:hover .resizer-handle,
+.panel-resizer.dragging .resizer-handle {
+  background: rgba(255, 255, 255, 0.8);
+  transform: scaleX(1.2);
+}
+
+/* Refined Active Endpoint / Nav Item Styling */
+.endpoint-item.active,
+.mcp-nav-item.active {
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.12), transparent) !important;
+  border-left: 2px solid #3b82f6 !important;
+  box-shadow: inset 1px 0 8px rgba(59, 130, 246, 0.08);
+}
+
+/* Sleek Tab / Panel Enter Animation */
+@keyframes classyTabFade {
+  0% { opacity: 0; transform: translateY(4px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.tab-animated {
+  animation: classyTabFade 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Elegant Glassmorphic Card Lift */
+.api-docs-panels .card,
+.mcp-docs-panels .card {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.api-docs-panels .card:hover,
+.mcp-docs-panels .card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+/* Premium Gradient Title */
+.cyber-title {
+  background: linear-gradient(135deg, #ffffff 30%, #93c5fd 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.02em;
+}
+
+/* Visible Scrollbars for Best UX */
+.nav-panel,
+.middle-panel > .p-6,
+.code-panel {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.15) rgba(0,0,0,0.2);
+}
+::-webkit-scrollbar {
+  width: 6px !important;
+  height: 6px !important;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.2) !important;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.15) !important;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.25) !important;
+}
+</style>
