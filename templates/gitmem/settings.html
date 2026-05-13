@@ -1,8 +1,9 @@
-{% extends "base.html" %}
+{% extends "gitmem/base.html" %}
+{% set active_page = "settings" %}
 
 {% block title %}Settings - {{ agent.name if agent else 'Unknown' }} | GitMem{% endblock %}
 
-{% block content %}
+{% block repo_content %}
 <div class="relative min-h-screen bg-transparent text-foreground overflow-hidden">
     <div class="absolute inset-0 pointer-events-none">
         <div class="absolute top-0 left-1/4 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl"></div>

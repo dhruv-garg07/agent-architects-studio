@@ -600,12 +600,12 @@ def agent_commits(agent_id):
     # Get commits — filter by branch if we have ref data
     commits = []
     try:
-        query = _db().table('gitmem_commits').select('*').eq('agent_id', agent_id)
-        # If filtering by branch, find the branch's target hash and walk parents
-        # For now, use a simple approach: fetch all and let client see branch context
-        query = query.order('timestamp', desc=True).limit(100)
-        res = query.execute()
-        commits = res.data or []
+        db = _db()
+        if db:
+            query = db.table('gitmem_commits').select('*').eq('agent_id', agent_id)
+            query = query.order('timestamp', desc=True).limit(100)
+            res = query.execute()
+            commits = res.data or []
     except Exception:
         pass
 
@@ -639,11 +639,13 @@ def agent_diffs(agent_id):
 
     commits = []
     try:
-        res = _db().table('gitmem_commits').select('hash,message,timestamp,author_id') \
-            .eq('agent_id', agent_id) \
-            .order('timestamp', desc=True).limit(50).execute()
-        for c in (res.data or []):
-            commits.append({'sha': c['hash'], 'message': c.get('message', ''), 'timestamp': c.get('timestamp', '')})
+        db = _db()
+        if db:
+            res = db.table('gitmem_commits').select('hash,message,timestamp,author_id') \
+                .eq('agent_id', agent_id) \
+                .order('timestamp', desc=True).limit(50).execute()
+            for c in (res.data or []):
+                commits.append({'sha': c['hash'], 'message': c.get('message', ''), 'timestamp': c.get('timestamp', '')})
     except Exception:
         pass
 
@@ -851,10 +853,16 @@ def api_add_memory():
             importance=importance,
             tags=tags,
         )
-        _db().table('gitmem_memories').insert(mem.to_dict()).execute()
+        db = _db()
+        if not db:
+            return jsonify({"error": "Database unavailable"}), 503
+        db.table('gitmem_memories').insert(mem.to_dict()).execute()
 
-        # Also index in vector store
-        gitmem_app.vector_engine.add_memory(mem)
+        # Also index in vector store (best-effort)
+        try:
+            gitmem_app.vector_engine.add_memory(mem)
+        except Exception:
+            pass
 
         return jsonify({"status": "success", "id": mem.id})
     except Exception as e:
@@ -866,15 +874,18 @@ def api_add_memory():
 @login_required
 def api_delete_memory(memory_id):
     """Delete a memory."""
+    db = _db()
+    if not db:
+        return jsonify({"error": "Database unavailable"}), 503
     try:
-        res = _db().table('gitmem_memories').select('agent_id').eq('id', memory_id).execute()
+        res = db.table('gitmem_memories').select('agent_id').eq('id', memory_id).execute()
         if not res.data:
             return jsonify({"error": "Not found"}), 404
         agent_id = res.data[0]['agent_id']
         if not _get_agent(agent_id, user_id=current_user.get_id()):
             return jsonify({"error": "Access denied"}), 403
 
-        _db().table('gitmem_memories').delete().eq('id', memory_id).execute()
+        db.table('gitmem_memories').delete().eq('id', memory_id).execute()
         # Clean up vector index
         try:
             gitmem_app.vector_engine.delete_memory(memory_id)
@@ -890,9 +901,11 @@ def api_delete_memory(memory_id):
 def api_update_memory(memory_id):
     """Update an existing memory's content, type, importance, or tags."""
     data = request.get_json(silent=True) or {}
-
+    db = _db()
+    if not db:
+        return jsonify({"error": "Database unavailable"}), 503
     try:
-        res = _db().table('gitmem_memories').select('*').eq('id', memory_id).execute()
+        res = db.table('gitmem_memories').select('*').eq('id', memory_id).execute()
         if not res.data:
             return jsonify({"error": "Not found"}), 404
         existing = res.data[0]
@@ -916,7 +929,7 @@ def api_update_memory(memory_id):
 
         from datetime import datetime
         updates['updated_at'] = datetime.utcnow().isoformat()
-        _db().table('gitmem_memories').update(updates).eq('id', memory_id).execute()
+        db.table('gitmem_memories').update(updates).eq('id', memory_id).execute()
 
         # Re-index in vector if content changed
         if 'content' in updates:
@@ -964,7 +977,10 @@ def api_document_upload(agent_id):
             'storage_path': f'{agent_id}/{folder}/{file.filename}',
             'created_at': datetime.utcnow().isoformat(),
         }
-        _db().table('gitmem_documents').insert(doc).execute()
+        db = _db()
+        if not db:
+            return jsonify({"error": "Database unavailable"}), 503
+        db.table('gitmem_documents').insert(doc).execute()
         return jsonify({"status": "success", "id": doc['id'], "filename": file.filename}), 201
     except Exception as e:
         return jsonify({"status": "error", "error": str(e)}), 500
@@ -976,8 +992,11 @@ def api_document_delete(agent_id, doc_id):
     """Delete a document from an agent's store."""
     if not _get_agent(agent_id, user_id=current_user.get_id()):
         return jsonify({"error": "Access denied"}), 403
+    db = _db()
+    if not db:
+        return jsonify({"error": "Database unavailable"}), 503
     try:
-        _db().table('gitmem_documents').delete().eq('id', doc_id).eq('agent_id', agent_id).execute()
+        db.table('gitmem_documents').delete().eq('id', doc_id).eq('agent_id', agent_id).execute()
         return jsonify({"status": "success"})
     except Exception as e:
         return jsonify({"status": "error", "error": str(e)}), 500
@@ -1312,6 +1331,8 @@ def api_diff():
     sha_to = request.args.get('to', '')
     if not sha_from or not sha_to:
         return jsonify({"error": "Missing from and to params"}), 400
+    if not getattr(gitmem_app, 'vcs', None):
+        return jsonify({"error": "VCS engine not initialized"}), 503
 
     try:
         diff = gitmem_app.vcs.diff_engine.diff_commits(sha_from, sha_to)
@@ -1479,7 +1500,10 @@ def api_checkpoint_create(agent_id):
             'memory_counts': memory_counts,
             'metadata': {},
         }
-        _db().table('gitmem_checkpoints').insert(row).execute()
+        db = _db()
+        if not db:
+            return jsonify({"error": "Database unavailable"}), 503
+        db.table('gitmem_checkpoints').insert(row).execute()
         return jsonify({"status": "success", "id": checkpoint_id})
     except Exception as e:
         return jsonify({"status": "error", "error": str(e)}), 500
@@ -1499,8 +1523,11 @@ def api_logs(agent_id):
     limit = request.args.get('limit', 100, type=int)
     log_type = request.args.get('type')
 
+    db = _db()
+    if not db:
+        return jsonify({"status": "success", "data": []})
     try:
-        q = _db().table('gitmem_activity_logs').select('*').eq('agent_id', agent_id)
+        q = db.table('gitmem_activity_logs').select('*').eq('agent_id', agent_id)
         if log_type:
             q = q.eq('log_type', log_type)
         res = q.order('created_at', desc=True).limit(limit).execute()

@@ -1,8 +1,9 @@
-{% extends "base.html" %}
+{% extends "gitmem/base.html" %}
+{% set active_page = "code" %}
 
 {% block title %}{{ category|capitalize }} - {{ agent.name or agent.id }} | GitMem{% endblock %}
 
-{% block content %}
+{% block repo_content %}
 <div class="relative min-h-screen bg-transparent text-foreground overflow-hidden">
     <!-- Mesh Gradients Background -->
     <div class="absolute inset-0 pointer-events-none">
