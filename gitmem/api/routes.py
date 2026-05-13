@@ -47,6 +47,16 @@ def _get_agent(agent_id, user_id=None):
         return None
 
 
+def _agent_context(agent_id, agent_raw):
+    """Build a consistent agent context dict for templates (used by github_shell)."""
+    return {
+        'id': agent_id,
+        'name': (agent_raw or {}).get('agent_name') or agent_id,
+        'slug': (agent_raw or {}).get('agent_slug') or agent_id[:8],
+        'description': (agent_raw or {}).get('description') or '',
+    }
+
+
 def _count_table(table, col, val):
     if not _db():
         return 0
@@ -635,7 +645,7 @@ def agent_diffs(agent_id):
     if not agent_raw:
         return redirect(url_for('gitmem.landing'))
 
-    agent = {'id': agent_id, 'name': agent_raw.get('agent_name') or agent_id}
+    agent = _agent_context(agent_id, agent_raw)
 
     commits = []
     try:
@@ -662,7 +672,7 @@ def agent_diffs(agent_id):
 @login_required
 def pulls(agent_id):
     agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
-    agent = {'id': agent_id, 'name': (agent_raw or {}).get('agent_name', agent_id)}
+    agent = _agent_context(agent_id, agent_raw)
     return render_template('pulls.html', agent=agent, pulls=[], sources=get_sources_status())
 
 
@@ -670,7 +680,7 @@ def pulls(agent_id):
 @login_required
 def issues(agent_id):
     agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
-    agent = {'id': agent_id, 'name': (agent_raw or {}).get('agent_name', agent_id)}
+    agent = _agent_context(agent_id, agent_raw)
     return render_template('issues.html', agent=agent, issues=[], sources=get_sources_status())
 
 
@@ -680,7 +690,7 @@ def settings(agent_id):
     agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
     if not agent_raw:
         return redirect(url_for('gitmem.landing'))
-    agent = {'id': agent_id, 'name': agent_raw.get('agent_name', agent_id), 'description': agent_raw.get('description', '')}
+    agent = _agent_context(agent_id, agent_raw)
     # Get workspace_id for team management (default workspace if not set)
     workspace_id = agent_raw.get('workspace_id', 'default')
     return render_template('settings.html', agent=agent, workspace_id=workspace_id, sources=get_sources_status())
@@ -690,7 +700,7 @@ def settings(agent_id):
 @login_required
 def wiki(agent_id):
     agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
-    agent = {'id': agent_id, 'name': (agent_raw or {}).get('agent_name', agent_id)}
+    agent = _agent_context(agent_id, agent_raw)
     return render_template('wiki.html', agent=agent, sources=get_sources_status())
 
 
@@ -698,7 +708,7 @@ def wiki(agent_id):
 @login_required
 def agent_checkpoints(agent_id):
     agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
-    agent = {'id': agent_id, 'name': (agent_raw or {}).get('agent_name', agent_id)}
+    agent = _agent_context(agent_id, agent_raw)
     checkpoints = []
     if _db():
         try:
@@ -714,7 +724,7 @@ def agent_checkpoints(agent_id):
 @login_required
 def agent_logs(agent_id):
     agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
-    agent = {'id': agent_id, 'name': (agent_raw or {}).get('agent_name', agent_id)}
+    agent = _agent_context(agent_id, agent_raw)
     logs = []
     if _db():
         try:
@@ -1547,7 +1557,7 @@ def agent_documents(agent_id):
     agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
     if not agent_raw:
         return redirect(url_for('gitmem.landing'))
-    agent = {'id': agent_id, 'name': agent_raw.get('agent_name', agent_id)}
+    agent = _agent_context(agent_id, agent_raw)
     documents = []
     if _db():
         try:
@@ -1566,7 +1576,7 @@ def agent_memories(agent_id):
     agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
     if not agent_raw:
         return redirect(url_for('gitmem.landing'))
-    agent = {'id': agent_id, 'name': agent_raw.get('agent_name', agent_id)}
+    agent = _agent_context(agent_id, agent_raw)
     memories = []
     if _db():
         try:
@@ -1585,7 +1595,7 @@ def agent_sources(agent_id):
     agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
     if not agent_raw:
         return redirect(url_for('gitmem.landing'))
-    agent = {'id': agent_id, 'name': agent_raw.get('agent_name', agent_id)}
+    agent = _agent_context(agent_id, agent_raw)
     return render_template('sources.html', agent=agent, sources=get_sources_status())
 
 
