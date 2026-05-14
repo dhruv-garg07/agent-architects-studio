@@ -726,6 +726,148 @@
             });
         }
     </script>
+
+    <!-- Floating Contact Us Widget -->
+    <div class="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+        <!-- Contact Card (Hidden by default) -->
+        <div id="contact-card" class="hidden opacity-0 translate-y-4 scale-95 transition-all duration-300 ease-out mb-4 w-80 rounded-2xl overflow-hidden border border-[#2d2d2d] bg-[#121212]/95 backdrop-blur-md shadow-2xl shadow-black/60">
+            <!-- Header -->
+            <div class="p-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <div class="relative flex h-2.5 w-2.5">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-sm tracking-wide text-white">Chat with us</h4>
+                        <p class="text-[10px] text-blue-100/80">We usually reply in a few minutes</p>
+                    </div>
+                </div>
+                <button id="contact-widget-close" class="text-white/80 hover:text-white hover:bg-white/10 rounded-full p-1.5 transition-colors duration-200">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div class="p-5 space-y-4">
+                <p class="text-xs text-gray-400 leading-relaxed">
+                    Hi there! 👋 Have any questions or need support? Chat directly with our founders:
+                </p>
+
+                <div class="space-y-2">
+                    <!-- WhatsApp Button -->
+                    <a href="https://wa.me/918053779453?text=Hi!%20I%27m%20interested%20in%20The%20Manhattan%20Project." target="_blank" 
+                       class="flex items-center gap-3 w-full p-3 rounded-xl border border-[#22c55e]/20 bg-[#22c55e]/5 hover:bg-[#22c55e]/10 hover:border-[#22c55e]/40 transition-all duration-300 group text-left">
+                        <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-[#22c55e]/20 text-[#22c55e] group-hover:scale-110 transition-transform duration-300">
+                            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                                <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.73-1.456L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.725 1.45 5.277.002 9.585-4.294 9.588-9.577.002-2.561-1.002-4.97-2.83-6.799-1.829-1.83-4.238-2.83-6.801-2.83-5.283 0-9.59 4.3-9.594 9.583-.001 1.759.477 3.407 1.424 4.863l-.996 3.635 3.73-.978zm10.835-5.933c.3-.15.54-.27.6-.33.06-.06.12-.15.12-.27 0-.12-.06-.24-.3-.36-.24-.12-1.41-.69-1.62-.78-.21-.09-.36-.15-.51.09-.15.24-.6.75-.75.9-.15.15-.3.18-.6.03-.3-.15-1.26-.47-2.4-1.48-.87-.78-1.47-1.74-1.65-2.04-.18-.3-.02-.45.13-.6.13-.14.3-.33.45-.48.15-.15.2-.27.3-.45.1-.18.05-.33-.02-.48-.07-.15-.6-1.44-.82-1.98-.22-.54-.48-.45-.6-.45-.12 0-.27-.03-.42-.03-.15 0-.39.06-.6.27-.21.21-.81.78-.81 1.92 0 1.14.84 2.25.96 2.4.12.15 1.62 2.46 3.96 3.48.56.24 1 .39 1.34.5.56.18 1.08.15 1.48.09.45-.06 1.41-.57 1.62-1.14z"/>
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex items-center justify-between">
+                                <h5 class="text-sm font-semibold text-white">WhatsApp Chat</h5>
+                                <i data-lucide="arrow-up-right" class="w-3.5 h-3.5 text-gray-500 group-hover:text-[#22c55e] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300"></i>
+                            </div>
+                            <p class="text-[11px] text-gray-400 mt-0.5">+91 8053779453</p>
+                        </div>
+                    </a>
+
+                    <!-- Email Button -->
+                    <a href="mailto:founders@themanhattanproject.ai" 
+                       class="flex items-center gap-3 w-full p-3 rounded-xl border border-blue-500/20 bg-blue-500/5 hover:bg-blue-500/10 hover:border-blue-500/40 transition-all duration-300 group text-left">
+                        <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-500/20 text-blue-400 group-hover:scale-110 transition-transform duration-300">
+                            <i data-lucide="mail" class="w-5 h-5"></i>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex items-center justify-between">
+                                <h5 class="text-sm font-semibold text-white">Email Support</h5>
+                                <i data-lucide="arrow-up-right" class="w-3.5 h-3.5 text-gray-500 group-hover:text-blue-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300"></i>
+                            </div>
+                            <p class="text-[11px] text-gray-400 mt-0.5 truncate">founders@themanhattanproject.ai</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="px-5 py-3 bg-[#171717]/40 border-t border-[#2d2d2d] text-center">
+                <span class="text-[10px] text-gray-500">The Manhattan Project &copy; 2026</span>
+            </div>
+        </div>
+
+        <!-- Floating Action Button -->
+        <button id="contact-widget-toggle" class="flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium shadow-lg shadow-blue-600/20 hover:shadow-blue-600/35 hover:scale-105 active:scale-95 transition-all duration-300 group border border-blue-500/25">
+            <span class="relative flex h-2.5 w-2.5">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+            </span>
+            <i data-lucide="message-square" class="w-5 h-5 group-hover:rotate-6 transition-transform duration-300"></i>
+            <span class="text-sm tracking-wide font-semibold">Contact Us</span>
+        </button>
+    </div>
+
+    <!-- Script for Widget Interaction -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const toggleBtn = document.getElementById('contact-widget-toggle');
+            const closeBtn = document.getElementById('contact-widget-close');
+            const card = document.getElementById('contact-card');
+
+            function openCard() {
+                card.classList.remove('hidden');
+                // Force reflow for smooth transition
+                card.offsetHeight;
+                card.classList.remove('opacity-0', 'translate-y-4', 'scale-95');
+                card.classList.add('opacity-100', 'translate-y-0', 'scale-100');
+                toggleBtn.classList.add('scale-90', 'opacity-90');
+                // Render lucide icons if any dynamic icons were added
+                if (window.lucide) {
+                    window.lucide.createIcons();
+                }
+            }
+
+            function closeCard() {
+                card.classList.remove('opacity-100', 'translate-y-0', 'scale-100');
+                card.classList.add('opacity-0', 'translate-y-4', 'scale-95');
+                toggleBtn.classList.remove('scale-90', 'opacity-90');
+                
+                // Wait for animation duration (300ms) to add hidden class
+                setTimeout(() => {
+                    if (card.classList.contains('opacity-0')) {
+                        card.classList.add('hidden');
+                    }
+                }, 300);
+            }
+
+            toggleBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                if (card.classList.contains('hidden') || card.classList.contains('opacity-0')) {
+                    openCard();
+                } else {
+                    closeCard();
+                }
+            });
+
+            closeBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                closeCard();
+            });
+
+            // Close card when clicking outside
+            document.addEventListener('click', function (e) {
+                if (!card.contains(e.target) && !toggleBtn.contains(e.target)) {
+                    if (!card.classList.contains('hidden')) {
+                        closeCard();
+                    }
+                }
+            });
+
+            // Prevent closing when clicking inside the card
+            card.addEventListener('click', function (e) {
+                e.stopPropagation();
+            });
+        });
+    </script>
 </body>
 
 </html>
