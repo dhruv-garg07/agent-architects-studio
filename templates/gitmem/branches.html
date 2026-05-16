@@ -1,0 +1,134 @@
+{% extends "layouts/github_shell.html" %}
+{% set active_page = "branches" %}
+
+{% block repo_content %}
+<div class="space-y-4">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            <i data-lucide="git-branch" class="w-5 h-5 text-violet-400"></i>
+            Branches
+        </h2>
+        <button onclick="showNewBranchModal()" class="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            New Branch
+        </button>
+    </div>
+
+    <!-- Branches List -->
+    <div class="bg-white/[0.02] border border-white/10 rounded-xl overflow-hidden shadow-xl">
+        <div class="px-4 py-3 border-b border-white/5 bg-white/[0.02] text-xs font-semibold text-gray-500 uppercase tracking-wider grid grid-cols-12 gap-4">
+            <div class="col-span-4">Branch</div>
+            <div class="col-span-5">Latest Commit</div>
+            <div class="col-span-2">Updated</div>
+            <div class="col-span-1 text-right">Actions</div>
+        </div>
+
+        <div class="divide-y divide-white/5">
+            {% for branch in branches %}
+            <div class="px-4 py-4 grid grid-cols-12 gap-4 items-center hover:bg-white/[0.01] transition-colors group">
+                <!-- Branch Name -->
+                <div class="col-span-4 flex items-center gap-3">
+                    <div class="p-2 rounded-lg bg-violet-500/10 text-violet-400">
+                        <i data-lucide="git-branch" class="w-4 h-4"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-bold text-white truncate">{{ branch.name }}</span>
+                            {% if branch.name == 'main' %}
+                            <span class="px-1.5 py-0.5 rounded text-[10px] bg-white/10 text-gray-400 border border-white/5">default</span>
+                            {% endif %}
+                        </div>
+                        <div class="text-[10px] text-gray-500 font-mono truncate">{{ branch.hash[:12] if branch.hash else 'HEAD' }}</div>
+                    </div>
+                </div>
+
+                <!-- Latest Commit -->
+                <div class="col-span-5 min-w-0">
+                    {% if branch.commit %}
+                    <div class="text-sm text-gray-300 truncate">{{ branch.commit.message }}</div>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="text-[10px] text-gray-500">{{ branch.commit.author_id or 'system' }}</span>
+                        <code class="text-[10px] text-violet-400/70">{{ branch.commit.hash[:7] }}</code>
+                    </div>
+                    {% else %}
+                    <div class="text-xs text-gray-600 italic">No commits yet</div>
+                    {% endif %}
+                </div>
+
+                <!-- Updated Date -->
+                <div class="col-span-2 text-xs text-gray-500">
+                    {{ (branch.updated_at or '')[:10] }}
+                </div>
+
+                <!-- Actions -->
+                <div class="col-span-1 text-right opacity-0 group-hover:opacity-100 transition-opacity">
+                    {% if branch.name != 'main' %}
+                    <button onclick="deleteBranch('{{ branch.name }}')" class="p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors" title="Delete Branch">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Create Branch Modal -->
+<div id="new-branch-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div class="bg-[#1a1a2e] border border-white/10 rounded-xl p-6 w-full max-w-sm shadow-2xl">
+        <h3 class="text-lg font-semibold text-white mb-4">Create Branch</h3>
+        <div class="space-y-3">
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Branch name</label>
+                <input type="text" id="new-branch-name" placeholder="feature/my-branch"
+                    class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm font-mono focus:outline-none focus:ring-2 focus:ring-violet-500/50">
+            </div>
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Branch from</label>
+                <select id="new-branch-source" class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-white text-sm">
+                    {% for name in branch_names %}<option value="{{ name }}" {% if name == current_branch %}selected{% endif %}>{{ name }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="hideModal('new-branch-modal')" class="px-4 py-2 text-gray-400 text-sm hover:text-white">Cancel</button>
+                <button onclick="createBranch()" id="create-branch-btn" class="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg">Create</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showNewBranchModal() { 
+    document.getElementById('new-branch-name').value = ''; 
+    document.getElementById('new-branch-modal').classList.remove('hidden'); 
+}
+function hideModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+async function createBranch() {
+    const name = document.getElementById('new-branch-name').value.trim();
+    const source = document.getElementById('new-branch-source').value;
+    if (!name) return;
+    const btn = document.getElementById('create-branch-btn');
+    btn.disabled = true; btn.textContent = 'Creating...';
+    try {
+        const res = await fetch(`/gitmem/api/agent/${agentId}/branches`, {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({name, source})
+        });
+        if (res.ok) window.location.reload();
+        else { const d = await res.json(); alert(d.error || 'Failed'); }
+    } finally { btn.disabled = false; btn.textContent = 'Create'; }
+}
+
+async function deleteBranch(name) {
+    if (!confirm(`Delete branch "${name}"? This cannot be undone.`)) return;
+    try {
+        const res = await fetch(`/gitmem/api/agent/${agentId}/branches/${name}`, {method: 'DELETE'});
+        if (res.ok) window.location.reload();
+        else { const d = await res.json(); alert(d.error || 'Failed'); }
+    } catch(e) { alert('Error: ' + e); }
+}
+</script>
+{% endblock %}

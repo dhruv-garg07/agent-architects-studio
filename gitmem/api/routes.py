@@ -355,8 +355,13 @@ def landing():
         total_memories += mem_count
         total_commits += commit_count
 
+    # Calculate unique active workspaces
+    active_ws_count = len({r['workspace_id'] for r in repos if r.get('workspace_id')})
+    if active_ws_count == 0 and repos:
+        active_ws_count = 1 # Default workspace if none specified
+
     stats = {
-        'active_workspaces': 1,
+        'active_workspaces': active_ws_count,
         'total_repositories': len(repos),
         'total_memories': total_memories,
         'total_commits': total_commits,
@@ -447,6 +452,17 @@ def agent_dashboard(agent_id):
             if sub.get('count', 0) > 0:
                 context_sources.append(sub)
 
+    # Branches
+    current_branch = request.args.get('branch', 'main')
+    branches = []
+    try:
+        branches_raw = gitmem_app.vcs.branch_manager.list_branches(agent_id)
+        branches = [b.get('ref_name') for b in branches_raw if b.get('ref_name')]
+        if not branches or 'main' not in branches:
+            branches.insert(0, 'main')
+    except Exception:
+        branches = ['main']
+
     memory_count = _count_table('gitmem_memories', 'agent_id', agent_id)
     commit_count = _count_table('gitmem_commits', 'agent_id', agent_id)
 
@@ -461,6 +477,8 @@ def agent_dashboard(agent_id):
         context_sources=context_sources,
         memory_count=memory_count,
         commit_count=commit_count,
+        branches=branches,
+        current_branch=current_branch,
         sources=get_sources_status(),
     )
 
@@ -581,56 +599,89 @@ def agent_file_view(agent_id, virtual_path=''):
 # Commit Log
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-@gitmem_bp.route('/agent/<agent_id>/commits')
+@gitmem_bp.route('/agent/<agent_id>/history')
 @login_required
-def agent_commits(agent_id):
-    """Commit history page."""
+def agent_history(agent_id):
+    """Unified history view with branch management and commit graph."""
     agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
     if not agent_raw:
         flash("Repository not found.", "error")
         return redirect(url_for('gitmem.landing'))
-
-    agent = {
-        'id': agent_id,
-        'name': agent_raw.get('agent_name') or agent_id,
-        'slug': agent_raw.get('agent_slug', agent_id),
-    }
+    agent = _agent_context(agent_id, agent_raw)
 
     current_branch = request.args.get('branch', 'main')
-
-    # Branches
+    
+    # 1. Fetch Branches
     branches = []
     try:
-        branches = gitmem_app.vcs.branch_manager.list_branches(agent_id)
+        branches_raw = gitmem_app.vcs.branch_manager.list_branches(agent_id)
+        for b in branches_raw:
+            commit_meta = None
+            if b.get('target_hash') and b['target_hash'] != 'HEAD':
+                try:
+                    res = _db().table('gitmem_commits').select('*').eq('hash', b['target_hash']).limit(1).execute()
+                    if res.data: commit_meta = res.data[0]
+                except: pass
+            branches.append({
+                'name': b['ref_name'],
+                'hash': b['target_hash'],
+                'commit': commit_meta
+            })
+        if not any(b['name'] == 'main' for b in branches):
+            branches.insert(0, {'name': 'main', 'hash': 'HEAD', 'commit': None})
     except Exception:
-        pass
+        branches = [{'name': 'main', 'hash': 'HEAD', 'commit': None}]
 
-    branch_names = [b.get('ref_name', 'main') for b in branches]
-
-    # Get commits — filter by branch if we have ref data
+    # 2. Fetch Commits
     commits = []
     try:
         db = _db()
         if db:
-            query = db.table('gitmem_commits').select('*').eq('agent_id', agent_id)
-            query = query.order('timestamp', desc=True).limit(100)
-            res = query.execute()
+            res = db.table('gitmem_commits').select('*').eq('repo_id', agent_id).order('timestamp', desc=True).limit(100).execute()
             commits = res.data or []
-    except Exception:
-        pass
+    except Exception: pass
+
+    # 3. Graph Logic (Assign tracks/colors)
+    # Simple track allocation: each branch gets a track
+    branch_tracks = {b['name']: i for i, b in enumerate(branches)}
+    # Map commit hash to branch name if it's a branch tip
+    tip_map = {b['hash']: b['name'] for b in branches if b['hash'] != 'HEAD'}
+    
+    for c in commits:
+        c['track'] = branch_tracks.get(tip_map.get(c['hash'], 'main'), 0)
+        c['is_tip'] = c['hash'] in tip_map
 
     memory_count = _count_table('gitmem_memories', 'agent_id', agent_id)
+    commit_count = len(commits)
+
+    import json
+    commits_json = json.dumps([{'sha': c['hash'], 'message': c.get('message',''), 'timestamp': c.get('timestamp',''), 'author_id': c.get('author_id','')} for c in commits])
 
     return render_template(
-        'commit_log.html',
+        'history.html',
         agent=agent,
         commits=commits,
-        commit_count=len(commits),
-        memory_count=memory_count,
-        branches=branch_names,
+        commits_json=commits_json,
+        branches=branches,
         current_branch=current_branch,
+        memory_count=memory_count,
+        commit_count=commit_count,
         sources=get_sources_status(),
     )
+
+
+@gitmem_bp.route('/agent/<agent_id>/commits')
+@login_required
+def agent_commits(agent_id):
+    """Commit history page (Redirecting to unified history)."""
+    return redirect(url_for('gitmem.agent_history', agent_id=agent_id, branch=request.args.get('branch', 'main')))
+
+
+@gitmem_bp.route('/agent/<agent_id>/branches_view')
+@login_required
+def agent_branches(agent_id):
+    """Branches view (Redirecting to unified history)."""
+    return redirect(url_for('gitmem.agent_history', agent_id=agent_id))
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -640,28 +691,8 @@ def agent_commits(agent_id):
 @gitmem_bp.route('/agent/<agent_id>/diffs')
 @login_required
 def agent_diffs(agent_id):
-    """Diff viewer between commits."""
-    agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
-    if not agent_raw:
-        return redirect(url_for('gitmem.landing'))
-
-    agent = _agent_context(agent_id, agent_raw)
-
-    commits = []
-    try:
-        db = _db()
-        if db:
-            res = db.table('gitmem_commits').select('hash,message,timestamp,author_id') \
-                .eq('agent_id', agent_id) \
-                .order('timestamp', desc=True).limit(50).execute()
-            for c in (res.data or []):
-                commits.append({'sha': c['hash'], 'message': c.get('message', ''), 'timestamp': c.get('timestamp', '')})
-    except Exception:
-        pass
-
-    import json
-    commits_json = json.dumps(commits)
-    return render_template('diff_viewer.html', agent=agent, commits=commits, commits_json=commits_json, sources=get_sources_status())
+    """Diff viewer — redirects to the unified history page which now includes the diff viewer."""
+    return redirect(url_for('gitmem.agent_history', agent_id=agent_id))
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -693,7 +724,18 @@ def settings(agent_id):
     agent = _agent_context(agent_id, agent_raw)
     # Get workspace_id for team management (default workspace if not set)
     workspace_id = agent_raw.get('workspace_id', 'default')
-    return render_template('settings.html', agent=agent, workspace_id=workspace_id, sources=get_sources_status())
+    # Branches for shell
+    current_branch = request.args.get('branch', 'main')
+    branches = []
+    try:
+        branches_raw = gitmem_app.vcs.branch_manager.list_branches(agent_id)
+        branches = [b.get('ref_name') for b in branches_raw if b.get('ref_name')]
+        if not branches or 'main' not in branches:
+            branches.insert(0, 'main')
+    except Exception:
+        branches = ['main']
+
+    return render_template('settings.html', agent=agent, workspace_id=workspace_id, branches=branches, current_branch=current_branch, sources=get_sources_status())
 
 
 @gitmem_bp.route('/agent/<agent_id>/wiki')
@@ -795,11 +837,11 @@ def api_create_agent():
             limits={"max_memories": 10000},
             metadata={"capabilities": [], "status": "active", "workspace_id": workspace_id},
         )
-        # Create default branch
+        # Create default branch using the VCS facade (handles repo provisioning)
         try:
-            gitmem_app.vcs.branch_manager.create_branch(agent_id, 'main', 'HEAD', current_user.get_id())
-        except Exception:
-            pass
+            gitmem_app.vcs.branch(agent_id, 'main', 'HEAD', current_user.get_id(), workspace_id=workspace_id)
+        except Exception as e:
+            print(f"[GitMem] Initial branch creation warning: {e}")
 
         flash(f"Repository '{agent_name}' created.", "success")
         return redirect(url_for('gitmem.agent_dashboard', agent_id=agent_id))
@@ -1402,9 +1444,13 @@ def api_create_branch(agent_id):
             repo_id=agent_id,
             branch_name=branch_name,
             target_branch_or_hash=source,
-            actor_id=current_user.get_id()
+            actor_id=current_user.get_id(),
+            workspace_id='default' # API will attempt to auto-resolve if repo missing
         )
-        return jsonify({"ok": True, "branch": branch_name, "created": bool(result)}), 201
+        if not result:
+            return jsonify({"error": f"Failed to create branch '{branch_name}'. It may already exist or the source branch '{source}' is invalid."}), 400
+
+        return jsonify({"ok": True, "branch": branch_name}), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -1459,24 +1505,35 @@ def api_merge_branches(agent_id):
 @gitmem_bp.route('/api/agent/<agent_id>/rollback', methods=['POST'])
 @login_required
 def api_rollback(agent_id):
-    """Rollback a branch to a specific commit hash."""
+    """Rollback branch to a specific commit."""
     if not _get_agent(agent_id, user_id=current_user.get_id()):
         return jsonify({"error": "Access denied"}), 403
     data = request.get_json(silent=True) or {}
     branch = data.get('branch', 'main')
-    target_hash = data.get('target_hash', '')
+    target_hash = data.get('hash', '')
     if not target_hash:
-        return jsonify({"error": "target_hash is required"}), 400
+        return jsonify({"error": "target hash is required"}), 400
     try:
-        result = gitmem_app.vcs.rollback(
+        success = gitmem_app.vcs.rollback(
             repo_id=agent_id,
             branch_name=branch,
             target_hash=target_hash,
             actor_id=current_user.get_id()
         )
-        return jsonify({"ok": True, "rolled_back": bool(result), "branch": branch, "target": target_hash})
+        if not success:
+            return jsonify({"error": "Rollback failed"}), 400
+        return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Checkpoints API
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1566,7 +1623,18 @@ def agent_documents(agent_id):
             documents = res.data or []
         except Exception:
             pass
-    return render_template('documents.html', agent=agent, documents=documents, sources=get_sources_status())
+    # Branches
+    current_branch = request.args.get('branch', 'main')
+    branches = []
+    try:
+        branches_raw = gitmem_app.vcs.branch_manager.list_branches(agent_id)
+        branches = [b.get('ref_name') for b in branches_raw if b.get('ref_name')]
+        if not branches or 'main' not in branches:
+            branches.insert(0, 'main')
+    except Exception:
+        branches = ['main']
+
+    return render_template('documents.html', agent=agent, documents=documents, branches=branches, current_branch=current_branch, sources=get_sources_status())
 
 
 @gitmem_bp.route('/agent/<agent_id>/memories')
@@ -1585,7 +1653,18 @@ def agent_memories(agent_id):
             memories = res.data or []
         except Exception:
             pass
-    return render_template('memories.html', agent=agent, memories=memories, sources=get_sources_status())
+    # Branches
+    current_branch = request.args.get('branch', 'main')
+    branches = []
+    try:
+        branches_raw = gitmem_app.vcs.branch_manager.list_branches(agent_id)
+        branches = [b.get('ref_name') for b in branches_raw if b.get('ref_name')]
+        if not branches or 'main' not in branches:
+            branches.insert(0, 'main')
+    except Exception:
+        branches = ['main']
+
+    return render_template('memories.html', agent=agent, memories=memories, branches=branches, current_branch=current_branch, sources=get_sources_status())
 
 
 @gitmem_bp.route('/agent/<agent_id>/sources')
@@ -1596,7 +1675,18 @@ def agent_sources(agent_id):
     if not agent_raw:
         return redirect(url_for('gitmem.landing'))
     agent = _agent_context(agent_id, agent_raw)
-    return render_template('sources.html', agent=agent, sources=get_sources_status())
+    # Branches for shell
+    current_branch = request.args.get('branch', 'main')
+    branches = []
+    try:
+        branches_raw = gitmem_app.vcs.branch_manager.list_branches(agent_id)
+        branches = [b.get('ref_name') for b in branches_raw if b.get('ref_name')]
+        if not branches or 'main' not in branches:
+            branches.insert(0, 'main')
+    except Exception:
+        branches = ['main']
+
+    return render_template('sources.html', agent=agent, branches=branches, current_branch=current_branch, sources=get_sources_status())
 
 
 @gitmem_bp.route('/api/star', methods=['POST'])

@@ -165,8 +165,22 @@ class ObjectStore:
     def __init__(self, supabase_client, bucket_name: str = "gitmem-objects", cache=None):
         self.client = supabase_client
         self.bucket = bucket_name
-        self.storage = self.client.storage.from_(self.bucket) if self.client else None
         self.cache = cache  # core.cache.ObjectCache instance
+        
+        if self.client:
+            try:
+                # Try to get the bucket. If it fails, try to create it.
+                self.client.storage.get_bucket(self.bucket)
+            except Exception:
+                try:
+                    self.client.storage.create_bucket(self.bucket, options={'public': False})
+                    print(f"[ObjectStore] Created missing storage bucket: {self.bucket}")
+                except Exception as e:
+                    print(f"[ObjectStore] Warning: Could not ensure bucket '{self.bucket}' exists: {e}")
+            
+            self.storage = self.client.storage.from_(self.bucket)
+        else:
+            self.storage = None
 
     def _blob_path(self, sha: str) -> str:
         return f"objects/{sha}.json.zlib"
@@ -198,6 +212,10 @@ class ObjectStore:
     
     def read_object(self, sha: str) -> Optional[Dict]:
         """Read an object from Supabase Storage (with caching)."""
+        # Skip invalid SHAs (non-hex or too short)
+        if not sha or len(sha) < 8 or sha in ("init", "HEAD", "undefined"):
+            return None
+            
         if self.cache:
             cached = self.cache.get(sha)
             if cached is not None:
@@ -217,11 +235,19 @@ class ObjectStore:
                 
             return obj_data
         except Exception as e:
-            print(f"[ObjectStore] Read failed for {sha}: {e}")
+            if "Bucket not found" in str(e):
+                print(f"[ObjectStore] Critical: Bucket '{self.bucket}' not found in Supabase Storage.")
+            elif "not found" in str(e).lower() or "not_found" in str(e).lower() or "404" in str(e):
+                pass  # Object doesn't exist, this is expected in some Git operations
+            else:
+                print(f"[ObjectStore] Read failed for {sha}: {e}")
             return None
     
     def object_exists(self, sha: str) -> bool:
         """Check if an object exists in Supabase Storage."""
+        if not sha or len(sha) < 8 or sha in ("init", "HEAD", "undefined"):
+            return False
+            
         if self.cache and self.cache.get(sha) is not None:
             return True
             
@@ -229,16 +255,17 @@ class ObjectStore:
             return False
             
         try:
-            # A lightweight way to check is to try downloading or listing.
-            # In Supabase Storage, there isn't a direct headObject, so we list.
             path = self._blob_path(sha)
-            prefix = "objects"
-            files = self.storage.list(prefix)
+            # Check if bucket exists first by a small operation or assume it exists
+            # but handle error in list
+            files = self.storage.list("objects")
             for f in files:
                 if f.get("name") == f"{sha}.json.zlib":
                     return True
             return False
         except Exception as e:
+            if "Bucket not found" in str(e):
+                 print(f"[ObjectStore] Critical: Bucket '{self.bucket}' missing.")
             return False
     
     # ========== High-Level Operations ==========

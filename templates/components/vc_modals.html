@@ -1,0 +1,80 @@
+<!-- New Branch Modal -->
+<div id="new-branch-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/80 backdrop-blur-md">
+    <div class="bg-[#1a1a2e] border border-white/10 rounded-2xl p-8 w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
+        <h3 class="text-xl font-bold text-white mb-2 flex items-center gap-2">
+            <i data-lucide="git-branch-plus" class="w-5 h-5 text-violet-400"></i>
+            Create New Branch
+        </h3>
+        <p class="text-xs text-gray-400 mb-6">Create a new line of development from an existing branch or commit.</p>
+        
+        <div class="space-y-4">
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1.5 ml-1">Branch Name</label>
+                <input type="text" id="new-branch-name" placeholder="e.g. feature/cognition-boost"
+                    class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm font-mono focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-all">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1.5 ml-1">Source Point</label>
+                <div class="relative">
+                    <select id="new-branch-source" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-violet-500/50">
+                        {% for b in branches %}<option value="{{ b.name }}" {% if b.name == current_branch %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
+                    </select>
+                    <i data-lucide="chevron-down" class="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-3 mt-8">
+            <button onclick="hideModal('new-branch-modal')" class="px-5 py-2.5 text-sm font-medium text-gray-400 hover:text-white transition-colors">Cancel</button>
+            <button onclick="createBranch()" class="px-6 py-2.5 bg-violet-600 hover:bg-violet-500 text-white text-sm font-bold rounded-xl shadow-lg shadow-violet-500/20 transition-all">Create Branch</button>
+        </div>
+    </div>
+</div>
+
+<!-- Merge Modal -->
+<div id="merge-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/80 backdrop-blur-md">
+    <div class="bg-[#1a1a2e] border border-white/10 rounded-2xl p-8 w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
+        <h3 class="text-xl font-bold text-white mb-2 flex items-center gap-2">
+            <i data-lucide="git-merge" class="w-5 h-5 text-violet-400"></i>
+            Merge Branches
+        </h3>
+        <p class="text-xs text-gray-400 mb-6">Incorporate changes from one branch into another.</p>
+        
+        <div class="space-y-4">
+            <div class="p-4 bg-violet-500/5 border border-violet-500/10 rounded-xl flex items-center justify-between">
+                <div class="space-y-1">
+                    <label class="block text-[10px] font-bold text-violet-400/70 uppercase">Source Branch</label>
+                    <select id="merge-source" class="bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-white font-bold focus:ring-1 focus:ring-violet-500 text-xs appearance-none cursor-pointer">
+                        {% for b in branches %}<option value="{{ b.name }}">{{ b.name }}</option>{% endfor %}
+                    </select>
+                </div>
+                <i data-lucide="arrow-right" class="w-4 h-4 text-gray-600"></i>
+                <div class="space-y-1 text-right">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase">Target Branch</label>
+                    <select id="merge-target" class="bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-white font-bold focus:ring-1 focus:ring-violet-500 text-xs appearance-none cursor-pointer text-right">
+                        {% for b in branches %}<option value="{{ b.name }}" {% if b.name == current_branch %}selected{% endif %}>{{ b.name }}</option>{% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1.5 ml-1">Merge Strategy</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button class="p-3 bg-white/5 border-2 border-violet-500 rounded-xl text-left transition-all">
+                        <div class="text-[10px] font-bold text-violet-400">FAST-FORWARD</div>
+                        <div class="text-[9px] text-gray-500 leading-tight mt-1">Append commits directly if possible</div>
+                    </button>
+                    <button class="p-3 bg-white/5 border-2 border-transparent hover:border-white/10 rounded-xl text-left opacity-50 transition-all">
+                        <div class="text-[10px] font-bold text-gray-400">SQUASH</div>
+                        <div class="text-[9px] text-gray-600 leading-tight mt-1">Combine all commits into one</div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-3 mt-8">
+            <button onclick="hideModal('merge-modal')" class="px-5 py-2.5 text-sm font-medium text-gray-400 hover:text-white transition-colors">Cancel</button>
+            <button onclick="mergeBranch()" class="px-6 py-2.5 bg-violet-600 hover:bg-violet-500 text-white text-sm font-bold rounded-xl shadow-lg shadow-violet-500/20 transition-all">Start Merge</button>
+        </div>
+    </div>
+</div>

@@ -14,10 +14,22 @@ class VectorEngine:
             import chromadb
             import os
             from chromadb.config import Settings
+            from chromadb.utils import embedding_functions
             
             # Load environment variables just in case
             from dotenv import load_dotenv
             load_dotenv()
+            
+            # 1. Setup Embedding Function (Hugging Face API)
+            hf_token = os.getenv("HF_TOKEN") or os.getenv("HUGGINGFACE_API_KEY")
+            self.ef = None
+            if hf_token:
+                model_name = os.getenv("HF_EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+                print(f"Initializing HuggingFace Inference API Embedding Function (Model: {model_name})")
+                self.ef = embedding_functions.HuggingFaceInferenceAPIEmbeddingFunction(
+                    api_key=hf_token,
+                    model_name=model_name
+                )
             
             api_key = os.getenv("CHROMA_API_KEY")
             tenant = os.getenv("CHROMA_TENANT")
@@ -48,9 +60,11 @@ class VectorEngine:
                 self.client = chromadb.EphemeralClient()
             
             # Try to get the GLOBAL collection first, as that's what UnifiedContext uses
-            # But be ready to switch to per-agent collections
             try:
-                self.collection = self.client.get_or_create_collection(name="gitmem_global")
+                self.collection = self.client.get_or_create_collection(
+                    name="gitmem_global",
+                    embedding_function=self.ef
+                )
             except Exception as e:
                 print(f"Failed to get global collection: {e}")
                 
@@ -68,7 +82,10 @@ class VectorEngine:
         target_collection = self.collection
         if collection_name:
             try:
-                target_collection = self.client.get_or_create_collection(name=collection_name)
+                target_collection = self.client.get_or_create_collection(
+                    name=collection_name,
+                    embedding_function=self.ef
+                )
             except:
                 pass
 
@@ -99,7 +116,10 @@ class VectorEngine:
             return
             
         try:
-            target_collection = self.client.get_or_create_collection(name=collection_name)
+            target_collection = self.client.get_or_create_collection(
+                name=collection_name,
+                embedding_function=self.ef
+            )
             
             processed_metadatas = []
             for meta in metadatas:

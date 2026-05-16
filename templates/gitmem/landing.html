@@ -362,36 +362,49 @@
             workspaces = await res.json();
             if (!Array.isArray(workspaces)) workspaces = [];
             renderWsList();
-            if (workspaces.length > 0) {
-                selectWorkspace(workspaces[0]);
-            } else {
-                document.getElementById('ws-current-name').textContent = 'No workspace';
-            }
+            // Default to "All Workspaces"
+            selectWorkspace({workspace_id:'all', name:'All Workspaces', user_role:''});
         } catch (e) {
+            console.error('Failed to load workspaces:', e);
             document.getElementById('ws-current-name').textContent = 'Default';
         }
     }
 
     function renderWsList() {
         const list = document.getElementById('ws-list');
-        const allBtn = `<button onclick="selectWorkspace({workspace_id:'all',name:'All Workspaces',user_role:''})" class="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-white/5 ${!currentWsId || currentWsId === 'all' ? 'text-violet-400' : 'text-gray-300'}">
+        const allBtn = `<button onclick="selectWorkspaceByIndex(-1)" class="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-white/5 ${!currentWsId || currentWsId === 'all' ? 'text-violet-400' : 'text-gray-300'}">
             <span>All Workspaces</span><span class="text-xs text-gray-500">${workspaces.length}</span>
         </button>`;
-        list.innerHTML = allBtn + workspaces.map(ws => `
-            <button onclick="selectWorkspace(${JSON.stringify(ws).replace(/"/g, '&quot;')})" class="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-white/5 ${ws.workspace_id === currentWsId ? 'text-violet-400' : 'text-gray-300'}">
+        list.innerHTML = allBtn + workspaces.map((ws, idx) => `
+            <button onclick="selectWorkspaceByIndex(${idx})" class="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-white/5 ${ws.workspace_id === currentWsId ? 'text-violet-400' : 'text-gray-300'}">
                 <span class="truncate">${ws.name}</span>
                 <span class="text-xs text-gray-500">${ws.user_role || ''}</span>
             </button>
         `).join('');
     }
 
+    window.selectWorkspaceByIndex = function(idx) {
+        if (idx === -1) {
+            selectWorkspace({workspace_id:'all', name:'All Workspaces', user_role:''});
+        } else {
+            selectWorkspace(workspaces[idx]);
+        }
+    };
+
     function selectWorkspace(ws) {
         currentWsId = ws.workspace_id;
         document.getElementById('ws-current-name').textContent = ws.name;
+        
         const badge = document.getElementById('ws-role-badge');
-        badge.textContent = ws.user_role || 'member';
-        badge.classList.remove('hidden');
-        document.getElementById('ws-dropdown').classList.add('hidden');
+        if (currentWsId === 'all') {
+            badge.classList.add('hidden');
+        } else {
+            badge.textContent = ws.user_role || 'member';
+            badge.classList.remove('hidden');
+        }
+        
+        const dropdown = document.getElementById('ws-dropdown');
+        if (dropdown) dropdown.classList.add('hidden');
         filterReposByWorkspace();
     }
 

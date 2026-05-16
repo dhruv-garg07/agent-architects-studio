@@ -22,6 +22,20 @@
                             {{ agent.name if agent else 'Memory Repository' }}
                         </h2>
                         <div class="flex items-center gap-2 text-[10px] text-gray-400 font-medium">
+                            <!-- Branch Selector (Global) -->
+                            {% if branches %}
+                            <div class="relative mr-1">
+                                <select onchange="handleBranchChange(this.value)"
+                                    class="appearance-none bg-white/5 border border-white/10 text-white text-[10px] rounded px-1.5 py-0.5 focus:outline-none cursor-pointer pr-4">
+                                    {% for branch in branches %}
+                                    {% set b_name = branch.name if branch is mapping else branch %}
+                                    <option value="{{ b_name }}" {% if b_name == current_branch %}selected{% endif %}>{{ b_name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <i data-lucide="chevron-down" class="absolute right-1 top-1/2 -translate-y-1/2 w-2.5 h-2.5 text-gray-500 pointer-events-none"></i>
+                            </div>
+                            {% endif %}
+                            
                             <span
                                 class="font-mono bg-[rgba(255,255,255,0.05)] px-1.5 py-0.5 rounded text-[9px] border border-[rgba(255,255,255,0.08)] shrink-0">
                                 {{ agent.slug or agent.id[:8] if agent else 'PUBLIC' }}
@@ -44,15 +58,15 @@
                     class="gh-nav-pill flex items-center gap-1 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
                     {% set nav_items = [
                     ('code', 'code-2', 'Code', 'gitmem.agent_dashboard' if agent else 'gitmem.landing'),
-                    ('commits', 'git-commit', 'Commits', 'gitmem.agent_commits'),
+                    ('history', 'git-branch', 'History', 'gitmem.agent_history'),
                     ('memories', 'brain', 'Memories', 'gitmem.agent_memories'),
                     ('documents', 'file-text', 'Docs', 'gitmem.agent_documents'),
                     ('settings', 'settings', 'Settings', 'gitmem.settings'),
                     ] %}
 
-                    {% set repo_routes = ['gitmem.agent_dashboard', 'gitmem.agent_commits', 'gitmem.agent_memories',
-                    'gitmem.agent_documents', 'gitmem.agent_checkpoints', 'gitmem.agent_logs', 'gitmem.agent_sources',
-                    'gitmem.settings'] %}
+                    {% set repo_routes = ['gitmem.agent_dashboard', 'gitmem.agent_commits', 'gitmem.agent_branches', 'gitmem.agent_history',
+                    'gitmem.agent_memories', 'gitmem.agent_documents', 'gitmem.agent_checkpoints', 'gitmem.agent_logs',
+                    'gitmem.agent_sources', 'gitmem.settings'] %}
 
                     {% for id, icon, label, route in nav_items %}
                     <a href="{{ url_for(route, agent_id=agent.id) if agent and route in repo_routes else url_for(route) }}"
@@ -237,7 +251,9 @@
     }
 
     function handleBranchChange(branch) {
-        console.log('Switching branch:', branch);
+        const url = new URL(window.location);
+        url.searchParams.set('branch', branch);
+        window.location.href = url.toString();
     }
 
     function navSearch() {

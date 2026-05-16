@@ -52,15 +52,35 @@ class VCSOrchestrator:
                         }).execute()
                     except: pass
                 
+                # Try to fetch real name/slug/workspace from api_agents
+                name = f"Agent {repo_id[:8]}"
+                slug = repo_id
+                try:
+                    agent_res = self.client.table("api_agents").select("agent_name, agent_slug, metadata").eq("agent_id", repo_id).execute()
+                    if agent_res.data:
+                        row = agent_res.data[0]
+                        name = row.get("agent_name") or name
+                        slug = row.get("agent_slug") or slug
+                        # Use workspace_id from metadata if current one is default/missing
+                        meta = row.get("metadata") or {}
+                        if meta.get("workspace_id") and (not workspace_id or workspace_id == "default"):
+                            workspace_id = meta.get("workspace_id")
+                except: pass
+
                 # Provision repo
                 self.client.table("gitmem_repos").insert({
                     "repo_id": repo_id,
                     "workspace_id": workspace_id,
-                    "name": f"Agent {repo_id[:8]}",
-                    "slug": repo_id,
+                    "name": name,
+                    "slug": slug,
                     "owner_id": owner_id,
                     "visibility": "private"
                 }).execute()
+
+                # Also provision default main branch to avoid "Branch not found" errors
+                try:
+                    self.branch_manager.create_branch(repo_id, "main", "init", owner_id)
+                except: pass
         except Exception as e:
             print(f"[VCS] Warning: Could not ensure repo {repo_id} exists: {e}")
 
@@ -115,7 +135,7 @@ class VCSOrchestrator:
                 
         # 2. Get current branch head
         branch_ref = self.branch_manager.get_branch(repo_id, branch)
-        parents = [branch_ref["target_hash"]] if branch_ref else []
+        parents = [branch_ref["target_hash"]] if branch_ref and branch_ref["target_hash"] not in ("init", "HEAD") else []
         
         # 3. Store Tree
         tree_sha = self.store.store_tree(tree)
@@ -153,22 +173,49 @@ class VCSOrchestrator:
             "stats": commit.stats
         }
 
-    def branch(self, repo_id: str, branch_name: str, target_branch_or_hash: str, actor_id: str) -> bool:
+    def branch(self, repo_id: str, branch_name: str, target_branch_or_hash: str, actor_id: str, workspace_id: str = "default") -> bool:
         """Create a new branch from an existing branch or commit hash."""
+        # Ensure repo exists before creating refs (prevents foreign key violation)
+        self._ensure_repo(repo_id, workspace_id, actor_id)
+
         # Check if target is a branch name
         target_ref = self.branch_manager.get_branch(repo_id, target_branch_or_hash)
-        target_hash = target_ref["target_hash"] if target_ref else target_branch_or_hash
+        
+        if target_ref:
+            target_hash = target_ref["target_hash"]
+        else:
+            # If not a branch, assume it's a hash or 'HEAD'
+            target_hash = target_branch_or_hash
+            
+            # Basic validation: if it's not a hash (64 chars) and not 'HEAD', 
+            # and we couldn't find a branch, it might be an invalid branch name.
+            if target_hash != "HEAD" and len(target_hash) < 8:
+                # Default to HEAD if repo is empty, otherwise this is likely a mistake
+                # In GitMem, we allow branching from "HEAD" for new repos.
+                print(f"[VCS] Warning: Branch source '{target_hash}' could not be resolved. Defaulting to 'HEAD'.")
+                target_hash = "HEAD"
         
         return self.branch_manager.create_branch(repo_id, branch_name, target_hash, actor_id)
 
     def merge(self, repo_id: str, target_branch: str, source_branch: str, actor_id: str, 
-              workspace_id: str, policy: MergePolicy = MergePolicy.LAST_WRITE_WINS) -> Dict[str, Any]:
+              workspace_id: str = "default", policy: MergePolicy = MergePolicy.LAST_WRITE_WINS) -> Dict[str, Any]:
         """Merge source_branch into target_branch."""
+        self._ensure_repo(repo_id, workspace_id, actor_id)
+        
         target_ref = self.branch_manager.get_branch(repo_id, target_branch)
         source_ref = self.branch_manager.get_branch(repo_id, source_branch)
         
+        # If still missing, check if it's the default 'main' and try to fix
+        if not target_ref and target_branch == 'main':
+             self.branch_manager.create_branch(repo_id, "main", "init", actor_id)
+             target_ref = self.branch_manager.get_branch(repo_id, target_branch)
+        
+        if not source_ref and source_branch == 'main':
+             self.branch_manager.create_branch(repo_id, "main", "init", actor_id)
+             source_ref = self.branch_manager.get_branch(repo_id, source_branch)
+
         if not target_ref or not source_ref:
-            return {"status": "error", "error": "Branch not found"}
+            return {"status": "error", "error": f"Branch not found: {target_branch if not target_ref else source_branch}"}
             
         target_sha = target_ref["target_hash"]
         source_sha = source_ref["target_hash"]
@@ -188,13 +235,13 @@ class VCSOrchestrator:
                 policy=policy
             )
             
-            # 2. Create merge commit
+            valid_parents = [p for p in [target_sha, source_sha] if p and p not in ("init", "HEAD")]
             merge_commit = MemoryCommit(
                 tree_sha=merged_tree_sha,
                 message=f"Merge branch '{source_branch}' into '{target_branch}'",
                 author=actor_id,
                 agent_id=repo_id,
-                parents=[target_sha, source_sha]
+                parents=valid_parents
             )
             
             commit_sha = self.store.store_commit(merge_commit)
