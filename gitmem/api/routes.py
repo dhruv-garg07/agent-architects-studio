@@ -53,7 +53,7 @@ def _agent_context(agent_id, agent_raw):
         'id': agent_id,
         'name': (agent_raw or {}).get('agent_name') or agent_id,
         'slug': (agent_raw or {}).get('agent_slug') or agent_id[:8],
-        'description': (agent_raw or {}).get('description') or '',
+        'description': (agent_raw or {}).get('description') or ((agent_raw or {}).get('metadata') or {}).get('description') or '',
     }
 
 
@@ -341,7 +341,7 @@ def landing():
         repos.append({
             'repo_id':       aid,
             'name':          agent.get('agent_name') or agent.get('agent_slug') or aid,
-            'description':   agent.get('description') or '',
+            'description':   agent.get('description') or agent_meta.get('description') or '',
             'visibility':    'private',
             'default_branch': 'main',
             'created_at':    agent.get('created_at', ''),
@@ -395,7 +395,7 @@ def agent_dashboard(agent_id):
         'id':          agent_id,
         'name':        agent_raw.get('agent_name') or agent_raw.get('agent_slug') or agent_id,
         'slug':        agent_raw.get('agent_slug', agent_id),
-        'description': agent_raw.get('description', ''),
+        'description': agent_raw.get('description') or (agent_raw.get('metadata') or {}).get('description') or '',
         'status':      agent_raw.get('status', 'active'),
     }
 

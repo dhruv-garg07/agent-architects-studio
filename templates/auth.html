@@ -203,6 +203,15 @@
                     </button>
                 </a>
 
+                {% if 'localhost' in request.host or '127.0.0.1' in request.host %}
+                <div class="pt-2">
+                    <a href="{{ url_for('dev_login') }}"
+                        class="w-full flex items-center justify-center bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 border border-violet-500/30 rounded-xl py-3 px-4 text-white text-sm font-bold transition-all shadow-lg shadow-violet-500/20 hover:scale-[1.01] active:scale-[0.99]">
+                        <i data-lucide="terminal" class="w-4 h-4 mr-2"></i>
+                        Developer Local Login (Bypass)
+                    </a>
+                </div>
+                {% endif %}
             </div>
 
         </div>

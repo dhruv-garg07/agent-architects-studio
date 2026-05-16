@@ -466,6 +466,39 @@ def dashboard():
         return redirect(url_for('homepage'))
 
 
+@app.route('/dev-login')
+def dev_login():
+    if 'localhost' in request.host or '127.0.0.1' in request.host:
+        try:
+            res = supabase.table('profiles').select('id, email').limit(1).execute()
+            if res.data:
+                user_id = res.data[0]['id']
+                email = res.data[0]['email']
+            else:
+                user_id = "00000000-0000-0000-0000-000000000000"
+                email = "dev@gitmem.local"
+                profile_data = {
+                    "id": user_id,
+                    "email": email,
+                    "username": "dev_user",
+                    "full_name": "Developer Account",
+                    "user_role": "creator",
+                    "created_at": datetime.utcnow().isoformat()
+                }
+                supabase.table('profiles').upsert(profile_data).execute()
+        except Exception as e:
+            print("Dev login setup warning:", e)
+            user_id = "00000000-0000-0000-0000-000000000000"
+            email = "dev@gitmem.local"
+            
+        user = User(user_id=user_id, email=email)
+        login_user(user)
+        flash('Logged in as Developer successfully!', 'success')
+        return redirect(url_for('gitmem.landing'))
+    else:
+        return "Dev login is only allowed in local development", 403
+
+
 def _clean_email(v: str) -> str:
     return (v or "").strip().lower()
 

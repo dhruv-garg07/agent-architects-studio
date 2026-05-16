@@ -44,10 +44,17 @@ class ApiAgentsService:
         permissions: Dict[str, Any],
         limits: Dict[str, Any],
         system_prompt: Optional[str] = None,
+        description: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         # Generate a unique agent_id
         agent_id = str(uuid.uuid4())
+        
+        # Store description inside metadata since the database table does not contain a separate column for it
+        metadata = metadata or {}
+        if description:
+            metadata["description"] = description
+
         payload = {
             "agent_id": agent_id,
             "user_id": user_id,
@@ -56,7 +63,7 @@ class ApiAgentsService:
             "permissions": permissions,
             "limits": limits,
             "system_prompt": system_prompt,
-            "metadata": metadata or {},
+            "metadata": metadata,
         }
 
         res = (
