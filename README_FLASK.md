@@ -165,8 +165,8 @@ python app.py
 ### Production Deployment
 1. **Using Gunicorn**:
    ```bash
-   pip install gunicorn
-   gunicorn -w 4 -b 0.0.0.0:5000 app:app
+   pip install gunicorn gevent gevent-websocket
+   gunicorn -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker -w 4 -b 0.0.0.0:5000 api.index:app
    ```
 
 2. **Using Docker**:
@@ -177,7 +177,7 @@ python app.py
    RUN pip install -r requirements.txt
    COPY . .
    EXPOSE 5000
-   CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "app:app"]
+   CMD ["gunicorn", "-k", "geventwebsocket.gunicorn.workers.GeventWebSocketWorker", "-w", "4", "-b", "0.0.0.0:5000", "api.index:app"]
    ```
 
 3. **Deploy to platforms**:
