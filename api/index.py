@@ -69,7 +69,7 @@ from backend_examples.python.services.creators import creator_service
 
 from backend_examples.python.models import SearchFilters
 # API Key helpers
-from key_utils import hash_key, mask_key, generate_secret_key
+from key_utils import hash_key, mask_key, generate_secret_key, encrypt_api_key, decrypt_api_key
 from dotenv import load_dotenv
 # Email service
 from utlis.email_service import get_email_service
@@ -1169,11 +1169,32 @@ def list_api_keys():
     List API keys for the logged-in user. Returns masked keys only.
     """
     try:
-        resp = supabase.table('api_keys').select('id, name, masked_key, expiration, expires_at, created_at, status').eq('user_id', current_user.id).neq('status', 'revoked').order('created_at', desc=True).execute()
+        resp = supabase.table('api_keys').select('id, name, masked_key, expiration, expires_at, created_at, status, permissions').eq('user_id', current_user.id).neq('status', 'revoked').order('created_at', desc=True).execute()
         # Supabase client returns a response with .data property
         data = getattr(resp, 'data', None) or (resp.data if hasattr(resp, 'data') else None) or resp
         # Ensure we return an array
         keys = data if isinstance(data, list) else []
+        
+        for k in keys:
+            encrypted_val = None
+            perms = k.get('permissions')
+            if isinstance(perms, str):
+                try:
+                    perms = json.loads(perms)
+                except Exception:
+                    perms = {}
+            if isinstance(perms, dict):
+                encrypted_val = perms.get('encrypted_key')
+            
+            if encrypted_val:
+                try:
+                    k['key'] = decrypt_api_key(encrypted_val)
+                except Exception as e:
+                    print("Decryption failed for key:", k.get('id'), e)
+                    k['key'] = None
+            else:
+                k['key'] = None
+                
         return jsonify(keys)
     except Exception as e:
         print('Error listing API keys:', e)
@@ -1233,6 +1254,10 @@ def create_api_key():
     # Permissions and limits can be supplied by client; fall back to sensible defaults
     permissions = data.get('permissions') or {'chat': True, 'embeddings': True, 'tools': False}
     limits = data.get('limits') or {'rpm': 60, 'tpm': 100000, 'concurrency': 5}
+
+    # Encrypt and save plaintext key within permissions JSON to allow retrieve-reveal
+    if isinstance(permissions, dict):
+        permissions['encrypted_key'] = encrypt_api_key(key_val)
 
     # Hash the API key before storing; do NOT store plaintext key
     hashed = hash_key(key_val)
