@@ -151,7 +151,6 @@ class LLMClient:
                 except Exception as e:
                     last_exception = e
                     if attempt < max_retries - 1:
-                        import time
                         wait_time = (2 ** attempt)
                         print(f"Anthropic API call failed (attempt {attempt + 1}/{max_retries}): {e}")
                         print(f"Retrying in {wait_time} seconds...")
