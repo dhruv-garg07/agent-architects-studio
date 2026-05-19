@@ -460,106 +460,150 @@ class LLMClient:
 
 
 if __name__ == "__main__":
+    import sys
+    
     print("=" * 60)
-    print("LLMClient Test Suite")
+    print("LLMClient Interactive Test & Verification Suite")
     print("=" * 60)
     
-    # 1. Test JSON Extraction (Local)
-    print("\n--- Running JSON Extraction Tests (Local) ---")
     client = LLMClient()
     
-    test_cases = [
-        ("Pure JSON", '{"name": "Test", "value": 42}'),
-        ("JSON in Markdown code block", '```json\n{"name": "Test", "value": 42}\n```'),
-        ("JSON in generic code block", '```\n{"name": "Test", "value": 42}\n```'),
-        ("JSON with prefix", 'Here is the JSON response:\n{"name": "Test", "value": 42}'),
-        ("JSON with comments and trailing commas", '{\n    "name": "Test", // standard comment\n    "value": 42,\n    "items": [1, 2, 3,],\n}'),
-        ("JSON embedded in text with balanced braces", 'Some initial conversational text followed by: {"name": "Test", "value": 42} and some closing text.')
-    ]
+    # Check if custom prompt is provided
+    custom_prompt = None
+    if len(sys.argv) > 1:
+        custom_prompt = " ".join(sys.argv[1:])
+        print(f"Using prompt from command line argument: '{custom_prompt}'")
     
-    all_passed = True
-    for name, text in test_cases:
-        try:
-            result = client.extract_json(text)
-            expected = {"name": "Test", "value": 42} if "items" not in text else {"name": "Test", "value": 42, "items": [1, 2, 3]}
-            if result == expected or (isinstance(result, dict) and result.get("name") == "Test" and result.get("value") == 42):
-                print(f"✅ {name}: PASSED")
-            else:
-                print(f"❌ {name}: FAILED (Unexpected output: {result})")
-                all_passed = False
-        except Exception as e:
-            print(f"❌ {name}: FAILED with exception: {e}")
-            all_passed = False
-
-    # 2. Live API Completion Tests
-    print("\n--- Running Live API Completion Tests ---")
-    messages = [{"role": "user", "content": "Say hello in exactly 3 words."}]
-    
-    # Test Claude if Claude key is present
-    if client.claude_api_key:
-        print(f"\nTesting Anthropic Claude (Model: {client.claude_model})...")
-        try:
-            # Make sure anthropic client is set up
+    if custom_prompt:
+        # 1. Clear cache to guarantee it hits the actual API
+        LLMClient._response_cache.clear()
+        
+        # 2. Verify and show API key details to confirm we are using the user's key
+        print("\n--- API Configuration Verification ---")
+        if client.claude_api_key:
+            # Obfuscate key for display
+            key_display = client.claude_api_key[:8] + "..." + client.claude_api_key[-8:]
+            print(f"Anthropic API Key Detected: {key_display}")
+            print(f"Target Model: {client.claude_model}")
+            
+            # Confirm the Anthropic Client is initialized
             if not client.anthropic_client:
                 from anthropic import Anthropic
                 client.anthropic_client = Anthropic(api_key=client.claude_api_key)
+            print("Anthropic client object successfully created.")
+            
+            # 3. Execute call & verify
+            print("\n--- Sending request to Anthropic API ---")
+            messages = [{"role": "user", "content": custom_prompt}]
             
             start_time = time.time()
             response = client.chat_completion(messages, temperature=0.0)
             duration = time.time() - start_time
-            print(f"Response: '{response.strip()}'")
-            print(f"Duration: {duration:.2f}s")
             
-            # Test Cache Hit
-            print("Testing cache for Anthropic Claude...")
-            start_time = time.time()
-            cached_response = client.chat_completion(messages, temperature=0.0)
-            duration = time.time() - start_time
-            print(f"Cached Response: '{cached_response.strip()}'")
-            print(f"Cached Duration: {duration:.4f}s")
-            if cached_response == response:
-                print("✅ Cache functional for Anthropic")
-            else:
-                print("❌ Cache failed for Anthropic")
-                
-        except Exception as e:
-            print(f"❌ Claude completion failed: {e}")
+            print("\n--- Response Received ---")
+            print(response)
+            print(f"\nRequest Duration: {duration:.2f} seconds")
+            print("✅ Successfully hit Anthropic APIs and fetched response using your API key!")
+        else:
+            print("❌ Anthropic Claude API key (CLAUDE_API_KEY) is not configured!")
+            
     else:
-        print("\nAnthropic Claude API key not configured. Skipping Claude tests.")
+        # 1. Test JSON Extraction (Local)
+        print("\n--- Running JSON Extraction Tests (Local) ---")
+        
+        test_cases = [
+            ("Pure JSON", '{"name": "Test", "value": 42}'),
+            ("JSON in Markdown code block", '```json\n{"name": "Test", "value": 42}\n```'),
+            ("JSON in generic code block", '```\n{"name": "Test", "value": 42}\n```'),
+            ("JSON with prefix", 'Here is the JSON response:\n{"name": "Test", "value": 42}'),
+            ("JSON with comments and trailing commas", '{\n    "name": "Test", // standard comment\n    "value": 42,\n    "items": [1, 2, 3,],\n}'),
+            ("JSON embedded in text with balanced braces", 'Some initial conversational text followed by: {"name": "Test", "value": 42} and some closing text.')
+        ]
+        
+        all_passed = True
+        for name, text in test_cases:
+            try:
+                result = client.extract_json(text)
+                expected = {"name": "Test", "value": 42} if "items" not in text else {"name": "Test", "value": 42, "items": [1, 2, 3]}
+                if result == expected or (isinstance(result, dict) and result.get("name") == "Test" and result.get("value") == 42):
+                    print(f"✅ {name}: PASSED")
+                else:
+                    print(f"❌ {name}: FAILED (Unexpected output: {result})")
+                    all_passed = False
+            except Exception as e:
+                print(f"❌ {name}: FAILED with exception: {e}")
+                all_passed = False
 
-    # Test Together AI
-    if client.api_key:
-        print(f"\nTesting Together AI (Model: {client.model})...")
-        try:
-            # Clear cache to ensure a fresh Together AI request
-            LLMClient._response_cache.clear()
-            
-            # Temporarily disable anthropic client to force Together AI code path
-            orig_anthropic = client.anthropic_client
-            client.anthropic_client = None
-            
-            start_time = time.time()
-            response = client.chat_completion(messages, temperature=0.0)
-            duration = time.time() - start_time
-            print(f"Response: '{response.strip()}'")
-            print(f"Duration: {duration:.2f}s")
-            
-            # Test Cache Hit
-            print("Testing cache for Together AI...")
-            start_time = time.time()
-            cached_response = client.chat_completion(messages, temperature=0.0)
-            duration = time.time() - start_time
-            print(f"Cached Response: '{cached_response.strip()}'")
-            print(f"Cached Duration: {duration:.4f}s")
-            if cached_response == response:
-                print("✅ Cache functional for Together AI")
-            else:
-                print("❌ Cache failed for Together AI")
-            
-            # Restore anthropic client
-            client.anthropic_client = orig_anthropic
-            
-        except Exception as e:
-            print(f"❌ Together AI completion failed: {e}")
-    else:
-        print("\nTogether AI API key not configured. Skipping Together AI tests.")
+        # 2. Live API Completion Tests
+        print("\n--- Running Live API Completion Tests ---")
+        messages = [{"role": "user", "content": "Say hello in exactly 3 words."}]
+        
+        # Test Claude if Claude key is present
+        if client.claude_api_key:
+            print(f"\nTesting Anthropic Claude (Model: {client.claude_model})...")
+            try:
+                # Make sure anthropic client is set up
+                if not client.anthropic_client:
+                    from anthropic import Anthropic
+                    client.anthropic_client = Anthropic(api_key=client.claude_api_key)
+                
+                print("Anthropic Client:", client.anthropic_client)
+                start_time = time.time()
+                response = client.chat_completion(messages, temperature=0.0)
+                duration = time.time() - start_time
+                print(f"Response: '{response.strip()}'")
+                print(f"Duration: {duration:.2f}s")
+                
+                # Test Cache Hit
+                print("Testing cache for Anthropic Claude...")
+                start_time = time.time()
+                cached_response = client.chat_completion(messages, temperature=0.0)
+                duration = time.time() - start_time
+                print(f"Cached Response: '{cached_response.strip()}'")
+                print(f"Cached Duration: {duration:.4f}s")
+                if cached_response == response:
+                    print("✅ Cache functional for Anthropic")
+                else:
+                    print("❌ Cache failed for Anthropic")
+                    
+            except Exception as e:
+                print(f"❌ Claude completion failed: {e}")
+        else:
+            print("\nAnthropic Claude API key not configured. Skipping Claude tests.")
+
+        # Test Together AI
+        if client.api_key:
+            print(f"\nTesting Together AI (Model: {client.model})...")
+            try:
+                # Clear cache to ensure a fresh Together AI request
+                LLMClient._response_cache.clear()
+                
+                # Temporarily disable anthropic client to force Together AI code path
+                orig_anthropic = client.anthropic_client
+                client.anthropic_client = None
+                
+                start_time = time.time()
+                response = client.chat_completion(messages, temperature=0.0)
+                duration = time.time() - start_time
+                print(f"Response: '{response.strip()}'")
+                print(f"Duration: {duration:.2f}s")
+                
+                # Test Cache Hit
+                print("Testing cache for Together AI...")
+                start_time = time.time()
+                cached_response = client.chat_completion(messages, temperature=0.0)
+                duration = time.time() - start_time
+                print(f"Cached Response: '{cached_response.strip()}'")
+                print(f"Cached Duration: {duration:.4f}s")
+                if cached_response == response:
+                    print("✅ Cache functional for Together AI")
+                else:
+                    print("❌ Cache failed for Together AI")
+                
+                # Restore anthropic client
+                client.anthropic_client = orig_anthropic
+                
+            except Exception as e:
+                print(f"❌ Together AI completion failed: {e}")
+        else:
+            print("\nTogether AI API key not configured. Skipping Together AI tests.")
