@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import chromadb
 import logging
 import numpy as np
+import threading
 
 # -------------------------------------------------
 # Environment & Logging
@@ -30,6 +31,7 @@ class DisabledEmbeddingFunction(EmbeddingFunction):
         )
 
 # HF Inference API config
+# HF Inference API config
 HF_TOKEN = os.getenv("HF_TOKEN")
 HF_EMBEDDING_MODEL = os.getenv("HF_EMBEDDING_MODEL", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
 REMOTE_EMBEDDING_DIMENSION = int(os.getenv("REMOTE_EMBEDDING_DIMENSION", "384"))
@@ -50,6 +52,8 @@ class RemoteEmbeddingClient:
     Uses huggingface_hub InferenceClient for feature_extraction.
     No dependency on HF Spaces — uses the official Inference API directly.
     """
+    _embedding_cache = {}
+    _cache_lock = threading.Lock()
 
     def __init__(self, model: str = None, api_key: str = None):
         from huggingface_hub import InferenceClient
@@ -73,24 +77,38 @@ class RemoteEmbeddingClient:
 
     def embed_remote(self, texts: List[str]) -> List[List[float]]:
         """
-        Embed multiple texts safely (one-by-one with retries).
+        Embed multiple texts safely (one-by-one with retries), caching results.
         """
         import time
-        embeddings = []
-        max_retries = 3
+        embeddings = [None] * len(texts)
+        missing_texts = []
+        missing_indices = []
 
-        for idx, text in enumerate(texts):
-            for attempt in range(max_retries):
-                try:
-                    vec = self._embed_one(text)
-                    embeddings.append(vec)
-                    break  # Success
-                except Exception as e:
-                    if attempt < max_retries - 1:
-                        print(f"[WARNING] Embedding failed for text {idx} (attempt {attempt + 1}/{max_retries}): {e}. Retrying in 2 seconds...")
-                        time.sleep(2)
-                    else:
-                        raise RuntimeError(f"Failed to embed text after {max_retries} attempts: {e}")
+        with self._cache_lock:
+            for idx, text in enumerate(texts):
+                if text in self._embedding_cache:
+                    embeddings[idx] = self._embedding_cache[text]
+                else:
+                    missing_texts.append(text)
+                    missing_indices.append(idx)
+
+        if missing_texts:
+            max_retries = 3
+            for idx_in_missing, text in enumerate(missing_texts):
+                orig_idx = missing_indices[idx_in_missing]
+                for attempt in range(max_retries):
+                    try:
+                        vec = self._embed_one(text)
+                        with self._cache_lock:
+                            self._embedding_cache[text] = vec
+                        embeddings[orig_idx] = vec
+                        break  # Success
+                    except Exception as e:
+                        if attempt < max_retries - 1:
+                            print(f"[WARNING] Embedding failed for text {orig_idx} (attempt {attempt + 1}/{max_retries}): {e}. Retrying in 2 seconds...")
+                            time.sleep(2)
+                        else:
+                            raise RuntimeError(f"Failed to embed text after {max_retries} attempts: {e}")
 
         return embeddings
 

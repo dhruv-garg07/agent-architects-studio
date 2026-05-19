@@ -180,13 +180,16 @@ class VectorStore:
     def _ensure_collection(self):
         """Ensure the collection exists in ChromaDB."""
         try:
-            # Try to get collection info - if it fails, collection doesn't exist
-            # Use thread-safe agent_id access via property
-            self.agentic_RAG.get_agent_collection_info(self._agent_id)
-        except Exception:
-            # Create the collection
-            self.agentic_RAG.create_agent_collection(self._agent_id)
-            print(f"Created new collection for agent: {self._agent_id}")
+            # Use the direct, idempotent get_collection method from ChromaCollectionManager.
+            # This guarantees the collection exists (creating it if necessary) using
+            # a single cached network call, without performing an expensive col.count() check.
+            self.agentic_RAG.wrapper.manager.get_collection(self._agent_id)
+        except Exception as e:
+            # Fallback for safety
+            try:
+                self.agentic_RAG.get_agent_collection_info(self._agent_id)
+            except Exception:
+                self.agentic_RAG.create_agent_collection(self._agent_id)
     
     def _validate_agent_id_unchanged(self, operation_name: str) -> str:
         """

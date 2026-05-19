@@ -248,6 +248,7 @@ def extract_and_validate_api_key(data: dict = None):
     else:
         # Fallback for local testing
         if api_key.startswith('sk-'):
+            import os
             user_id = os.environ.get('TEST_USER_ID', 'test-user')
             g.api_key_record = {'id': 'test-key', 'user_id': user_id, 'permissions': {'memory': True, 'agent_create': True}}
             return user_id, None
@@ -917,6 +918,7 @@ _shared_agentic_rag = None
 def _get_shared_components():
     """Lazily initialize shared components once. These are agent-agnostic
     and extremely expensive to create (network connections, API clients)."""
+    import os
     global _shared_llm_client, _shared_embedding_model, _shared_agentic_rag
     
     if _shared_llm_client is None:
@@ -932,6 +934,15 @@ def _get_shared_components():
             enable_monitoring=True
         )
     return _shared_llm_client, _shared_embedding_model, _shared_agentic_rag
+
+# Start background pre-warming on module import
+try:
+    import threading
+    threading.Thread(target=_get_shared_components, name="PreWarmSimpleMem", daemon=True).start()
+    print("[STARTUP] SimpleMem background pre-warming thread started successfully")
+except Exception as pre_warm_err:
+    print(f"[STARTUP] Warning: Failed to start pre-warming thread: {pre_warm_err}")
+
 
 def _get_or_create_memory_system(agent_id: str, clear_db: bool = False) -> SimpleMemSystem:
     """Get cached SimpleMem system or create new one for the agent.

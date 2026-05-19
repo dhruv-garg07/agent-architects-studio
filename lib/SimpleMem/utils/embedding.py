@@ -9,6 +9,7 @@ from SimpleMem.config_loader import EMBEDDING_MODEL, REMOTE_EMBEDDING_URL, REMOT
 import os
 import requests
 import json
+import threading
 
 
 class EmbeddingModel:
@@ -16,6 +17,9 @@ class EmbeddingModel:
     Embedding model that calls a remote embedding API to generate vectors.
     This class preserves the same public API as the original implementation.
     """
+    _embedding_cache = {}
+    _cache_lock = threading.Lock()
+
     def __init__(self, model_name: str = None, use_optimization: bool = True):
         self.model_name = model_name or EMBEDDING_MODEL
         self.use_optimization = use_optimization
@@ -37,8 +41,27 @@ class EmbeddingModel:
         if isinstance(texts, str):
             texts = [texts]
 
-        # The remote API does not support a separate query prompt, so use standard encoding
-        return self._encode_standard(texts)
+        embeddings = [None] * len(texts)
+        missing_texts = []
+        missing_indices = []
+
+        with self._cache_lock:
+            for idx, text in enumerate(texts):
+                if text in self._embedding_cache:
+                    embeddings[idx] = self._embedding_cache[text]
+                else:
+                    missing_texts.append(text)
+                    missing_indices.append(idx)
+
+        if missing_texts:
+            # Call standard encoding to fetch missing embeddings
+            fetched_embeddings = self._encode_standard(missing_texts)
+            with self._cache_lock:
+                for idx, text, emb in zip(missing_indices, missing_texts, fetched_embeddings):
+                    self._embedding_cache[text] = emb
+                    embeddings[idx] = emb
+
+        return np.stack(embeddings, axis=0)
 
     def encode_single(self, text: str, is_query: bool = False) -> np.ndarray:
         """

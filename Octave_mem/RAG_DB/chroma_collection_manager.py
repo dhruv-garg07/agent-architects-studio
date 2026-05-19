@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import chromadb
 import logging
 import numpy as np
+import threading
 
 # -------------------------------------------------
 # Environment & Logging
@@ -50,6 +51,8 @@ class RemoteEmbeddingClient:
     Uses huggingface_hub InferenceClient for feature_extraction.
     No dependency on HF Spaces — uses the official Inference API directly.
     """
+    _embedding_cache = {}
+    _cache_lock = threading.Lock()
 
     def __init__(self, model: str = None, api_key: str = None):
         from huggingface_hub import InferenceClient
@@ -72,6 +75,31 @@ class RemoteEmbeddingClient:
         return vec
 
     def embed_remote(self, texts: List[str]) -> List[List[float]]:
+        """
+        Embed multiple texts. Tries cache first, then batch, then fallback.
+        """
+        embeddings = [None] * len(texts)
+        missing_texts = []
+        missing_indices = []
+
+        with self._cache_lock:
+            for idx, text in enumerate(texts):
+                if text in self._embedding_cache:
+                    embeddings[idx] = self._embedding_cache[text]
+                else:
+                    missing_texts.append(text)
+                    missing_indices.append(idx)
+
+        if missing_texts:
+            fetched = self._embed_remote_uncached(missing_texts)
+            with self._cache_lock:
+                for idx, text, emb in zip(missing_indices, missing_texts, fetched):
+                    self._embedding_cache[text] = emb
+                    embeddings[idx] = emb
+
+        return embeddings
+
+    def _embed_remote_uncached(self, texts: List[str]) -> List[List[float]]:
         """
         Embed multiple texts. Tries batch first, falls back to one-by-one.
         """

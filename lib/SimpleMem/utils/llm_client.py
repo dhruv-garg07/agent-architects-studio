@@ -8,6 +8,8 @@ import requests
 from typing import List, Dict, Any, Optional
 # from openai import OpenAI
 from SimpleMem.config_loader import TOGETHER_API_KEY, LLM_MODEL, OPENAI_BASE_URL, ENABLE_THINKING, USE_STREAMING, CLAUDE_API_KEY, CLAUDE_MODEL
+import hashlib
+import threading
 from together import Together
 def extract_output_after_think(response: str) -> str:
     """
@@ -24,6 +26,22 @@ class LLMClient:
     """
     Unified LLM client interface
     """
+    _response_cache = {}
+    _cache_lock = threading.Lock()
+
+    def _get_cache_key(self, messages: List[Dict[str, str]], temperature: float, response_format: Optional[Dict[str, str]]) -> str:
+        # Serialize prompt structure
+        try:
+            serialized = json.dumps({
+                "messages": messages,
+                "temperature": temperature,
+                "response_format": response_format,
+                "model": self.model
+            }, sort_keys=True)
+        except Exception:
+            # Fallback: string representation
+            serialized = str(messages) + str(temperature) + str(response_format) + str(self.model)
+        return hashlib.sha256(serialized.encode('utf-8')).hexdigest()
     def __init__(
         self,
         api_key: Optional[str] = None,
@@ -63,6 +81,31 @@ class LLMClient:
 
 
     def chat_completion(
+        self,
+        messages: List[Dict[str, str]],
+        temperature: float = 0.2,
+        response_format: Optional[Dict[str, str]] = None,
+        max_retries: int = 3
+    ) -> str:
+        cache_key = self._get_cache_key(messages, temperature, response_format)
+        with self._cache_lock:
+            if cache_key in self._response_cache:
+                print(f"[LLM CACHE HIT] Returning cached completion.")
+                return self._response_cache[cache_key]
+        
+        result = self._chat_completion_uncached(
+            messages=messages,
+            temperature=temperature,
+            response_format=response_format,
+            max_retries=max_retries
+        )
+        
+        with self._cache_lock:
+            self._response_cache[cache_key] = result
+            
+        return result
+
+    def _chat_completion_uncached(
         self,
         messages: List[Dict[str, str]],
         temperature: float = 0.2,
