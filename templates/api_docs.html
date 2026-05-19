@@ -2625,9 +2625,12 @@ table thead {
         <div class="tryit-response-wrap">
           <div class="tryit-response-header">
             <span class="tryit-label">Response</span>
-            <span id="tryit-timing" class="tryit-timing"></span>
           </div>
           <pre id="tryit-response" class="tryit-response-pre"><code class="language-json">// Click "Send Request" to execute</code></pre>
+          <div id="tryit-timing-footer" class="hidden mt-2 flex items-center justify-between text-xs border-t border-[rgba(255,255,255,0.08)] pt-2">
+            <span class="text-gray-500">Execution Timing</span>
+            <span id="tryit-timing" class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 font-mono font-bold"></span>
+          </div>
         </div>`;
 
       tabContent.appendChild(content);
@@ -2639,11 +2642,13 @@ table thead {
         const apiKey = content.querySelector('#tryit-apikey').value.trim();
         const bodyEl = content.querySelector('#tryit-body');
         const statusEl = content.querySelector('#tryit-status');
+        const timingFooterEl = content.querySelector('#tryit-timing-footer');
         const timingEl = content.querySelector('#tryit-timing');
         const responseEl = content.querySelector('#tryit-response code');
 
         statusEl.textContent = '';
         statusEl.className = 'tryit-status';
+        timingFooterEl.classList.add('hidden');
         timingEl.textContent = '';
         responseEl.textContent = '// Sending...';
 
@@ -2663,11 +2668,40 @@ table thead {
           }
         }
 
+        // Setup loading state on button
+        sendBtn.disabled = true;
+        sendBtn.style.opacity = '0.75';
+        sendBtn.style.cursor = 'not-allowed';
+        const originalBtnHtml = sendBtn.innerHTML;
+
         const t0 = performance.now();
+        const updateTimerText = () => {
+          const elapsedSec = ((performance.now() - t0) / 1000).toFixed(1);
+          sendBtn.innerHTML = `
+            <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" style="display: inline-block;">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Sending... <span class="font-mono ml-1 px-1.5 py-0.5 bg-black/20 rounded text-blue-200 font-bold">${elapsedSec}s</span>
+          `;
+        };
+
+        updateTimerText();
+        const timerInterval = setInterval(updateTimerText, 100);
+
+        const stopTimer = () => {
+          clearInterval(timerInterval);
+          sendBtn.disabled = false;
+          sendBtn.style.opacity = '';
+          sendBtn.style.cursor = '';
+          sendBtn.innerHTML = originalBtnHtml;
+        };
+
         try {
           const res = await fetch(url, fetchOpts);
-          const elapsed = Math.round(performance.now() - t0);
-          timingEl.textContent = `${elapsed}ms`;
+          const elapsed = ((performance.now() - t0) / 1000).toFixed(2);
+          timingEl.textContent = `${elapsed}s`;
+          timingFooterEl.classList.remove('hidden');
 
           const ct = res.headers.get('content-type') || '';
           let body;
@@ -2682,11 +2716,14 @@ table thead {
           responseEl.textContent = body;
           if (typeof Prism !== 'undefined') Prism.highlightElement(responseEl);
         } catch (err) {
-          const elapsed = Math.round(performance.now() - t0);
-          timingEl.textContent = `${elapsed}ms`;
+          const elapsed = ((performance.now() - t0) / 1000).toFixed(2);
+          timingEl.textContent = `${elapsed}s`;
+          timingFooterEl.classList.remove('hidden');
           statusEl.textContent = 'Network Error';
           statusEl.className = 'tryit-status status-error';
           responseEl.textContent = `// ${err.message}`;
+        } finally {
+          stopTimer();
         }
       });
     }
