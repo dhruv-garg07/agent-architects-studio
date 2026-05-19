@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # BASE_URL = "http://localhost:1080"
-BASE_URL = "https://www.themanhattanproject.ai"
+BASE_URL = "http://127.0.0.1:5000"
 API_KEY = os.getenv("MANHATTAN_API_KEY_TEST", "sk-5VagoCihzX6rWtT0u2L-ZLIfNWDqLV3HhAhdDZ0avW4")
 HEADERS = {
     "Authorization": f"Bearer {API_KEY}",
