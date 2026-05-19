@@ -46,7 +46,6 @@ class LLMClient:
         if self.claude_api_key:
             try:
                 from anthropic import Anthropic
-                import os
                 self.anthropic_client = Anthropic(api_key=self.claude_api_key)
                 print(f"Initialized Anthropic client with model: {self.claude_model}")
             except Exception as e:
