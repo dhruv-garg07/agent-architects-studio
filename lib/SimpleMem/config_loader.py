@@ -75,6 +75,9 @@ OPENAI_API_KEY = get_str("OPENAI_API_KEY", "")
 OPENAI_BASE_URL = get_str("OPENAI_BASE_URL")
 LLM_MODEL = get_str("LLM_MODEL", "ServiceNow-AI/Apriel-1.5-15b-Thinker")
 TOGETHER_API_KEY = get_str("TOGETHER_API_KEY", "")
+CLAUDE_API_KEY = get_str("CLAUDE_API_KEY", "")
+CLAUDE_MODEL = get_str("CLAUDE_MODEL", "claude-sonnet-4-6")
+
 
 # Embedding model (local, no API needed)
 EMBEDDING_MODEL = get_str("EMBEDDING_MODEL", "all-MiniLM-L6-v2")

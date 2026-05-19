@@ -7,7 +7,7 @@ import time
 import requests
 from typing import List, Dict, Any, Optional
 # from openai import OpenAI
-from SimpleMem.config_loader import TOGETHER_API_KEY, LLM_MODEL, OPENAI_BASE_URL, ENABLE_THINKING, USE_STREAMING
+from SimpleMem.config_loader import TOGETHER_API_KEY, LLM_MODEL, OPENAI_BASE_URL, ENABLE_THINKING, USE_STREAMING, CLAUDE_API_KEY, CLAUDE_MODEL
 from together import Together
 def extract_output_after_think(response: str) -> str:
     """
@@ -38,6 +38,20 @@ class LLMClient:
         self.enable_thinking = enable_thinking if enable_thinking is not None else ENABLE_THINKING
         self.use_streaming = use_streaming if use_streaming is not None else USE_STREAMING
 
+        # Load Claude settings
+        self.claude_api_key = CLAUDE_API_KEY or os.environ.get("CLAUDE_API_KEY", "")
+        self.claude_model = CLAUDE_MODEL or os.environ.get("CLAUDE_MODEL", "claude-sonnet-4-6")
+        self.anthropic_client = None
+        
+        if self.claude_api_key:
+            try:
+                from anthropic import Anthropic
+                import os
+                self.anthropic_client = Anthropic(api_key=self.claude_api_key)
+                print(f"Initialized Anthropic client with model: {self.claude_model}")
+            except Exception as e:
+                print(f"Failed to initialize Anthropic client: {e}")
+
         # Initialize OpenAI client with optional base_url
         client_kwargs = {"api_key": self.api_key}
         if self.base_url:
@@ -47,6 +61,7 @@ class LLMClient:
         if self.enable_thinking:
             print(f"Deep thinking mode enabled")
         self.client = Together(api_key=self.api_key)
+
 
     def chat_completion(
         self,
@@ -58,6 +73,53 @@ class LLMClient:
         """
         Standard chat completion with optional thinking mode and retry mechanism
         """
+        if self.anthropic_client:
+            # Format messages for Anthropic (extract system prompt if present)
+            system_prompt = ""
+            filtered_messages = []
+            for msg in messages:
+                if msg.get("role") == "system":
+                    system_prompt = msg.get("content", "")
+                else:
+                    # Anthropic API only allows "user" and "assistant" roles in messages array
+                    role = msg.get("role")
+                    if role not in ("user", "assistant"):
+                        role = "user"
+                    filtered_messages.append({
+                        "role": role,
+                        "content": msg.get("content")
+                    })
+            
+            # Retry loop for Anthropic
+            last_exception = None
+            for attempt in range(max_retries):
+                try:
+                    kwargs = {
+                        "model": self.claude_model,
+                        "messages": filtered_messages,
+                        "temperature": temperature,
+                        "max_tokens": 4000
+                    }
+                    if system_prompt:
+                        kwargs["system"] = system_prompt
+                    
+                    response = self.anthropic_client.messages.create(**kwargs)
+                    content = response.content[0].text
+                    return content
+                except Exception as e:
+                    last_exception = e
+                    if attempt < max_retries - 1:
+                        import time
+                        wait_time = (2 ** attempt)
+                        print(f"Anthropic API call failed (attempt {attempt + 1}/{max_retries}): {e}")
+                        print(f"Retrying in {wait_time} seconds...")
+                        time.sleep(wait_time)
+                    else:
+                        print(f"Anthropic API call failed after {max_retries} attempts: {e}")
+            
+            if last_exception:
+                raise last_exception
+
         kwargs = {
             "model": self.model,
             "messages": messages,
