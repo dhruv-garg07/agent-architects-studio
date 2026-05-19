@@ -73,12 +73,33 @@ class RemoteEmbeddingClient:
 
     def embed_remote(self, texts: List[str]) -> List[List[float]]:
         """
-        Embed multiple texts safely (one-by-one with retries).
+        Embed multiple texts. Tries batch first, falls back to one-by-one.
         """
         import time
-        embeddings = []
         max_retries = 3
 
+        # --- Fast path: batch all texts in a single API call ---
+        for attempt in range(max_retries):
+            try:
+                results = self.client.feature_extraction(
+                    texts,
+                    model=self.model,
+                )
+                embeddings = [np.array(r).flatten().tolist() for r in results]
+                if len(embeddings) == len(texts):
+                    return embeddings
+                # If count mismatch, fall through to sequential
+                break
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    time.sleep(1)
+                else:
+                    # Batch failed after retries, fall through to sequential
+                    print(f"[RemoteEmbeddingClient] Batch embedding failed, falling back to sequential: {e}")
+                    break
+
+        # --- Fallback: sequential one-by-one ---
+        embeddings = []
         for idx, text in enumerate(texts):
             for attempt in range(max_retries):
                 try:
@@ -97,13 +118,21 @@ class RemoteEmbeddingClient:
 
 # -------------------------------------------------
 # Global Chroma Cloud Client (NO EMBEDDING FUNCTION)
+# Lazy-initialized to avoid blocking module import.
 # -------------------------------------------------
 
-CHROMA_CLIENT = chromadb.CloudClient(
-    api_key=os.getenv("CHROMA_API_KEY"),
-    tenant=os.getenv("CHROMA_TENANT"),
-    database=os.getenv("CHROMA_DATABASE_CHAT_HISTORY"),
-)
+_CHROMA_CLIENT = None
+
+def get_chroma_client():
+    """Lazy singleton for ChromaDB CloudClient."""
+    global _CHROMA_CLIENT
+    if _CHROMA_CLIENT is None:
+        _CHROMA_CLIENT = chromadb.CloudClient(
+            api_key=os.getenv("CHROMA_API_KEY"),
+            tenant=os.getenv("CHROMA_TENANT"),
+            database=os.getenv("CHROMA_DATABASE_CHAT_HISTORY"),
+        )
+    return _CHROMA_CLIENT
 
 # -------------------------------------------------
 # Chroma Collection Manager (Remote Embeddings)
@@ -116,11 +145,16 @@ class ChromaCollectionManager:
     """
 
     _collection_cache: Dict[str, any] = {}
+    _shared_embedder = None  # Singleton embedder shared across all instances
 
     def __init__(self, database: Optional[str] = None):
-        self.client = CHROMA_CLIENT
+        self.client = get_chroma_client()
         self.database = database or os.getenv("CHROMA_DATABASE_CHAT_HISTORY")
-        self.embedder = RemoteEmbeddingClient()
+        
+        # Share a single RemoteEmbeddingClient across all manager instances
+        if ChromaCollectionManager._shared_embedder is None:
+            ChromaCollectionManager._shared_embedder = RemoteEmbeddingClient()
+        self.embedder = ChromaCollectionManager._shared_embedder
 
         # [SUCCESS] SINGLE shared disabled embedding function
         self._disabled_ef = DisabledEmbeddingFunction()
@@ -215,12 +249,47 @@ class ChromaCollectionManager:
                 f"Embedding count mismatch: {len(embeddings)} vs {len(ids)}"
             )
 
-        col.upsert(
-            ids=ids,
-            documents=documents,
-            embeddings=embeddings,
-            metadatas=metadatas or [{} for _ in ids],
-        )
+        try:
+            col.upsert(
+                ids=ids,
+                documents=documents,
+                embeddings=embeddings,
+                metadatas=metadatas or [{} for _ in ids],
+            )
+        except Exception as e:
+            err_str = str(e).lower()
+            if "dimension" in err_str or "embedding" in err_str:
+                # Dimension mismatch: stale collection built with different embedding size.
+                # Auto-recover by deleting and recreating the collection.
+                print(f"[AUTO-RECOVER] Dimension mismatch detected for '{collection_name}'. "
+                      f"Deleting stale collection and recreating with correct dimension. Error: {e}")
+                try:
+                    self.client.delete_collection(collection_name)
+                except Exception:
+                    pass
+                self._collection_cache.pop(collection_name, None)
+                # Also clear from VectorStore's known_collections to force re-init
+                try:
+                    from SimpleMem.database.vector_store import VectorStore
+                    VectorStore._known_collections.discard(collection_name)
+                except Exception:
+                    pass
+                # Recreate with correct dimension
+                col = self.client.create_collection(
+                    name=collection_name,
+                    embedding_function=self._disabled_ef,
+                    metadata={"embedding": "remote-only"},
+                )
+                self._collection_cache[collection_name] = col
+                col.add(
+                    ids=ids,
+                    documents=documents,
+                    embeddings=embeddings,
+                    metadatas=metadatas or [{} for _ in ids],
+                )
+                return f"[RECOVERED] Collection '{collection_name}' recreated with correct dimension ({len(ids)} items)."
+            else:
+                raise
 
         return f"[SUCCESS] Collection '{collection_name}' upserted ({len(ids)} items)."
 
@@ -288,12 +357,24 @@ class ChromaCollectionManager:
                     f"Embedding count mismatch: {len(embeddings)} vs {len(ids)}"
                 )
 
-            col.update(
-                ids=ids,
-                documents=documents,
-                embeddings=embeddings,
-                metadatas=metadatas or [{} for _ in ids],
-            )
+            try:
+                col.update(
+                    ids=ids,
+                    documents=documents,
+                    embeddings=embeddings,
+                    metadatas=metadatas or [{} for _ in ids],
+                )
+            except Exception as e:
+                err_str = str(e).lower()
+                if "dimension" in err_str or "embedding" in err_str:
+                    print(f"[AUTO-RECOVER] Dimension mismatch in update for '{collection_name}'. "
+                          f"Falling back to upsert after recreating. Error: {e}")
+                    return self.create_or_update_collection(
+                        collection_name=collection_name,
+                        ids=ids, documents=documents, metadatas=metadatas
+                    )
+                raise
+
             return f"Updated {len(ids)} documents in '{collection_name}'."
         except Exception as e:
             return f"Error updating collection '{collection_name}': {e}"
@@ -328,11 +409,31 @@ class ChromaCollectionManager:
         col = self.get_collection(collection_name)
         query_embeddings = self.embedder.embed_remote(query_texts)
 
-        return col.query(
-            query_embeddings=query_embeddings,
-            n_results=n_results,
-            where=where,
-        )
+        try:
+            return col.query(
+                query_embeddings=query_embeddings,
+                n_results=n_results,
+                where=where,
+            )
+        except Exception as e:
+            err_str = str(e).lower()
+            if "dimension" in err_str or "embedding" in err_str:
+                # Stale collection with wrong dimension: delete it so next write recreates correctly
+                print(f"[AUTO-RECOVER] Dimension mismatch on query for '{collection_name}'. "
+                      f"Dropping stale collection. Error: {e}")
+                try:
+                    self.client.delete_collection(collection_name)
+                except Exception:
+                    pass
+                self._collection_cache.pop(collection_name, None)
+                try:
+                    from SimpleMem.database.vector_store import VectorStore
+                    VectorStore._known_collections.discard(collection_name)
+                except Exception:
+                    pass
+                # Return empty results — caller handles gracefully
+                return {"ids": [[]], "documents": [[]], "metadatas": [[]], "distances": [[]]}
+            raise
 
     def get_collection_info(self, collection_name: str) -> Dict:
         col = self.get_collection(collection_name)

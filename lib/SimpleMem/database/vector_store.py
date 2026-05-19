@@ -78,29 +78,40 @@ class VectorStore:
         vs.semantic_search(query)
     """
     
-    def __init__(self, agent_id: str = "memory_entries", embedding_model: EmbeddingModel = None):
+    # Class-level cache of collections already verified to exist.
+    # Prevents redundant network calls to ChromaDB for _ensure_collection().
+    _known_collections: set = set()
+
+    def __init__(self, agent_id: str = "memory_entries", embedding_model: EmbeddingModel = None, agentic_rag=None):
         """
         Initialize VectorStore using Agentic_RAG as the vector database.
         
         Args:
             agent_id: Unique identifier for the memory entries collection
             embedding_model: Embedding model for vector generation
+            agentic_rag: Pre-built Agentic_RAG instance (shared across agents to avoid
+                         redundant ChromaDB/embedding client initialization)
         """
         # Use private variable for agent_id to enable property setter
         self._agent_id = agent_id
         self._agent_id_lock = threading.RLock()  # Thread-safe agent_id switching
         self.embedding_model = embedding_model or EmbeddingModel()
         
-        # Initialize Agentic_RAG with ChromaDB
-        database_path = os.getenv("CHROMA_DATABASE_CHAT_HISTORY")
-        self.agentic_RAG = Agentic_RAG(
-            database=database_path,
-            enable_cache=True,
-            enable_monitoring=True
-        )
+        # Reuse shared Agentic_RAG instance if provided, otherwise create new one
+        if agentic_rag is not None:
+            self.agentic_RAG = agentic_rag
+        else:
+            database_path = os.getenv("CHROMA_DATABASE_CHAT_HISTORY")
+            self.agentic_RAG = Agentic_RAG(
+                database=database_path,
+                enable_cache=True,
+                enable_monitoring=True
+            )
         
-        # Ensure collection exists
-        self._ensure_collection()
+        # Lazy collection init: skip network call if we already verified this collection
+        if agent_id not in VectorStore._known_collections:
+            self._ensure_collection()
+            VectorStore._known_collections.add(agent_id)
         
         # Cache for frequently accessed entries
         self.entry_cache = {}

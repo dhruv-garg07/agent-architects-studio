@@ -4,12 +4,19 @@ from dotenv import load_dotenv
 from RAG_DB.chroma_collection_manager import ChromaCollectionManager
 
 class ChromaCollectionWrapper:
-    def __init__(self, database: str = None):
-        """Initialize the wrapper with ChromaCollectionManager."""
+    def __init__(self, database: str = None, verify_writes: bool = False):
+        """Initialize the wrapper with ChromaCollectionManager.
+        
+        Args:
+            database: ChromaDB database name
+            verify_writes: If True, verify data after every write (slower but safer).
+                          Default False for production performance.
+        """
         load_dotenv()
         if database is None:
             database = os.getenv("CHROMA_DATABASE_FILE_DATA")
         self.manager = ChromaCollectionManager(database=database)
+        self.verify_writes = verify_writes
     
     def create_or_update_collection_with_verify(
         self,
@@ -19,13 +26,12 @@ class ChromaCollectionWrapper:
         metadatas: Optional[List[Dict]] = None
     ) -> Dict:
         """
-        Create or update collection and automatically verify the operation.
+        Create or update collection. Verifies only when verify_writes is enabled.
         
         Returns:
             Dict with operation result and verification details.
         """
         
-        print("Reached inside create or update with verify")
         # Perform the operation
         result = self.manager.create_or_update_collection(
             collection_name=collection_name,
@@ -34,7 +40,15 @@ class ChromaCollectionWrapper:
             metadatas=metadatas
         )
         
-        # Verify the operation
+        # Fast path: skip verification in production
+        if not self.verify_writes:
+            return {
+                "operation": "create_or_update_collection",
+                "result": result,
+                "success": True
+            }
+        
+        # Slow path: verify the operation
         verification = self.manager.verify_data_in_collection(
             collection_name=collection_name,
             expected_ids=ids
@@ -55,7 +69,7 @@ class ChromaCollectionWrapper:
         metadatas: Optional[List[Dict]] = None
     ) -> Dict:
         """
-        Update collection and automatically verify the operation.
+        Update collection. Verifies only when verify_writes is enabled.
         
         Returns:
             Dict with operation result and verification details.
@@ -68,7 +82,16 @@ class ChromaCollectionWrapper:
             metadatas=metadatas
         )
         
-        # Verify the operation - get all IDs to see what's actually there
+        # Fast path: skip verification in production
+        if not self.verify_writes:
+            return {
+                "operation": "update_collection",
+                "result": result,
+                "success": True,
+                "new_ids_added": list(set(ids))
+            }
+        
+        # Slow path: verify the operation
         verification = self.manager.verify_data_in_collection(
             collection_name=collection_name
         )

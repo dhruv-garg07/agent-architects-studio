@@ -50,7 +50,11 @@ class SimpleMemSystem:
         enable_parallel_processing: Optional[bool] = None,
         max_parallel_workers: Optional[int] = None,
         enable_parallel_retrieval: Optional[bool] = None,
-        max_retrieval_workers: Optional[int] = None
+        max_retrieval_workers: Optional[int] = None,
+        # Shared component injection (avoids redundant re-initialization)
+        shared_llm_client: Optional['LLMClient'] = None,
+        shared_embedding_model: Optional['EmbeddingModel'] = None,
+        shared_agentic_rag = None
     ):
         """
         Initialize system
@@ -76,20 +80,19 @@ class SimpleMemSystem:
         print("Initializing SimpleMem System")
         print("=" * 60)
 
-        # Initialize core components
-        self.llm_client = LLMClient(
+        # Initialize core components — reuse shared instances when provided
+        self.llm_client = shared_llm_client or LLMClient(
             api_key=api_key,
             model=model,
             base_url="https://semipathologically-nonexcusable-randi.ngrok-free.dev/",
             enable_thinking=enable_thinking,
             use_streaming=use_streaming
         )
-        self.embedding_model = EmbeddingModel()
+        self.embedding_model = shared_embedding_model or EmbeddingModel()
         self.vector_store = VectorStore(
             agent_id=agent_id,
-            # db_path=db_path,
             embedding_model=self.embedding_model,
-            # table_name=table_name
+            agentic_rag=shared_agentic_rag
         )
 
         if clear_db:
@@ -121,7 +124,7 @@ class SimpleMemSystem:
         print("\nSystem initialization complete!")
         print("=" * 60)
 
-    def add_dialogue(self, speaker: str, content: str, timestamp: Optional[str] = None):
+    def add_dialogue(self, speaker: str, content: str, timestamp: Optional[str] = None, auto_process: bool = True):
         """
         Add a single dialogue
 
@@ -129,6 +132,8 @@ class SimpleMemSystem:
         - speaker: Speaker name
         - content: Dialogue content
         - timestamp: Timestamp (ISO 8601 format)
+        - auto_process: If True (default), extract memory entries immediately via LLM.
+                        If False, buffer for later batch processing (much faster).
         """
         dialogue_id = self.memory_builder.processed_count + len(self.memory_builder.dialogue_buffer) + 1
         dialogue = Dialogue(
@@ -137,7 +142,7 @@ class SimpleMemSystem:
             content=content,
             timestamp=timestamp
         )
-        self.memory_builder.add_dialogue(dialogue)
+        self.memory_builder.add_dialogue(dialogue, auto_process=auto_process)
 
     def add_dialogues(self, dialogues: List[Dialogue]):
         """
@@ -180,6 +185,35 @@ class SimpleMemSystem:
         print("=" * 60 + "\n")
 
         return answer
+
+    def ask_with_contexts(self, question: str):
+        """
+        Ask question and return both the answer and the retrieved contexts.
+        
+        This avoids the duplicate retrieve() call that happens when
+        ask() and retrieve() are called separately.
+
+        Args:
+        - question: User question
+
+        Returns:
+        - Tuple of (answer: str, contexts: List[MemoryEntry])
+        """
+        print("\n" + "=" * 60)
+        print(f"Question: {question}")
+        print("=" * 60)
+
+        # Single retrieval pass
+        contexts = self.hybrid_retriever.retrieve(question)
+
+        # Generate answer from retrieved contexts
+        answer = self.answer_generator.generate_answer(question, contexts)
+
+        print("\nAnswer:")
+        print(answer)
+        print("=" * 60 + "\n")
+
+        return answer, contexts
 
     def get_all_memories(self) -> List[MemoryEntry]:
         """

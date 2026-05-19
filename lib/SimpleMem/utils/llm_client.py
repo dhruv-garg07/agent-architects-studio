@@ -2,6 +2,9 @@
 LLM Client - Handles all LLM interactions
 """
 import json
+import os
+import time
+import requests
 from typing import List, Dict, Any, Optional
 # from openai import OpenAI
 from SimpleMem.config_loader import TOGETHER_API_KEY, LLM_MODEL, OPENAI_BASE_URL, ENABLE_THINKING, USE_STREAMING
@@ -43,7 +46,6 @@ class LLMClient:
 
         if self.enable_thinking:
             print(f"Deep thinking mode enabled")
-        import os
         self.client = Together(api_key=self.api_key)
 
     def chat_completion(
@@ -85,8 +87,6 @@ class LLMClient:
         last_exception = None
         for attempt in range(max_retries):
             # Try OpenRouter First
-            import os
-            import requests
             openrouter_key = os.getenv("OPENROUTER_API_KEY")
             try:
                 if openrouter_key:
@@ -129,7 +129,6 @@ class LLMClient:
             except Exception as e:
                 last_exception = e
                 if attempt < max_retries - 1:
-                    import time
                     wait_time = (2 ** attempt)  # Exponential backoff: 1s, 2s, 4s
                     print(f"LLM API call failed (attempt {attempt + 1}/{max_retries}): {e}")
                     print(f"Retrying in {wait_time} seconds...")
@@ -147,8 +146,6 @@ class LLMClient:
         full_content = []
         
         # Try OpenRouter First
-        import os
-        import requests
         openrouter_key = os.getenv("OPENROUTER_API_KEY")
         try:
             if openrouter_key:

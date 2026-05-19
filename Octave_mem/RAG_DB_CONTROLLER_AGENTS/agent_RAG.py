@@ -21,7 +21,15 @@ if grandparent_dir not in sys.path:
 from RAG_DB.chroma_collection_wrapper import ChromaCollectionWrapper
 from RAG_DB_CONTROLLER.read_data_RAG_all_DB import read_data_RAG
 from dotenv import load_dotenv
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any, Tuple, Union, Callable
+from datetime import datetime, timedelta
+import os
+import hashlib
+import json
+from functools import lru_cache
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+import uuid
 
 load_dotenv()
 
@@ -41,21 +49,6 @@ Advanced Features Added:
 7. Performance monitoring and analytics
 8. Backup and restore operations
 """
-
-from RAG_DB.chroma_collection_wrapper import ChromaCollectionWrapper
-from RAG_DB_CONTROLLER.read_data_RAG_all_DB import read_data_RAG
-from dotenv import load_dotenv
-import os
-from typing import List, Dict, Optional, Any, Tuple, Union, Callable
-from datetime import datetime, timedelta
-import hashlib
-import json
-from functools import lru_cache
-import asyncio
-from concurrent.futures import ThreadPoolExecutor
-import uuid
-
-load_dotenv()
 
 class SemanticCache:
     """Semantic caching layer for reducing redundant vector searches"""
@@ -292,14 +285,25 @@ class Agentic_RAG:
         self.embedding_dimension = self._get_embedding_dimension()
         
     def _get_embedding_dimension(self) -> int:
-        """Get embedding dimension based on model"""
-        # This should be configured based on your embedding model
+        """Get embedding dimension based on model. Reads from env for accuracy."""
+        # Primary source: REMOTE_EMBEDDING_DIMENSION from env (most authoritative)
+        env_dim = os.getenv("REMOTE_EMBEDDING_DIMENSION") or os.getenv("EMBEDDING_DIMENSION")
+        if env_dim:
+            try:
+                return int(env_dim)
+            except ValueError:
+                pass
+
+        # Fallback: infer from model name
         model_dimensions = {
             "text-embedding-ada-002": 1536,
             "all-MiniLM-L6-v2": 384,
-            "default": 768
+            "paraphrase-multilingual-MiniLM-L12-v2": 384,
+            "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2": 384,
+            "sentence-transformers/all-MiniLM-L6-v2": 384,
+            "default": 384  # Default to 384 (the HF model used throughout)
         }
-        return model_dimensions.get(self.embedding_model, 768)
+        return model_dimensions.get(self.embedding_model, 384)
     
     # === EXISTING METHODS (unchanged for backward compatibility) ===
     

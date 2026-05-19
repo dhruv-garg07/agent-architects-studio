@@ -903,22 +903,51 @@ def search_chat_history():
 # Import SimpleMem components for memory operations
 from SimpleMem.main import create_system, SimpleMemSystem
 from SimpleMem.models.memory_entry import MemoryEntry, Dialogue
+from SimpleMem.utils.llm_client import LLMClient as SimpleMemLLMClient
+from SimpleMem.utils.embedding import EmbeddingModel as SimpleMemEmbeddingModel
 
 # Cache for SimpleMem systems per agent (avoids recreating systems on every request)
 _memory_systems_cache = {}
 
+# Shared singleton components (agent-agnostic, initialized once)
+_shared_llm_client = None
+_shared_embedding_model = None
+_shared_agentic_rag = None
+
+def _get_shared_components():
+    """Lazily initialize shared components once. These are agent-agnostic
+    and extremely expensive to create (network connections, API clients)."""
+    global _shared_llm_client, _shared_embedding_model, _shared_agentic_rag
+    
+    if _shared_llm_client is None:
+        _shared_llm_client = SimpleMemLLMClient()
+    if _shared_embedding_model is None:
+        _shared_embedding_model = SimpleMemEmbeddingModel()
+    if _shared_agentic_rag is None:
+        from Octave_mem.RAG_DB_CONTROLLER_AGENTS.agent_RAG import Agentic_RAG
+        database_path = os.getenv("CHROMA_DATABASE_CHAT_HISTORY")
+        _shared_agentic_rag = Agentic_RAG(
+            database=database_path,
+            enable_cache=True,
+            enable_monitoring=True
+        )
+    return _shared_llm_client, _shared_embedding_model, _shared_agentic_rag
+
 def _get_or_create_memory_system(agent_id: str, clear_db: bool = False) -> SimpleMemSystem:
     """Get cached SimpleMem system or create new one for the agent.
     
-    Uses agent_id as the collection name in ChromaDB for per-agent storage.
+    Uses shared singleton components (LLMClient, EmbeddingModel, Agentic_RAG)
+    so that only the first agent pays the full initialization cost.
+    Subsequent agents reuse these and only create lightweight per-agent wrappers.
     """
     if agent_id not in _memory_systems_cache or clear_db:
-        # Use SimpleMemSystem with agent_id for ChromaDB collection name
-        # NOTE: agent_id parameter is what VectorStore uses for the ChromaDB collection,
-        # not table_name (which was being used incorrectly before)
+        llm, emb, rag = _get_shared_components()
         _memory_systems_cache[agent_id] = SimpleMemSystem(
             agent_id=agent_id,
-            clear_db=clear_db
+            clear_db=clear_db,
+            shared_llm_client=llm,
+            shared_embedding_model=emb,
+            shared_agentic_rag=rag
         )
     return _memory_systems_cache[agent_id]
 
@@ -1251,11 +1280,9 @@ def get_context():
     try:
         memory_system = _get_or_create_memory_system(agent_id)
         
-        # Use SimpleMem's ask() for full Q&A with memory context
-        answer = memory_system.ask(question)
-        
-        # Also get the contexts used for transparency
-        contexts = memory_system.hybrid_retriever.retrieve(question)
+        # Use ask_with_contexts() to get answer + contexts in a single retrieval pass
+        # This avoids the duplicate retrieve() call that was doubling latency
+        answer, contexts = memory_system.ask_with_contexts(question)
         contexts_used = [
             {
                 'entry_id': ctx.entry_id,
@@ -1437,49 +1464,47 @@ def agent_chat():
             if not agent:
                 return jsonify({'error': 'agent_not_found', 'agent_id': agent_id}), 404
         
-        # Import SimpleMem system
-        from SimpleMem.main import create_system
+        # Use cached memory system (avoids recreating SimpleMemSystem every call)
+        memory_system = _get_or_create_memory_system(agent_id)
         
-        # Create or retrieve SimpleMem system for this agent
-        # Agent-specific isolated memory system
-        memory_system = create_system(agent_id=agent_id, clear_db=False)
-        
-        # Add user message as dialogue to SimpleMem
-        # Using "user" as speaker and current timestamp
+        # Record timestamp for this interaction
         from datetime import datetime
         timestamp = datetime.utcnow().isoformat()
+        
+        # Buffer user message WITHOUT LLM extraction (auto_process=False)
+        # This skips the expensive LLM call to extract memory from user message
         memory_system.add_dialogue(
             speaker="user",
             content=user_message,
-            timestamp=timestamp
+            timestamp=timestamp,
+            auto_process=False
         )
         
-        # Finalize any pending dialogues in buffer
-        # memory_system.finalize()
-        
-        # Ask SimpleMem system to generate response
+        # Ask SimpleMem system to generate response (retrieval + answer generation)
         agent_response = memory_system.ask(user_message)
         
-        # Also store the response/agent message in the memory
+        # Buffer agent response WITHOUT LLM extraction (auto_process=False)
         memory_system.add_dialogue(
             speaker="agent",
             content=agent_response,
-            timestamp=datetime.utcnow().isoformat()
+            timestamp=datetime.utcnow().isoformat(),
+            auto_process=False
         )
-        memory_system.finalize()
         
-        # Store conversation in chat history (Agentic RAG)
-        #Confirm if this is the correct way to store chat history
-        # chat_agentic_rag.add_docs(
-        #     agent_ID=agent_id,
-        #     document_content=f"User: {user_message}\nAgent: {agent_response}",
-        #     document_id=str(uuid.uuid4()),
-        #     metadata={
-        #         'speaker': 'user',
-        #         'timestamp': timestamp,
-        #         'user_id': user_id
-        #     }
-        # )
+        # Process buffered dialogues in background thread
+        # This extracts memory entries asynchronously so the API responds immediately
+        import threading
+        def _background_finalize(mem_sys):
+            try:
+                mem_sys.finalize()
+            except Exception as bg_err:
+                print(f"[agent_chat] Background finalize error: {bg_err}")
+        
+        threading.Thread(
+            target=_background_finalize,
+            args=(memory_system,),
+            daemon=True
+        ).start()
         
         return jsonify({
             'ok': True,
