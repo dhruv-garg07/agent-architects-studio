@@ -395,7 +395,7 @@ class VectorStore:
         batch = self.agentic_RAG.batch_operation()
         for i in range(0, len(ids), 100):  # Batch in chunks of 100
             batch_chunk = batch.add_documents(
-                agent_id=agent_id_snapshot,  # Use snapshot, not self.agent_id
+                agent_id=current_agent_id,  # Use snapshot, not self.agent_id
                 ids=ids[i:i+100],
                 documents=documents[i:i+100],
                 metadatas=metadatas[i:i+100]
@@ -408,7 +408,7 @@ class VectorStore:
         print(f"[DEBUG VectorStore.add_entries] Batch execute result: {result}")
         
         if result.get('success'):
-            print(f"[SUCCESS] Added {len(entries)} memory entries to {agent_id_snapshot}")
+            print(f"[SUCCESS] Added {len(entries)} memory entries to {current_agent_id}")
             return {
                 "success": True,
                 "operations_completed": result.get("operations", 0),
