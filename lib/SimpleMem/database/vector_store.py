@@ -234,7 +234,7 @@ class VectorStore:
             
         return "\n".join(components)
     
-    def _entry_to_metadata(self, entry: MemoryEntry) -> Dict[str, Any]:
+    def _entry_to_metadata(self, entry: MemoryEntry, agent_id: str = None) -> Dict[str, Any]:
         """
         Convert MemoryEntry to ChromaDB metadata.
         
@@ -242,7 +242,7 @@ class VectorStore:
         Metadata includes structured information for filtering.
         """
         metadata = {
-            "agent_id": self.agent_id,
+            "agent_id": agent_id or self.agent_id,
             "entry_type": "memory_entry",
             "timestamp": entry.timestamp or datetime.now().isoformat(),
             "has_keywords": len(entry.keywords) > 0,
@@ -368,13 +368,9 @@ class VectorStore:
         """
         print(f"[DEBUG VectorStore.add_entries] Called with {len(entries) if entries else 0} entries")
         if not entries:
-            print("[DEBUG VectorStore.add_entries] No entries to add, returning early")
-            return
-        
-        # Capture agent_id at start (thread-safe snapshot)
-        agent_id_snapshot = self._validate_agent_id_unchanged("add_entries")
-        print(f"[DEBUG VectorStore.add_entries] agent_id_snapshot = {agent_id_snapshot}")
-        
+            return []
+            
+        current_agent_id = self.agent_id
         ids = []
         documents = []
         metadatas = []
@@ -388,7 +384,7 @@ class VectorStore:
             ids.append(entry.entry_id)
             documents.append(self._entry_to_document(entry))
             
-            metadata = self._entry_to_metadata(entry)
+            metadata = self._entry_to_metadata(entry, agent_id=current_agent_id)
             metadata["entry_id"] = entry.entry_id
             metadatas.append(metadata)
             
@@ -886,11 +882,12 @@ class VectorStore:
                 return False
             
             # Update in ChromaDB
+            metadata = self._entry_to_metadata(entry, agent_id=self.agent_id)
             result = self.agentic_RAG.update_docs(
                 agent_ID=self.agent_id,
                 ids=[entry.entry_id],
                 documents=[self._entry_to_document(entry)],
-                metadatas=[self._entry_to_metadata(entry)]
+                metadatas=[metadata]
             )
             
             # Update cache

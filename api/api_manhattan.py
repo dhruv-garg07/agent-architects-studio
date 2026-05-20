@@ -255,6 +255,17 @@ def extract_and_validate_api_key(data: dict = None):
         return None, (jsonify({'error': info, 'valid': False}), 401)
 
 
+def _verify_agent_ownership(agent_id: str, user_id: str):
+    """Verify the agent belongs to the user. Returns (agent_record, error_response)."""
+    try:
+        agent = service.get_agent_by_id(agent_id=agent_id, user_id=user_id)
+        if not agent:
+            return None, (jsonify({'error': 'agent_not_found', 'agent_id': agent_id}), 404)
+        return agent, None
+    except Exception as e:
+        return None, (jsonify({'error': str(e)}), 500)
+
+
 @manhattan_api.route("/validate_key", methods=["POST"])
 def validate_key():
     """Validate an API key sent in JSON { "api_key": "sk-...", "permission": "chat" }.
@@ -283,8 +294,14 @@ The session_ids will be stored in a supabase table with user association in the 
 """
 
 service = ApiAgentsService()
-chat_agentic_rag = Agentic_RAG(database=os.getenv("CHROMA_DATABASE_CHAT_HISTORY"))
+# chat_agentic_rag is now provided by _get_shared_components() to avoid triple-instantiation.
+# Use _get_chat_agentic_rag() helper instead.
 file_agentic_rag = Agentic_RAG(database=os.getenv("CHROMA_DATABASE_FILE_DATA")) 
+
+def _get_chat_agentic_rag():
+    """Get the shared Agentic_RAG instance for chat history operations."""
+    _, _, rag = _get_shared_components()
+    return rag
 
 @manhattan_api.route("/create_agent", methods=["POST"])
 def create_agent():
@@ -350,7 +367,7 @@ def create_agent():
         )
         
         # Try creating Chroma DB collections for the agent
-        chat_agentic_rag.create_agent_collection(agent_ID=agent_id)
+        _get_chat_agentic_rag().create_agent_collection(agent_ID=agent_id)
         file_agentic_rag.create_agent_collection(agent_ID=agent_id)
         
         return jsonify(agent), 201
@@ -380,19 +397,25 @@ def list_agents():
         return jsonify({'error': str(e)}), 500
 
 # Get the agent by id
-@manhattan_api.route("/get_agent", methods=["GET"])
+@manhattan_api.route("/get_agent", methods=["GET", "POST"])
 def get_agent():
     """Get an agent by ID for the authenticated user.
 
     Expects API key via Authorization/X-API-Key/query param/raw payload.
     Expects query param `agent_id`.
     """
-    agent_id = request.get_json().get('agent_id')
+    if request.method == "POST":
+        data = request.get_json(silent=True) or {}
+        agent_id = data.get('agent_id')
+    else:
+        data = request.args
+        agent_id = data.get('agent_id')
+
     if not agent_id:
         return jsonify({'error': 'agent_id is required'}), 400
 
     # 1. Extract and Validate API Key
-    user_id, error_resp = extract_and_validate_api_key()
+    user_id, error_resp = extract_and_validate_api_key(data)
     if error_resp:
         return error_resp
             
@@ -682,13 +705,17 @@ def delete_agent():
         
         # Best-effort cleanup of Chroma DB collections for the agent
         try:
-            chat_agentic_rag.delete_agent_collection(agent_ID=agent_id)
+            _get_chat_agentic_rag().delete_agent_collection(agent_ID=agent_id)
         except Exception as e:
             print(f"[delete_agent] Chat collection cleanup skipped: {e}")
         try:
             file_agentic_rag.delete_agent_collection(agent_ID=agent_id)
         except Exception as e:
             print(f"[delete_agent] File collection cleanup skipped: {e}")
+        
+        # Evict from SimpleMem cache
+        if agent_id in _memory_systems_cache:
+            del _memory_systems_cache[agent_id]
         
         return jsonify({'ok': True, 'message': 'agent_deleted'}), 200   
     except Exception as e:
@@ -859,18 +886,18 @@ def search_chat_history():
 
     Expects JSON body with:
     - agent_id: str
-    - user_id: str
-    - limit: int (optional, default=10)
+    - query: str (optional)
+    - top_k: int (optional, default=10)
 
     Expects API key via Authorization/X-API-Key/query param/raw payload.
     """
     data = request.get_json(silent=True) or {}
     agent_id = data.get('agent_id')
-    user_id = data.get('user_id')
-    limit = data.get('limit', 10)
+    query = data.get('query', '')
+    top_k = data.get('top_k', 10)
 
-    if not agent_id or not user_id:
-        return jsonify({'error': 'agent_id and user_id are required'}), 400
+    if not agent_id:
+        return jsonify({'error': 'agent_id is required'}), 400
 
     # 1. Extract and Validate API Key
     valid_user_id, error_resp = extract_and_validate_api_key(data)
@@ -878,11 +905,17 @@ def search_chat_history():
         return error_resp
     try:
         # Fetch conversation history
-        history = chat_agentic_rag.search_agent_collection(
-            agent_id=agent_id,
-            user_id=user_id,
-            limit=limit
-        )
+        if query:
+            history = _get_chat_agentic_rag().search_agent_collection(
+                agent_ID=agent_id,
+                query=query,
+                n_results=top_k
+            )
+        else:
+            history = _get_chat_agentic_rag().fetch_history(
+                agent_ID=agent_id,
+                top_k=top_k
+            )
         return jsonify({'history': history}), 200       
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -985,6 +1018,10 @@ def create_memory():
         return error
 
     try:
+        # Verify ownership
+        agent_record, err_resp = _verify_agent_ownership(agent_id, user_id)
+        if err_resp:
+            return err_resp
         # Create SimpleMem system (initializes vector store/ChromaDB collection)
         memory_system = _get_or_create_memory_system(agent_id, clear_db=clear_db)
         
@@ -1022,6 +1059,10 @@ def process_raw():
         return error
 
     try:
+        # Verify ownership
+        agent_record, err_resp = _verify_agent_ownership(agent_id, user_id)
+        if err_resp:
+            return err_resp
         memory_system = _get_or_create_memory_system(agent_id)
         
         memories_created = 0
@@ -1077,6 +1118,10 @@ def add_memory():
         return error
 
     try:
+        # Verify ownership
+        agent_record, err_resp = _verify_agent_ownership(agent_id, user_id)
+        if err_resp:
+            return err_resp
         print(f"[DEBUG /add_memory] Getting memory system for agent_id: {agent_id}")
         memory_system = _get_or_create_memory_system(agent_id)
         print(f"[DEBUG /add_memory] Memory system obtained. VectorStore agent_id: {memory_system.vector_store.agent_id}")
@@ -1217,6 +1262,10 @@ def get_memories_by_bin():
         return error
 
     try:
+        # Verify ownership
+        agent_record, err_resp = _verify_agent_ownership(agent_id, user_id)
+        if err_resp:
+            return err_resp
         memory_system = _get_or_create_memory_system(agent_id)
         
         if hasattr(memory_system.vector_store, 'agentic_RAG'):
@@ -1289,6 +1338,10 @@ def get_context():
         return error
 
     try:
+        # Verify ownership
+        agent_record, err_resp = _verify_agent_ownership(agent_id, user_id)
+        if err_resp:
+            return err_resp
         memory_system = _get_or_create_memory_system(agent_id)
         
         # Use ask_with_contexts() to get answer + contexts in a single retrieval pass
@@ -1341,6 +1394,10 @@ def update_memory():
         return error
 
     try:
+        # Verify ownership
+        agent_record, err_resp = _verify_agent_ownership(agent_id, user_id)
+        if err_resp:
+            return err_resp
         memory_system = _get_or_create_memory_system(agent_id)
         
         # Build the document content from lossless_restatement if provided
@@ -1407,6 +1464,10 @@ def delete_memory():
         return error
 
     try:
+        # Verify ownership
+        agent_record, err_resp = _verify_agent_ownership(agent_id, user_id)
+        if err_resp:
+            return err_resp
         memory_system = _get_or_create_memory_system(agent_id)
         
         # Use Agentic_RAG to delete documents
@@ -1436,44 +1497,16 @@ def agent_chat():
     if not agent_id or not user_message:
         return jsonify({'error': 'agent_id and message are required'}), 400
     
-    # Extract API key from Authorization header
-    auth_header = request.headers.get('Authorization') or request.headers.get('authorization')
-    api_key = None
-    
-    if auth_header and auth_header.lower().startswith('bearer '):
-        api_key = auth_header.split(None, 1)[1].strip()
-    
-    if not api_key:
-        return jsonify({'error': 'missing_api_key'}), 401
-
-    # Validate API key
-    permission = data.get('permission')
-    ok, info = validate_api_key_value(api_key, permission)
-
-    print(f"API Key validation result: {ok}, info: {info}")
-
-    if not ok:
-        return jsonify({'error': info, 'valid': False}), 401
-
-    user_id = info.get('user_id')
-    g.api_key_record = info
+    # 1. Extract and Validate API Key
+    user_id, error_resp = extract_and_validate_api_key(data)
+    if error_resp:
+        return error_resp
 
     try:
-        # Check if agent_id exists in supabase api_agents table
-        if _supabase_backend:
-            agent_check = _supabase_backend.table('api_agents').select('*').eq('agent_id', agent_id).execute()
-            if not agent_check.data or len(agent_check.data) == 0:
-                return jsonify({'error': 'agent_not_found', 'agent_id': agent_id}), 404
-            
-            # Verify the agent belongs to the authenticated user
-            agent_record = agent_check.data[0]
-            if agent_record.get('user_id') != user_id:
-                return jsonify({'error': 'unauthorized_agent_access'}), 403
-        else:
-            # Fallback: use service to check agent
-            agent = service.get_agent_by_id(agent_id=agent_id, user_id=user_id)
-            if not agent:
-                return jsonify({'error': 'agent_not_found', 'agent_id': agent_id}), 404
+        # Verify the agent belongs to the authenticated user
+        agent_record, err_resp = _verify_agent_ownership(agent_id, user_id)
+        if err_resp:
+            return err_resp
         
         # Use cached memory system (avoids recreating SimpleMemSystem every call)
         memory_system = _get_or_create_memory_system(agent_id)

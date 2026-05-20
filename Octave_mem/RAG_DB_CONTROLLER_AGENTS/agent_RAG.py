@@ -27,9 +27,9 @@ import os
 import hashlib
 import json
 from functools import lru_cache
+from chromadb.utils import embedding_functions
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
-import uuid
 
 load_dotenv()
 
@@ -581,7 +581,7 @@ class Agentic_RAG:
                 for agent_id in agent_ids
             }
             
-            for future in asyncio.as_completed(future_to_agent.keys()):
+            for future in as_completed(future_to_agent.keys()):
                 agent_id = future_to_agent[future]
                 try:
                     results[agent_id] = future.result()
