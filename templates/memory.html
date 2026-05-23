@@ -3,7 +3,7 @@
 <!-- {% block title %}Memory Dashboard | AI Agent Marketplace{% endblock %} -->
 
 {% block content %}
-<div class="memory-dashboard min-h-screen bg-[#0f0f0f] text-[#e8eaed] flex flex-col">
+<div class="memory-dashboard bg-[#0f0f0f] text-[#e8eaed] flex flex-col">
     <!-- Top Navigation Bar -->
     <!-- original header classes commented out: bg-card border-b border-border py-4 px-6 flex justify-between items-center shrink-0 -->
     <header>
@@ -47,33 +47,33 @@
 <!-- Main Dashboard Content -->
 <div class="flex flex-1 overflow-hidden">
     <!-- Left Panel - Sessions Sidebar -->
-    <div class="w-72 bg-[#1a1a1a] border-r border-[#2d2d2d] flex flex-col shrink-0">
+    <div class="w-72 bg-[#09090d] border-r border-white/5 flex flex-col shrink-0">
         <div class="p-4">
             <button id="newSessionBtn"
-                class="w-full bg-[#4285f4] hover:bg-[#5a9cf5] text-white font-medium py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98]">
-                <i data-lucide="plus" class="h-4 w-4"></i>
+                class="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-outfit font-semibold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.98] shadow-lg shadow-indigo-500/15 border border-indigo-400/10">
+                <i data-lucide="plus" class="h-4.5 w-4.5"></i>
                 <span>New Session</span>
             </button>
         </div>
 
         <!-- Memory Settings -->
-        <div class="px-4 py-3 border-t border-[#2d2d2d]" id="memorySettingsTop">
-            <h2 class="text-xs font-medium text-[#9aa0a6] uppercase tracking-wider mb-3">Settings</h2>
-            <div class="space-y-2">
+        <div class="px-4 py-3 border-t border-white/5" id="memorySettingsTop">
+            <h2 class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.15em] mb-3">Settings</h2>
+            <div class="space-y-2.5">
                 <label class="flex items-center justify-between cursor-pointer group">
-                    <span class="text-sm text-[#e8eaed]">Chat History</span>
+                    <span class="text-sm text-slate-300 font-jakarta">Chat History</span>
                     <input type="checkbox" id="chatHistoryToggle" checked disabled class="sr-only">
-                    <div class="w-9 h-5 bg-[#4285f4] rounded-full relative">
-                        <div class="absolute right-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform">
+                    <div class="w-9 h-5 bg-indigo-500 rounded-full relative shadow-inner">
+                        <div class="absolute right-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform shadow-md">
                         </div>
                     </div>
                 </label>
                 <label class="flex items-center justify-between cursor-pointer group">
-                    <span class="text-sm text-[#e8eaed]">File RAG</span>
+                    <span class="text-sm text-slate-300 font-jakarta">File RAG</span>
                     <input type="checkbox" id="fileRagToggle" class="sr-only peer">
-                    <div class="w-9 h-5 bg-[#3d3d3d] peer-checked:bg-[#4285f4] rounded-full relative transition-colors">
+                    <div class="w-9 h-5 bg-[#1e1e24] peer-checked:bg-indigo-500 rounded-full relative transition-colors shadow-inner">
                         <div
-                            class="absolute left-0.5 peer-checked:right-0.5 peer-checked:left-auto top-0.5 w-4 h-4 bg-white rounded-full transition-all">
+                            class="absolute left-0.5 peer-checked:right-0.5 peer-checked:left-auto top-0.5 w-4 h-4 bg-white rounded-full transition-all shadow-md">
                         </div>
                     </div>
                 </label>
@@ -81,13 +81,13 @@
         </div>
 
         <!-- Sessions List -->
-        <div id="sessionsPanel" class="flex-1 overflow-y-auto px-3 py-2 border-t border-[#2d2d2d]">
-            <div id="noSessionsMessage" class="text-center py-10">
-                <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-[#2d2d2d] flex items-center justify-center">
-                    <i data-lucide="message-square" class="h-6 w-6 text-[#9aa0a6]"></i>
+        <div id="sessionsPanel" class="flex-1 overflow-y-auto px-3 py-2 border-t border-white/5">
+            <div id="noSessionsMessage" class="text-center py-12">
+                <div class="w-11 h-11 mx-auto mb-3 rounded-full bg-white/[0.02] border border-white/5 flex items-center justify-center">
+                    <i data-lucide="message-square" class="h-5 w-5 text-slate-500"></i>
                 </div>
-                <p class="text-[#9aa0a6] text-sm">No chat sessions yet</p>
-                <p class="text-xs text-[#6b6b6b] mt-1">Start a conversation to create one</p>
+                <p class="text-slate-400 text-xs font-medium font-jakarta">No sessions yet</p>
+                <p class="text-[10px] text-slate-600 mt-1 font-jakarta">Start a conversation to index</p>
             </div>
 
             <div id="sessionsList" class="space-y-1 hidden">
@@ -97,22 +97,16 @@
     </div>
 
     <!-- Center Panel - Chat Area -->
-    <div class="flex-1 bg-[#0f0f0f] border-r border-[#2d2d2d] flex flex-col relative min-h-0">
+    <div class="flex-1 bg-[#07070a] border-r border-white/5 flex flex-col relative min-h-0">
         <!-- Header -->
-        <div class="shrink-0 px-6 py-4 border-b border-[#2d2d2d] bg-[#0f0f0f]">
-            <h2 class="text-lg font-medium text-white">AI Assistant</h2>
-            <p class="text-sm text-[#9aa0a6] mt-0.5" id="conversationContext">Ask questions about your memory data</p>
+        <div class="shrink-0 px-6 py-4 border-b border-white/5 bg-black/35 backdrop-blur-md">
+            <h2 class="text-lg font-outfit font-bold text-white">AI Assistant</h2>
+            <p class="text-xs text-slate-400 mt-0.5 font-jakarta font-light" id="conversationContext">Ask questions about your memory data</p>
         </div>
 
         <!-- Scrollable Conversation Area -->
         <div class="flex-1 overflow-hidden relative">
-            <div id="conversationHistory" class="absolute inset-0 overflow-y-auto p-5 space-y-6">
-                <div class="text-center py-12 text-muted-foreground" id="emptyConversation">
-                    <i data-lucide="message-square" class="h-16 w-16 mx-auto mb-4 opacity-50"></i>
-                    <p class="text-lg">No conversation yet</p>
-                    <p class="text-sm mt-1">Start by asking a question about your memory data</p>
-                </div>
-
+            <div id="conversationHistory" class="absolute inset-0 overflow-y-auto p-6 space-y-6">
                 <!-- Conversation messages will be dynamically added here -->
                 <!-- Example messages for testing -->
                 <div class="message user">
@@ -129,34 +123,68 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Empty Conversation State -->
+            <div class="flex flex-col items-center justify-center absolute inset-0 text-center p-6 text-slate-400 bg-[#07070a] z-10" id="emptyConversation">
+                <!-- Celestial memory visual capsule -->
+                <div class="relative mb-8 flex justify-center">
+                    <div class="w-20 h-20 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center shadow-[0_0_40px_rgba(99,102,241,0.15)] animate-pulse">
+                        <i data-lucide="brain" class="h-9 w-9 text-indigo-400"></i>
+                    </div>
+                    <div class="absolute -inset-2 rounded-full border border-white/5 animate-ping opacity-15 duration-1000"></div>
+                </div>
+                <h3 class="text-2xl font-outfit font-extrabold text-white mb-3">Where Memory Meets Intelligence</h3>
+                <p class="text-slate-400 max-w-md text-sm leading-relaxed font-jakarta font-light mb-8">
+                    Bridge the gap between your knowledge vault and AI models. Ask anything, upload reference files, or query cross-workspace databases in real-time.
+                </p>
+                <div class="flex flex-wrap gap-3 justify-center max-w-lg">
+                    <button type="button" onclick="document.getElementById('chatInput').value='What index sources are active?'; document.getElementById('chatForm').dispatchEvent(new Event('submit'));" 
+                            class="px-4 py-2 rounded-full bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 text-xs text-slate-300 hover:text-white hover:border-indigo-500/30 transition-all font-medium shadow-[0_2px_8px_rgba(0,0,0,0.2)] font-jakarta flex items-center gap-1.5">
+                        <i data-lucide="search" class="w-3.5 h-3.5 text-indigo-400"></i>
+                        What index sources are active?
+                    </button>
+                    <button type="button" onclick="document.getElementById('chatInput').value='How can I connect Cursor agent?'; document.getElementById('chatForm').dispatchEvent(new Event('submit'));"
+                            class="px-4 py-2 rounded-full bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 text-xs text-slate-300 hover:text-white hover:border-cyan-500/30 transition-all font-medium shadow-[0_2px_8px_rgba(0,0,0,0.2)] font-jakarta flex items-center gap-1.5">
+                        <i data-lucide="sparkles" class="w-3.5 h-3.5 text-cyan-400"></i>
+                        How can I connect Cursor agent?
+                    </button>
+                    <button type="button" onclick="document.getElementById('chatInput').value='List my recent uploaded files'; document.getElementById('chatForm').dispatchEvent(new Event('submit'));"
+                            class="px-4 py-2 rounded-full bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 text-xs text-slate-300 hover:text-white hover:border-purple-500/30 transition-all font-medium shadow-[0_2px_8px_rgba(0,0,0,0.2)] font-jakarta flex items-center gap-1.5">
+                        <i data-lucide="hard-drive" class="w-3.5 h-3.5 text-purple-400"></i>
+                        List my recent uploaded files
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- Chat Input - Gemini Style -->
-        <div class="shrink-0 bg-[#1a1a1a] border-t border-[#2d2d2d] p-4">
-            <form id="chatForm" class="flex items-center gap-3">
-                <div class="flex-1 relative">
-                    <button type="button" id="attachFileBtn"
-                        class="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#2d2d2d] hover:bg-[#3d3d3d] flex items-center justify-center text-[#9aa0a6] hover:text-white transition-all">
-                        <i data-lucide="plus" class="h-4 w-4"></i>
+        <div class="shrink-0 bg-[#07070a] px-4 pb-4 pt-2">
+            <div class="sticky-chat-input backdrop-blur-md bg-[#101015]/70 border border-white/5 rounded-2xl shadow-2xl">
+                <form id="chatForm" class="flex items-center gap-3">
+                    <div class="flex-1 relative">
+                        <button type="button" id="attachFileBtn"
+                            class="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 flex items-center justify-center text-indigo-400 hover:text-white transition-all duration-150">
+                            <i data-lucide="plus" class="h-5 w-5"></i>
+                        </button>
+                        <input type="text" id="chatInput" placeholder="Ask about your memory..."
+                            class="w-full bg-black/40 border border-white/5 rounded-xl py-3.5 pl-14 pr-4 text-[#f8fafc] placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all font-jakarta text-sm"
+                            autocomplete="off">
+                    </div>
+                    <button type="submit"
+                        class="w-11 h-11 rounded-xl bg-gradient-to-tr from-[#6366f1] to-[#3b82f6] flex items-center justify-center text-white hover:shadow-lg hover:shadow-indigo-500/20 transition-all duration-150 hover:-translate-y-0.5 active:scale-95">
+                        <i data-lucide="send" class="h-4.5 w-4.5"></i>
                     </button>
-                    <input type="text" id="chatInput" placeholder="Ask about your memory..."
-                        class="w-full bg-[#2d2d2d] border border-[#3d3d3d] rounded-full py-3 pl-14 pr-4 text-[#e8eaed] placeholder-[#6b6b6b] focus:outline-none focus:border-[#4285f4] focus:ring-1 focus:ring-[#4285f4] transition-all"
-                        autocomplete="off">
-                </div>
-                <button type="submit"
-                    class="w-11 h-11 rounded-full bg-[#4285f4] hover:bg-[#5a9cf5] flex items-center justify-center text-white transition-all hover:-translate-y-0.5 active:scale-95">
-                    <i data-lucide="send" class="h-5 w-5"></i>
-                </button>
-            </form>
+                </form>
+            </div>
         </div>
     </div>
 
     <!-- Right Panel - RAG Results -->
-    <div class="w-80 bg-[#1a1a1a] flex flex-col shrink-0">
-        <div class="px-5 py-4 border-b border-[#2d2d2d] flex justify-between items-center">
-            <h2 class="text-base font-medium text-white">RAG Results</h2>
+    <div class="w-80 bg-[#09090d] flex flex-col shrink-0">
+        <div class="px-5 py-4 border-b border-white/5 bg-black/35 backdrop-blur-md flex justify-between items-center">
+            <h2 class="text-base font-outfit font-bold text-white">RAG Results</h2>
             <button id="exportResultsBtn"
-                class="w-8 h-8 rounded-lg bg-[#2d2d2d] hover:bg-[#3d3d3d] flex items-center justify-center text-[#9aa0a6] hover:text-white transition-all"
+                class="w-8 h-8 rounded-lg bg-white/[0.03] hover:bg-white/[0.08] border border-white/5 flex items-center justify-center text-slate-400 hover:text-white transition-all duration-150"
                 title="Export">
                 <i data-lucide="download" class="h-4 w-4"></i>
             </button>
@@ -164,11 +192,11 @@
 
         <div class="flex-1 overflow-y-auto p-4 space-y-3" id="ragResults">
             <div class="text-center py-12" id="emptyRagResults">
-                <div class="w-14 h-14 mx-auto mb-4 rounded-full bg-[#2d2d2d] flex items-center justify-center">
-                    <i data-lucide="search" class="h-7 w-7 text-[#6b6b6b]"></i>
+                <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-white/[0.02] border border-white/5 flex items-center justify-center">
+                    <i data-lucide="search" class="h-5 w-5 text-slate-500"></i>
                 </div>
-                <p class="text-[#9aa0a6] text-sm">No results yet</p>
-                <p class="text-xs text-[#6b6b6b] mt-1">Ask a question to see matches</p>
+                <p class="text-slate-400 text-xs font-medium font-jakarta">No results yet</p>
+                <p class="text-[10px] text-slate-600 mt-1 font-jakarta">Ask a question to search matches</p>
             </div>
         </div>
     </div>
@@ -240,10 +268,20 @@
     </div>
 
     <style>
+        /* Disable base footer and body scrolling on playground for true full-viewport app layout */
+        body {
+            overflow: hidden !important;
+        }
+        
+        footer {
+            display: none !important;
+        }
+
         /* CRITICAL: Chat Layout Fixes */
         .memory-dashboard {
-            height: 100vh;
+            height: calc(100vh - 56px); /* Viewport minus navbar height (56px) */
             overflow: hidden;
+            background-color: #07070a;
         }
 
         .memory-dashboard .flex-1 {
@@ -265,17 +303,11 @@
 
         /* Conversation History Scroll Area */
         #conversationHistory {
-            /* bottom padding adjusted so the lifted/sticky input doesn't cover messages
-           Reduced to lift the overall layout up a bit */
-            padding-bottom: 6.5rem;
+            padding-bottom: 7.5rem;
             box-sizing: border-box;
-        }
-
-        /* Smooth scrolling */
-        #conversationHistory {
             scroll-behavior: smooth;
             scrollbar-width: thin;
-            scrollbar-color: hsl(var(--border)) transparent;
+            scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
         }
 
         #conversationHistory::-webkit-scrollbar {
@@ -287,124 +319,103 @@
         }
 
         #conversationHistory::-webkit-scrollbar-thumb {
-            background-color: hsl(var(--border));
+            background-color: rgba(255, 255, 255, 0.08);
             border-radius: 3px;
         }
 
         #conversationHistory::-webkit-scrollbar-thumb:hover {
-            background-color: hsl(var(--muted-foreground));
+            background-color: rgba(255, 255, 255, 0.2);
         }
 
-        /* Sticky Chat Input (stick to bottom of center panel so it's always visible) */
+        /* Sticky Chat Input */
         .sticky-chat-input {
-            position: sticky;
-            /* raise the chat box a bit higher so the whole control sits up */
-            bottom: 28px;
-            margin-left: 18px;
-            margin-right: 18px;
-            background: hsl(var(--card));
-            border: 1px solid hsl(var(--border));
-            border-radius: 12px;
-            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+            margin: 0 auto 8px auto;
+            max-width: 95%;
+            background: rgba(15, 15, 22, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.03);
             z-index: 60;
-            transform: translateY(0);
             transition: transform 120ms ease, box-shadow 120ms ease;
-            padding: 0.75rem;
+            padding: 0.6rem;
         }
 
-        /* Chat input plus button (filled circular control) */
+        /* Larger rounded input with left space for the plus control */
+        #chatInput {
+            padding-left: 52px;
+            padding-right: 12px;
+            height: 48px;
+            font-size: 0.9rem;
+            border-radius: 12px;
+            background-color: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Chat input plus button */
         #attachFileBtn {
-            width: 44px;
-            height: 44px;
-            left: 12px;
+            width: 36px;
+            height: 36px;
+            left: 8px;
             top: 50%;
             transform: translateY(-50%);
             border-radius: 10px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            background: hsl(var(--primary));
-            border: 1px solid hsl(var(--primary));
-            font-size: 20px;
-            line-height: 1;
-            color: hsl(var(--primary-foreground));
-            transition: background .12s ease, transform .12s ease;
-            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            color: #818cf8;
+            transition: all 0.15s ease;
         }
 
         #attachFileBtn:hover {
             transform: translateY(-50%) scale(1.03);
-            background: color-mix(in srgb, hsl(var(--primary)) 85%, black 15%);
-        }
-
-        /* Larger rounded input with left space for the plus control */
-        #chatInput {
-            padding-left: 64px;
-            /* leave room for the circular + */
-            padding-right: 48px;
-            /* keep space for send button */
-            height: 56px;
-            font-size: 1.25rem;
-            border-radius: 12px;
-        }
-
-        /* Make the chat form align items center and ensure the input fills height */
-        .sticky-chat-input form {
-            align-items: center;
-        }
-
-        /* Existing Memory Dashboard Styles */
-        .memory-dashboard .nav-item {
-            display: flex;
-            align-items: center;
-            color: hsl(var(--muted-foreground));
-            transition: all 0.2s ease;
-        }
-
-        .memory-dashboard .nav-item:hover {
-            background-color: hsl(var(--secondary));
-            color: hsl(var(--foreground));
-        }
-
-        .memory-dashboard .nav-item.active {
-            background-color: hsl(var(--primary));
-            color: hsl(var(--primary-foreground));
+            background: rgba(99, 102, 241, 0.2);
+            color: #ffffff;
         }
 
         /* RAG Result Block Styling */
         .rag-result {
-            background: hsl(var(--card));
-            border: 1px solid hsl(var(--border));
-            border-radius: 8px;
+            background: rgba(15, 15, 22, 0.55);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
             padding: 1rem;
-            transition: all 0.2s ease;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
         .rag-result:hover {
-            border-color: hsl(var(--primary));
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-color: rgba(99, 102, 241, 0.25);
+            background: rgba(20, 20, 30, 0.7);
+            transform: translateY(-1.5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
         }
 
         .rag-result.selected {
-            border-color: hsl(var(--primary));
-            background: hsl(var(--primary)/0.05);
+            border-color: rgba(99, 102, 241, 0.4);
+            background: rgba(99, 102, 241, 0.08);
         }
 
         .rag-score {
             display: inline-flex;
             align-items: center;
-            background: hsl(var(--primary));
-            color: hsl(var(--primary-foreground));
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.75rem;
+            background: rgba(45, 212, 191, 0.1);
+            color: #2dd4bf;
+            border: 1px solid rgba(45, 212, 191, 0.25);
+            padding: 0.2rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.7rem;
             font-weight: 600;
+            font-family: 'Outfit', sans-serif;
         }
 
         .rag-text-match {
-            background: hsl(var(--primary)/0.2);
-            padding: 0.1rem 0.25rem;
+            background: rgba(99, 102, 241, 0.15);
+            border-bottom: 1.5px solid #818cf8;
+            padding: 0.05rem 0.2rem;
             border-radius: 2px;
             font-weight: 500;
         }
@@ -413,35 +424,33 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 0.75rem;
-            color: hsl(var(--muted-foreground));
-            margin-top: 0.75rem;
-            padding-top: 0.75rem;
-            border-top: 1px solid hsl(var(--border)/0.5);
-        }
-
-        .rag-feedback {
-            display: flex;
-            gap: 0.5rem;
+            font-size: 0.7rem;
+            color: #64748b;
+            margin-top: 0.8rem;
+            padding-top: 0.8rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
         }
 
         .feedback-btn {
             background: transparent;
-            border: 1px solid hsl(var(--border));
-            border-radius: 4px;
-            padding: 0.25rem 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 6px;
+            padding: 0.2rem 0.4rem;
+            color: #64748b;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.15s ease;
         }
 
         .feedback-btn:hover {
-            background: hsl(var(--secondary));
+            background: rgba(255, 255, 255, 0.04);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.15);
         }
 
         .feedback-btn.active {
-            background: hsl(var(--primary));
-            color: hsl(var(--primary-foreground));
-            border-color: hsl(var(--primary));
+            background: rgba(99, 102, 241, 0.15);
+            color: #818cf8;
+            border-color: rgba(99, 102, 241, 0.3);
         }
 
         /* Conversation Message Styling */
@@ -460,79 +469,59 @@
 
         .message-content {
             max-width: 80%;
-            padding: 0;
             position: relative;
         }
 
         .message.user .message-content {
-            background: hsl(var(--primary));
-            color: hsl(var(--primary-foreground));
+            background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
+            color: #ffffff;
+            border-radius: 16px;
             border-bottom-right-radius: 4px;
-            padding: 1rem;
-            border-radius: 12px;
+            padding: 0.85rem 1.1rem;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 0.925rem;
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
 
         .message.assistant .message-content {
             background: transparent;
-            border-bottom-left-radius: 0;
             padding: 0;
-            color: hsl(var(--foreground));
-            font-size: 1rem;
-            line-height: 1.6;
+            color: #e2e8f0;
+            font-size: 0.95rem;
+            line-height: 1.65;
+            font-family: 'Plus Jakarta Sans', sans-serif;
         }
 
-        /* Minimal formatting for assistant messages - like Gemini */
+        /* Premium Assistant typography */
         .message.assistant .message-content strong {
-            font-weight: 600;
-            color: hsl(var(--foreground));
-            background: none;
-            padding: 0;
-            border-radius: 0;
-            border: none;
-            box-shadow: none;
-            letter-spacing: normal;
+            font-weight: 700;
+            color: #ffffff;
         }
 
         .message.assistant .message-content em {
-            color: hsl(var(--foreground));
             font-style: italic;
-            font-weight: 400;
-            background: none;
-            padding: 0;
-            border-radius: 0;
-            display: inline;
-        }
-
-        .message.assistant .message-content u,
-        .underline-text {
-            color: #ffd3b6;
-            text-decoration: underline;
-            text-decoration-thickness: 2px;
-            text-underline-offset: 3px;
-            text-decoration-color: #ffd3b6;
-            font-weight: 600;
-            background: rgba(255, 211, 182, 0.08);
-            padding: 0.1rem 0.3rem;
-            border-radius: 3px;
-            display: inline-block;
+            color: #cbd5e1;
         }
 
         .message.assistant .message-content code {
-            background: hsl(var(--secondary));
-            padding: 2px 4px;
-            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 0.15rem 0.35rem;
+            border-radius: 6px;
             font-family: 'Courier New', monospace;
-            font-size: 0.9em;
-            color: hsl(var(--foreground));
+            font-size: 0.85em;
+            color: #f472b6;
         }
 
         .message.assistant .message-content pre {
-            background: hsl(var(--secondary));
-            padding: 1rem;
-            border-radius: 6px;
+            background: rgba(10, 10, 14, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 1.1rem;
+            border-radius: 12px;
             overflow-x: auto;
-            margin: 1rem 0;
-            border-left: none;
+            margin: 1.2rem 0;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
         }
 
         .message.assistant .message-content pre code {
@@ -540,15 +529,13 @@
             padding: 0;
             border-radius: 0;
             border: none;
-            color: #a0e7e5;
+            color: #38bdf8;
             font-family: 'Courier New', monospace;
-            font-size: 0.95em;
+            font-size: 0.875em;
         }
 
         .message.assistant .message-content p {
-            margin: 0.75rem 0;
-            line-height: 1.7;
-            font-size: 1rem;
+            margin: 0.85rem 0;
         }
 
         .message.assistant .message-content p:first-child {
@@ -559,17 +546,10 @@
             margin-bottom: 0;
         }
 
-        /* Formatted definition blocks - REMOVED for cleaner UI */
-
-        .section-divider {
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            margin: 1.25rem 0;
-        }
-
         .message-time {
-            font-size: 0.75rem;
-            color: hsl(var(--muted-foreground));
-            margin-top: 0.5rem;
+            font-size: 0.7rem;
+            color: #475569;
+            margin-top: 0.4rem;
             text-align: right;
         }
 
@@ -581,85 +561,52 @@
         .session-item {
             display: flex;
             align-items: center;
-            padding: 0.75rem;
-            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             border: 1px solid transparent;
+            background: transparent;
+            position: relative;
+            margin-bottom: 0.25rem;
         }
 
         .session-item:hover {
-            background: hsl(var(--secondary));
+            background: rgba(255, 255, 255, 0.02);
+            border-color: rgba(255, 255, 255, 0.04);
         }
 
         .session-item.active {
-            background: hsl(var(--primary)/0.1);
-            border-color: hsl(var(--primary));
+            background: rgba(99, 102, 241, 0.06);
+            border-color: rgba(99, 102, 241, 0.2);
+        }
+
+        .session-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 25%;
+            bottom: 25%;
+            width: 2px;
+            background: #6366f1;
+            border-radius: 99px;
+            box-shadow: 0 0 8px #6366f1;
         }
 
         .session-preview {
-            font-size: 0.875rem;
-            color: hsl(var(--muted-foreground));
+            font-size: 0.75rem;
+            color: #64748b;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            margin-top: 0.15rem;
         }
 
-        /* Switch Styling */
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 40px;
-            height: 22px;
-        }
-
-        .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: hsl(var(--muted));
-            transition: .4s;
-        }
-
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 16px;
-            width: 16px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            transition: .4s;
-        }
-
-        input:checked+.slider {
-            background-color: hsl(var(--primary));
-        }
-
-        input:checked+.slider:before {
-            transform: translateX(18px);
-        }
-
-        .slider.round {
-            border-radius: 34px;
-        }
-
-        .slider.round:before {
-            border-radius: 50%;
-        }
-
-        /* Modal styles */
+        /* Modal Styles */
         #addDataModal {
             transition: opacity 0.2s ease;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(6px);
         }
 
         #addDataModal:not(.hidden) {
@@ -667,19 +614,10 @@
             opacity: 1;
         }
 
-        /* File preview styles */
-        #filePreview {
-            transition: all 0.3s ease;
-        }
-
         /* Responsive adjustments */
         @media (max-width: 1024px) {
             .memory-dashboard .w-80 {
                 width: 250px;
-            }
-
-            .memory-dashboard .w-96 {
-                width: 300px;
             }
         }
 
@@ -689,27 +627,18 @@
             }
 
             .memory-dashboard .w-80,
-            .memory-dashboard .w-96 {
+            .memory-dashboard .w-72 {
                 width: 100%;
             }
 
             .memory-dashboard .border-r {
                 border-right: none;
-                border-bottom: 1px solid hsl(var(--border));
-            }
-
-            .message-content {
-                max-width: 90%;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
             }
 
             /* Mobile-specific chat input styling */
             .sticky-chat-input {
-                padding: 0.75rem;
-            }
-
-            /* Ensure proper scrolling on mobile */
-            #conversationHistory {
-                -webkit-overflow-scrolling: touch;
+                padding: 0.5rem;
             }
         }
 
@@ -721,14 +650,11 @@
         }
 
         @keyframes pulse {
-
-            0%,
-            100% {
+            0%, 100% {
                 opacity: 1;
             }
-
             50% {
-                opacity: 0.5;
+                opacity: 0.4;
             }
         }
 

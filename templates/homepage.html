@@ -4,88 +4,169 @@
 
 {% block content %}
 <!-- Hero Section -->
-<section class="relative overflow-hidden pt-20 pb-16 md:pt-32 md:pb-24">
-    <!-- Mesh gradient overlay -->
+<section class="relative overflow-hidden pt-24 pb-20 md:pt-36 md:pb-28">
+    <!-- Elegant background glow spots -->
     <div class="absolute inset-0 pointer-events-none">
-        <div class="absolute top-0 left-1/4 w-96 h-96 bg-violet-500/20 rounded-full blur-3xl"></div>
-        <div class="absolute bottom-0 right-1/4 w-80 h-80 bg-cyan-500/15 rounded-full blur-3xl"></div>
-        <div class="absolute top-1/2 right-1/3 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute top-0 left-1/4 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-cyan-500/8 rounded-full blur-3xl"></div>
+        <div class="absolute top-1/2 right-1/3 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl"></div>
     </div>
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+    
+    <div class="max-w-6xl mx-auto px-6 relative z-10">
         <div class="text-center">
-            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 tracking-tight">
-                The Manhattan Project: real context for your <span
-                    class="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent">coding
-                    agents.</span>
-            </h1>
-            <p class="text-lg sm:text-xl text-gray-400 mb-8 max-w-3xl mx-auto leading-relaxed">
-                Index your repos and docs so agents stop hallucinating and you stop wasting tokens.
-            </p>
-            <div class="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-                <button onclick="openWaitlistModal()"
-                    class="btn-primary text-base sm:text-lg px-8 py-3 font-semibold rounded-xl hover:scale-105 transition-transform shadow-lg shadow-violet-500/25">
-                    Join the waitlist
-                </button>
+            <!-- Top Pulse Badge -->
+            <div class="flex justify-center mb-8">
+                <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-indigo-500/20 bg-indigo-950/40 text-indigo-300 text-xs font-semibold tracking-wider uppercase animate-pulse shadow-[0_0_15px_rgba(99,102,241,0.1)]">
+                    <span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+                    Memory infrastructure for AI
+                </div>
             </div>
 
+            <h1 class="text-5xl sm:text-6xl lg:text-7xl font-outfit font-extrabold text-white mb-6 tracking-tight leading-[1.1]">
+                Unified Memory for <span class="block bg-gradient-to-r from-indigo-400 via-cyan-300 to-purple-400 bg-clip-text text-transparent">you and your AI.</span>
+            </h1>
+            
+            <p class="text-lg sm:text-xl text-slate-400 mb-10 max-w-2xl mx-auto leading-relaxed font-jakarta font-light">
+                One memory across every app and agent you use. Captured automatically, synthesized continuously, shared on your terms.
+            </p>
+            
+            <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
+                {% if current_user.is_authenticated %}
+                <a href="{{ url_for('memory') }}"
+                    class="btn-primary text-base px-8 py-3.5 font-semibold rounded-xl shadow-lg shadow-indigo-500/25 hover:scale-[1.02] active:scale-[0.98] transition-transform">
+                    Go to Playground
+                    <i data-lucide="arrow-right" class="w-4.5 h-4.5 ml-1.5"></i>
+                </a>
+                <a href="{{ url_for('dashboard') }}"
+                    class="btn-secondary text-base px-8 py-3.5 font-semibold rounded-xl hover:bg-white/5 transition-all">
+                    Go to Dashboard
+                    <i data-lucide="layout-dashboard" class="w-4.5 h-4.5 ml-1"></i>
+                </a>
+                {% else %}
+                <button onclick="openWaitlistModal()"
+                    class="btn-primary text-base px-8 py-3.5 font-semibold rounded-xl shadow-lg shadow-indigo-500/25 hover:scale-[1.02] active:scale-[0.98] transition-transform">
+                    Get started free
+                    <i data-lucide="arrow-right" class="w-4.5 h-4.5 ml-1.5"></i>
+                </button>
+                <a href="{{ url_for('memory') }}"
+                    class="btn-secondary text-base px-8 py-3.5 font-semibold rounded-xl hover:bg-white/5 transition-all">
+                    See how it works
+                    <i data-lucide="plus" class="w-4.5 h-4.5 ml-1"></i>
+                </a>
+                {% endif %}
+            </div>
+
+            <!-- Integration Showcase / Connect Grid -->
+            <div class="pt-8 pb-4 max-w-4xl mx-auto border-t border-white/5">
+                <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-500 mb-8">Connects every AI agent to every workspace</p>
+                <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-6 items-center justify-items-center opacity-45 hover:opacity-75 transition-opacity duration-300">
+                    <div class="flex items-center gap-2 text-sm text-slate-300 font-outfit font-medium">
+                        <i data-lucide="terminal" class="w-4.5 h-4.5 text-indigo-400"></i>
+                        <span>Codex</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-sm text-slate-300 font-outfit font-medium">
+                        <i data-lucide="bot" class="w-4.5 h-4.5 text-cyan-400"></i>
+                        <span>Gemini</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-sm text-slate-300 font-outfit font-medium">
+                        <i data-lucide="code-2" class="w-4.5 h-4.5 text-purple-400"></i>
+                        <span>Windsurf</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-sm text-slate-300 font-outfit font-medium">
+                        <i data-lucide="globe" class="w-4.5 h-4.5 text-emerald-400"></i>
+                        <span>Zed</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-sm text-slate-300 font-outfit font-medium">
+                        <i data-lucide="trello" class="w-4.5 h-4.5 text-amber-400"></i>
+                        <span>Jira</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-sm text-slate-300 font-outfit font-medium">
+                        <i data-lucide="layers" class="w-4.5 h-4.5 text-blue-400"></i>
+                        <span>Linear</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-sm text-slate-300 font-outfit font-medium">
+                        <i data-lucide="slack" class="w-4.5 h-4.5 text-orange-400"></i>
+                        <span>Slack</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-sm text-slate-300 font-outfit font-medium">
+                        <i data-lucide="mail" class="w-4.5 h-4.5 text-red-400"></i>
+                        <span>Gmail</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-sm text-slate-300 font-outfit font-medium">
+                        <i data-lucide="calendar" class="w-4.5 h-4.5 text-pink-400"></i>
+                        <span>Calendar</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-sm text-slate-300 font-outfit font-medium">
+                        <i data-lucide="hard-drive" class="w-4.5 h-4.5 text-sky-400"></i>
+                        <span>Drive</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-sm text-slate-300 font-outfit font-medium col-span-3 sm:col-span-1">
+                        <i data-lucide="sparkles" class="w-4.5 h-4.5 text-violet-400"></i>
+                        <span>Antigravity</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-sm text-slate-300 font-outfit font-medium col-span-3 sm:col-span-1">
+                        <i data-lucide="brain" class="w-4.5 h-4.5 text-rose-400"></i>
+                        <span>GitMem</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </section>
 
 <!-- Features Section -->
-<section class="py-16 relative">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+<section class="py-20 relative border-t border-white/5">
+    <div class="max-w-6xl mx-auto px-6">
+        <div class="text-center mb-16">
+            <h2 class="text-3xl font-outfit font-extrabold text-white mb-4">Built for AI-first workflows</h2>
+            <p class="text-slate-400 max-w-xl mx-auto font-jakarta font-light">
+                Everything your coding agents need to deliver accurate, context-aware responses without token waste.
+            </p>
+        </div>
+
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
             <!-- Feature 1 -->
-            <div
-                class="backdrop-blur-xl bg-white/5 border border-white/10 p-8 rounded-2xl hover:border-violet-500/30 transition-all duration-300 hover:shadow-lg hover:shadow-violet-500/10 group">
-                <div class="flex items-start mb-4">
+            <div class="card p-8 group hover:border-indigo-500/30 transition-all duration-300">
+                <div class="flex items-start mb-6">
                     <div class="flex-shrink-0">
-                        <div
-                            class="inline-flex items-center justify-center w-12 h-12 bg-violet-500/20 rounded-xl group-hover:bg-violet-500/30 transition-colors">
-                            <i data-lucide="shield-alert" class="h-6 w-6 text-violet-400"></i>
+                        <div class="inline-flex items-center justify-center w-12 h-12 bg-indigo-500/10 border border-indigo-500/20 rounded-xl group-hover:bg-indigo-500/20 group-hover:border-indigo-500/30 transition-all duration-300">
+                            <i data-lucide="shield-alert" class="h-5 w-5 text-indigo-400"></i>
                         </div>
                     </div>
                 </div>
-                <h3 class="text-lg font-semibold text-white mb-3 tracking-tight">Remove hallucinations on new APIs and
-                    beta features</h3>
-                <p class="text-gray-400 text-sm leading-relaxed">
-                    Keep your agents grounded with up-to-date documentation and code references.
+                <h3 class="text-xl font-outfit font-bold text-white mb-3">Zero Hallucinations</h3>
+                <p class="text-slate-400 text-sm leading-relaxed font-jakarta font-light">
+                    Keep your coding agents grounded with real-time repos, up-to-date API schemas, and robust document boundaries.
                 </p>
             </div>
 
             <!-- Feature 2 -->
-            <div
-                class="backdrop-blur-xl bg-white/5 border border-white/10 p-8 rounded-2xl hover:border-cyan-500/30 transition-all duration-300 hover:shadow-lg hover:shadow-cyan-500/10 group">
-                <div class="flex items-start mb-4">
+            <div class="card p-8 group hover:border-cyan-500/30 transition-all duration-300">
+                <div class="flex items-start mb-6">
                     <div class="flex-shrink-0">
-                        <div
-                            class="inline-flex items-center justify-center w-12 h-12 bg-cyan-500/20 rounded-xl group-hover:bg-cyan-500/30 transition-colors">
-                            <i data-lucide="zap" class="h-6 w-6 text-cyan-400"></i>
+                        <div class="inline-flex items-center justify-center w-12 h-12 bg-cyan-500/10 border border-cyan-500/20 rounded-xl group-hover:bg-cyan-500/20 group-hover:border-cyan-500/30 transition-all duration-300">
+                            <i data-lucide="zap" class="h-5 w-5 text-cyan-400"></i>
                         </div>
                     </div>
                 </div>
-                <h3 class="text-lg font-semibold text-white mb-3 tracking-tight">Compress context to lower token usage
-                </h3>
-                <p class="text-gray-400 text-sm leading-relaxed">
-                    Reduce API costs by providing only the relevant code and documentation your agents need.
+                <h3 class="text-xl font-outfit font-bold text-white mb-3">Compress Context</h3>
+                <p class="text-slate-400 text-sm leading-relaxed font-jakarta font-light">
+                    Save token costs. Prune unnecessary files dynamically and feed agents only the hyper-relevant snippets.
                 </p>
             </div>
 
             <!-- Feature 3 -->
-            <div
-                class="backdrop-blur-xl bg-white/5 border border-white/10 p-8 rounded-2xl hover:border-amber-500/30 transition-all duration-300 hover:shadow-lg hover:shadow-amber-500/10 group">
-                <div class="flex items-start mb-4">
+            <div class="card p-8 group hover:border-purple-500/30 transition-all duration-300">
+                <div class="flex items-start mb-6">
                     <div class="flex-shrink-0">
-                        <div
-                            class="inline-flex items-center justify-center w-12 h-12 bg-amber-500/20 rounded-xl group-hover:bg-amber-500/30 transition-colors">
-                            <i data-lucide="refresh-cw" class="h-6 w-6 text-amber-400"></i>
+                        <div class="inline-flex items-center justify-center w-12 h-12 bg-purple-500/10 border border-purple-500/20 rounded-xl group-hover:bg-purple-500/20 group-hover:border-purple-500/30 transition-all duration-300">
+                            <i data-lucide="refresh-cw" class="h-5 w-5 text-purple-400"></i>
                         </div>
                     </div>
                 </div>
-                <h3 class="text-lg font-semibold text-white mb-3 tracking-tight">Auto-sync code and docs</h3>
-                <p class="text-gray-400 text-sm leading-relaxed">
-                    Agents always see the latest version of your repositories and documentation.
+                <h3 class="text-xl font-outfit font-bold text-white mb-3">Instant Auto-Sync</h3>
+                <p class="text-slate-400 text-sm leading-relaxed font-jakarta font-light">
+                    Live codebase listener. Your local modifications are compiled and indexed immediately for your connected tools.
                 </p>
             </div>
         </div>
@@ -93,22 +174,22 @@
 </section>
 <!-- Multi-Step Waitlist Modal -->
 <div id="waitlist-modal"
-    class="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 hidden">
+    class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 hidden">
     <div
-        class="backdrop-blur-2xl bg-white/5 border border-white/10 rounded-2xl m-4 w-full max-w-md shadow-2xl shadow-violet-500/10 overflow-hidden">
+        class="backdrop-blur-2xl bg-[#0c0c10]/95 border border-white/10 rounded-3xl m-4 w-full max-w-md shadow-2xl shadow-indigo-500/10 overflow-hidden">
         <!-- Step Indicator Bar -->
         <div class="px-6 sm:px-8 pt-6 pb-4">
             <div class="flex justify-between items-center mb-6">
-                <span id="step-counter" class="text-sm font-medium text-muted-foreground">Step 1 of 3</span>
+                <span id="step-counter" class="text-xs font-semibold tracking-wider uppercase text-slate-400">Step 1 of 3</span>
                 <button onclick="closeWaitlistModal()"
-                    class="text-muted-foreground hover:text-foreground transition-colors">
+                    class="text-slate-400 hover:text-white hover:bg-white/5 p-1 rounded-full transition-colors">
                     <i data-lucide="x" class="h-5 w-5"></i>
                 </button>
             </div>
             <div class="flex gap-2" id="step-indicator-bar">
-                <div class="h-1 flex-1 bg-primary rounded-full" id="indicator-bar-1"></div>
-                <div class="h-1 flex-1 bg-muted rounded-full" id="indicator-bar-2"></div>
-                <div class="h-1 flex-1 bg-muted rounded-full" id="indicator-bar-3"></div>
+                <div class="h-1 flex-1 bg-indigo-500 rounded-full" id="indicator-bar-1"></div>
+                <div class="h-1 flex-1 bg-white/10 rounded-full" id="indicator-bar-2"></div>
+                <div class="h-1 flex-1 bg-white/10 rounded-full" id="indicator-bar-3"></div>
             </div>
         </div>
 
@@ -118,151 +199,138 @@
             <!-- Step 1 -->
             <div id="step-1" class="step-content">
                 <div class="mb-6">
-                    <h3 class="text-2xl font-bold text-foreground mb-2">Which tools do you use with AI today?</h3>
-                    <p class="text-sm text-muted-foreground">Select all that apply</p>
+                    <h3 class="text-xl font-outfit font-extrabold text-white mb-1">Which AI tools do you use?</h3>
+                    <p class="text-xs text-slate-400 font-jakarta">Select all that apply to personalize your flow</p>
                 </div>
-                <div class="space-y-3 mb-6">
-                    <label class="flex items-center cursor-pointer group">
+                <div class="space-y-2.5 mb-6">
+                    <label class="flex items-center cursor-pointer group bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 p-3 rounded-xl transition-colors">
                         <input type="checkbox" name="tools" value="Cursor"
-                            class="w-4 h-4 rounded border-border bg-card text-primary">
-                        <span class="ml-3 text-foreground group-hover:text-primary transition-colors">Cursor</span>
+                            class="w-4.5 h-4.5 rounded border-white/10 bg-black text-indigo-500 focus:ring-indigo-500 focus:ring-offset-0">
+                        <span class="ml-3 text-sm text-slate-300 group-hover:text-white transition-colors font-jakarta">Cursor</span>
                     </label>
-                    <label class="flex items-center cursor-pointer group">
+                    <label class="flex items-center cursor-pointer group bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 p-3 rounded-xl transition-colors">
                         <input type="checkbox" name="tools" value="Claude Code"
-                            class="w-4 h-4 rounded border-border bg-card text-primary">
-                        <span class="ml-3 text-foreground group-hover:text-primary transition-colors">Claude Code</span>
+                            class="w-4.5 h-4.5 rounded border-white/10 bg-black text-indigo-500 focus:ring-indigo-500 focus:ring-offset-0">
+                        <span class="ml-3 text-sm text-slate-300 group-hover:text-white transition-colors font-jakarta">Claude Code</span>
                     </label>
-                    <label class="flex items-center cursor-pointer group">
+                    <label class="flex items-center cursor-pointer group bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 p-3 rounded-xl transition-colors">
                         <input type="checkbox" name="tools" value="VS Code agents"
-                            class="w-4 h-4 rounded border-border bg-card text-primary">
-                        <span class="ml-3 text-foreground group-hover:text-primary transition-colors">VS Code
-                            agents</span>
+                            class="w-4.5 h-4.5 rounded border-white/10 bg-black text-indigo-500 focus:ring-indigo-500 focus:ring-offset-0">
+                        <span class="ml-3 text-sm text-slate-300 group-hover:text-white transition-colors font-jakarta">VS Code agents</span>
                     </label>
-                    <label class="flex items-center cursor-pointer group">
+                    <label class="flex items-center cursor-pointer group bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 p-3 rounded-xl transition-colors">
                         <input type="checkbox" name="tools" value="Custom in-house agent"
-                            class="w-4 h-4 rounded border-border bg-card text-primary">
-                        <span class="ml-3 text-foreground group-hover:text-primary transition-colors">Custom in-house
-                            agent</span>
+                            class="w-4.5 h-4.5 rounded border-white/10 bg-black text-indigo-500 focus:ring-indigo-500 focus:ring-offset-0">
+                        <span class="ml-3 text-sm text-slate-300 group-hover:text-white transition-colors font-jakarta">Custom in-house agent</span>
                     </label>
-                    <label class="flex items-center cursor-pointer group">
+                    <label class="flex items-center cursor-pointer group bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 p-3 rounded-xl transition-colors">
                         <input type="checkbox" name="tools" value="Other"
-                            class="w-4 h-4 rounded border-border bg-card text-primary">
-                        <span class="ml-3 text-foreground group-hover:text-primary transition-colors">Other</span>
+                            class="w-4.5 h-4.5 rounded border-white/10 bg-black text-indigo-500 focus:ring-indigo-500 focus:ring-offset-0">
+                        <span class="ml-3 text-sm text-slate-300 group-hover:text-white transition-colors font-jakarta">Other</span>
                     </label>
                 </div>
 
                 <div class="mb-6">
-                    <h3 class="text-lg font-semibold text-foreground mb-3">Main languages / stack?</h3>
+                    <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-2.5">Main languages / stack?</h3>
                     <input type="text" id="stack-input" name="stack" class="input w-full text-sm"
                         placeholder="e.g., TypeScript, Python, React, Next.js">
                 </div>
 
-                <button onclick="nextStep()" class="btn-primary w-full">Next</button>
+                <button onclick="nextStep()" class="btn-primary w-full py-3 rounded-xl">Next</button>
             </div>
 
             <!-- Step 2 -->
             <div id="step-2" class="step-content hidden">
                 <div class="mb-6">
-                    <h3 class="text-2xl font-bold text-foreground mb-2">What do you want The Manhattan Project to help
-                        with most?</h3>
-                    <p class="text-sm text-muted-foreground">Select all that apply</p>
+                    <h3 class="text-xl font-outfit font-extrabold text-white mb-1">What are your goals?</h3>
+                    <p class="text-xs text-slate-400 font-jakarta">What should we help with most?</p>
                 </div>
-                <div class="space-y-3 mb-6">
-                    <label class="flex items-center cursor-pointer group">
+                <div class="space-y-2.5 mb-6">
+                    <label class="flex items-center cursor-pointer group bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 p-3 rounded-xl transition-colors">
                         <input type="checkbox" name="goals" value="Remove hallucinations"
-                            class="w-4 h-4 rounded border-border bg-card text-primary">
-                        <span class="ml-3 text-foreground group-hover:text-primary transition-colors">Remove
-                            hallucinations</span>
+                            class="w-4.5 h-4.5 rounded border-white/10 bg-black text-indigo-500 focus:ring-indigo-500 focus:ring-offset-0">
+                        <span class="ml-3 text-sm text-slate-300 group-hover:text-white transition-colors font-jakarta">Remove hallucinations</span>
                     </label>
-                    <label class="flex items-center cursor-pointer group">
+                    <label class="flex items-center cursor-pointer group bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 p-3 rounded-xl transition-colors">
                         <input type="checkbox" name="goals" value="Reduce token costs"
-                            class="w-4 h-4 rounded border-border bg-card text-primary">
-                        <span class="ml-3 text-foreground group-hover:text-primary transition-colors">Reduce token
-                            costs</span>
+                            class="w-4.5 h-4.5 rounded border-white/10 bg-black text-indigo-500 focus:ring-indigo-500 focus:ring-offset-0">
+                        <span class="ml-3 text-sm text-slate-300 group-hover:text-white transition-colors font-jakarta">Reduce token costs</span>
                     </label>
-                    <label class="flex items-center cursor-pointer group">
+                    <label class="flex items-center cursor-pointer group bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 p-3 rounded-xl transition-colors">
                         <input type="checkbox" name="goals" value="Better code & docs search"
-                            class="w-4 h-4 rounded border-border bg-card text-primary">
-                        <span class="ml-3 text-foreground group-hover:text-primary transition-colors">Better code & docs
-                            search</span>
+                            class="w-4.5 h-4.5 rounded border-white/10 bg-black text-indigo-500 focus:ring-indigo-500 focus:ring-offset-0">
+                        <span class="ml-3 text-sm text-slate-300 group-hover:text-white transition-colors font-jakarta">Better code & docs search</span>
                     </label>
-                    <label class="flex items-center cursor-pointer group">
+                    <label class="flex items-center cursor-pointer group bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 p-3 rounded-xl transition-colors">
                         <input type="checkbox" name="goals" value="Keep repos/docs in sync"
-                            class="w-4 h-4 rounded border-border bg-card text-primary">
-                        <span class="ml-3 text-foreground group-hover:text-primary transition-colors">Keep repos/docs in
-                            sync</span>
+                            class="w-4.5 h-4.5 rounded border-white/10 bg-black text-indigo-500 focus:ring-indigo-500 focus:ring-offset-0">
+                        <span class="ml-3 text-sm text-slate-300 group-hover:text-white transition-colors font-jakarta">Keep repos/docs in sync</span>
                     </label>
                 </div>
 
                 <div class="mb-6">
-                    <h3 class="text-lg font-semibold text-foreground mb-3">Anything specific about your setup we should
-                        know?</h3>
+                    <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-2.5">Your environment / setup?</h3>
                     <textarea id="setup-input" name="setup" class="input w-full text-sm h-24 resize-none"
-                        placeholder="Optional: Tell us about your setup..."></textarea>
+                        placeholder="Tell us about your agent setup..."></textarea>
                 </div>
 
                 <div class="flex gap-3">
-                    <button onclick="prevStep()" class="btn-secondary w-1/3">Back</button>
-                    <button onclick="nextStep()" class="btn-primary w-2/3">Next</button>
+                    <button onclick="prevStep()" class="btn-secondary w-1/3 py-3 rounded-xl">Back</button>
+                    <button onclick="nextStep()" class="btn-primary w-2/3 py-3 rounded-xl">Next</button>
                 </div>
             </div>
 
             <!-- Step 3 -->
             <div id="step-3" class="step-content hidden">
                 <div class="mb-6">
-                    <h3 class="text-2xl font-bold text-foreground mb-2">Where should we send your invite?</h3>
-                    <p class="text-sm text-muted-foreground">Join The Manhattan Project's waitlist</p>
+                    <h3 class="text-xl font-outfit font-extrabold text-white mb-1">Access Invite</h3>
+                    <p class="text-xs text-slate-400 font-jakarta">Where should we send your access credentials?</p>
                 </div>
 
                 <div class="space-y-4 mb-6">
                     <div>
-                        <label for="name-input" class="block text-sm font-medium text-foreground mb-2">Name
-                            (optional)</label>
+                        <label for="name-input" class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">Name (optional)</label>
                         <input type="text" id="name-input" name="name" class="input w-full" placeholder="Your name">
                     </div>
                     <div>
-                        <label for="email-input" class="block text-sm font-medium text-foreground mb-2">Email *</label>
+                        <label for="email-input" class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">Email *</label>
                         <input type="email" id="email-input" name="email" required class="input w-full"
                             placeholder="you@company.com">
                     </div>
                 </div>
 
-                <label class="flex items-center cursor-pointer group mb-6">
+                <label class="flex items-center cursor-pointer group mb-6 bg-white/[0.01] border border-white/5 p-3 rounded-xl">
                     <input type="checkbox" id="feedback-checkbox" name="feedback"
-                        class="w-4 h-4 rounded border-border bg-card text-primary">
-                    <span class="ml-3 text-sm text-foreground group-hover:text-primary transition-colors">I'm open to a
-                        short feedback call</span>
+                        class="w-4.5 h-4.5 rounded border-white/10 bg-black text-indigo-500 focus:ring-indigo-500 focus:ring-offset-0">
+                    <span class="ml-3 text-xs text-slate-300 group-hover:text-white transition-colors font-jakarta">I'm open to a short feedback call</span>
                 </label>
 
                 <div class="flex gap-3">
-                    <button onclick="prevStep()" class="btn-secondary w-1/3">Back</button>
-                    <button onclick="submitWaitlist()" class="btn-primary w-2/3">Join The Manhattan Project
-                        waitlist</button>
+                    <button onclick="prevStep()" class="btn-secondary w-1/3 py-3 rounded-xl">Back</button>
+                    <button onclick="submitWaitlist()" class="btn-primary w-2/3 py-3 rounded-xl">Join waitlist</button>
                 </div>
             </div>
 
             <!-- Confirmation State -->
-            <div id="step-confirmation" class="step-content hidden text-center">
+            <div id="step-confirmation" class="step-content hidden text-center py-4">
                 <div class="mb-6">
-                    <div class="inline-flex items-center justify-center w-16 h-16 bg-green-100/20 rounded-full mb-4">
-                        <i data-lucide="check-circle-2" class="h-8 w-8 text-green-600"></i>
+                    <div class="inline-flex items-center justify-center w-14 h-14 bg-indigo-500/10 border border-indigo-500/20 rounded-full mb-4">
+                        <i data-lucide="check" class="h-6 w-6 text-indigo-400"></i>
                     </div>
                 </div>
-                <h3 class="text-2xl font-bold text-foreground mb-3">You're on the list!</h3>
-                <p class="text-muted-foreground mb-6 text-sm leading-relaxed">
-                    The Manhattan Project is onboarding users in batches and will prioritize people who filled out all
-                    the questions.
-                    We'll be in touch soon!
+                <h3 class="text-2xl font-outfit font-extrabold text-white mb-2">You're on the list!</h3>
+                <p class="text-slate-400 mb-6 text-sm leading-relaxed font-jakarta font-light">
+                    The Manhattan Project is onboarding users in batches. We'll prioritize users who filled out all answers. We'll be in touch soon!
                 </p>
-                <button onclick="closeWaitlistModal()" class="btn-primary w-full">Close</button>
+                <button onclick="closeWaitlistModal()" class="btn-primary w-full py-3 rounded-xl">Close</button>
             </div>
         </div>
 
         <!-- Step Indicator (hidden - kept for compatibility) -->
         <div class="flex gap-2 mt-8 justify-center hidden" id="step-indicator">
-            <div class="h-1 w-8 bg-primary rounded-full" id="indicator-1"></div>
-            <div class="h-1 w-8 bg-muted rounded-full" id="indicator-2"></div>
-            <div class="h-1 w-8 bg-muted rounded-full" id="indicator-3"></div>
+            <div class="h-1 w-8 bg-indigo-500 rounded-full" id="indicator-1"></div>
+            <div class="h-1 w-8 bg-white/10 rounded-full" id="indicator-2"></div>
+            <div class="h-1 w-8 bg-white/10 rounded-full" id="indicator-3"></div>
         </div>
     </div>
 </div>
