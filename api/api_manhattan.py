@@ -1511,6 +1511,121 @@ def agent_chat():
         # Use cached memory system (avoids recreating SimpleMemSystem every call)
         memory_system = _get_or_create_memory_system(agent_id)
         
+        # Extract strategy or mode from request payload (default to 'auto')
+        strategy = data.get('strategy') or data.get('mode') or 'auto'
+        
+        # Dynamic Auto-Routing: zero-overhead declarative statement / greeting classifier
+        is_conversational_statement = False
+        msg_clean = user_message.strip().lower()
+        
+        # Split into words and strip punctuation from each word individually (preserving original msg_clean for '?' check)
+        words = [w.strip('.,!?;:"\'()[]') for w in msg_clean.split()]
+        
+        # 1. Comprehensive Interrogative Set
+        interrogatives = {
+            # Standard question words
+            'who', 'what', 'when', 'where', 'why', 'how', 'which', 'whose', 'whom',
+            # Common contractions
+            "who's", "what's", "where's", "when's", "why's", "how's",
+            'whos', 'whats', 'wheres', 'whens', 'whys', 'hows',
+            # Auxiliary & modal verbs
+            'is', 'are', 'was', 'were', 'am', 'be', 'been',
+            'do', 'did', 'does', 'doing',
+            'have', 'has', 'had', 'having',
+            'can', 'could', 'will', 'would', 'shall', 'should', 'may', 'might', 'must',
+            # Negative contractions
+            "isn't", "aren't", "wasn't", "weren't", "don't", "didn't", "doesn't",
+            "haven't", "hasn't", "hadn't", "can't", "couldn't", "won't", "wouldn't", "shouldn't",
+            'isnt', 'arent', 'wasnt', 'werent', 'dont', 'didnt', 'doesnt',
+            'havent', 'hasnt', 'hadnt', 'cant', 'couldnt', 'wont', 'wouldnt', 'shouldnt'
+        }
+        
+        # 2. Conversational Openers / Info-Seeding markers
+        conversational_starters = {
+            'hi', 'hello', 'hey', 'yo', 'greetings', 'sup', 'morning', 'afternoon', 'evening',
+            'ok', 'okay', 'yes', 'no', 'thanks', 'thank', 'cool', 'awesome', 'great', 'perfect',
+            'here', 'this', 'we', 'i', 'let', 'lets', 'im', 'weve', 'ive'
+        }
+        
+        # Rule 1: Very short queries are conversational
+        if len(words) < 6:
+            is_conversational_statement = True
+        # Rule 2: Direct match of conversational starters or feedback words
+        elif words and words[0] in conversational_starters:
+            is_conversational_statement = True
+        # Rule 3: Declarative statements (no question mark and no interrogative starters)
+        elif '?' not in msg_clean:
+            if words and words[0] not in interrogatives:
+                is_conversational_statement = True
+                
+        # Resolve 'auto' strategy dynamically based on grammar and complexity checks
+        if strategy == 'auto':
+            if is_conversational_statement:
+                print(f"[Router] Auto-routing: Declarative statement/greeting. Routing to FAST mode.")
+                strategy = 'fast'
+            else:
+                # Rule 4: Question complexity check. Determine if Thinking Mode is required.
+                # We search for indicators of synthesis, history, temporal bounds, or comparisons
+                complex_indicators = {
+                    # Synthesizing / Summarizing
+                    'summarize', 'summary', 'synthesize', 'overview', 'outline', 'recap', 'brief', 'digest',
+                    # Comparative analysis
+                    'difference', 'between', 'compare', 'contrast', 'versus', 'vs', 'similar', 'similarity',
+                    'similarities', 'advantages', 'disadvantages', 'pros', 'cons',
+                    # Explanations / Mechanics
+                    'explain', 'analysis', 'analyze', 'how does', 'how do', 'why is', 'why does', 'detailed',
+                    # Time-based lookups / Historical logs
+                    'yesterday', 'today', 'tomorrow', 'last week', 'last month', 'last year', 'history',
+                    'timeline', 'schedule', 'calendar', 'agenda', 'past', 'recent',
+                    # Logical subclauses
+                    'and also', 'as well as', 'along with', 'how can we', 'what are the'
+                }
+                
+                requires_deep_thinking = False
+                
+                # Complexity Check A: Word Count & Interrogative Symbol (Long Questions)
+                if len(words) > 20 and '?' in msg_clean:
+                    print(f"[Router] Complex query: High word count ({len(words)} words) with question.")
+                    requires_deep_thinking = True
+                
+                # Complexity Check B: Keyword Indicators
+                if not requires_deep_thinking:
+                    for indicator in complex_indicators:
+                        if indicator in msg_clean:
+                            requires_deep_thinking = True
+                            print(f"[Router] Complex query: Found indicator '{indicator}'.")
+                            break
+                            
+                # Complexity Check C: Conditional subclause depth
+                if not requires_deep_thinking:
+                    subclause_connectors = {'if', 'then', 'because', 'although', 'unless'}
+                    connector_count = sum(1 for w in words if w in subclause_connectors)
+                    if connector_count >= 2:
+                        requires_deep_thinking = True
+                        print(f"[Router] Complex query: High subclause connector count ({connector_count}).")
+                
+                if requires_deep_thinking:
+                    print(f"[Router] Auto-routing: Complex query '{user_message[:30]}...' -> THINKING mode.")
+                    strategy = 'thinking'
+                else:
+                    print(f"[Router] Auto-routing: Simple question '{user_message[:30]}...' -> FAST mode.")
+                    strategy = 'fast'
+        elif is_conversational_statement and strategy == 'thinking':
+            # Force 'fast' override if thinking is explicitly requested but prompt is just a greeting/statement
+            print(f"[Router] Explicit 'thinking' override ignored: Declarative statement. Downgrading to FAST mode.")
+            strategy = 'fast'
+            
+        # Configure SimpleMem planning/reflection behavior dynamically
+        if strategy == 'thinking':
+            memory_system.hybrid_retriever.enable_planning = True
+            memory_system.hybrid_retriever.enable_reflection = True
+            print(f"[Router] Routing to THINKING mode (Planning & Reflection enabled)")
+        else:
+            # Fast Mode: Direct RAG (Single LLM response generation, direct vector search)
+            memory_system.hybrid_retriever.enable_planning = False
+            memory_system.hybrid_retriever.enable_reflection = False
+            print(f"[Router] Routing to FAST mode (Planning & Reflection disabled)")
+        
         # Record timestamp for this interaction
         from datetime import datetime
         timestamp = datetime.utcnow().isoformat()

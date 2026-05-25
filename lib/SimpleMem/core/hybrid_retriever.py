@@ -71,6 +71,15 @@ class HybridRetriever:
 
         Returns: List of relevant MemoryEntry
         """
+        # Instant bypass if database is empty (zero historical memories)
+        # This completely eliminates planning and reflection overhead for new agents!
+        try:
+            if not self.vector_store.get_all_entries(limit=1):
+                print("[Retrieval Bypass] Collection is empty. Skipping RAG planning & reflection.")
+                return []
+        except Exception as err:
+            print(f"[Retrieval Bypass] Warning checking collection status: {err}")
+
         if self.enable_planning:
             return self._retrieve_with_planning(query, enable_reflection)
         else:

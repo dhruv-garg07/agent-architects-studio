@@ -37,10 +37,11 @@ class AnswerGenerator:
         Returns:
         - Generated answer (concise phrase)
         """
-        # Build prompt depending on context availability
+        # Build prompt and system instruction depending on context availability
         if contexts:
             context_str = self._format_contexts(contexts)
             prompt = self._build_answer_prompt(query, context_str)
+            system_instruction = "You are a professional Q&A assistant. Extract concise answers from context. You must output valid JSON format."
         else:
             # Friendly conversational fallback when no memories are retrieved (e.g., greetings or new conversations)
             prompt = f"""
@@ -63,12 +64,13 @@ class AnswerGenerator:
             
             Return ONLY the JSON, no other text.
             """
+            system_instruction = "You are a helpful, friendly, and natural AI assistant. You must output valid JSON format."
 
         # Call LLM to generate answer
         messages = [
             {
                 "role": "system",
-                "content": "You are a professional Q&A assistant. Extract concise answers from context. You must output valid JSON format."
+                "content": system_instruction
             },
             {
                 "role": "user",
