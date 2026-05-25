@@ -37,14 +37,32 @@ class AnswerGenerator:
         Returns:
         - Generated answer (concise phrase)
         """
-        if not contexts:
-            return "No relevant information found"
-
-        # Build context string
-        context_str = self._format_contexts(contexts)
-
-        # Build prompt
-        prompt = self._build_answer_prompt(query, context_str)
+        # Build prompt depending on context availability
+        if contexts:
+            context_str = self._format_contexts(contexts)
+            prompt = self._build_answer_prompt(query, context_str)
+        else:
+            # Friendly conversational fallback when no memories are retrieved (e.g., greetings or new conversations)
+            prompt = f"""
+            Respond to the user's message directly, friendly, and naturally.
+            
+            User Message: {query}
+            
+            Requirements:
+            1. First, think through the reasoning process.
+            2. Provide a natural, conversational, and friendly response.
+            3. Return your response in JSON format.
+            
+            Output Format:
+            ```json
+            {{
+              "reasoning": "Brief explanation of your response strategy",
+              "answer": "Friendly and natural response"
+            }}
+            ```
+            
+            Return ONLY the JSON, no other text.
+            """
 
         # Call LLM to generate answer
         messages = [

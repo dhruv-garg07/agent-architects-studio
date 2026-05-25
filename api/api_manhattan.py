@@ -1515,38 +1515,37 @@ def agent_chat():
         from datetime import datetime
         timestamp = datetime.utcnow().isoformat()
         
-        # Buffer user message WITHOUT LLM extraction (auto_process=False)
-        # This skips the expensive LLM call to extract memory from user message
-        memory_system.add_dialogue(
-            speaker="user",
-            content=user_message,
-            timestamp=timestamp,
-            auto_process=False
-        )
-        
         # Ask SimpleMem system to generate response (retrieval + answer generation)
+        # In-memory history in dialogue_buffer is automatically injected inside ask()
         agent_response = memory_system.ask(user_message)
         
-        # Buffer agent response WITHOUT LLM extraction (auto_process=False)
-        memory_system.add_dialogue(
-            speaker="agent",
-            content=agent_response,
-            timestamp=datetime.utcnow().isoformat(),
-            auto_process=False
-        )
-        
-        # Process buffered dialogues in background thread
-        # This extracts memory entries asynchronously so the API responds immediately
+        # Process dialogue storing and finalization asynchronously in a background thread.
+        # This frees the HTTP request thread from all write and vectorization overhead.
         import threading
-        def _background_finalize(mem_sys):
+        def _background_save_and_finalize(mem_sys, query, reply, ts):
             try:
+                # Buffer user dialogue asynchronously (extremely fast)
+                mem_sys.add_dialogue(
+                    speaker="user",
+                    content=query,
+                    timestamp=ts,
+                    auto_process=False
+                )
+                # Buffer agent dialogue asynchronously (extremely fast)
+                mem_sys.add_dialogue(
+                    speaker="agent",
+                    content=reply,
+                    timestamp=datetime.utcnow().isoformat(),
+                    auto_process=False
+                )
+                # Vectorize and save all buffered dialogues in background
                 mem_sys.finalize()
             except Exception as bg_err:
-                print(f"[agent_chat] Background finalize error: {bg_err}")
+                print(f"[agent_chat] Background save/finalize error: {bg_err}")
         
         threading.Thread(
-            target=_background_finalize,
-            args=(memory_system,),
+            target=_background_save_and_finalize,
+            args=(memory_system, user_message, agent_response, timestamp),
             daemon=True
         ).start()
         

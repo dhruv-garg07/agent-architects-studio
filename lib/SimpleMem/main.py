@@ -177,6 +177,19 @@ class SimpleMemSystem:
         # Stage 2: Hybrid retrieval
         contexts = self.hybrid_retriever.retrieve(question)
 
+        # Inject unsaved dialogue history from RAM buffer to keep the LLM context-aware
+        if hasattr(self, 'memory_builder') and self.memory_builder.dialogue_buffer:
+            buffered_entries = []
+            for dialogue in self.memory_builder.dialogue_buffer:
+                entry = MemoryEntry(
+                    lossless_restatement=f"{dialogue.speaker}: {dialogue.content}",
+                    keywords=[],
+                    timestamp=dialogue.timestamp,
+                    topic="Recent conversation turn (unsaved)"
+                )
+                buffered_entries.append(entry)
+            contexts = buffered_entries + contexts
+
         # Stage 3: Answer generation
         answer = self.answer_generator.generate_answer(question, contexts)
 
@@ -205,6 +218,19 @@ class SimpleMemSystem:
 
         # Single retrieval pass
         contexts = self.hybrid_retriever.retrieve(question)
+
+        # Inject unsaved dialogue history from RAM buffer to keep the LLM context-aware
+        if hasattr(self, 'memory_builder') and self.memory_builder.dialogue_buffer:
+            buffered_entries = []
+            for dialogue in self.memory_builder.dialogue_buffer:
+                entry = MemoryEntry(
+                    lossless_restatement=f"{dialogue.speaker}: {dialogue.content}",
+                    keywords=[],
+                    timestamp=dialogue.timestamp,
+                    topic="Recent conversation turn (unsaved)"
+                )
+                buffered_entries.append(entry)
+            contexts = buffered_entries + contexts
 
         # Generate answer from retrieved contexts
         answer = self.answer_generator.generate_answer(question, contexts)
