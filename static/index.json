@@ -226,8 +226,13 @@
             "options": {}
           },
           "response": {
-            "reply": "string",
-            "conversation_id": "string"
+            "ok": "boolean",
+            "agent_id": "string",
+            "user_message": "string",
+            "agent_response": "string",
+            "strategy": "string (resolved retrieval method: 'fast' or 'thinking')",
+            "user_id": "string",
+            "timestamp": "string"
           },
           "when_to_use": "Call this whenever the end-user sends a message. It is the primary inference endpoint — it combines the agent's documents, memory, and the current conversation to produce a contextual reply.",
           "use_cases": [

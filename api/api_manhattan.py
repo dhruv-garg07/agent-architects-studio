@@ -1669,6 +1669,7 @@ def agent_chat():
             'agent_id': agent_id,
             'user_message': user_message,
             'agent_response': agent_response,
+            'strategy': strategy,
             'user_id': user_id,
             'timestamp': timestamp
         }), 200
