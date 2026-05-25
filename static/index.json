@@ -218,10 +218,11 @@
           "path": "/agent_chat",
           "method": "POST",
           "summary": "Chat with agent",
-          "description": "Send a message to a specific agent and receive a reply from the agent. Provide 'agent_id' and 'message' (optional 'options').",
+          "description": "Send a message to a specific agent and receive a reply. For high-speed, low-latency responses (<1.5s), set 'strategy' to 'fast'. Set to 'thinking' for deep planning/reflection. Default is 'auto' (backend routes dynamically).",
           "request": {
             "agent_id": "string",
             "message": "string",
+            "strategy": "string (optional: 'auto', 'fast', 'thinking'; default 'auto'). Use 'fast' to guarantee low-latency snappier responses.",
             "options": {}
           },
           "response": {
@@ -235,7 +236,7 @@
             "Domain-specific Q&A bot powered by uploaded documents",
             "Automated email-reply drafting with full conversation context"
           ],
-          "notes": "This endpoint triggers LLM inference and may take 2–30 seconds. Use a client timeout of at least 120 seconds. Store the returned conversation_id and pass it on subsequent turns to maintain context continuity.",
+          "notes": "This endpoint triggers LLM inference and may take 2–30 seconds. Use a client timeout of at least 120 seconds. Store the returned conversation_id and pass it on subsequent turns to maintain context continuity. Passing strategy 'auto' enables smart query-complexity based dynamic routing.",
           "errors": [
             {"code": 400, "message": "Bad request — missing agent_id or message"},
             {"code": 401, "message": "Unauthorized — invalid API key"},
@@ -243,9 +244,9 @@
             {"code": 503, "message": "Service unavailable — LLM provider is temporarily unreachable"}
           ],
           "code": {
-            "curl": "curl -X POST '__BASE__/agent_chat' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"message\":\"Hello\"}'",
-            "python": "import requests\n\nurl = \"__BASE__/agent_chat\"\npayload = { 'agent_id': '<AGENT_ID>', 'message': 'Hello' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=120)\n\nprint(response.text)",
-            "javascript": "async function chatWithAgent(baseUrl = '__BASE__', apiKey = null, agentId = null, message = 'Hello') {\n  baseUrl = baseUrl === '__BASE__' ? (typeof process !== 'undefined' && process.env && process.env.BASE_URL) : baseUrl;\n  if (!baseUrl || baseUrl === '__BASE__') throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = apiKey;\n  const res = await fetch(`${baseUrl}/agent_chat`, { method: 'POST', headers, body: JSON.stringify({ agent_id: agentId, message }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\nchatWithAgent().then(console.log).catch(console.error);"
+            "curl": "curl -X POST '__BASE__/agent_chat' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"message\":\"Hello\",\"strategy\":\"auto\"}'",
+            "python": "import requests\n\nurl = \"__BASE__/agent_chat\"\npayload = { 'agent_id': '<AGENT_ID>', 'message': 'Hello', 'strategy': 'auto' }\nheaders = {\n    \"Authorization\": \"Bearer <token>\",\n    \"Content-Type\": \"application/json\"\n}\n\nresponse = requests.post(url, json=payload, headers=headers, timeout=120)\n\nprint(response.text)",
+            "javascript": "async function chatWithAgent(baseUrl = '__BASE__', apiKey = null, agentId = null, message = 'Hello', strategy = 'auto') {\n  baseUrl = baseUrl === '__BASE__' ? (typeof process !== 'undefined' && process.env && process.env.BASE_URL) : baseUrl;\n  if (!baseUrl || baseUrl === '__BASE__') throw new Error('baseUrl must be provided or set BASE_URL env var');\n  const headers = { 'Content-Type': 'application/json' };\n  if (apiKey) headers['Authorization'] = apiKey;\n  const res = await fetch(`${baseUrl}/agent_chat`, { method: 'POST', headers, body: JSON.stringify({ agent_id: agentId, message, strategy }) });\n  if (!res.ok) throw new Error(`HTTP ${res.status}`);\n  return await res.json();\n}\nchatWithAgent().then(console.log).catch(console.error);"
           }
         }
       ]
