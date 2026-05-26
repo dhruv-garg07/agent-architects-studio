@@ -159,7 +159,7 @@ class LLMClient:
                         print(f"Anthropic API call failed after {max_retries} attempts: {e}")
             
             if last_exception:
-                raise last_exception
+                print(f"Anthropic Claude failed completely: {last_exception}. Falling back to OpenRouter/Together AI...")
 
         kwargs = {
             "model": self.model,
