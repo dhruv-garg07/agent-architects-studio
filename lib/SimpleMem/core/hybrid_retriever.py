@@ -125,6 +125,10 @@ class HybridRetriever:
         if should_use_reflection:
             merged_results = self._retrieve_with_intelligent_reflection(query, merged_results, information_plan)
         
+        print(f"\n[Retrieval Debug] Top 5 retrieved entries sent to Answer Generator:")
+        for idx, entry in enumerate(merged_results[:5], 1):
+            print(f"  Entry {idx}: '{entry.lossless_restatement[:120]}...' (Source: {entry.topic or 'general'})")
+            
         return merged_results
     
     def _retrieve_with_reflection(self, query: str, initial_results: List[MemoryEntry]) -> List[MemoryEntry]:
