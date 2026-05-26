@@ -113,86 +113,20 @@ class LLMClient:
         max_retries: int = 3
     ) -> str:
         """
-        Standard chat completion with optional thinking mode and retry mechanism
+        Unified completion with priority order:
+        1. OpenRouter (Nemotron free model)
+        2. Together AI
+        3. Anthropic Claude (last resort fallback, no startup logs)
         """
-        if self.anthropic_client:
-            # Format messages for Anthropic (extract system prompt if present)
-            system_prompt = ""
-            filtered_messages = []
-            for msg in messages:
-                if msg.get("role") == "system":
-                    system_prompt = msg.get("content", "")
-                else:
-                    # Anthropic API only allows "user" and "assistant" roles in messages array
-                    role = msg.get("role")
-                    if role not in ("user", "assistant"):
-                        role = "user"
-                    filtered_messages.append({
-                        "role": role,
-                        "content": msg.get("content")
-                    })
-            
-            # Retry loop for Anthropic
-            last_exception = None
+        errors = []
+
+        # -----------------------------------------
+        # Try Option 1: OpenRouter First
+        # -----------------------------------------
+        openrouter_key = os.getenv("OPENROUTER_API_KEY")
+        if openrouter_key:
             for attempt in range(max_retries):
                 try:
-                    kwargs = {
-                        "model": self.claude_model,
-                        "messages": filtered_messages,
-                        "temperature": temperature,
-                        "max_tokens": 4000
-                    }
-                    if system_prompt:
-                        kwargs["system"] = system_prompt
-                    
-                    response = self.anthropic_client.messages.create(**kwargs)
-                    content = response.content[0].text
-                    return content
-                except Exception as e:
-                    last_exception = e
-                    if attempt < max_retries - 1:
-                        wait_time = (2 ** attempt)
-                        print(f"Anthropic API call failed (attempt {attempt + 1}/{max_retries}): {e}")
-                        print(f"Retrying in {wait_time} seconds...")
-                        time.sleep(wait_time)
-                    else:
-                        print(f"Anthropic API call failed after {max_retries} attempts: {e}")
-            
-            if last_exception:
-                print(f"Anthropic Claude failed completely: {last_exception}. Falling back to OpenRouter/Together AI...")
-
-        kwargs = {
-            "model": self.model,
-            "messages": messages,
-            "temperature": temperature,
-        }
-
-        if response_format:
-            kwargs["response_format"] = response_format
-
-        # Enable thinking mode if configured (for Qwen and compatible models only)
-        # Only add enable_thinking parameter for Qwen API (identified by base_url)
-        is_qwen_api = self.base_url and "dashscope.aliyuncs.com" in self.base_url
-        
-        if is_qwen_api:
-            # Qwen API requires explicit enable_thinking parameter
-            # - Streaming + thinking: enable_thinking=True
-            # - Non-streaming: enable_thinking=False (required, not optional)
-            # - JSON format: enable_thinking=False (incompatible with thinking mode)
-            if self.use_streaming and self.enable_thinking and not response_format:
-                kwargs["extra_body"] = {"enable_thinking": True}
-            else:
-                # Explicitly set to False for non-streaming calls or JSON format
-                kwargs["extra_body"] = {"enable_thinking": False}
-        # For OpenAI and other APIs, don't add extra_body parameters
-
-        # Retry mechanism
-        last_exception = None
-        for attempt in range(max_retries):
-            # Try OpenRouter First
-            openrouter_key = os.getenv("OPENROUTER_API_KEY")
-            try:
-                if openrouter_key:
                     headers = {
                         "Authorization": f"Bearer {openrouter_key}",
                         "Content-Type": "application/json",
@@ -220,27 +154,81 @@ class LLMClient:
                         if "[END FINAL RESPONSE]" in content:
                             content = content.split("[END FINAL RESPONSE]")[0]
                         return content
-            except Exception as e:
-                print(f"OpenRouter call failed: {e}. Falling back to Together AI.")
+                except Exception as e:
+                    if attempt == max_retries - 1:
+                        errors.append(f"OpenRouter failed: {e}")
+                    # Print a single clean log if OpenRouter fails completely after retries
+                    if attempt < max_retries - 1:
+                        time.sleep(2 ** attempt)
 
-            try:
+        # -----------------------------------------
+        # Try Option 2: Together AI Second
+        # -----------------------------------------
+        if self.client:
+            kwargs = {
+                "model": self.model,
+                "messages": messages,
+                "temperature": temperature,
+            }
+            if response_format:
+                kwargs["response_format"] = response_format
                 
-                    response = self.client.chat.completions.create(**kwargs)
-                    # print(response.choices[0].message.content )
-                    return response.choices[0].message.content
-                    
-            except Exception as e:
-                last_exception = e
-                if attempt < max_retries - 1:
-                    wait_time = (2 ** attempt)  # Exponential backoff: 1s, 2s, 4s
-                    print(f"LLM API call failed (attempt {attempt + 1}/{max_retries}): {e}")
-                    print(f"Retrying in {wait_time} seconds...")
-                    time.sleep(wait_time)
+            is_qwen_api = self.base_url and "dashscope.aliyuncs.com" in self.base_url
+            if is_qwen_api:
+                if self.use_streaming and self.enable_thinking and not response_format:
+                    kwargs["extra_body"] = {"enable_thinking": True}
                 else:
-                    print(f"LLM API call failed after {max_retries} attempts: {e}")
-        
-        # If all retries failed, raise the last exception
-        raise last_exception
+                    kwargs["extra_body"] = {"enable_thinking": False}
+
+            for attempt in range(max_retries):
+                try:
+                    response = self.client.chat.completions.create(**kwargs)
+                    return response.choices[0].message.content
+                except Exception as e:
+                    if attempt == max_retries - 1:
+                        errors.append(f"Together AI failed: {e}")
+                    if attempt < max_retries - 1:
+                        time.sleep(2 ** attempt)
+
+        # -----------------------------------------
+        # Try Option 3: Anthropic Claude (Last Resort)
+        # -----------------------------------------
+        if self.anthropic_client:
+            system_prompt = ""
+            filtered_messages = []
+            for msg in messages:
+                if msg.get("role") == "system":
+                    system_prompt = msg.get("content", "")
+                else:
+                    role = msg.get("role")
+                    if role not in ("user", "assistant"):
+                        role = "user"
+                    filtered_messages.append({
+                        "role": role,
+                        "content": msg.get("content")
+                    })
+
+            for attempt in range(max_retries):
+                try:
+                    kwargs = {
+                        "model": self.claude_model,
+                        "messages": filtered_messages,
+                        "temperature": temperature,
+                        "max_tokens": 4000
+                    }
+                    if system_prompt:
+                        kwargs["system"] = system_prompt
+                    
+                    response = self.anthropic_client.messages.create(**kwargs)
+                    return response.content[0].text
+                except Exception as e:
+                    if attempt == max_retries - 1:
+                        errors.append(f"Anthropic Claude failed: {e}")
+                    if attempt < max_retries - 1:
+                        time.sleep(2 ** attempt)
+
+        # If all failed, raise unified exception
+        raise Exception(f"All LLM providers failed to complete request. Errors: {'; '.join(errors)}")
 
     def _handle_streaming_response(self, **kwargs) -> str:
         """
