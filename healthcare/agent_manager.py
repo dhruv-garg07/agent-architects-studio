@@ -28,7 +28,7 @@ class HealthcareAgentManager:
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
         }
-        self.agent_id = None
+        self.agent_id = "b431c5f5-2556-4768-9959-838eeefbb952"
         self.agent_slug = "healthcare-ai-assistant-dhruv"
         self.agent_name = "Healthcare AI Assistant"
         self.system_prompt = (
