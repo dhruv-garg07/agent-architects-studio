@@ -7,7 +7,7 @@ import time
 import requests
 from typing import List, Dict, Any, Optional
 # from openai import OpenAI
-from SimpleMem.config_loader import TOGETHER_API_KEY, LLM_MODEL, OPENAI_BASE_URL, ENABLE_THINKING, USE_STREAMING, CLAUDE_API_KEY, CLAUDE_MODEL
+from SimpleMem.config_loader import TOGETHER_API_KEY, LLM_MODEL, OPENAI_BASE_URL, ENABLE_THINKING, USE_STREAMING, CLAUDE_API_KEY, CLAUDE_MODEL, COHERE_API_KEY, COHERE_MODEL
 import hashlib
 import threading
 from together import Together
@@ -60,6 +60,10 @@ class LLMClient:
         self.claude_api_key = CLAUDE_API_KEY or os.environ.get("CLAUDE_API_KEY", "")
         self.claude_model = CLAUDE_MODEL or os.environ.get("CLAUDE_MODEL", "claude-sonnet-4-6")
         self.anthropic_client = None
+
+        # Load Cohere settings
+        self.cohere_api_key = COHERE_API_KEY or os.environ.get("COHERE_API_KEY", "")
+        self.cohere_model = COHERE_MODEL or os.environ.get("COHERE_MODEL", "command-r-plus-08-2024")
         
         if self.claude_api_key:
             try:
@@ -114,18 +118,88 @@ class LLMClient:
     ) -> str:
         """
         Unified completion with priority order:
-        1. OpenRouter (Nemotron free model)
-        2. Together AI
-        3. Anthropic Claude (last resort fallback, no startup logs)
+        1. Cohere (Primary)
+        2. OpenRouter (Nemotron free model)
+        3. Together AI
+        4. Anthropic Claude (last resort fallback, no startup logs)
         """
         errors = []
 
         # -----------------------------------------
-        # Try Option 1: OpenRouter First
+        # Try Option 1: Cohere First
+        # -----------------------------------------
+        if self.cohere_api_key:
+            for attempt in range(max_retries):
+                try:
+                    headers = {
+                        "Authorization": f"Bearer {self.cohere_api_key}",
+                        "Content-Type": "application/json",
+                        "Accept": "application/json"
+                    }
+                    
+                    preamble = None
+                    chat_history = []
+                    message = ""
+                    
+                    for idx, msg in enumerate(messages):
+                        role = msg.get("role", "").lower()
+                        content = msg.get("content", "").strip()
+                        
+                        if role == "system":
+                            preamble = content
+                        elif idx == len(messages) - 1 and role == "user":
+                            message = content
+                        else:
+                            cohere_role = "USER" if role == "user" else "CHATBOT"
+                            chat_history.append({
+                                "role": cohere_role,
+                                "message": content
+                            })
+                    
+                    if not message:
+                        for msg in reversed(messages):
+                            if msg.get("role") != "system":
+                                message = msg.get("content", "")
+                                break
+                        if not message and messages:
+                            message = messages[-1].get("content", "")
+                            
+                    payload = {
+                        "model": self.cohere_model,
+                        "message": message,
+                        "temperature": temperature
+                    }
+                    if preamble:
+                        payload["preamble"] = preamble
+                    if chat_history:
+                        payload["chat_history"] = chat_history
+                        
+                    response = requests.post(
+                        "https://api.cohere.com/v1/chat",
+                        headers=headers,
+                        json=payload,
+                        timeout=15
+                    )
+                    response.raise_for_status()
+                    res_json = response.json()
+                    content = res_json.get("text", "")
+                    if content:
+                        if "[END FINAL RESPONSE]" in content:
+                            content = content.split("[END FINAL RESPONSE]")[0]
+                        return content
+                except Exception as e:
+                    if attempt == max_retries - 1:
+                        errors.append(f"Cohere failed: {e}")
+                    if attempt < max_retries - 1:
+                        time.sleep(2 ** attempt)
+
+        # -----------------------------------------
+        # Try Option 2: OpenRouter Second
         # -----------------------------------------
         openrouter_key = os.getenv("OPENROUTER_API_KEY")
         if openrouter_key:
             for attempt in range(max_retries):
+
                 try:
                     headers = {
                         "Authorization": f"Bearer {openrouter_key}",
@@ -236,7 +310,72 @@ class LLMClient:
         """
         full_content = []
         
-        # Try OpenRouter First
+        # Try Cohere First
+        if self.cohere_api_key:
+            try:
+                headers = {
+                    "Authorization": f"Bearer {self.cohere_api_key}",
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                }
+                
+                messages = kwargs.get("messages", [])
+                temperature = kwargs.get("temperature", 0.2)
+                
+                preamble = None
+                chat_history = []
+                message = ""
+                
+                for idx, msg in enumerate(messages):
+                    role = msg.get("role", "").lower()
+                    content = msg.get("content", "").strip()
+                    
+                    if role == "system":
+                        preamble = content
+                    elif idx == len(messages) - 1 and role == "user":
+                        message = content
+                    else:
+                        cohere_role = "USER" if role == "user" else "CHATBOT"
+                        chat_history.append({
+                            "role": cohere_role,
+                            "message": content
+                        })
+                
+                if not message:
+                    for msg in reversed(messages):
+                        if msg.get("role") != "system":
+                            message = msg.get("content", "")
+                            break
+                    if not message and messages:
+                        message = messages[-1].get("content", "")
+                        
+                payload = {
+                    "model": self.cohere_model,
+                    "message": message,
+                    "temperature": temperature
+                }
+                if preamble:
+                    payload["preamble"] = preamble
+                if chat_history:
+                    payload["chat_history"] = chat_history
+                    
+                response = requests.post(
+                    "https://api.cohere.com/v1/chat",
+                    headers=headers,
+                    json=payload,
+                    timeout=15
+                )
+                response.raise_for_status()
+                res_json = response.json()
+                content = res_json.get("text", "")
+                if content:
+                    if "[END FINAL RESPONSE]" in content:
+                        content = content.split("[END FINAL RESPONSE]")[0]
+                    return content
+            except Exception as e:
+                print(f"Cohere streaming fallback failed: {e}")
+
+        # Try OpenRouter Second
         openrouter_key = os.getenv("OPENROUTER_API_KEY")
         try:
             if openrouter_key:

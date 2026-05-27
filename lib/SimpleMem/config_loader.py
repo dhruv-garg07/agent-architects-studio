@@ -77,6 +77,8 @@ LLM_MODEL = get_str("LLM_MODEL", "ServiceNow-AI/Apriel-1.5-15b-Thinker")
 TOGETHER_API_KEY = get_str("TOGETHER_API_KEY", "")
 CLAUDE_API_KEY = get_str("CLAUDE_API_KEY", "")
 CLAUDE_MODEL = get_str("CLAUDE_MODEL", "claude-sonnet-4-6")
+COHERE_API_KEY = get_str("COHERE_API_KEY", "")
+COHERE_MODEL = get_str("COHERE_MODEL", "command-r-plus-08-2024")
 
 
 # Embedding model (local, no API needed)
