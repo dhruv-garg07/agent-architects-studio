@@ -84,13 +84,12 @@ app = Flask(__name__, static_folder=STATIC_DIR, template_folder=TEMPLATES_DIR)
 # --- Flask-SocketIO for Real-Time Updates ---
 try:
     from flask_socketio import SocketIO
-    # Use auto-detected async_mode to match available worker class gracefully
-    socketio = SocketIO(app, cors_allowed_origins="*", async_mode='gevent', ping_timeout=60, ping_interval=25)
+    socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading', ping_timeout=60, ping_interval=25)
     
     # Initialize GitMem WebSocket handlers
     from gitmem.api.websocket_events import init_websocket
     init_websocket(socketio)
-    print("[STARTUP] Flask-SocketIO initialized for real-time updates (gevent mode)")
+    print("[STARTUP] Flask-SocketIO initialized for real-time updates (threading mode)")
     
     # Register MCP Blueprint synchronously to avoid race conditions
     try:

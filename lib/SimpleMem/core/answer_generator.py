@@ -41,7 +41,15 @@ class AnswerGenerator:
         if contexts:
             context_str = self._format_contexts(contexts)
             prompt = self._build_answer_prompt(query, context_str)
-            system_instruction = "You are a professional Q&A assistant. Extract concise answers from context. You must output valid JSON format."
+            is_complex = len(query.split()) > 15
+            if is_complex:
+                system_instruction = (
+                    "You are a professional Q&A assistant. Extract a detailed, synthesized, "
+                    "and comprehensive explanation from the context addressing all parts of the question thoroughly. "
+                    "You must output valid JSON format."
+                )
+            else:
+                system_instruction = "You are a professional Q&A assistant. Extract concise answers from context. You must output valid JSON format."
         else:
             # Friendly conversational fallback when no memories are retrieved (e.g., greetings or new conversations)
             prompt = f"""
@@ -141,6 +149,19 @@ class AnswerGenerator:
         """
         Build answer generation prompt
         """
+        is_complex = len(query.split()) > 15
+        answer_requirement = (
+            "Then provide a detailed, synthesized, and comprehensive answer "
+            "that addresses all parts and questions within the query thoroughly using the context"
+            if is_complex else
+            "Then provide a very CONCISE answer (short phrase about core information)"
+        )
+        answer_format_example = (
+            "Detailed complete explanation addressing all parts of the complex query thoroughly"
+            if is_complex else
+            "Concise answer in a short phrase"
+        )
+
         return f"""
 Answer the user's question based on the provided context.
 
@@ -151,16 +172,17 @@ Relevant Context:
 
 Requirements:
 1. First, think through the reasoning process
-2. Then provide a very CONCISE answer (short phrase about core information)
+2. {answer_requirement}
 3. Answer must be based ONLY on the provided context
 4. All dates in the response must be formatted as 'DD Month YYYY' but you can output more or less details if needed
-5. Return your response in JSON format
+5. The 'answer' field in the JSON MUST be a plain text string, NOT a nested JSON object or dictionary
+6. Return your response in JSON format
 
 Output Format:
 ```json
 {{
   "reasoning": "Brief explanation of your thought process",
-  "answer": "Concise answer in a short phrase"
+  "answer": "{answer_format_example}"
 }}
 ```
 

@@ -1647,9 +1647,10 @@ def agent_chat():
                     auto_process=False
                 )
                 # Buffer agent dialogue asynchronously (extremely fast)
+                agent_content = json.dumps(reply) if isinstance(reply, (dict, list)) else str(reply)
                 mem_sys.add_dialogue(
                     speaker="agent",
-                    content=reply,
+                    content=agent_content,
                     timestamp=datetime.utcnow().isoformat(),
                     auto_process=False
                 )
