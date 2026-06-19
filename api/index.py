@@ -349,6 +349,15 @@ def privacy():
     except Exception as e:
         return f"<h1>Privacy Policy</h1><p>Unable to render page: {e}</p>", 500
 
+@app.route('/deck')
+def deck():
+    """Customer deck page."""
+    try:
+        return render_template('deck.html')
+    except Exception as e:
+        return f"<h1>Deck</h1><p>Unable to render page: {e}</p>", 500
+    
+
 @app.route('/submit')
 @login_required
 def creator_studio():
