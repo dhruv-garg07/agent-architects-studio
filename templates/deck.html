@@ -9,50 +9,153 @@
     <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Architects+Daughter&family=Special+Elite&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        /* 1. THE SETUP */
+        /* 1. THE SETUP & VARIABLES */
         :root {
-          --manila-bg: #f3eacb;
-          --typewriter-ink: #2d3436;
+          /* Light Theme (Manila Dossier) */
+          --bg-desktop: #d1c7a5;
+          --bg-slide: #ebdcb9;
+          --typewriter-ink: #2b2d2f;
           --marker-red: #c0392b;
           --marker-blue: #2980b9;
-          --stamp-red: rgba(192, 57, 43, 0.4);
+          --stamp-red: rgba(192, 57, 43, 0.7);
+          --stamp-blue: rgba(41, 128, 185, 0.7);
+          --border-color: #ced6e0;
+          --shadow-color: rgba(0, 0, 0, 0.15);
+          
+          --primary-glow: transparent;
+          --text-shadow: none;
+          --crt-visibility: hidden;
+          --grid-overlay: radial-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+        }
+
+        body.secure-terminal {
+          /* Dark Theme (CRT Terminal) */
+          --bg-desktop: #0a0b0d;
+          --bg-slide: #09120e;
+          --typewriter-ink: #33ff66; /* Glowing Phosphorus Green */
+          --marker-red: #ff3333;
+          --marker-blue: #33ccff;
+          --stamp-red: rgba(255, 51, 51, 0.85);
+          --stamp-blue: rgba(51, 204, 255, 0.85);
+          --border-color: #1f4d2b;
+          --shadow-color: rgba(51, 255, 102, 0.1);
+          
+          --primary-glow: 0 0 10px rgba(51, 255, 102, 0.5);
+          --text-shadow: 0 0 5px rgba(51, 255, 102, 0.6), 0 0 10px rgba(51, 255, 102, 0.3);
+          --crt-visibility: visible;
+          --grid-overlay: linear-gradient(rgba(51, 255, 102, 0.04) 1px, transparent 1px),
+                          linear-gradient(90deg, rgba(51, 255, 102, 0.04) 1px, transparent 1px);
         }
 
         * { box-sizing: border-box; }
 
-        body {
-          background-color: #dcdde1;
-          display: grid;
-          gap: 40px;
-          grid-template-columns: 1fr;
+        html, body {
           margin: 0;
-          padding: 40px 0;
-          place-items: center;
+          padding: 0;
+          width: 100vw;
+          height: 100vh;
+          overflow: hidden;
+          background-color: var(--bg-desktop);
+          transition: background-color 0.5s ease;
+        }
+
+        /* 1.1 PRESENTATION FRAMEWORK LAYOUT */
+        #presentation-viewport {
+          width: 100vw;
+          height: 100vh;
+          position: relative;
+          display: flex;
+          flex-direction: column;
+        }
+
+        #deck-viewport {
+          flex-grow: 1;
+          position: relative;
+          overflow: hidden;
+          width: 100%;
+          height: 100%;
+        }
+
+        #deck-container {
+          width: 1280px;
+          height: 720px;
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          transform: translate(-50%, -50%) scale(1);
+          transform-origin: center center;
+          transition: transform 0.1s ease;
         }
 
         .slide-container {
-          align-items: flex-start;
-          background-color: var(--manila-bg);
-          background-image: 
-            linear-gradient(rgba(0,0,0,0.02) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0,0,0,0.02) 1px, transparent 1px);
-          background-size: 20px 20px;
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-color: var(--bg-slide);
           border-radius: 4px;
-          box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+          box-shadow: 0 15px 35px var(--shadow-color);
           display: flex;
           flex-direction: column;
           font-family: 'Courier Prime', monospace;
-          height: 720px;
-          justify-content: flex-start;
           overflow: hidden;
           padding: 60px;
-          position: relative;
-          width: 100%;
-          max-width: 1280px;
-          border: 1px solid #ced6e0;
+          border: 1px solid var(--border-color);
+          opacity: 0;
+          visibility: hidden;
+          pointer-events: none;
+          transition: opacity 0.5s ease-in-out, transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+          transform: scale(0.97) translateY(15px);
+          z-index: 1;
         }
 
-        /* 1.1 CLASSIFIED DECORATIONS */
+        .slide-container.active {
+          opacity: 1;
+          visibility: visible;
+          pointer-events: auto;
+          transform: scale(1) translateY(0);
+          z-index: 2;
+        }
+
+        /* Folder index tab visual detail for slides */
+        .slide-container::after {
+          content: '';
+          position: absolute;
+          top: -15px;
+          left: 40px;
+          width: 160px;
+          height: 15px;
+          background-color: var(--bg-slide);
+          border: 1px solid var(--border-color);
+          border-bottom: none;
+          border-radius: 6px 6px 0 0;
+          transition: background-color 0.5s ease, border-color 0.5s ease;
+          z-index: -1;
+        }
+
+        /* Subtle paper noise texture */
+        .paper-overlay {
+          position: absolute;
+          top: 0; left: 0; width: 100%; height: 100%;
+          pointer-events: none;
+          z-index: 99;
+          opacity: 0.06;
+          mix-blend-mode: multiply;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)'/%3E%3C/svg%3E");
+        }
+
+        /* Grid / Mesh lines overlay */
+        .slide-grid {
+          position: absolute;
+          top: 0; left: 0; width: 100%; height: 100%;
+          background-image: var(--grid-overlay);
+          background-size: 30px 30px;
+          pointer-events: none;
+          z-index: 0;
+        }
+
+        /* 1.2 CLASSIFIED DECORATIONS */
         .classification-header, .classification-footer {
           color: var(--typewriter-ink);
           font-size: 14px;
@@ -79,311 +182,1197 @@
           top: 60px;
           transform: rotate(-15deg);
           z-index: 5;
+          opacity: 0;
+        }
+
+        @keyframes stampIn {
+          0% {
+            opacity: 0;
+            transform: scale(2.5) rotate(-35deg);
+            filter: blur(2px);
+          }
+          60% {
+            opacity: 0.9;
+            transform: scale(0.95) rotate(-10deg);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1) rotate(-15deg);
+          }
+        }
+
+        .active .stamp-box {
+          animation: stampIn 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+          animation-delay: 0.3s;
         }
 
         /* 2. TYPOGRAPHY */
-        .slide-container h1, .slide-container h2, .slide-container h3 {
+        .slide-container h1, .slide-container h2, .slide-container h3, .slide-container h4 {
           color: var(--typewriter-ink);
           font-family: 'Special Elite', cursive;
           margin: 0;
+          z-index: 1;
         }
-        .slide-container h1 { font-size: 80px; line-height: 0.9; }
-        .slide-container .slide-title { font-size: 44px; margin-bottom: 25px; border-bottom: 2px solid var(--typewriter-ink); width: 100%; padding-bottom: 10px; text-transform: uppercase; }
-        .slide-container h3 { font-size: 32px; color: var(--marker-blue); font-family: 'Architects Daughter', cursive; }
-
-        .slide-container p, .slide-container li, .slide-container td {
+        .slide-container h1 { font-size: 72px; line-height: 1.0; }
+        .slide-container .slide-title { 
+          font-size: 40px; 
+          margin-bottom: 25px; 
+          border-bottom: 2px solid var(--typewriter-ink); 
+          width: 100%; 
+          padding-bottom: 10px; 
+          text-transform: uppercase; 
+        }
+        .slide-container h3 { font-size: 28px; color: var(--marker-blue); font-family: 'Architects Daughter', cursive; }
+        
+        .slide-container p, .slide-container li, .slide-container td, .slide-container th {
           font-size: 18px;
           line-height: 1.4;
           color: var(--typewriter-ink);
+          z-index: 1;
         }
 
-        .marker-text { font-family: 'Architects Daughter', cursive; color: var(--marker-red); }
+        .marker-text { 
+          font-family: 'Architects Daughter', cursive; 
+          color: var(--marker-red); 
+          position: relative;
+          display: inline-block;
+        }
 
-        /* 3. LAYOUTS */
-        .content-area { display: flex; flex-direction: column; flex-grow: 1; width: 100%; justify-content: center; }
+
+
+        /* 3. LAYOUTS & COMPONENT BLOCKS */
+        .content-area { 
+          display: flex; 
+          flex-direction: column; 
+          flex-grow: 1; 
+          width: 100%; 
+          justify-content: center; 
+          z-index: 1;
+        }
         .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; width: 100%; }
 
-        .highlight-numbers-layout { display: flex; align-items: center; justify-content: space-around; width: 100%; }
-        .number-box { text-align: center; padding: 20px; border: 1px dashed var(--typewriter-ink); }
-        .big-number { font-size: 100px; font-family: 'Special Elite'; color: var(--marker-red); line-height: 1; }
+        .highlight-numbers-layout { display: flex; align-items: center; justify-content: space-around; width: 100%; margin-top: 20px; }
+        .number-box { 
+          text-align: center; 
+          padding: 25px; 
+          border: 1px dashed var(--typewriter-ink); 
+          background: rgba(0, 0, 0, 0.02);
+          transition: border-style 0.3s;
+        }
+        body.secure-terminal .number-box {
+          background: rgba(51, 255, 102, 0.02);
+        }
+        .big-number { font-size: 80px; font-family: 'Special Elite'; color: var(--marker-red); line-height: 1; margin-bottom: 10px; }
 
         .logo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; padding: 20px; align-items: center; }
-        .logo-item { background: transparent; padding: 10px; border: 1px solid rgba(0,0,0,0.1); text-align: center; }
-        .logo-item img { height: 120px; width: 120px; object-fit: contain; mix-blend-mode: multiply; }
+        .logo-item { 
+          background: rgba(0,0,0,0.02); 
+          padding: 30px; 
+          border: 1px solid var(--border-color); 
+          text-align: center; 
+          transition: background-color 0.3s;
+        }
+        body.secure-terminal .logo-item {
+          background: rgba(51, 255, 102, 0.03);
+        }
+        .logo-item i {
+          transition: transform 0.3s ease;
+        }
+        .logo-item:hover i {
+          transform: scale(1.1);
+        }
 
-        .table-layout table { width: 100%; border-collapse: collapse; background: rgba(255,255,255,0.2); }
+        .table-layout table { width: 100%; border-collapse: collapse; background: rgba(255,255,255,0.25); }
+        body.secure-terminal .table-layout table { background: rgba(0,0,0,0.2); }
         .table-layout th, .table-layout td { border: 1px solid var(--typewriter-ink); padding: 12px; text-align: left; }
         .table-layout th { font-family: 'Special Elite'; text-transform: uppercase; background: rgba(0,0,0,0.05); }
+        body.secure-terminal .table-layout th { background: rgba(51, 255, 102, 0.08); }
 
-        /* Charts */
-        .bar-chart-container { display: flex; flex-direction: column; gap: 15px; width: 100%; }
-        .bar { display: flex; align-items: center; gap: 15px; }
-        .bar-label { width: 300px; font-weight: bold; text-align: right; }
-        .bar-outer { flex-grow: 1; height: 35px; background: rgba(0,0,0,0.1); border: 1px solid black; }
-        .bar-fill { height: 100%; background: var(--marker-blue); display: flex; align-items: center; padding-left: 10px; color: white; }
+        /* 3.1 CHARTS */
+        .bar-chart-container { display: flex; flex-direction: column; gap: 20px; width: 100%; margin-top: 10px; }
+        .bar { display: flex; align-items: center; gap: 20px; }
+        .bar-label { width: 280px; font-weight: bold; text-align: right; font-size: 16px; }
+        .bar-outer { flex-grow: 1; height: 40px; background: rgba(0,0,0,0.05); border: 1px solid var(--typewriter-ink); overflow: hidden; position: relative; }
+        body.secure-terminal .bar-outer { background: rgba(51, 255, 102, 0.05); }
+        
+        .bar-fill { 
+          height: 100%; 
+          display: flex; 
+          align-items: center; 
+          padding-left: 15px; 
+          color: white; 
+          font-weight: bold;
+          font-size: 15px;
+          width: 0% !important; /* Overwritten by animation */
+          transition: width 1.5s cubic-bezier(0.25, 1, 0.5, 1) 0.5s;
+        }
+        body.secure-terminal .bar-fill {
+          color: #09120e;
+        }
+        
+        .active .bar-fill-1 { width: 90% !important; }
+        .active .bar-fill-2 { width: 70% !important; }
+        .active .bar-fill-3 { width: 30% !important; }
 
-        .area-chart-svg { width: 100%; height: 320px; overflow: visible; }
-        .area-fill { fill: rgba(41, 128, 185, 0.2); stroke: var(--marker-blue); stroke-width: 3; }
+        .area-chart-svg { width: 100%; height: 300px; overflow: visible; }
+        .area-line {
+          fill: none;
+          stroke: var(--marker-blue);
+          stroke-width: 4;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+          stroke-dasharray: 1000;
+          stroke-dashoffset: 1000;
+          transition: stroke-dashoffset 2s cubic-bezier(0.4, 0, 0.2, 1) 0.5s;
+        }
+        .active .area-line {
+          stroke-dashoffset: 0;
+        }
+        
+        .area-fill-shape {
+          fill: rgba(41, 128, 185, 0.15);
+          stroke: none;
+          opacity: 0;
+          transition: opacity 1s ease-out 1.2s;
+        }
+        body.secure-terminal .area-fill-shape {
+          fill: rgba(51, 255, 102, 0.1);
+        }
+        .active .area-fill-shape {
+          opacity: 1;
+        }
 
+        .chart-point {
+          transform: scale(0);
+          transform-origin: center;
+          transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        /* Sequential reveal of points */
+        .active .chart-point:nth-child(4) { transform: scale(1); transition-delay: 0.6s; }
+        .active .chart-point:nth-child(5) { transform: scale(1); transition-delay: 0.9s; }
+        .active .chart-point:nth-child(6) { transform: scale(1); transition-delay: 1.2s; }
+        .active .chart-point:nth-child(7) { transform: scale(1); transition-delay: 1.5s; }
+        .active .chart-point:nth-child(8) { transform: scale(1); transition-delay: 1.8s; }
+        .active .chart-point:nth-child(9) { transform: scale(1); transition-delay: 2.1s; }
+
+        /* 3.2 TIMELINE */
         .timeline-layout { display: flex; justify-content: space-between; position: relative; margin-top: 60px; width: 100%; }
-        .timeline-line { position: absolute; top: 50%; width: 100%; height: 2px; background: var(--typewriter-ink); }
-        .timeline-item { background: var(--manila-bg); border: 1px solid var(--typewriter-ink); padding: 15px; width: 23%; z-index: 2; position: relative; }
+        .timeline-line { 
+          position: absolute; 
+          top: 50%; 
+          left: 0;
+          width: 0%; 
+          height: 2px; 
+          background: var(--typewriter-ink); 
+          transition: width 1.5s ease-out 0.2s;
+          transform: translateY(-50%);
+        }
+        .active .timeline-line {
+          width: 100%;
+        }
+        
+        .timeline-item { 
+          background: var(--bg-slide); 
+          border: 1px solid var(--typewriter-ink); 
+          padding: 18px; 
+          width: 22%; 
+          z-index: 2; 
+          position: relative; 
+          opacity: 0;
+          transform: translateY(20px);
+          transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+        }
+        .active .timeline-item:nth-child(2) { opacity: 1; transform: translateY(0); transition-delay: 0.4s; }
+        .active .timeline-item:nth-child(3) { opacity: 1; transform: translateY(0); transition-delay: 0.7s; }
+        .active .timeline-item:nth-child(4) { opacity: 1; transform: translateY(0); transition-delay: 1.0s; }
+        .active .timeline-item:nth-child(5) { opacity: 1; transform: translateY(0); transition-delay: 1.3s; }
 
-        /* Custom Icons */
-        .icon-circle { width: 70px; height: 70px; border-radius: 50%; border: 2px solid var(--marker-blue); display: grid; place-items: center; margin-bottom: 15px; font-size: 30px; color: var(--marker-blue); }
+        .tile {
+          border: 1px solid var(--border-color);
+          padding: 20px;
+          background: rgba(0, 0, 0, 0.01);
+          transition: transform 0.3s;
+        }
+        body.secure-terminal .tile {
+          background: rgba(51, 255, 102, 0.02);
+        }
+        .tile:hover {
+          transform: translateY(-5px);
+        }
+        .icon-circle { 
+          width: 70px; 
+          height: 70px; 
+          border-radius: 50%; 
+          border: 2px solid var(--marker-blue); 
+          display: grid; 
+          place-items: center; 
+          margin-bottom: 20px; 
+          font-size: 30px; 
+          color: var(--marker-blue); 
+        }
+
+        /* 4. PRESENTATION INTERFACE CONTROLS */
+        #deck-controls {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          width: 100vw;
+          height: 60px;
+          background-color: var(--bg-desktop);
+          border-top: 1px solid var(--border-color);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0 40px;
+          z-index: 999;
+          transition: background-color 0.5s ease, border-color 0.5s ease;
+        }
+
+        .control-btn {
+          background: transparent;
+          border: 1px solid var(--typewriter-ink);
+          color: var(--typewriter-ink);
+          font-family: 'Courier Prime', monospace;
+          font-size: 13px;
+          font-weight: bold;
+          padding: 8px 16px;
+          cursor: pointer;
+          transition: all 0.2s;
+          text-transform: uppercase;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .control-btn:hover {
+          background-color: var(--typewriter-ink);
+          color: var(--bg-desktop);
+        }
+
+        #slide-counter {
+          font-size: 16px;
+          font-weight: bold;
+          font-family: 'Special Elite', cursive;
+          letter-spacing: 1px;
+          color: var(--typewriter-ink);
+        }
+
+        #progress-container {
+          flex-grow: 1;
+          max-width: 400px;
+          height: 8px;
+          border: 1px solid var(--typewriter-ink);
+          margin: 0 20px;
+          position: relative;
+          background: rgba(0,0,0,0.05);
+        }
+        body.secure-terminal #progress-container {
+          background: rgba(51, 255, 102, 0.05);
+        }
+
+        #progress-bar {
+          height: 100%;
+          width: 0%;
+          background-color: var(--marker-red);
+          transition: width 0.3s ease;
+        }
+        body.secure-terminal #progress-bar {
+          background-color: var(--typewriter-ink);
+        }
+
+        /* 4.1 THEME & CLEARANCE TOGGLE */
+        #clearance-control {
+          position: fixed;
+          top: 15px;
+          right: 40px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          z-index: 999;
+        }
+
+        .control-label {
+          font-size: 12px;
+          font-weight: bold;
+          letter-spacing: 1px;
+          color: var(--typewriter-ink);
+          font-family: 'Special Elite', cursive;
+        }
+
+        .btn-clearance {
+          background: transparent;
+          border: 1px solid var(--typewriter-ink);
+          color: var(--typewriter-ink);
+          font-family: 'Special Elite', cursive;
+          font-size: 11px;
+          padding: 6px 12px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          transition: all 0.2s;
+          text-transform: uppercase;
+        }
+
+        .btn-clearance:hover {
+          background-color: var(--typewriter-ink);
+          color: var(--bg-desktop);
+          box-shadow: var(--primary-glow);
+        }
+
+        /* 4.2 SIDEBAR / INDEX DRAWER */
+        #index-drawer {
+          position: fixed;
+          left: -280px;
+          top: 0;
+          width: 280px;
+          height: 100vh;
+          background-color: var(--bg-slide);
+          border-right: 2px solid var(--border-color);
+          z-index: 1000;
+          box-shadow: 10px 0 30px var(--shadow-color);
+          transition: left 0.4s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.5s ease, border-color 0.5s ease;
+          padding: 40px 20px;
+          display: flex;
+          flex-direction: column;
+        }
+
+        #index-drawer.open {
+          left: 0;
+        }
+
+        #drawer-tab {
+          position: absolute;
+          right: -45px;
+          top: 100px;
+          width: 45px;
+          height: 150px;
+          background-color: var(--bg-slide);
+          border: 1px solid var(--border-color);
+          border-left: none;
+          border-radius: 0 8px 8px 0;
+          cursor: pointer;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          box-shadow: 5px 5px 15px var(--shadow-color);
+          z-index: 1001;
+          transition: background-color 0.5s ease, border-color 0.5s ease;
+        }
+
+        #drawer-tab span {
+          writing-mode: vertical-rl;
+          text-orientation: mixed;
+          font-weight: bold;
+          font-size: 11px;
+          letter-spacing: 2px;
+          text-transform: uppercase;
+          color: var(--typewriter-ink);
+        }
+        #drawer-tab i {
+          color: var(--typewriter-ink);
+        }
+
+        #drawer-content h3 {
+          font-family: 'Special Elite', cursive;
+          font-size: 18px;
+          border-bottom: 2px solid var(--typewriter-ink);
+          padding-bottom: 10px;
+          margin-bottom: 20px;
+          text-transform: uppercase;
+        }
+
+        #slide-links {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+          overflow-y: auto;
+          flex-grow: 1;
+        }
+
+        #slide-links li {
+          margin-bottom: 8px;
+        }
+
+        #slide-links a {
+          color: var(--typewriter-ink);
+          text-decoration: none;
+          font-size: 13px;
+          display: block;
+          padding: 8px 12px;
+          border: 1px dashed transparent;
+          transition: all 0.2s;
+          cursor: pointer;
+          text-transform: uppercase;
+        }
+
+        #slide-links a:hover {
+          background-color: rgba(0, 0, 0, 0.05);
+          border-color: var(--typewriter-ink);
+        }
+
+        body.secure-terminal #slide-links a:hover {
+          background-color: rgba(51, 255, 102, 0.1);
+        }
+
+        #slide-links a.active {
+          border-style: solid;
+          border-color: var(--typewriter-ink);
+          font-weight: bold;
+          background-color: rgba(192, 57, 43, 0.05);
+        }
+
+        body.secure-terminal #slide-links a.active {
+          background-color: rgba(51, 255, 102, 0.15);
+        }
+
+        /* 5. CRT RETRO TERMINAL DETAILS (DARK THEME ONLY) */
+        #crt-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.12) 50%), 
+                      linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
+          background-size: 100% 3px, 6px 100%;
+          pointer-events: none;
+          z-index: 9999;
+          opacity: 0;
+          transition: opacity 0.5s ease;
+        }
+
+        body.secure-terminal #crt-overlay {
+          opacity: 1;
+        }
+
+        #crt-overlay::after {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; width: 100%; height: 100%;
+          background: radial-gradient(circle, transparent 40%, rgba(0, 0, 0, 0.35) 100%);
+          pointer-events: none;
+        }
+
+        @keyframes scanlineMove {
+          0% { transform: translateY(-100%); }
+          100% { transform: translateY(100%); }
+        }
+
+        body.secure-terminal #crt-overlay::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; width: 100%; height: 6px;
+          background: rgba(51, 255, 102, 0.08);
+          animation: scanlineMove 8s linear infinite;
+          pointer-events: none;
+        }
+
+        @keyframes crt-flicker {
+          0% { opacity: 0.99; }
+          45% { opacity: 0.99; }
+          50% { opacity: 0.975; }
+          55% { opacity: 0.99; }
+          100% { opacity: 0.99; }
+        }
+        body.secure-terminal #deck-container {
+          animation: crt-flicker 0.2s infinite;
+        }
+
+        /* 5.1 FONT COLOR WRITING MONOCHROME FORCE */
+        body.secure-terminal {
+          text-shadow: var(--text-shadow);
+        }
+        body.secure-terminal .slide-container h1,
+        body.secure-terminal .slide-container h2,
+        body.secure-terminal .slide-container h3,
+        body.secure-terminal .slide-container h4,
+        body.secure-terminal .slide-container p,
+        body.secure-terminal .slide-container li,
+        body.secure-terminal .slide-container td,
+        body.secure-terminal .slide-container th,
+        body.secure-terminal .slide-counter,
+        body.secure-terminal .control-btn,
+        body.secure-terminal .btn-clearance,
+        body.secure-terminal .control-label,
+        body.secure-terminal #drawer-tab span,
+        body.secure-terminal #drawer-tab i,
+        body.secure-terminal #drawer-content h3 {
+          color: var(--typewriter-ink) !important;
+          text-shadow: var(--text-shadow) !important;
+        }
+
+        body.secure-terminal .stamp-box {
+          border-color: var(--marker-red) !important;
+          color: var(--marker-red) !important;
+          text-shadow: 0 0 5px rgba(255, 51, 51, 0.4) !important;
+        }
+        
+        body.secure-terminal .icon-circle {
+          border-color: var(--typewriter-ink) !important;
+          color: var(--typewriter-ink) !important;
+          box-shadow: var(--primary-glow);
+        }
+        
+        body.secure-terminal .area-line {
+          stroke: var(--typewriter-ink) !important;
+        }
+        
+        body.secure-terminal .chart-point {
+          fill: var(--marker-red) !important;
+        }
+
+        /* Dynamic blinking terminal cursor */
+        .terminal-cursor {
+          display: inline-block;
+          width: 8px;
+          height: 18px;
+          background-color: var(--typewriter-ink);
+          margin-left: 5px;
+          animation: cursorBlink 1s step-end infinite;
+          vertical-align: middle;
+        }
+        @keyframes cursorBlink {
+          50% { opacity: 0; }
+        }
+        body:not(.secure-terminal) .terminal-cursor {
+          display: none;
+        }
     </style>
 </head>
 <body>
 
-<div class="slide-container" id="slide1">
-    <div class="classification-header">TOP SECRET // EYES ONLY</div>
-    <div class="stamp-box">CLASSIFIED</div>
-    <div class="content-area" style="justify-content: center;">
-        <p style="margin:0; font-weight: bold; text-transform: uppercase;">Project Designation:</p>
-        <h1>THE MANHATTAN<br>PROJECT</h1>
-        <h3 class="marker-text" style="font-size: 54px; margin-top: 15px;">> Organizational Memory</h3>
-        <p style="margin-top: 50px; border-left: 6px solid var(--marker-red); padding-left: 25px; background: rgba(192, 57, 43, 0.05); padding-top: 10px; padding-bottom: 10px;">
-            FILE ID: ORG-MEM-2026-X<br>
-            SECURITY CLEARANCE: LEVEL 5 (EXECUTIVE)<br>
-            SUBJECT: INTERNAL DATA THREADING & CONTAINMENT
-        </p>
-    </div>
-    <div class="classification-footer">PROPERTY OF THE FIRM // FOR AUTHORIZED REVIEW ONLY</div>
-</div>
-
-<div class="slide-container" id="slide2">
-    <div class="classification-header">SUBJECT: FRAGMENTATION ANALYSIS</div>
-    <h2 class="slide-title">SITREP: THE FRAGMENTED ENTERPRISE</h2>
-    <div class="content-area">
-        <div class="two-column">
-            <div>
-                <p style="font-weight: bold; color: var(--marker-red);">[CRITICAL KNOWLEDGE LEAK DETECTED]</p>
-                <p>Institutional memory is currently non-centralized, leading to systemic "brain drain."</p>
-                <ul style="margin-top: 15px;">
-                    <li>High-level strategy lost in Slack "noise".</li>
-                    <li>Technical know-how siloed in legacy Gmail threads.</li>
-                    <li>Decision context evaporates when employees depart.</li>
-                </ul>
-                <p class="marker-text" style="margin-top: 25px; font-size: 26px;">"Ask Dave... wait, Dave left in June."</p>
-            </div>
-            <div class="logo-grid">
-                <div class="logo-item"><i class="fa-brands fa-slack" style="font-size: 80px; color: var(--typewriter-ink);"></i></div>
-                <div class="logo-item"><i class="fa-solid fa-envelope" style="font-size: 80px; color: var(--typewriter-ink);"></i></div>
-                <div class="logo-item"><i class="fa-solid fa-users" style="font-size: 80px; color: var(--typewriter-ink);"></i></div>
-            </div>
+<div id="presentation-viewport">
+    
+    <!-- Sidebar Index drawer -->
+    <div id="index-drawer">
+        <div id="drawer-tab" onclick="toggleDrawer()">
+            <i class="fa-solid fa-folder-open"></i>
+            <span>DOSSIER INDEX</span>
+        </div>
+        <div id="drawer-content">
+            <h3>TOC DOSSIER</h3>
+            <ul id="slide-links">
+                <!-- Javascript will populate links here -->
+            </ul>
         </div>
     </div>
-</div>
 
-<div class="slide-container" id="slide3">
-    <div class="classification-header">SUBJECT: INDIVIDUAL EFFICIENCY DEFICIT</div>
-    <h2 class="slide-title">THE HUMAN TAX: EMPLOYEE WASTE</h2>
-    <div class="content-area">
-        <div class="highlight-numbers-layout">
-            <div class="number-box">
-                <div class="big-number">1.8h</div>
-                <p>DAILY SEARCHING<br><b>(McKinsey)</b></p>
+    <!-- Clearance/Theme control -->
+    <div id="clearance-control">
+        <span class="control-label">CLEARANCE LEVEL:</span>
+        <button id="theme-toggle" class="btn-clearance" onclick="toggleTheme()">
+            <i class="fa-solid fa-lock"></i>
+            <span id="theme-status">LEVEL 1 (UNCLASSIFIED)</span>
+        </button>
+    </div>
+
+    <!-- Main Presentation Deck -->
+    <div id="deck-viewport">
+        <div id="deck-container">
+            <div class="paper-overlay"></div>
+            <div class="slide-grid"></div>
+
+            <!-- Slide 1: Cover -->
+            <div class="slide-container" id="slide1">
+                <div class="classification-header">TOP SECRET // EYES ONLY</div>
+                <div class="stamp-box">CLASSIFIED</div>
+                <div class="content-area" style="justify-content: center;">
+                    <p style="margin:0; font-weight: bold; text-transform: uppercase;">Project Designation:</p>
+                    <h1 style="margin-top: 10px;">THE MANHATTAN<br>PROJECT</h1>
+                    <h3 class="marker-text" style="font-size: 50px; margin-top: 15px;">> Organizational Memory<span class="terminal-cursor"></span></h3>
+                    <p style="margin-top: 40px; border-left: 6px solid var(--marker-red); padding-left: 25px; background: rgba(192, 57, 43, 0.05); padding-top: 10px; padding-bottom: 10px;">
+                        FILE ID: ORG-MEM-2026-X<br>
+                        SECURITY CLEARANCE: LEVEL 5 (EXECUTIVE)<br>
+                        SUBJECT: INTERNAL DATA THREADING & CONTAINMENT
+                    </p>
+                </div>
+                <div class="classification-footer">PROPERTY OF THE FIRM // FOR AUTHORIZED REVIEW ONLY</div>
             </div>
-            <div class="number-box">
-                <div class="big-number">664h</div>
-                <p>ANNUAL "WORK ABOUT WORK"<br><b>(Asana 2024)</b></p>
+
+            <!-- Slide 2: Sitrep -->
+            <div class="slide-container" id="slide2">
+                <div class="classification-header">SUBJECT: FRAGMENTATION ANALYSIS</div>
+                <h2 class="slide-title">SITREP: THE FRAGMENTED ENTERPRISE</h2>
+                <div class="content-area">
+                    <div class="two-column" style="align-items: center;">
+                        <div>
+                            <p style="font-weight: bold; color: var(--marker-red);">[CRITICAL KNOWLEDGE LEAK DETECTED]</p>
+                            <p style="margin-top: 15px;">Institutional memory is currently non-centralized, leading to systemic "brain drain."</p>
+                            <ul style="margin-top: 15px; padding-left: 20px;">
+                                <li style="margin-bottom: 8px;">High-level strategy lost in Slack "noise".</li>
+                                <li style="margin-bottom: 8px;">Technical know-how siloed in legacy Gmail threads.</li>
+                                <li style="margin-bottom: 8px;">Decision context evaporates when employees depart.</li>
+                            </ul>
+                            <p class="marker-text" style="margin-top: 25px; font-size: 24px;">"Ask Dave... wait, Dave left in June."</p>
+                        </div>
+                        <div class="logo-grid">
+                            <div class="logo-item"><i class="fa-brands fa-slack" style="font-size: 80px; color: var(--typewriter-ink);"></i></div>
+                            <div class="logo-item"><i class="fa-solid fa-envelope" style="font-size: 80px; color: var(--typewriter-ink);"></i></div>
+                            <div class="logo-item"><i class="fa-solid fa-users" style="font-size: 80px; color: var(--typewriter-ink);"></i></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="classification-footer">PROPERTY OF THE FIRM // FOR AUTHORIZED REVIEW ONLY</div>
             </div>
-            <div class="number-box">
-                <div class="big-number">$12.9M</div>
-                <p>POOR DATA QUALITY COST<br><b>(Gartner)</b></p>
+
+            <!-- Slide 3: Individual Deficit -->
+            <div class="slide-container" id="slide3">
+                <div class="classification-header">SUBJECT: INDIVIDUAL EFFICIENCY DEFICIT</div>
+                <h2 class="slide-title">THE HUMAN TAX: EMPLOYEE WASTE</h2>
+                <div class="content-area">
+                    <div class="highlight-numbers-layout">
+                        <div class="number-box">
+                            <div class="big-number">1.8h</div>
+                            <p style="margin: 0;">DAILY SEARCHING<br><b>(McKinsey)</b></p>
+                        </div>
+                        <div class="number-box">
+                            <div class="big-number">664h</div>
+                            <p style="margin: 0;">ANNUAL "WORK ABOUT WORK"<br><b>(Asana 2024)</b></p>
+                        </div>
+                        <div class="number-box">
+                            <div class="big-number">$12.9M</div>
+                            <p style="margin: 0;">POOR DATA QUALITY COST<br><b>(Gartner)</b></p>
+                        </div>
+                    </div>
+                    <p class="marker-text" style="text-align: center; margin-top: 50px; font-size: 22px; width: 100%;">The average American employee wastes 25% of their workday just finding the tools to work.</p>
+                </div>
+                <div class="classification-footer">PROPERTY OF THE FIRM // FOR AUTHORIZED REVIEW ONLY</div>
             </div>
+
+            <!-- Slide 4: Financial Leak -->
+            <div class="slide-container" id="slide4">
+                <div class="classification-header">SUBJECT: COST DEFICIT ANALYSIS</div>
+                <h2 class="slide-title">THE FINANCIAL LEAK (ANNUAL DATA)</h2>
+                <div class="content-area">
+                    <div class="two-column" style="align-items: center;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 130px; font-weight: bold; color: var(--marker-red); font-family: 'Special Elite'; line-height: 1;">21%</div>
+                            <p style="font-weight: bold; margin-top: 15px;">TOTAL TIME WASTED SEARCHING</p>
+                            <p class="marker-text" style="margin-top: 10px;">Source: Gartner Intelligence 2025</p>
+                        </div>
+                        <div style="border-left: 1px dashed var(--typewriter-ink); padding-left: 40px;">
+                            <h3>THE HIDDEN TAX:</h3>
+                            <p style="margin-top: 15px;"><strong>14% Productivity Loss:</strong> Recreating documentation that already exists but is unretrievable.</p>
+                            <p style="margin-top: 15px;"><strong>$31.5 Billion:</strong> Total annual loss for Fortune 500s due to knowledge silos (IDC).</p>
+                            <p class="marker-text" style="font-size: 20px; margin-top: 25px;">* This isn't an IT problem. It's a Balance Sheet problem.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="classification-footer">PROPERTY OF THE FIRM // FOR AUTHORIZED REVIEW ONLY</div>
+            </div>
+
+            <!-- Slide 5: The Brain -->
+            <div class="slide-container" id="slide5" style="align-items: center; text-align: center;">
+                <div class="classification-header">SOLUTION DEPLOYMENT SPECIFICATION</div>
+                <div class="content-area" style="align-items: center;">
+                    <p class="marker-text" style="font-size: 28px;">[ INITIATING SOLUTION PHASE ]</p>
+                    <h1 style="font-size: 100px; margin-top: 20px; line-height: 1;">THE BRAIN</h1>
+                    <h3 style="color: var(--typewriter-ink); font-family: 'Special Elite'; margin-top: 15px;">CENTRALIZED ORGANIZATIONAL MEMORY<span class="terminal-cursor"></span></h3>
+                    <p style="max-width: 900px; margin-top: 40px; font-size: 22px; line-height: 1.6; border: 1px solid var(--typewriter-ink); padding: 25px; background: rgba(0, 0, 0, 0.01);">
+                        "A living map of every refund handled, every pricing exception made, and every technical incident resolved—structured for retrieval, history, and control."
+                    </p>
+                </div>
+                <div class="classification-footer">PROPERTY OF THE FIRM // FOR AUTHORIZED REVIEW ONLY</div>
+            </div>
+
+            <!-- Slide 6: Versioning -->
+            <div class="slide-container" id="slide6">
+                <div class="classification-header">TECHNICAL SPECIFICATION: TEMPORAL CHAIN</div>
+                <h2 class="slide-title">THE THREADED FABRIC (VERSIONING)</h2>
+                <div class="content-area">
+                    <div class="two-column">
+                        <div style="padding: 25px; background: rgba(0,0,0,0.02); border: 1px dashed var(--typewriter-ink);">
+                            <h3 style="font-family: 'Special Elite'; font-size: 24px; color: var(--typewriter-ink);">TEMPORAL VERSIONING</h3>
+                            <p style="margin-top: 15px;">We don't just store data; we thread it. Maintain a complete history of <b>how</b> information evolved.</p>
+                            <p class="marker-text" style="margin-top: 20px; font-size: 20px;">> RETRIEVE THE TRUTH AT ANY POINT.</p>
+                        </div>
+                        <div style="padding: 25px; background: rgba(0,0,0,0.02); border: 1px dashed var(--typewriter-ink);">
+                            <h3 style="font-family: 'Special Elite'; font-size: 24px; color: var(--typewriter-ink);">CORRUPTION RECOVERY</h3>
+                            <p style="margin-top: 15px;">If data drifts or is corrupted by poor input, the system can "rewind" the fabric to recover the original institutional know-how.</p>
+                            <p class="marker-text" style="margin-top: 20px; font-size: 20px;">> ZERO KNOWLEDGE LOSS.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="classification-footer">PROPERTY OF THE FIRM // FOR AUTHORIZED REVIEW ONLY</div>
+            </div>
+
+            <!-- Slide 7: Hierarchical Containment -->
+            <div class="slide-container" id="slide7">
+                <div class="classification-header">SECURITY SPECIFICATION: PERMISSIONS</div>
+                <h2 class="slide-title">HIERARCHICAL CONTAINMENT</h2>
+                <div class="content-area">
+                    <div class="tiled-content" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+                        <div class="tile">
+                            <div class="icon-circle"><i class="fa-solid fa-user-tie"></i></div>
+                            <h4 style="font-family: 'Special Elite'; margin-bottom: 12px; font-size: 20px;">EXECUTIVE TRACK</h4>
+                            <p style="font-size: 16px;">Executives maintain full oversight of practices across all firm levels without micromanagement.</p>
+                        </div>
+                        <div class="tile">
+                            <div class="icon-circle"><i class="fa-solid fa-ban"></i></div>
+                            <h4 style="font-family: 'Special Elite'; margin-bottom: 12px; font-size: 20px;">JUNIOR GATE</h4>
+                            <p style="font-size: 16px;">Protects business know-how by preventing junior staff from accessing high-level decision frameworks.</p>
+                        </div>
+                        <div class="tile">
+                            <div class="icon-circle"><i class="fa-solid fa-shield-halved"></i></div>
+                            <h4 style="font-family: 'Special Elite'; margin-bottom: 12px; font-size: 20px;">AGENT QUARANTINE</h4>
+                            <p style="font-size: 16px;">AI agents are bound by the same hierarchy as humans. Information is only accessed by authorized logic.</p>
+                        </div>
+                    </div>
+                    <p class="marker-text" style="margin-top: 35px; text-align: center; font-size: 24px; width: 100%;">Containment of Business IP is Non-Negotiable.</p>
+                </div>
+                <div class="classification-footer">PROPERTY OF THE FIRM // FOR AUTHORIZED REVIEW ONLY</div>
+            </div>
+
+            <!-- Slide 8: Weaponizing AI Agents -->
+            <div class="slide-container" id="slide8">
+                <div class="classification-header">OPERATIONAL FOCUS: LOGIC AGENTS</div>
+                <h2 class="slide-title">WEAPONIZING AI AGENTS</h2>
+                <div class="content-area">
+                    <div class="two-column" style="align-items: center;">
+                        <div style="display: flex; flex-direction: column; justify-content: center;">
+                            <h3>GROUND-TRUTH AUTONOMY</h3>
+                            <p style="margin-top: 15px;">Most AI agents fail due to "flat" data. By plugging into the <b>Company Brain</b>, agents operate with perfect context.</p>
+                            <ul style="margin-top: 20px; padding-left: 20px;">
+                                <li style="margin-bottom: 10px;"><b>No Hallucinations:</b> Agents cite the threaded fabric.</li>
+                                <li style="margin-bottom: 10px;"><b>Consistency:</b> Every agent follows the same verified organizational history.</li>
+                                <li style="margin-bottom: 10px;"><b>Safe Execution:</b> Agents only move on authorized data paths.</li>
+                            </ul>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.4); border: 2px solid var(--typewriter-ink); padding: 40px; display: grid; place-items: center;">
+                            <i class="fa-solid fa-network-wired" style="font-size: 150px; color: var(--marker-blue);"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="classification-footer">PROPERTY OF THE FIRM // FOR AUTHORIZED REVIEW ONLY</div>
+            </div>
+
+            <!-- Slide 9: ROI Projections -->
+            <div class="slide-container" id="slide9">
+                <div class="classification-header">PROJECTIONS MODEL: 12-MONTH OUTLOOK</div>
+                <h2 class="slide-title">PRODUCTIVITY PROJECTIONS (ROI)</h2>
+                <div class="content-area">
+                    <svg class="area-chart-svg" viewBox="0 0 1000 320">
+                        <line x1="50" y1="270" x2="950" y2="270" style="stroke: var(--typewriter-ink); stroke-width:2;"></line>
+                        <!-- Area Fill -->
+                        <path class="area-fill-shape" d="M50,250 L250,220 L450,150 L650,80 L850,40 L950,20 L950,270 L50,270 Z"></path>
+                        <!-- Line -->
+                        <path class="area-line" d="M50,250 L250,220 L450,150 L650,80 L850,40 L950,20"></path>
+                        <!-- Points -->
+                        <circle cx="50" cy="250" r="6" class="chart-point" style="fill: var(--marker-red); stroke: var(--bg-slide); stroke-width: 2;"></circle>
+                        <circle cx="250" cy="220" r="6" class="chart-point" style="fill: var(--marker-red); stroke: var(--bg-slide); stroke-width: 2;"></circle>
+                        <circle cx="450" cy="150" r="6" class="chart-point" style="fill: var(--marker-red); stroke: var(--bg-slide); stroke-width: 2;"></circle>
+                        <circle cx="650" cy="80" r="6" class="chart-point" style="fill: var(--marker-red); stroke: var(--bg-slide); stroke-width: 2;"></circle>
+                        <circle cx="850" cy="40" r="6" class="chart-point" style="fill: var(--marker-red); stroke: var(--bg-slide); stroke-width: 2;"></circle>
+                        <circle cx="950" cy="20" r="6" class="chart-point" style="fill: var(--marker-red); stroke: var(--bg-slide); stroke-width: 2;"></circle>
+                        
+                        <text x="50" y="300" font-family="Special Elite" font-size="14" fill="var(--typewriter-ink)">Pre-Brain</text>
+                        <text x="500" y="300" font-family="Special Elite" font-size="14" fill="var(--typewriter-ink)">Threading Phase</text>
+                        <text x="850" y="300" font-family="Special Elite" font-size="14" fill="var(--typewriter-ink)">Optimization</text>
+                        <text x="15" y="50" transform="rotate(-90 15,50)" font-family="Special Elite" font-size="14" fill="var(--typewriter-ink)">EFFICIENCY</text>
+                    </svg>
+                    <p class="marker-text" style="text-align: center; font-size: 22px; width: 100%; margin-top: 15px;">Targeting 35% reduction in "Work about Work" within 12 months.</p>
+                </div>
+                <div class="classification-footer">PROPERTY OF THE FIRM // FOR AUTHORIZED REVIEW ONLY</div>
+            </div>
+
+            <!-- Slide 10: Cost Recovery -->
+            <div class="slide-container" id="slide10">
+                <div class="classification-header">FINANCIAL MODEL: RECOVERY BENCHMARKS</div>
+                <h2 class="slide-title">COST RECOVERY ANALYSIS</h2>
+                <div class="content-area">
+                    <div class="bar-chart-container">
+                        <div class="bar">
+                            <div class="bar-label">Turnover Loss (Current)</div>
+                            <div class="bar-outer">
+                                <div class="bar-fill bar-fill-1" style="background: var(--marker-red);">4x Salary Cost</div>
+                            </div>
+                        </div>
+                        <div class="bar">
+                            <div class="bar-label">Search Tax (Current)</div>
+                            <div class="bar-outer">
+                                <div class="bar-fill bar-fill-2" style="background: var(--marker-red);">$2.4M / 1k Workers</div>
+                            </div>
+                        </div>
+                        <div class="bar">
+                            <div class="bar-label">Projected Recovery</div>
+                            <div class="bar-outer">
+                                <div class="bar-fill bar-fill-3" style="background: var(--marker-blue);">92% Efficiency Gain</div>
+                            </div>
+                        </div>
+                    </div>
+                    <p style="margin-top: 30px; font-style: italic; font-size: 15px;">Based on 2025 Gartner and Panopto benchmarks for optimized knowledge management.</p>
+                </div>
+                <div class="classification-footer">PROPERTY OF THE FIRM // FOR AUTHORIZED REVIEW ONLY</div>
+            </div>
+
+            <!-- Slide 11: Vulnerability -->
+            <div class="slide-container" id="slide11">
+                <div class="classification-header">SUBJECT: STRATEGIC RISKS ASSESSMENT</div>
+                <h2 class="slide-title">STRATEGIC VULNERABILITY</h2>
+                <div class="content-area" style="text-align: center;">
+                    <blockquote style="font-size: 32px; border-left: 15px solid var(--marker-red); padding-left: 40px; text-align: left; margin: 30px auto; line-height: 1.3; max-width: 1000px;">
+                        "Loss of organizational tacit knowledge erodes the protective capacities of the firm... it is a systemic threat to long-term sustainability."
+                    </blockquote>
+                    <p style="font-weight: bold; font-size: 22px; margin-top: 20px;">— PHALADI & NGULUBE (2024)</p>
+                    <p class="marker-text" style="margin-top: 30px; font-size: 28px;">"Data can be replaced. Memory cannot."</p>
+                </div>
+                <div class="classification-footer">PROPERTY OF THE FIRM // FOR AUTHORIZED REVIEW ONLY</div>
+            </div>
+
+            <!-- Slide 12: Roadmap -->
+            <div class="slide-container" id="slide12">
+                <div class="classification-header">OPERATIONAL TIMELINE: DEPLOYMENT STAGES</div>
+                <h2 class="slide-title">ROADMAP TO TOTAL MEMORY</h2>
+                <div class="content-area">
+                    <div class="timeline-layout">
+                        <div class="timeline-line"></div>
+                        <div class="timeline-item">
+                            <h3 style="font-size: 22px;">Q1: AUDIT</h3>
+                            <p style="font-size: 15px; margin-top: 10px;">Mapping the 'bleed'. Finding where memory lives.</p>
+                        </div>
+                        <div class="timeline-item">
+                            <h3 style="font-size: 22px;">Q2: THREAD</h3>
+                            <p style="font-size: 15px; margin-top: 10px;">Deployment of the Retrieval Engine.</p>
+                        </div>
+                        <div class="timeline-item">
+                            <h3 style="font-size: 22px;">Q3: CONTROL</h3>
+                            <p style="font-size: 15px; margin-top: 10px;">Hierarchical containment implementation.</p>
+                        </div>
+                        <div class="timeline-item">
+                            <h3 style="font-size: 22px;">Q4: ACTIVATE</h3>
+                            <p style="font-size: 15px; margin-top: 10px;">100% IP lockdown via AI Agents.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="classification-footer">PROPERTY OF THE FIRM // FOR AUTHORIZED REVIEW ONLY</div>
+            </div>
+
+            <!-- Slide 13: References -->
+            <div class="slide-container" id="slide13">
+                <div class="classification-header">VERIFIED DOSSIER SOURCES</div>
+                <h2 class="slide-title">INTELLIGENCE SOURCES & REFERENCES</h2>
+                <div class="content-area" style="justify-content: flex-start; margin-top: 10px;">
+                    <div class="table-layout">
+                        <table>
+                            <thead>
+                                <tr><th>ENTITY / SOURCE</th><th>DATA POINT / STUDY</th><th>VERIFIED REFERENCE</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>ASANA INDEX</td><td>Work About Work (664h/Year)</td><td>asana.com/resources/anatomy-of-work</td></tr>
+                                <tr><td>MCKINSEY MGI</td><td>1.8h Daily Search Time</td><td>mckinsey.com/mgi/our-research</td></tr>
+                                <tr><td>GARTNER</td><td>21% Waste / Data Quality Costs</td><td>gartner.com/it/research/knowledge-mgmt</td></tr>
+                                <tr><td>IDC REPORTS</td><td>$31.5B Knowledge Failure Cost</td><td>idc.com/resource-center/ai-infrastructure</td></tr>
+                                <tr><td>PANOPTO</td><td>5.3h Weekly Wait Time</td><td>panopto.com/resource/workplace-productivity</td></tr>
+                                <tr><td>PHALADI (2024)</td><td>Tacit Knowledge Loss Threats</td><td>doi.org/10.4102/sajhrm.v22i0.2229</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="marker-text" style="margin-top: 20px; font-size: 18px;">All data points cross-referenced for Fiscal Accuracy.</p>
+                </div>
+                <div class="classification-footer">PROPERTY OF THE FIRM // FOR AUTHORIZED REVIEW ONLY</div>
+            </div>
+
+            <!-- Slide 14: Q&A / Debrief -->
+            <div class="slide-container" id="slide14" style="background-color: #2d3436; color: white;">
+                <div class="classification-header" style="color: white;">DEBRIEFING IN PROGRESS</div>
+                <div class="stamp-box" style="border-color: rgba(255,255,255,0.4); color: rgba(255,255,255,0.4);">CONFIDENTIAL</div>
+                <div class="content-area" style="text-align: center; align-items: center;">
+                    <h1 style="color: white; font-size: 90px; line-height: 1;">QUESTIONS?</h1>
+                    <p class="marker-text" style="font-size: 32px; color: var(--marker-red); transform: rotate(-1deg); margin-top: 15px;">[ AUTHORIZED PERSONNEL ONLY ]</p>
+                    <div style="margin-top: 40px; border: 2px dashed rgba(255,255,255,0.4); padding: 30px; width: 650px;">
+                        <p style="color: white; margin-bottom: 8px;">PROJECT LEAD: THE MANHATTAN PROJECT</p>
+                        <p style="color: white; margin-bottom: 8px;">LOCATION: SECURE TERMINAL</p>
+                        <p style="font-size: 14px; opacity: 0.5; margin-top: 20px; color: white;">* WARNING: UNAUTHORIZED SHARING OF THIS DOSSIER IS A BREACH OF CORPORATE IP PROTOCOL.</p>
+                    </div>
+                </div>
+                <div class="classification-footer" style="color: white;">END OF BRIEFING // ARCHIVE FILE 00-X</div>
+            </div>
+
         </div>
-        <p class="marker-text" style="text-align: center; margin-top: 40px; font-size: 24px;">The average American employee wastes 25% of their workday just finding the tools to work.</p>
     </div>
-</div>
 
-<div class="slide-container" id="slide4">
-    <h2 class="slide-title">THE FINANCIAL LEAK (ANNUAL DATA)</h2>
-    <div class="content-area">
-        <div class="two-column" style="align-items: center;">
-            <div style="text-align: center;">
-                <div style="font-size: 140px; font-weight: bold; color: var(--marker-red); font-family: 'Special Elite';">21%</div>
-                <p style="font-weight: bold;">TOTAL TIME WASTED SEARCHING</p>
-                <p class="marker-text">Source: Gartner Intelligence 2025</p>
-            </div>
-            <div style="border-left: 1px dashed black; padding-left: 40px;">
-                <h3>THE HIDDEN TAX:</h3>
-                <p><strong>14% Productivity Loss:</strong> Recreating documentation that already exists but is unretrievable.</p>
-                <p><strong>$31.5 Billion:</strong> Total annual loss for Fortune 500s due to knowledge silos (IDC).</p>
-                <p class="marker-text" style="font-size: 22px; margin-top: 15px;">* This isn't an IT problem. It's a Balance Sheet problem.</p>
-            </div>
+    <!-- Presentation bottom controls -->
+    <div id="deck-controls">
+        <button onclick="prevSlide()" class="control-btn"><i class="fa-solid fa-arrow-left"></i> PREV</button>
+        <div id="progress-container">
+            <div id="progress-bar"></div>
+        </div>
+        <span id="slide-counter">PAGE 01 / 14</span>
+        <div style="display: flex; gap: 10px;">
+            <button onclick="nextSlide()" class="control-btn">NEXT <i class="fa-solid fa-arrow-right"></i></button>
+            <button onclick="toggleFullscreen()" class="control-btn" title="Toggle Fullscreen"><i class="fa-solid fa-expand"></i></button>
         </div>
     </div>
+
+    <!-- Retro CRT monitor scanlines -->
+    <div id="crt-overlay"></div>
+
 </div>
 
-<div class="slide-container" id="slide5" style="align-items: center; text-align: center;">
-    <div class="content-area">
-        <p class="marker-text" style="font-size: 30px;">[ INITIATING SOLUTION PHASE ]</p>
-        <h1 style="font-size: 110px;">THE BRAIN</h1>
-        <h3 style="color: var(--typewriter-ink); font-family: 'Special Elite';">CENTRALIZED ORGANIZATIONAL MEMORY</h3>
-        <p style="max-width: 900px; margin-top: 40px; font-size: 22px; line-height: 1.6; border: 1px solid black; padding: 20px;">
-            "A living map of every refund handled, every pricing exception made, and every technical incident resolved—structured for retrieval, history, and control."
-        </p>
-    </div>
-</div>
+<script>
+    // State Variables
+    let currentSlideIndex = 0;
+    const slides = document.querySelectorAll('.slide-container');
+    const totalSlides = slides.length;
+    let isCrtTheme = false;
 
-<div class="slide-container" id="slide6">
-    <h2 class="slide-title">THE THREADED FABRIC (VERSIONING)</h2>
-    <div class="content-area">
-        <div class="two-column">
-            <div style="padding: 20px; background: rgba(255,255,255,0.3); border: 1px dashed black;">
-                <h3>TEMPORAL VERSIONING</h3>
-                <p>We don't just store data; we thread it. Maintain a complete history of <b>how</b> information evolved.</p>
-                <p class="marker-text" style="margin-top: 10px;">> RETRIEVE THE TRUTH AT ANY POINT.</p>
-            </div>
-            <div style="padding: 20px; background: rgba(255,255,255,0.3); border: 1px dashed black;">
-                <h3>CORRUPTION RECOVERY</h3>
-                <p>If data drifts or is corrupted by poor input, the system can "rewind" the fabric to recover the original institutional know-how.</p>
-                <p class="marker-text" style="margin-top: 10px;">> ZERO KNOWLEDGE LOSS.</p>
-            </div>
-        </div>
-    </div>
-</div>
+    // Slide Titles for Dossier Index drawer
+    const slideTitles = [
+        "01. Classified Cover",
+        "02. SITREP: Fragmentation",
+        "03. Waste: McKinsey Stats",
+        "04. Financial Data Leak",
+        "05. Solution: The Brain",
+        "06. Tech: Temporal Chain",
+        "07. Security: Containment",
+        "08. Autonomy: AI Agents",
+        "09. Projections: ROI Graph",
+        "10. Cost Recovery Audit",
+        "11. Strategic Vulnerability",
+        "12. Operational Roadmap",
+        "13. Research References",
+        "14. Final Debriefing Q&A"
+    ];
 
-<div class="slide-container" id="slide7">
-    <h2 class="slide-title">HIERARCHICAL CONTAINMENT</h2>
-    <div class="content-area">
-        <div class="tiled-content" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
-            <div class="tile">
-                <div class="icon-circle"><i class="fa-solid fa-user-tie"></i></div>
-                <h4 style="font-family: 'Special Elite'; margin-bottom: 10px;">EXECUTIVE TRACK</h4>
-                <p>Executives maintain full oversight of practices across all firm levels without micromanagement.</p>
-            </div>
-            <div class="tile">
-                <div class="icon-circle"><i class="fa-solid fa-ban"></i></div>
-                <h4 style="font-family: 'Special Elite'; margin-bottom: 10px;">JUNIOR GATE</h4>
-                <p>Protects business know-how by preventing junior staff from accessing high-level decision frameworks.</p>
-            </div>
-            <div class="tile">
-                <div class="icon-circle"><i class="fa-solid fa-shield-halved"></i></div>
-                <h4 style="font-family: 'Special Elite'; margin-bottom: 10px;">AGENT QUARANTINE</h4>
-                <p>AI agents are bound by the same hierarchy as humans. Information is only accessed by authorized logic.</p>
-            </div>
-        </div>
-        <p class="marker-text" style="margin-top: 30px; text-align: center; font-size: 26px;">Containment of Business IP is Non-Negotiable.</p>
-    </div>
-</div>
+    // Initialize Presentation
+    function initPresentation() {
+        populateIndexDrawer();
+        showSlide(currentSlideIndex);
+        resizeDeck();
+        
+        // Listeners
+        window.addEventListener('resize', resizeDeck);
+        document.addEventListener('keydown', handleKeyDown);
+        setupSwipeDetect();
+    }
 
-<div class="slide-container" id="slide8">
-    <h2 class="slide-title">WEAPONIZING AI AGENTS</h2>
-    <div class="content-area">
-        <div class="two-column">
-            <div style="display: flex; flex-direction: column; justify-content: center;">
-                <h3>GROUND-TRUTH AUTONOMY</h3>
-                <p>Most AI agents fail due to "flat" data. By plugging into the <b>Company Brain</b>, agents operate with perfect context.</p>
-                <ul style="margin-top: 20px;">
-                    <li><b>No Hallucinations:</b> Agents cite the threaded fabric.</li>
-                    <li><b>Consistency:</b> Every agent follows the same verified organizational history.</li>
-                    <li><b>Safe Execution:</b> Agents only move on authorized data paths.</li>
-                </ul>
-            </div>
-            <div style="background: white; border: 2px solid black; padding: 10px; display: grid; place-items: center;">
-                <i class="fa-solid fa-network-wired" style="font-size: 150px; color: var(--marker-blue);"></i>
-            </div>
-        </div>
-    </div>
-</div>
+    // Auto-scale content wrapper to fit layout cleanly inside window
+    function resizeDeck() {
+        const deck = document.getElementById('deck-container');
+        const viewport = document.getElementById('deck-viewport');
+        if (!deck || !viewport) return;
+        
+        const vw = viewport.clientWidth;
+        const vh = viewport.clientHeight;
+        const dw = 1280;
+        const dh = 720;
+        
+        // Compute best fit scale while retaining 16:9 ratio
+        const scale = Math.min(vw / dw, vh / dh);
+        
+        // Apply transform. 0.95 gives 5% margin buffer
+        deck.style.transform = `translate(-50%, -50%) scale(${scale * 0.94})`;
+    }
 
-<div class="slide-container" id="slide9">
-    <h2 class="slide-title">PRODUCTIVITY PROJECTIONS (ROI)</h2>
-    <div class="content-area">
-        <svg class="area-chart-svg" viewBox="0 0 1000 350">
-            <line x1="50" y1="300" x2="950" y2="300" style="stroke:black; stroke-width:2;"></line>
-            <path class="area-fill" d="M50,280 L250,250 L450,180 L650,110 L850,70 L950,50 L950,300 L50,300 Z"></path>
-            <text x="50" y="330" font-family="Special Elite">Pre-Brain</text>
-            <text x="500" y="330" font-family="Special Elite">Threading Phase</text>
-            <text x="850" y="330" font-family="Special Elite">Optimization</text>
-            <text x="10" y="50" transform="rotate(-90 10,50)" font-family="Special Elite">EFFICIENCY</text>
-        </svg>
-        <p class="marker-text" style="text-align: center; font-size: 24px;">Targeting 35% reduction in "Work about Work" within 12 months.</p>
-    </div>
-</div>
+    // Render active slide state and animations
+    function showSlide(index) {
+        // Bounds checking
+        if (index < 0) index = 0;
+        if (index >= totalSlides) index = totalSlides - 1;
+        
+        currentSlideIndex = index;
 
-<div class="slide-container" id="slide10">
-    <h2 class="slide-title">COST RECOVERY ANALYSIS</h2>
-    <div class="content-area">
-        <div class="bar-chart-container">
-            <div class="bar">
-                <div class="bar-label">Turnover Loss (Current)</div>
-                <div class="bar-outer"><div class="bar-fill" style="width: 90%; background: var(--marker-red);">4x Salary Cost</div></div>
-            </div>
-            <div class="bar">
-                <div class="bar-label">Search Tax (Current)</div>
-                <div class="bar-outer"><div class="bar-fill" style="width: 70%; background: var(--marker-red);">$2.4M/1k Workers</div></div>
-            </div>
-            <div class="bar">
-                <div class="bar-label">Projected Recovery</div>
-                <div class="bar-outer"><div class="bar-fill" style="width: 30%; background: var(--marker-blue);">92% Efficiency Gain</div></div>
-            </div>
-        </div>
-        <p style="margin-top: 30px; font-style: italic;">Based on 2025 Gartner and Panopto benchmarks for optimized knowledge management.</p>
-    </div>
-</div>
+        // Reset all slide states
+        slides.forEach((slide, i) => {
+            if (i === currentSlideIndex) {
+                slide.classList.add('active');
+            } else {
+                slide.classList.remove('active');
+            }
+        });
 
-<div class="slide-container" id="slide11">
-    <h2 class="slide-title">STRATEGIC VULNERABILITY</h2>
-    <div class="content-area" style="text-align: center;">
-        <blockquote style="font-size: 36px; border-left: 15px solid var(--marker-red); padding-left: 40px; text-align: left; margin: 40px auto; line-height: 1.3;">
-            "Loss of organizational tacit knowledge erodes the protective capacities of the firm... it is a systemic threat to long-term sustainability."
-        </blockquote>
-        <p style="font-weight: bold; font-size: 24px;">— PHALADI & NGULUBE (2024)</p>
-        <p class="marker-text" style="margin-top: 40px; font-size: 32px;">"Data can be replaced. Memory cannot."</p>
-    </div>
-</div>
+        // Update Bottom Controls Interface
+        const humanIndex = String(currentSlideIndex + 1).padStart(2, '0');
+        const totalStr = String(totalSlides).padStart(2, '0');
+        document.getElementById('slide-counter').textContent = `PAGE ${humanIndex} / ${totalStr}`;
+        
+        const progressPct = ((currentSlideIndex) / (totalSlides - 1)) * 100;
+        document.getElementById('progress-bar').style.width = `${progressPct}%`;
 
-<div class="slide-container" id="slide12">
-    <h2 class="slide-title">ROADMAP TO TOTAL MEMORY</h2>
-    <div class="content-area">
-        <div class="timeline-layout">
-            <div class="timeline-line"></div>
-            <div class="timeline-item"><h3>Q1: AUDIT</h3><p>Mapping the 'bleed'. Finding where memory lives.</p></div>
-            <div class="timeline-item"><h3>Q2: THREAD</h3><p>Deployment of the Retrieval Engine.</p></div>
-            <div class="timeline-item"><h3>Q3: CONTROL</h3><p>Hierarchical containment implementation.</p></div>
-            <div class="timeline-item"><h3>Q4: ACTIVATE</h3><p>100% IP lockdown via AI Agents.</p></div>
-        </div>
-    </div>
-</div>
+        // Update Table of Contents Drawer Selected State
+        const links = document.querySelectorAll('#slide-links a');
+        links.forEach((link, idx) => {
+            if (idx === currentSlideIndex) {
+                link.classList.add('active');
+            } else {
+                link.classList.remove('active');
+            }
+        });
+    }
 
-<div class="slide-container" id="slide13">
-    <h2 class="slide-title">INTELLIGENCE SOURCES & REFERENCES</h2>
-    <div class="content-area" style="justify-content: flex-start; margin-top: 20px;">
-        <div class="table-layout">
-            <table>
-                <thead>
-                    <tr><th>ENTITY / SOURCE</th><th>DATA POINT / STUDY</th><th>VERIFIED REFERENCE</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td>ASANA INDEX</td><td>Work About Work (664h/Year)</td><td>asana.com/resources/anatomy-of-work</td></tr>
-                    <tr><td>MCKINSEY MGI</td><td>1.8h Daily Search Time</td><td>mckinsey.com/mgi/our-research</td></tr>
-                    <tr><td>GARTNER</td><td>21% Waste / Data Quality Costs</td><td>gartner.com/it/research/knowledge-mgmt</td></tr>
-                    <tr><td>IDC REPORTS</td><td>$31.5B Knowledge Failure Cost</td><td>idc.com/resource-center/ai-infrastructure</td></tr>
-                    <tr><td>PANOPTO</td><td>5.3h Weekly Wait Time</td><td>panopto.com/resource/workplace-productivity</td></tr>
-                    <tr><td>PHALADI (2024)</td><td>Tacit Knowledge Loss Threats</td><td>doi.org/10.4102/sajhrm.v22i0.2229</td></tr>
-                </tbody>
-            </table>
-        </div>
-        <p class="marker-text" style="margin-top: 25px;">All data points cross-referenced for Fiscal Accuracy.</p>
-    </div>
-</div>
+    // Navigation Actions
+    function nextSlide() {
+        if (currentSlideIndex < totalSlides - 1) {
+            showSlide(currentSlideIndex + 1);
+        }
+    }
 
-<div class="slide-container" id="slide14" style="background-color: #2d3436; color: white;">
-    <div class="classification-header" style="color: white;">DEBRIEFING IN PROGRESS</div>
-    <div class="content-area" style="text-align: center; align-items: center;">
-        <h1 style="color: white; font-size: 100px;">QUESTIONS?</h1>
-        <p class="marker-text" style="font-size: 34px; color: var(--marker-red); transform: rotate(-1deg);">[ AUTHORIZED PERSONNEL ONLY ]</p>
-        <div style="margin-top: 60px; border: 2px dashed rgba(255,255,255,0.4); padding: 40px; width: 600px;">
-            <p>PROJECT LEAD: THE MANHATTAN PROJECT</p>
-            <p>LOCATION: SECURE TERMINAL</p>
-            <p style="font-size: 14px; opacity: 0.5; margin-top: 20px;">* WARNING: UNAUTHORIZED SHARING OF THIS DOSSIER IS A BREACH OF CORPORATE IP PROTOCOL.</p>
-        </div>
-    </div>
-    <div class="classification-footer" style="color: white;">END OF BRIEFING // ARCHIVE FILE 00-X</div>
-</div>
+    function prevSlide() {
+        if (currentSlideIndex > 0) {
+            showSlide(currentSlideIndex - 1);
+        }
+    }
+
+    // Keyboard Controllers
+    function handleKeyDown(e) {
+        switch(e.key) {
+            case 'ArrowRight':
+            case ' ':
+            case 'PageDown':
+                nextSlide();
+                break;
+            case 'ArrowLeft':
+            case 'Backspace':
+            case 'PageUp':
+                prevSlide();
+                break;
+            case 'Home':
+                showSlide(0);
+                break;
+            case 'End':
+                showSlide(totalSlides - 1);
+                break;
+            case 'Escape':
+                closeDrawer();
+                break;
+            case 'f':
+            case 'F':
+                // Check if user is not typing in a text field
+                if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+                    toggleFullscreen();
+                }
+                break;
+        }
+    }
+
+    // Drawer / TOC Panel Interactions
+    function toggleDrawer() {
+        const drawer = document.getElementById('index-drawer');
+        drawer.classList.toggle('open');
+    }
+
+    function closeDrawer() {
+        const drawer = document.getElementById('index-drawer');
+        drawer.classList.remove('open');
+    }
+
+    function populateIndexDrawer() {
+        const linksList = document.getElementById('slide-links');
+        linksList.innerHTML = '';
+        
+        slideTitles.forEach((title, idx) => {
+            const li = document.createElement('li');
+            const a = document.createElement('a');
+            a.textContent = title;
+            a.onclick = () => {
+                showSlide(idx);
+                closeDrawer();
+            };
+            li.appendChild(a);
+            linksList.appendChild(li);
+        });
+    }
+
+    // Clearance level / Theme Toggle (Light manila folder vs. Dark terminal scanlines)
+    function toggleTheme() {
+        const body = document.body;
+        const statusText = document.getElementById('theme-status');
+        const toggleBtn = document.getElementById('theme-toggle');
+        
+        isCrtTheme = !isCrtTheme;
+        
+        if (isCrtTheme) {
+            body.classList.add('secure-terminal');
+            statusText.textContent = "LEVEL 5 (SECURE TERMINAL)";
+            toggleBtn.querySelector('i').className = "fa-solid fa-lock-open";
+            
+            // Subtle sound click or chime if desired
+            playClickSound();
+        } else {
+            body.classList.remove('secure-terminal');
+            statusText.textContent = "LEVEL 1 (UNCLASSIFIED)";
+            toggleBtn.querySelector('i').className = "fa-solid fa-lock";
+            
+            playClickSound();
+        }
+    }
+
+    // Play tactile mechanical UI tick
+    function playClickSound() {
+        try {
+            const context = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = context.createOscillator();
+            const gain = context.createGain();
+            
+            osc.connect(gain);
+            gain.connect(context.destination);
+            
+            // Short mechanical click/beep sound
+            osc.frequency.setValueAtTime(isCrtTheme ? 800 : 400, context.currentTime);
+            osc.type = 'sine';
+            
+            gain.gain.setValueAtTime(0.05, context.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.00001, context.currentTime + 0.08);
+            
+            osc.start();
+            osc.stop(context.currentTime + 0.08);
+        } catch(e) {
+            // Audio context blocked or unsupported
+        }
+    }
+
+    // Fullscreen Mode Handler
+    function toggleFullscreen() {
+        const elem = document.getElementById('presentation-viewport');
+        if (!document.fullscreenElement) {
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen();
+            } else if (elem.webkitRequestFullscreen) { /* Safari */
+                elem.webkitRequestFullscreen();
+            }
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            }
+        }
+    }
+
+    // Mobile/Trackpad swipe detection gestures
+    function setupSwipeDetect() {
+        let touchstartX = 0;
+        let touchendX = 0;
+        
+        const area = document.getElementById('deck-viewport');
+        
+        area.addEventListener('touchstart', e => {
+            touchstartX = e.changedTouches[0].screenX;
+        }, {passive: true});
+        
+        area.addEventListener('touchend', e => {
+            touchendX = e.changedTouches[0].screenX;
+            handleSwipe();
+        }, {passive: true});
+        
+        function handleSwipe() {
+            // Swipe right (previous slide)
+            if (touchendX - touchstartX > 100) {
+                prevSlide();
+            }
+            // Swipe left (next slide)
+            if (touchstartX - touchendX > 100) {
+                nextSlide();
+            }
+        }
+    }
+
+    // Initialize on load
+    window.onload = initPresentation;
+</script>
 
 </body>
 </html>
