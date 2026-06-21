@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Manhattan Project: VC Briefing</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        /* BASE RESET & VARIABLE SETTINGS */
+        :root {
+            --bg-desktop: #020408;
+            --bg-slide: #070b13;
+            --text-main: #ffffff;
+            --text-muted: #8b949e;
+            --accent-blue: #0ea5e9;
+            --accent-blue-glow: rgba(14, 165, 233, 0.4);
+            --watermark: rgba(255, 255, 255, 0.05);
+            --border-color: #1f2937;
+            --shadow-color: rgba(0, 0, 0, 0.6);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background-color: var(--bg-desktop);
+            font-family: 'Inter', sans-serif;
+            color: var(--text-main);
+        }
+
+        /* PRESENTATION CONTAINER & VIEWPORT SYSTEM */
+        #presentation-viewport {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Top Information/Status Bar */
+        #top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 50px;
+            background-color: #04070d;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+            z-index: 999;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--accent-blue);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent-blue);
+            animation: pulse 2.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.5; box-shadow: 0 0 5px var(--accent-blue); }
+            50% { opacity: 1; box-shadow: 0 0 15px var(--accent-blue); }
+            100% { opacity: 0.5; box-shadow: 0 0 5px var(--accent-blue); }
+        }
+
+        .logo-text {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            color: var(--text-main);
+        }
+
+        .theme-area {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-indicator {
+            color: #10b981;
+            font-weight: bold;
+            background: rgba(16, 185, 129, 0.1);
+            padding: 4px 10px;
+            border-radius: 4px;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            font-size: 11px;
+            letter-spacing: 1.5px;
+        }
+
+        /* Slide Viewport */
+        #deck-viewport {
+            flex-grow: 1;
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+        }
+
+        #deck-container {
+            width: 1280px;
+            height: 720px;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%) scale(1);
+            transform-origin: center center;
+            transition: transform 0.1s ease;
+        }
+
+        /* SIDEBAR INDEX DRAWER */
+        #index-drawer {
+            position: fixed;
+            left: -280px;
+            top: 0;
+            width: 280px;
+            height: 100vh;
+            background-color: #04070d;
+            border-right: 1px solid var(--border-color);
+            z-index: 1000;
+            box-shadow: 10px 0 30px rgba(0,0,0,0.7);
+            transition: left 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            padding: 80px 20px 40px 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #index-drawer.open {
+            left: 0;
+        }
+
+        #drawer-tab {
+            position: absolute;
+            right: -42px;
+            top: 120px;
+            width: 42px;
+            height: 140px;
+            background-color: #04070d;
+            border: 1px solid var(--border-color);
+            border-left: none;
+            border-radius: 0 8px 8px 0;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.4);
+            z-index: 1001;
+            transition: border-color 0.2s ease;
+        }
+
+        #drawer-tab:hover {
+            border-color: var(--accent-blue);
+        }
+
+        #drawer-tab span {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            font-weight: bold;
+            font-size: 11px;
+            letter-spacing: 2px;
+            color: var(--accent-blue);
+            font-family: 'JetBrains Mono', monospace;
+            text-transform: uppercase;
+        }
+
+        #drawer-tab i {
+            color: var(--accent-blue);
+            font-size: 12px;
+        }
+
+        .drawer-header {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            margin-bottom: 25px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        #slide-links {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow-y: auto;
+        }
+
+        #slide-links li a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            cursor: pointer;
+            display: block;
+            padding: 8px 12px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #slide-links li a:hover {
+            color: var(--accent-blue);
+            background: rgba(14, 165, 233, 0.05);
+        }
+
+        #slide-links li a.active {
+            color: #020408;
+            background-color: var(--accent-blue);
+            font-weight: bold;
+            box-shadow: 0 0 10px var(--accent-blue-glow);
+        }
+
+        /* SLIDE CONTAINER WRAPPERS */
+        .slide-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-slide);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            padding: 80px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.5s ease-in-out, transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+            transform: scale(0.97) translateY(15px);
+            z-index: 1;
+        }
+
+        .slide-container.active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+            transform: scale(1) translateY(0);
+            z-index: 2;
+        }
+
+        /* WATERMARK */
+        .watermark {
+            position: absolute;
+            top: 55%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 110px; /* Sized to fit MANHATTAN PROJECT beautifully */
+            font-weight: 900;
+            color: var(--watermark);
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 0;
+            letter-spacing: 5px;
+            font-family: 'Inter', sans-serif;
+            text-transform: uppercase;
+            user-select: none;
+        }
+
+        /* FOREGROUND CONTENT */
+        .content {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+        }
+
+        .content-center {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        /* TYPOGRAPHY */
+        h1 {
+            font-size: 64px;
+            font-weight: 800;
+            letter-spacing: -2px;
+            margin-bottom: 20px;
+            line-height: 1.1;
+        }
+
+        h2 {
+            font-size: 44px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 15px;
+            line-height: 1.2;
+        }
+
+        h3 {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--accent-blue);
+            margin-bottom: 15px;
+        }
+
+        .subtitle {
+            font-size: 26px;
+            color: var(--text-muted);
+            font-weight: 300;
+            margin-bottom: 35px;
+            line-height: 1.4;
+        }
+
+        p, li {
+            font-size: 20px;
+            line-height: 1.6;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        strong {
+            color: var(--text-main);
+        }
+
+        ul {
+            list-style-type: none;
+        }
+
+        ul li {
+            position: relative;
+            padding-left: 25px;
+        }
+
+        ul li::before {
+            content: ">";
+            position: absolute;
+            left: 0;
+            top: 0;
+            color: var(--accent-blue);
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: bold;
+        }
+
+        /* LAYOUTS */
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            width: 100%;
+            margin-top: 30px;
+        }
+
+        .three-column {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            width: 100%;
+            margin-top: 30px;
+        }
+
+        /* TABLES */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        th, td {
+            border-bottom: 1px solid #1f2937;
+            padding: 16px 20px;
+            text-align: left;
+            font-size: 18px;
+        }
+
+        th {
+            color: var(--text-muted);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-size: 15px;
+        }
+
+        td {
+            color: var(--text-main);
+        }
+
+        .highlight-val {
+            color: var(--accent-blue);
+            font-weight: 700;
+            font-size: 22px;
+            text-shadow: 0 0 5px rgba(14, 165, 233, 0.2);
+        }
+
+        /* INTERACTIVE ELEMENTS (SLIDE 5) */
+        .interactive-node {
+            background: rgba(14, 165, 233, 0.03);
+            border: 1px solid rgba(14, 165, 233, 0.2);
+            padding: 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .interactive-node:hover {
+            background: rgba(14, 165, 233, 0.08);
+            border-color: var(--accent-blue);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .hidden-math {
+            display: none;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px dashed var(--accent-blue);
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-main);
+            font-size: 22px;
+        }
+
+        .hidden-math.visible {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* FOUNDERS CARD DESIGN */
+        .founder-box {
+            border: 1px solid var(--border-color);
+            padding: 25px;
+            background: rgba(255,255,255,0.01);
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            transition: border-color 0.2s ease;
+        }
+
+        .founder-box:hover {
+            border-color: var(--accent-blue);
+        }
+
+        .founder-avatar {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            margin-bottom: 15px;
+            border: 2px solid var(--border-color);
+            background-color: #1f2937;
+        }
+
+        .founder-box h3 {
+            margin-bottom: 5px;
+        }
+
+        .founder-box p strong {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            color: var(--accent-blue);
+            text-transform: uppercase;
+        }
+
+        /* CRT MONITOR VISUAL EFFECTS */
+        .crt-scanlines {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%);
+            background-size: 100% 4px;
+            z-index: 98;
+            pointer-events: none;
+            opacity: 0.2;
+        }
+
+        .crt-flicker {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 97;
+            pointer-events: none;
+            animation: crt-flicker-anim 0.15s infinite;
+            opacity: 0.02;
+            background: var(--accent-blue);
+        }
+
+        @keyframes crt-flicker-anim {
+            0% { opacity: 0.01; }
+            50% { opacity: 0.02; }
+            100% { opacity: 0.01; }
+        }
+
+        .vignette {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.65);
+            z-index: 96;
+            pointer-events: none;
+        }
+
+        /* PRESENTATION BOTTOM CONTROLS */
+        #deck-controls {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100vw;
+            height: 60px;
+            background-color: #04070d;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+            z-index: 999;
+        }
+
+        .control-btn {
+            background: transparent;
+            border: 1px solid var(--accent-blue);
+            color: var(--accent-blue);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            font-weight: bold;
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-radius: 4px;
+        }
+
+        .control-btn:hover {
+            background-color: var(--accent-blue);
+            color: #020408;
+            box-shadow: 0 0 12px var(--accent-blue-glow);
+        }
+
+        #slide-counter {
+            font-size: 15px;
+            font-weight: bold;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 1.5px;
+            color: var(--text-main);
+        }
+
+        #progress-container {
+            flex-grow: 1;
+            max-width: 400px;
+            height: 6px;
+            border: 1px solid var(--border-color);
+            margin: 0 25px;
+            position: relative;
+            background: rgba(255,255,255,0.03);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        #progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: var(--accent-blue);
+            box-shadow: 0 0 8px var(--accent-blue);
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+
+<div id="presentation-viewport">
+    
+    <!-- Top Information Bar -->
+    <div id="top-bar">
+        <div class="logo-area">
+            <span class="logo-dot"></span>
+            <span class="logo-text">MANHATTAN PROJECT BRIEFING</span>
+        </div>
+        <div class="theme-area">
+            <span class="status-indicator">SECURE TERMINAL</span>
+        </div>
+    </div>
+
+    <!-- Sidebar index drawer -->
+    <div id="index-drawer">
+        <div id="drawer-tab" onclick="toggleDrawer()">
+            <i class="fa-solid fa-folder-open"></i>
+            <span>INDEX</span>
+        </div>
+        <div class="drawer-header">VC BRIEFING DOSSIER</div>
+        <ul id="slide-links">
+            <!-- Dynamic Injection -->
+        </ul>
+    </div>
+
+    <!-- Main Presentation Deck -->
+    <div id="deck-viewport">
+        <div id="deck-container">
+            <div class="crt-scanlines"></div>
+            <div class="crt-flicker"></div>
+            <div class="vignette"></div>
+
+            <!-- Slide 1: Cover -->
+            <div class="slide-container" id="slide1">
+                <div class="watermark">MANHATTAN PROJECT</div>
+                <div class="content content-center">
+                    <h1 style="color: var(--accent-blue); text-shadow: 0 0 10px rgba(14, 165, 233, 0.3);">Total Organizational Memory.</h1>
+                    <p class="subtitle">Secure, version-controlled data infrastructure for the AI-first enterprise.</p>
+                </div>
+            </div>
+
+            <!-- Slide 2: Enterprise AI Bottleneck -->
+            <div class="slide-container" id="slide2">
+                <div class="watermark">MANHATTAN PROJECT</div>
+                <div class="content">
+                    <h2>The Enterprise AI Bottleneck.</h2>
+                    <p class="subtitle">Autonomous agents cannot run on fragmented human memory.</p>
+                    
+                    <div class="two-column">
+                        <div>
+                            <ul>
+                                <li style="margin-bottom: 12px;"><strong>The Scatter:</strong> Institutional knowledge is scattered across fragmented software and employee silos.</li>
+                                <li style="margin-bottom: 12px;"><strong>The Roadblock:</strong> AI agents cannot function without grounded, structured data.</li>
+                                <li style="margin-bottom: 12px;"><strong>The Result:</strong> Hallucinations, stalled deployments, and lost ROI.</li>
+                            </ul>
+                        </div>
+                        <div style="border-left: 2px solid var(--border-color); padding-left: 50px; display: flex; align-items: center;">
+                            <p style="font-family: 'JetBrains Mono', monospace; color: #ef4444; font-size: 24px; line-height: 1.8; text-shadow: 0 0 8px rgba(239, 68, 68, 0.2);">
+                                &gt; SYSTEM_ERROR:<br>
+                                &gt; KNOWLEDGE_NOT_FOUND<br>
+                                &gt; AGENT_DEPLOYMENT_FAILED
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 3: TAM -->
+            <div class="slide-container" id="slide3">
+                <div class="watermark">MANHATTAN PROJECT</div>
+                <div class="content">
+                    <h2>Total Addressable Market.</h2>
+                    <p class="subtitle">The infrastructure layer for the next iteration of enterprise work.</p>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Metric</th>
+                                <th>Target Definition</th>
+                                <th>Estimated Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>TAM</strong> (Total Addressable)</td>
+                                <td>Global enterprises deploying internal AI.</td>
+                                <td class="highlight-val">$85B+</td>
+                            </tr>
+                            <tr>
+                                <td><strong>SAM</strong> (Serviceable Available)</td>
+                                <td>US Fortune 5000 and high-growth mid-market.</td>
+                                <td class="highlight-val">$12B</td>
+                            </tr>
+                            <tr>
+                                <td><strong>SOM</strong> (Serviceable Obtainable)</td>
+                                <td>Year 1-3 capture (Targeting 250 pilots).</td>
+                                <td class="highlight-val">$25M</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p style="font-size: 14px; margin-top: 30px; color: var(--text-muted);">*Projections based on bottom-up calculations using a baseline $100k Annual Contract Value (ACV).</p>
+                </div>
+            </div>
+
+            <!-- Slide 4: Defensible Moat -->
+            <div class="slide-container" id="slide4">
+                <div class="watermark">MANHATTAN PROJECT</div>
+                <div class="content">
+                    <h2>The Defensible Moat.</h2>
+                    <p class="subtitle">Structuring chaos into a heavily guarded, version-controlled asset.</p>
+
+                    <div class="two-column">
+                        <div>
+                            <h3 style="margin-bottom: 8px;">The Threaded Fabric</h3>
+                            <p><strong>Immutable History:</strong> We maintain a complete history of data structures over time. If data is corrupted, the system instantly rewinds to the ground truth.</p>
+                        </div>
+                        <div>
+                            <h3 style="margin-bottom: 8px;">Hierarchical Containment</h3>
+                            <p><strong>Access Moat:</strong> Enforces strict controls for human and AI agents. Junior employees and their assistants cannot access executive-level frameworks.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 5: Revenue Flywheel -->
+            <div class="slide-container" id="slide5">
+                <div class="watermark">MANHATTAN PROJECT</div>
+                <div class="content">
+                    <h2>The Revenue Flywheel.</h2>
+                    <p class="subtitle">A usage-based model built for compounding growth.</p>
+
+                    <div class="two-column" style="margin-top: 10px;">
+                        <div class="interactive-node" onclick="toggleMath('math1')">
+                            <h3>Human Adoption</h3>
+                            <p style="font-size: 17px;">Land-and-expand department deployment.</p>
+                            <p style="font-size: 14px; margin-top: 15px; color: var(--accent-blue);">(Click to reveal Economics)</p>
+                            <div id="math1" class="hidden-math">
+                                $40 / Month per Seat
+                            </div>
+                        </div>
+                        
+                        <div class="interactive-node" onclick="toggleMath('math2')">
+                            <h3>Agent Deployment</h3>
+                            <p style="font-size: 17px;">Compounding compute API revenue as integrations scale.</p>
+                            <p style="font-size: 14px; margin-top: 15px; color: var(--accent-blue);">(Click to reveal Economics)</p>
+                            <div id="math2" class="hidden-math">
+                                $200 / Month per Agent
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="interactive-node" style="margin-top: 30px; padding: 18px;" onclick="toggleMath('math3')">
+                        <h3 style="margin: 0; color: #fff; font-size: 20px;">Target Enterprise ACV</h3>
+                        <div id="math3" class="hidden-math">
+                            <span style="color: var(--accent-blue); font-size: 28px; font-weight: bold; text-shadow: 0 0 8px var(--accent-blue-glow);">$240,000</span><br>
+                            <span style="font-size: 14px; opacity: 0.7;">(Based on mid-market average: 400 Humans + 20 Agents)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 6: GTM Sales Motion -->
+            <div class="slide-container" id="slide6">
+                <div class="watermark">MANHATTAN PROJECT</div>
+                <div class="content">
+                    <h2>Infiltrating the Enterprise.</h2>
+                    <p class="subtitle">A targeted, security-first sales motion to bypass IT blockers.</p>
+
+                    <div class="three-column">
+                        <div>
+                            <h3 style="font-size: 20px; margin-bottom: 8px;">Phase 1: The Wedge</h3>
+                            <p style="font-size: 16px; margin-bottom: 6px;"><strong>Target:</strong> Mid-market tech (200-1k staff).</p>
+                            <p style="font-size: 16px; margin-bottom: 6px;"><strong>Buyer:</strong> CISO or VP of Engineering.</p>
+                            <p style="font-size: 16px; margin-bottom: 6px;"><strong>Pitch:</strong> "Stop IP bleed before deploying agents." We sell security first.</p>
+                        </div>
+                        <div>
+                            <h3 style="font-size: 20px; margin-bottom: 8px;">Phase 2: Land & Thread</h3>
+                            <p style="font-size: 16px; margin-bottom: 6px;">Deploy retrieval engine to map data.</p>
+                            <p style="font-size: 16px; margin-bottom: 6px;">Establish memory for a single high-value department (e.g., Engineering).</p>
+                        </div>
+                        <div>
+                            <h3 style="font-size: 20px; margin-bottom: 8px;">Phase 3: Expansion</h3>
+                            <p style="font-size: 16px; margin-bottom: 6px;">Activate API tier for internal AI agents.</p>
+                            <p style="font-size: 16px; margin-bottom: 6px;">Expand human seat count organically across departments.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 7: Team -->
+            <div class="slide-container" id="slide7">
+                <div class="watermark">MANHATTAN PROJECT</div>
+                <div class="content">
+                    <h2>The Architects.</h2>
+                    <p class="subtitle">Uniquely positioned to solve the enterprise data bottleneck.</p>
+
+                    <div class="three-column">
+                        <!-- Harshit Card (CEO) -->
+                        <div class="founder-box">
+                            <div class="founder-avatar" style="background-image: url('/static/harshit.png'); background-size: cover; background-position: center;"></div>
+                            <h3>Harshit Sheoron</h3>
+                            <p><strong>CEO</strong></p>
+                            <p style="font-size: 15px; margin-top: 12px; font-family: 'JetBrains Mono', monospace; color: var(--accent-blue); font-weight: bold;">IIT Ropar // IIM Calcutta // CMU</p>
+                        </div>
+                        <!-- Sanket Card (CTO) -->
+                        <div class="founder-box">
+                            <div class="founder-avatar" style="background-image: url('/static/ranaji.jpg'); background-size: cover; background-position: center;"></div>
+                            <h3>Sanket Wadhwa</h3>
+                            <p><strong>CTO</strong></p>
+                            <p style="font-size: 15px; margin-top: 12px; font-family: 'JetBrains Mono', monospace; color: var(--accent-blue); font-weight: bold;">Texas Instruments // IIT Ropar</p>
+                        </div>
+                        <!-- Dhruv Card (COO) -->
+                        <div class="founder-box">
+                            <div class="founder-avatar" style="background-image: url('/static/dhruv.png'); background-size: cover; background-position: center;"></div>
+                            <h3>Dhruv Garg</h3>
+                            <p><strong>COO</strong></p>
+                            <p style="font-size: 15px; margin-top: 12px; font-family: 'JetBrains Mono', monospace; color: var(--accent-blue); font-weight: bold;">IIT Ropar // Google</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 8: The Ask -->
+            <div class="slide-container" id="slide8">
+                <div class="watermark">MANHATTAN PROJECT</div>
+                <div class="content content-center">
+                    <h2>The Ask.</h2>
+                    
+                    <div style="font-size: 100px; font-weight: 800; color: var(--accent-blue); margin: 30px 0; font-family: 'JetBrains Mono', monospace; letter-spacing: -4px; text-shadow: 0 0 20px var(--accent-blue-glow);">
+                        $1.5M Pre-Seed
+                    </div>
+
+                    <div style="text-align: left; max-width: 800px; margin: 0 auto;">
+                        <ul>
+                            <li style="margin-bottom: 8px;"><strong>Runway:</strong> 18 to 24 months of runway.</li>
+                            <li style="margin-bottom: 8px;"><strong>Engineering Core:</strong> Hire 1-3 elite engineers to build MVP security and fabric.</li>
+                            <li style="margin-bottom: 8px;"><strong>Traction:</strong> Secure first 5 enterprise pilot programs.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Presentation bottom controls -->
+    <div id="deck-controls">
+        <button class="control-btn" onclick="prevSlide()">
+            <i class="fa-solid fa-arrow-left"></i> PREV
+        </button>
+
+        <div style="display: flex; align-items: center; justify-content: center; flex-grow: 1; max-width: 600px;">
+            <span id="slide-counter">PAGE 01 / 08</span>
+            <div id="progress-container">
+                <div id="progress-bar"></div>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 15px;">
+            <button class="control-btn" onclick="toggleFullscreen()" title="Toggle Fullscreen (F)">
+                <i class="fa-solid fa-expand"></i>
+            </button>
+            <button class="control-btn" onclick="nextSlide()">
+                NEXT <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // State Variables
+    let currentSlideIndex = 0;
+    const slides = document.querySelectorAll('.slide-container');
+    const totalSlides = slides.length;
+
+    // Slide Titles for Table of Contents
+    const slideTitles = [
+        "01. Cover Brief",
+        "02. AI Bottleneck",
+        "03. Market: TAM",
+        "04. Defensible Moat",
+        "05. Revenue Flywheel",
+        "06. GTM: Sales Motion",
+        "07. The Architects",
+        "08. Capital Ask"
+    ];
+
+    // Initialize Presentation
+    function initPresentation() {
+        populateIndexDrawer();
+        showSlide(currentSlideIndex);
+        resizeDeck();
+        
+        // Listeners
+        window.addEventListener('resize', resizeDeck);
+        document.addEventListener('keydown', handleKeyDown);
+        setupSwipeDetect();
+    }
+
+    // Auto-scale content wrapper to fit layout cleanly inside window
+    function resizeDeck() {
+        const deck = document.getElementById('deck-container');
+        const viewport = document.getElementById('deck-viewport');
+        if (!deck || !viewport) return;
+        
+        const vw = viewport.clientWidth;
+        const vh = viewport.clientHeight;
+        const dw = 1280;
+        const dh = 720;
+        
+        // Compute best fit scale while retaining 16:9 ratio
+        const scale = Math.min(vw / dw, vh / dh);
+        
+        // Apply transform. 0.94 gives a nice margin buffer
+        deck.style.transform = `translate(-50%, -50%) scale(${scale * 0.94})`;
+    }
+
+    // Render active slide state and transitions
+    function showSlide(index) {
+        // Bounds checking
+        if (index < 0) index = 0;
+        if (index >= totalSlides) index = totalSlides - 1;
+        
+        currentSlideIndex = index;
+
+        // Reset all slide states
+        slides.forEach((slide, i) => {
+            if (i === currentSlideIndex) {
+                slide.classList.add('active');
+            } else {
+                slide.classList.remove('active');
+            }
+        });
+
+        // Update Bottom Controls Interface
+        const humanIndex = String(currentSlideIndex + 1).padStart(2, '0');
+        const totalStr = String(totalSlides).padStart(2, '0');
+        document.getElementById('slide-counter').textContent = `PAGE ${humanIndex} / ${totalStr}`;
+        
+        const progressPct = ((currentSlideIndex) / (totalSlides - 1)) * 100;
+        document.getElementById('progress-bar').style.width = `${progressPct}%`;
+
+        // Update Table of Contents Drawer Selected State
+        const links = document.querySelectorAll('#slide-links a');
+        links.forEach((link, idx) => {
+            if (idx === currentSlideIndex) {
+                link.classList.add('active');
+            } else {
+                link.classList.remove('active');
+            }
+        });
+    }
+
+    // Navigation Actions
+    function nextSlide() {
+        if (currentSlideIndex < totalSlides - 1) {
+            showSlide(currentSlideIndex + 1);
+            playClickSound();
+        }
+    }
+
+    // Interactive reveal for Slide 5
+    function toggleMath(id) {
+        const element = document.getElementById(id);
+        if (element.classList.contains('visible')) {
+            element.classList.remove('visible');
+        } else {
+            element.classList.add('visible');
+        }
+        playClickSound(600);
+    }
+
+    function prevSlide() {
+        if (currentSlideIndex > 0) {
+            showSlide(currentSlideIndex - 1);
+            playClickSound();
+        }
+    }
+
+    // Keyboard Controllers
+    function handleKeyDown(e) {
+        switch(e.key) {
+            case 'ArrowRight':
+            case ' ':
+            case 'PageDown':
+                nextSlide();
+                break;
+            case 'ArrowLeft':
+            case 'Backspace':
+            case 'PageUp':
+                prevSlide();
+                break;
+            case 'Home':
+                showSlide(0);
+                playClickSound();
+                break;
+            case 'End':
+                showSlide(totalSlides - 1);
+                playClickSound();
+                break;
+            case 'Escape':
+                closeDrawer();
+                break;
+            case 'f':
+            case 'F':
+                if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+                    toggleFullscreen();
+                }
+                break;
+        }
+    }
+
+    // Drawer / TOC Panel Interactions
+    function toggleDrawer() {
+        const drawer = document.getElementById('index-drawer');
+        drawer.classList.toggle('open');
+        playClickSound(300);
+    }
+
+    // Close Drawer
+    function closeDrawer() {
+        const drawer = document.getElementById('index-drawer');
+        drawer.classList.remove('open');
+    }
+
+    function populateIndexDrawer() {
+        const linksList = document.getElementById('slide-links');
+        linksList.innerHTML = '';
+        
+        slideTitles.forEach((title, idx) => {
+            const li = document.createElement('li');
+            const a = document.createElement('a');
+            a.textContent = title;
+            a.onclick = () => {
+                showSlide(idx);
+                closeDrawer();
+                playClickSound();
+            };
+            li.appendChild(a);
+            linksList.appendChild(li);
+        });
+    }
+
+    // Play high-quality mechanical audio click/beep
+    function playClickSound(freq = 500) {
+        try {
+            const context = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = context.createOscillator();
+            const gain = context.createGain();
+            
+            osc.connect(gain);
+            gain.connect(context.destination);
+            
+            osc.frequency.setValueAtTime(freq, context.currentTime);
+            osc.type = 'sine';
+            
+            gain.gain.setValueAtTime(0.03, context.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.00001, context.currentTime + 0.05);
+            
+            osc.start();
+            osc.stop(context.currentTime + 0.05);
+        } catch(e) {
+            // Audio Context blocked or unsupported
+        }
+    }
+
+    // Lock screen orientation to landscape in fullscreen
+    function lockLandscape() {
+        if (screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock("landscape").catch(err => {
+                console.log("Landscape lock unsupported/blocked: ", err);
+            });
+        }
+    }
+
+    // Fullscreen Mode Handler
+    function toggleFullscreen() {
+        const elem = document.getElementById('presentation-viewport');
+        if (!document.fullscreenElement) {
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen().then(lockLandscape);
+            } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen();
+            }
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            }
+        }
+    }
+
+    // Mobile/Trackpad swipe detection gestures
+    function setupSwipeDetect() {
+        let touchstartX = 0;
+        let touchendX = 0;
+        const area = document.getElementById('deck-viewport');
+        
+        area.addEventListener('touchstart', e => {
+            touchstartX = e.changedTouches[0].screenX;
+        }, {passive: true});
+        
+        area.addEventListener('touchend', e => {
+            touchendX = e.changedTouches[0].screenX;
+            handleSwipe();
+        }, {passive: true});
+        
+        function handleSwipe() {
+            if (touchendX - touchstartX > 100) {
+                prevSlide();
+            }
+            if (touchstartX - touchendX > 100) {
+                nextSlide();
+            }
+        }
+    }
+
+    // Initialize on page load
+    window.onload = initPresentation;
+</script>
+
+</body>
+</html>
