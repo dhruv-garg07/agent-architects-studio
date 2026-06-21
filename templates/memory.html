@@ -1456,15 +1456,14 @@
                 let loaderElement = null;
 
                 // Ask server to generate + store both messages in Chroma using streaming (SSE)
-                const res = await fetch('/web/chat', {
+                const res = await fetch('/agent_chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        thread_id: currentSession.id,   // UUID
-                        user_id: window.USER_ID,      // from base.html
-                        message,
-                        history: currentSession.messages,
-                        use_file_rag: fileRagToggle.checked  // Send RAG toggle state
+                        agent_id: currentSession.id,   // Equivalent to agent_id
+                        message: message,
+                        stream: true,
+                        use_file_rag: fileRagToggle.checked
                     })
                 });
 

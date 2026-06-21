@@ -34,25 +34,39 @@ def _db():
 
 
 def _get_agent(agent_id, user_id=None):
-    """Fetch agent from api_agents. Returns dict or None."""
+    """Fetch agent from api_agents by ID or slug. Returns dict or None."""
     if not _db():
         return None
     try:
-        q = _db().table('api_agents').select('*').eq('agent_id', agent_id)
+        import uuid
+        is_uuid = False
+        try:
+            uuid.UUID(agent_id)
+            is_uuid = True
+        except ValueError:
+            pass
+
+        if is_uuid:
+            q = _db().table('api_agents').select('*').eq('agent_id', agent_id)
+        else:
+            q = _db().table('api_agents').select('*').eq('agent_slug', agent_id)
+            
         if user_id:
             q = q.eq('user_id', user_id)
+            
         res = q.execute()
         return res.data[0] if res.data else None
-    except Exception:
+    except Exception as e:
+        print(f"Error in _get_agent: {e}")
         return None
 
 
 def _agent_context(agent_id, agent_raw):
     """Build a consistent agent context dict for templates (used by github_shell)."""
     return {
-        'id': agent_id,
+        'id': (agent_raw or {}).get('agent_id') or agent_id,
         'name': (agent_raw or {}).get('agent_name') or agent_id,
-        'slug': (agent_raw or {}).get('agent_slug') or agent_id[:8],
+        'slug': (agent_raw or {}).get('agent_slug') or agent_id,
         'description': (agent_raw or {}).get('description') or ((agent_raw or {}).get('metadata') or {}).get('description') or '',
     }
 
@@ -308,96 +322,39 @@ def get_sources_status():
 @gitmem_bp.route('/')
 @login_required
 def landing():
-    """Agent repository list — one card per agent."""
+    """
+    Smart landing: redirect to the user's first workspace Intelligence page.
+    If no workspaces exist, show the workspace creation/onboarding page.
+    """
     agents_raw = []
     if _db():
         try:
-            res = _db().table('api_agents').select('*') \
+            res = _db().table('api_agents').select('agent_id, agent_name, agent_slug') \
                 .eq('user_id', current_user.get_id()) \
                 .order('created_at', desc=True).execute()
             agents_raw = res.data or []
         except Exception as e:
             print(f"[GitMem] landing fetch error: {e}")
 
-    repos = []
-    total_memories, total_commits = 0, 0
-    for agent in agents_raw:
-        aid = agent.get('agent_id')
-        mem_count = _count_table('gitmem_memories', 'agent_id', aid)
-        commit_count = _count_table('gitmem_commits', 'agent_id', aid)
-        vec_count = 0
-        try:
-            vec_count = gitmem_app.vector_engine.get_agent_stats(aid).get('embeddings', 0)
-        except Exception:
-            pass
+    # If user has workspaces, redirect to the first one's Context page
+    if agents_raw:
+        first_ws = agents_raw[0]
+        ws_slug = first_ws.get('agent_id')
+        return redirect(url_for('gitmem.hub_context', ws_slug=ws_slug))
 
-        agent_meta = agent.get('metadata') or {}
-        if isinstance(agent_meta, str):
-            try:
-                import json as _json
-                agent_meta = _json.loads(agent_meta)
-            except Exception:
-                agent_meta = {}
-        repos.append({
-            'repo_id':       aid,
-            'name':          agent.get('agent_name') or agent.get('agent_slug') or aid,
-            'description':   agent.get('description') or agent_meta.get('description') or '',
-            'visibility':    'private',
-            'default_branch': 'main',
-            'created_at':    agent.get('created_at', ''),
-            'updated_at':    agent.get('updated_at', ''),
-            'status':        agent.get('status', 'active'),
-            'memory_count':  mem_count,
-            'commit_count':  commit_count,
-            'vector_count':  vec_count,
-            'workspace_id':  agent_meta.get('workspace_id', ''),
-        })
-        total_memories += mem_count
-        total_commits += commit_count
-
-    # Calculate unique active workspaces
-    active_ws_count = len({r['workspace_id'] for r in repos if r.get('workspace_id')})
-    if active_ws_count == 0 and repos:
-        active_ws_count = 1 # Default workspace if none specified
-
-    stats = {
-        'active_workspaces': active_ws_count,
-        'total_repositories': len(repos),
-        'total_memories': total_memories,
-        'total_commits': total_commits,
-    }
-
-    return render_template('landing.html', repos=repos, workspaces=[], stats=stats, sources=get_sources_status())
+    # No workspaces — show the creation page
+    return redirect(url_for('gitmem.create_agent_form'))
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # Agent Dashboard — File System View (PRIMARY UI)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-@gitmem_bp.route('/agent/<agent_id>')
+@gitmem_bp.route('/agent/<agent_id>/advanced')
 @login_required
 def agent_dashboard(agent_id):
-    """
-    Main agent view — file-system style with folder structure,
-    recent memories, activity feed, index stats.
-    """
-    if not _db():
-        flash("Database disconnected", "error")
-        return redirect(url_for('gitmem.landing'))
-
-    agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
-    if not agent_raw:
-        flash("Repository not found or access denied.", "error")
-        return redirect(url_for('gitmem.landing'))
-
-    # Build agent object for template
-    agent = {
-        'id':          agent_id,
-        'name':        agent_raw.get('agent_name') or agent_raw.get('agent_slug') or agent_id,
-        'slug':        agent_raw.get('agent_slug', agent_id),
-        'description': agent_raw.get('description') or (agent_raw.get('metadata') or {}).get('description') or '',
-        'status':      agent_raw.get('status', 'active'),
-    }
+    """Legacy dashboard route redirects to Overview."""
+    return redirect(url_for('gitmem.hub_overview', ws_slug=agent_id))
 
     # Folder structure
     folder_structure = _build_folder_structure(agent_id)
@@ -484,54 +441,51 @@ def agent_dashboard(agent_id):
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# File System Browser
+# Context Explorer (Filesystem Browser)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-@gitmem_bp.route('/agent/<agent_id>/fs/')
-@gitmem_bp.route('/agent/<agent_id>/fs/<path:virtual_path>')
+@gitmem_bp.route('/w/<ws_slug>/explorer/')
+@gitmem_bp.route('/w/<ws_slug>/explorer/<path:virtual_path>')
 @login_required
-def agent_fs_view(agent_id, virtual_path=''):
-    """Virtual filesystem browser."""
-    agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
+def hub_explorer(ws_slug, virtual_path=''):
+    """Unified Context Explorer (virtual filesystem)."""
+    agent_raw = _get_agent(ws_slug, user_id=current_user.get_id())
     if not agent_raw:
-        flash("Repository not found.", "error")
         return redirect(url_for('gitmem.landing'))
+    agent = _agent_context(ws_slug, agent_raw)
+    actual_agent_id = agent_raw.get('agent_id')
 
-    agent = {
-        'id': agent_id,
-        'name': agent_raw.get('agent_name') or agent_id,
-        'slug': agent_raw.get('agent_slug', agent_id),
-    }
-
-    items = _build_fs_items(agent_id, virtual_path)
+    items = _build_fs_items(actual_agent_id, virtual_path)
+    
+    commits = []
+    try:
+        res = _db().table('gitmem_commits').select('*').eq('agent_id', actual_agent_id).order('timestamp', desc=True).limit(10).execute()
+        commits = res.data or []
+    except Exception:
+        pass
 
     return render_template(
-        'file_browser.html',
-        agent=agent,
+        'gitmem/hub_explorer.html',
+        workspace=agent,
         current_path=virtual_path,
         items=items,
-        sources=get_sources_status(),
+        commits=commits
     )
-
-
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # File View (single memory/document)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-@gitmem_bp.route('/agent/<agent_id>/file/<path:virtual_path>')
+@gitmem_bp.route('/w/<ws_slug>/file/')
+@gitmem_bp.route('/w/<ws_slug>/file/<path:virtual_path>')
 @login_required
-def agent_file_view(agent_id, virtual_path=''):
-    """View a single memory item or document."""
-    agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
+def hub_file_view(ws_slug, virtual_path=''):
+    """Unified file viewer and editor."""
+    agent_raw = _get_agent(ws_slug, user_id=current_user.get_id())
     if not agent_raw:
-        flash("Repository not found.", "error")
         return redirect(url_for('gitmem.landing'))
 
-    agent = {
-        'id': agent_id,
-        'name': agent_raw.get('agent_name') or agent_id,
-        'slug': agent_raw.get('agent_slug', agent_id),
-    }
+    agent = _agent_context(ws_slug, agent_raw)
+    actual_agent_id = agent_raw.get('agent_id')
 
     # Parse path to figure out source: context/{type}/{id}, docs/{folder}/{id}, vectors/{type}/{id}
     parts = [p for p in virtual_path.strip('/').split('/') if p]
@@ -565,7 +519,7 @@ def agent_file_view(agent_id, virtual_path=''):
                         'created_at': row.get('created_at')
                     })
             elif root == 'vectors':
-                v = gitmem_app.vector_engine.get_vector(item_id, agent_id)
+                v = gitmem_app.vector_engine.get_vector(item_id, actual_agent_id)
                 if v:
                     file_content = v.get('content', '')
                     metadata = v.get('metadata', {})
@@ -585,13 +539,15 @@ def agent_file_view(agent_id, virtual_path=''):
         except Exception as e:
             file_content = f"Error retrieving item: {e}"
 
+    if request.args.get('raw'):
+        return Response(file_content, mimetype='text/plain')
+
     return render_template(
-        'file_view.html',
-        agent=agent,
+        'gitmem/hub_file_view.html',
+        workspace=agent,
         path=virtual_path,
         content=file_content,
-        metadata=metadata,
-        sources=get_sources_status(),
+        metadata=metadata
     )
 
 
@@ -599,7 +555,7 @@ def agent_file_view(agent_id, virtual_path=''):
 # Commit Log
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-@gitmem_bp.route('/agent/<agent_id>/history')
+@gitmem_bp.route('/agent/<agent_id>/advanced/history')
 @login_required
 def agent_history(agent_id):
     """Unified history view with branch management and commit graph."""
@@ -670,14 +626,14 @@ def agent_history(agent_id):
     )
 
 
-@gitmem_bp.route('/agent/<agent_id>/commits')
+@gitmem_bp.route('/agent/<agent_id>/advanced/commits')
 @login_required
 def agent_commits(agent_id):
     """Commit history page (Redirecting to unified history)."""
     return redirect(url_for('gitmem.agent_history', agent_id=agent_id, branch=request.args.get('branch', 'main')))
 
 
-@gitmem_bp.route('/agent/<agent_id>/branches_view')
+@gitmem_bp.route('/agent/<agent_id>/advanced/branches_view')
 @login_required
 def agent_branches(agent_id):
     """Branches view (Redirecting to unified history)."""
@@ -688,7 +644,7 @@ def agent_branches(agent_id):
 # Diff Viewer
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-@gitmem_bp.route('/agent/<agent_id>/diffs')
+@gitmem_bp.route('/agent/<agent_id>/advanced/diffs')
 @login_required
 def agent_diffs(agent_id):
     """Diff viewer — redirects to the unified history page which now includes the diff viewer."""
@@ -699,7 +655,7 @@ def agent_diffs(agent_id):
 # Placeholder pages (Issues, Pulls, Settings, Wiki, etc.)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-@gitmem_bp.route('/agent/<agent_id>/pulls')
+@gitmem_bp.route('/agent/<agent_id>/advanced/pulls')
 @login_required
 def pulls(agent_id):
     agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
@@ -707,7 +663,7 @@ def pulls(agent_id):
     return render_template('pulls.html', agent=agent, pulls=[], sources=get_sources_status())
 
 
-@gitmem_bp.route('/agent/<agent_id>/issues')
+@gitmem_bp.route('/agent/<agent_id>/advanced/issues')
 @login_required
 def issues(agent_id):
     agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
@@ -715,7 +671,7 @@ def issues(agent_id):
     return render_template('issues.html', agent=agent, issues=[], sources=get_sources_status())
 
 
-@gitmem_bp.route('/agent/<agent_id>/settings')
+@gitmem_bp.route('/agent/<agent_id>/advanced/settings')
 @login_required
 def settings(agent_id):
     agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
@@ -738,7 +694,7 @@ def settings(agent_id):
     return render_template('settings.html', agent=agent, workspace_id=workspace_id, branches=branches, current_branch=current_branch, sources=get_sources_status())
 
 
-@gitmem_bp.route('/agent/<agent_id>/wiki')
+@gitmem_bp.route('/agent/<agent_id>/advanced/wiki')
 @login_required
 def wiki(agent_id):
     agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
@@ -746,7 +702,7 @@ def wiki(agent_id):
     return render_template('wiki.html', agent=agent, sources=get_sources_status())
 
 
-@gitmem_bp.route('/agent/<agent_id>/checkpoints')
+@gitmem_bp.route('/agent/<agent_id>/advanced/checkpoints')
 @login_required
 def agent_checkpoints(agent_id):
     agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
@@ -762,7 +718,7 @@ def agent_checkpoints(agent_id):
     return render_template('checkpoints.html', agent=agent, checkpoints=checkpoints, sources=get_sources_status())
 
 
-@gitmem_bp.route('/agent/<agent_id>/logs')
+@gitmem_bp.route('/agent/<agent_id>/advanced/logs')
 @login_required
 def agent_logs(agent_id):
     agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
@@ -783,7 +739,294 @@ def agent_logs(agent_id):
 @login_required
 def repo_dashboard(repo_id):
     return redirect(url_for('gitmem.agent_dashboard', agent_id=repo_id))
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Workspace Views (Mission Control)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+@gitmem_bp.route('/w/<ws_slug>/')
+@login_required
+def hub_workspace(ws_slug):
+    """Workspace root redirects to Agents page (formerly Context)."""
+    return redirect(url_for('gitmem.hub_agents', ws_slug=ws_slug))
+
+
+@gitmem_bp.route('/w/<ws_slug>/overview')
+@login_required
+def hub_overview(ws_slug):
+    """Overview page — redirects to Agents since Mission Control merged with Agents."""
+    return redirect(url_for('gitmem.hub_agents', ws_slug=ws_slug))
+
+@gitmem_bp.route('/w/<ws_slug>/context')
+@login_required
+def hub_context(ws_slug):
+    agent_raw = _get_agent(ws_slug, user_id=current_user.get_id())
+    if not agent_raw: return redirect(url_for('gitmem.landing'))
+    agent = _agent_context(ws_slug, agent_raw)
+    
+    actual_agent_id = agent_raw.get('agent_id')
+
+    # Fetch all user's agents for the agent selector
+    all_agents = []
+    try:
+        res = _db().table('api_agents').select('agent_id, agent_name, agent_slug, status') \
+            .eq('user_id', current_user.get_id()) \
+            .order('created_at', desc=True).execute()
+        all_agents = res.data or []
+    except Exception as e:
+        print(f"Error fetching all agents: {e}")
+
+    # Fetch memories for this agent
+    memories = []
+    try:
+        res = _db().table('gitmem_memories').select('*') \
+            .eq('agent_id', actual_agent_id) \
+            .order('created_at', desc=True).limit(100).execute()
+        memories = res.data or []
+    except Exception as e:
+        print(f"Error fetching memories: {e}")
+
+    # Count by type
+    type_counts = {}
+    for m in memories:
+        t = m.get('type', 'unknown')
+        type_counts[t] = type_counts.get(t, 0) + 1
+
+    # Vector stats
+    vector_count = 0
+    try:
+        stats = gitmem_app.vector_engine.get_agent_stats(actual_agent_id)
+        vector_count = stats.get('embeddings', 0) or 0
+    except Exception as e:
+        print(f"Error fetching vector stats: {e}")
+
+    # Document count
+    doc_count = _count_table('gitmem_documents', 'agent_id', actual_agent_id)
+
+    # Commit count
+    commit_count = _count_table('gitmem_commits', 'agent_id', actual_agent_id)
+
+    import json
+    return render_template('gitmem/hub_knowledge_studio.html',
+        workspace=agent,
+        memories=memories,
+        type_counts=type_counts,
+        total_memories=len(memories),
+        vector_count=vector_count,
+        doc_count=doc_count,
+        commit_count=commit_count,
+        all_agents=all_agents,
+        memories_json=json.dumps([{
+            'id': m.get('id',''),
+            'content': (m.get('content','') or '')[:200],
+            'type': m.get('type',''),
+            'importance': m.get('importance', 0.5),
+            'tags': m.get('tags', []),
+            'created_at': (m.get('created_at','') or '')[:16],
+        } for m in memories]),
+    )
+
+@gitmem_bp.route('/w/<ws_slug>/context/<category>')
+@login_required
+def hub_context_category(ws_slug, category):
+    agent_raw = _get_agent(ws_slug, user_id=current_user.get_id())
+    if not agent_raw: return redirect(url_for('gitmem.landing'))
+    agent = _agent_context(ws_slug, agent_raw)
+    return render_template('gitmem/hub_context_category.html', workspace=agent, category=category)
+
+@gitmem_bp.route('/w/<ws_slug>/history')
+@login_required
+def hub_history(ws_slug):
+    """Workspace-level version history — commits, branches, diffs."""
+    agent_raw = _get_agent(ws_slug, user_id=current_user.get_id())
+    if not agent_raw: return redirect(url_for('gitmem.landing'))
+    agent = _agent_context(ws_slug, agent_raw)
+
+    actual_agent_id = agent_raw.get('agent_id')
+    current_branch = request.args.get('branch', 'main')
+
+    # Fetch Branches
+    branches = []
+    try:
+        branches_raw = gitmem_app.vcs.branch_manager.list_branches(actual_agent_id)
+        for b in branches_raw:
+            commit_meta = None
+            if b.get('target_hash') and b['target_hash'] != 'HEAD':
+                try:
+                    res = _db().table('gitmem_commits').select('*').eq('hash', b['target_hash']).limit(1).execute()
+                    if res.data: commit_meta = res.data[0]
+                except: pass
+            branches.append({
+                'name': b['ref_name'],
+                'hash': b['target_hash'],
+                'commit': commit_meta
+            })
+        if not any(b['name'] == 'main' for b in branches):
+            branches.insert(0, {'name': 'main', 'hash': 'HEAD', 'commit': None})
+    except Exception:
+        branches = [{'name': 'main', 'hash': 'HEAD', 'commit': None}]
+
+    # Fetch Commits
+    commits = []
+    try:
+        db = _db()
+        if db:
+            res = db.table('gitmem_commits').select('*').eq('repo_id', actual_agent_id).order('timestamp', desc=True).limit(100).execute()
+            commits = res.data or []
+    except Exception: pass
+
+    # Graph Logic (Assign tracks/colors)
+    branch_tracks = {b['name']: i for i, b in enumerate(branches)}
+    tip_map = {b['hash']: b['name'] for b in branches if b['hash'] != 'HEAD'}
+    for c in commits:
+        c['track'] = branch_tracks.get(tip_map.get(c['hash'], 'main'), 0)
+        c['is_tip'] = c['hash'] in tip_map
+
+    memory_count = _count_table('gitmem_memories', 'agent_id', actual_agent_id)
+    commit_count = len(commits)
+
+    import json
+    commits_json = json.dumps([{'sha': c['hash'], 'message': c.get('message',''), 'timestamp': c.get('timestamp',''), 'author_id': c.get('author_id','')} for c in commits])
+
+    return render_template('gitmem/hub_changes.html',
+        workspace=agent,
+        commits=commits,
+        commits_json=commits_json,
+        branches=branches,
+        current_branch=current_branch,
+        memory_count=memory_count,
+        commit_count=commit_count,
+    )
+
+@gitmem_bp.route('/w/<ws_slug>/agents')
+@login_required
+def hub_agents(ws_slug):
+    agent_raw = _get_agent(ws_slug, user_id=current_user.get_id())
+    if not agent_raw: return redirect(url_for('gitmem.landing'))
+    agent = _agent_context(ws_slug, agent_raw)
+    return render_template('gitmem/hub_agents.html', workspace=agent)
+
+@gitmem_bp.route('/w/<ws_slug>/integrations')
+@login_required
+def hub_integrations(ws_slug):
+    agent_raw = _get_agent(ws_slug, user_id=current_user.get_id())
+    if not agent_raw: return redirect(url_for('gitmem.landing'))
+    agent = _agent_context(ws_slug, agent_raw)
+    return render_template('gitmem/hub_integrations.html', workspace=agent)
+
+@gitmem_bp.route('/w/<ws_slug>/governance')
+@login_required
+def hub_governance(ws_slug):
+    agent_raw = _get_agent(ws_slug, user_id=current_user.get_id())
+    if not agent_raw: return redirect(url_for('gitmem.landing'))
+    agent = _agent_context(ws_slug, agent_raw)
+    return render_template('gitmem/hub_trust_center.html', workspace=agent)
+
+@gitmem_bp.route('/w/<ws_slug>/search')
+@login_required
+def hub_search(ws_slug):
+    agent_raw = _get_agent(ws_slug, user_id=current_user.get_id())
+    if not agent_raw: return redirect(url_for('gitmem.landing'))
+    agent = _agent_context(ws_slug, agent_raw)
+    return render_template('gitmem/hub_search.html', workspace=agent)
+
+@gitmem_bp.route('/w/<ws_slug>/chat')
+@login_required
+def hub_chat(ws_slug):
+    agent_raw = _get_agent(ws_slug, user_id=current_user.get_id())
+    if not agent_raw: return redirect(url_for('gitmem.landing'))
+    agent = _agent_context(ws_slug, agent_raw)
+    return render_template('gitmem/hub_chat.html', workspace=agent)
+
+@gitmem_bp.route('/w/<ws_slug>/permissions')
+@login_required
+def hub_permissions(ws_slug):
+    return redirect(url_for('gitmem.hub_governance', ws_slug=ws_slug))
+
+@gitmem_bp.route('/w/<ws_slug>/audit')
+@login_required
+def hub_audit(ws_slug):
+    return redirect(url_for('gitmem.hub_governance', ws_slug=ws_slug))
+
+@gitmem_bp.route('/w/<ws_slug>/branches')
+@login_required
+def hub_branches(ws_slug):
+    return redirect(url_for('gitmem.hub_history', ws_slug=ws_slug))
+
+@gitmem_bp.route('/w/<ws_slug>/activity')
+@login_required
+def hub_activity(ws_slug):
+    """Activity is now part of the Overview feed."""
+    return redirect(url_for('gitmem.hub_overview', ws_slug=ws_slug))
+
+@gitmem_bp.route('/w/<ws_slug>/analytics')
+@login_required
+def hub_analytics(ws_slug):
+    """Analytics is now part of the Overview page."""
+    return redirect(url_for('gitmem.hub_overview', ws_slug=ws_slug))
+
+@gitmem_bp.route('/w/<ws_slug>/intelligence')
+@login_required
+def hub_intelligence_legacy(ws_slug):
+    """Legacy intelligence route redirects to overview."""
+    return redirect(url_for('gitmem.hub_overview', ws_slug=ws_slug))
+
+@gitmem_bp.route('/w/<ws_slug>/connections')
+@login_required
+def hub_connections(ws_slug):
+    """Connections page — alias for integrations."""
+    return redirect(url_for('gitmem.hub_integrations', ws_slug=ws_slug))
+
+@gitmem_bp.route('/w/<ws_slug>/settings')
+@login_required
+def hub_settings(ws_slug):
+    agent_raw = _get_agent(ws_slug, user_id=current_user.get_id())
+    if not agent_raw: return redirect(url_for('gitmem.landing'))
+    agent = _agent_context(ws_slug, agent_raw)
+    return render_template('gitmem/hub_settings.html', workspace=agent)
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Legacy Redirects (301 Permanent)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@gitmem_bp.route('/agent/<agent_id>')
+def legacy_agent_dashboard(agent_id):
+    return redirect(url_for('gitmem.hub_workspace', ws_slug=agent_id), code=301)
+
+@gitmem_bp.route('/agent/<agent_id>/memories')
+def legacy_agent_memories(agent_id):
+    return redirect(url_for('gitmem.hub_context', ws_slug=agent_id), code=301)
+
+@gitmem_bp.route('/agent/<agent_id>/documents')
+def legacy_agent_documents(agent_id):
+    return redirect(url_for('gitmem.hub_context_category', ws_slug=agent_id, category='documents'), code=301)
+
+@gitmem_bp.route('/agent/<agent_id>/sources')
+def legacy_agent_sources(agent_id):
+    return redirect(url_for('gitmem.hub_integrations', ws_slug=agent_id), code=301)
+
+@gitmem_bp.route('/agent/<agent_id>/history')
+def legacy_agent_history(agent_id):
+    return redirect(url_for('gitmem.hub_activity', ws_slug=agent_id), code=301)
+
+@gitmem_bp.route('/agent/<agent_id>/settings')
+def legacy_agent_settings(agent_id):
+    return redirect(url_for('gitmem.hub_settings', ws_slug=agent_id), code=301)
+
+@gitmem_bp.route('/agent/<agent_id>/checkpoints')
+def legacy_agent_checkpoints(agent_id):
+    return redirect(url_for('gitmem.hub_activity', ws_slug=agent_id), code=301)
+
+@gitmem_bp.route('/agent/<agent_id>/logs')
+def legacy_agent_logs(agent_id):
+    return redirect(url_for('gitmem.hub_activity', ws_slug=agent_id), code=301)
+
+@gitmem_bp.route('/agent/<agent_id>/pulls')
+def legacy_agent_pulls(agent_id):
+    return redirect(url_for('gitmem.hub_governance', ws_slug=agent_id), code=301)
+
+@gitmem_bp.route('/agent/<agent_id>/issues')
+def legacy_agent_issues(agent_id):
+    return redirect(url_for('gitmem.hub_governance', ws_slug=agent_id), code=301)
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # Create Agent
@@ -816,10 +1059,14 @@ def api_create_agent():
     description = data.get('description', '').strip()
 
     if not agent_slug:
+        if request.is_json or request.accept_mimetypes.accept_json:
+            return jsonify({"error": "Agent ID is required."}), 400
         flash("Agent ID is required.", "error")
         return redirect(url_for('gitmem.create_agent_form'))
 
     if not _db():
+        if request.is_json or request.accept_mimetypes.accept_json:
+            return jsonify({"error": "Database disconnected."}), 500
         flash("Database disconnected.", "error")
         return redirect(url_for('gitmem.create_agent_form'))
 
@@ -843,9 +1090,14 @@ def api_create_agent():
         except Exception as e:
             print(f"[GitMem] Initial branch creation warning: {e}")
 
+        if request.is_json or request.accept_mimetypes.accept_json:
+            return jsonify({"status": "success", "agent_id": agent_id, "agent_name": agent_name})
+
         flash(f"Repository '{agent_name}' created.", "success")
         return redirect(url_for('gitmem.agent_dashboard', agent_id=agent_id))
     except Exception as e:
+        if request.is_json or request.accept_mimetypes.accept_json:
+            return jsonify({"error": f"Failed to create repository: {e}"}), 500
         flash(f"Failed to create repository: {e}", "error")
         return redirect(url_for('gitmem.create_agent_form'))
 
@@ -853,6 +1105,74 @@ def api_create_agent():
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # API Endpoints
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@gitmem_bp.route('/api/workspace_stats')
+@login_required
+def api_workspace_stats():
+    """Returns company-wide or agent-wide stats.
+    If ?ws_slug is provided, returns stats for that specific agent.
+    Otherwise, returns aggregated stats for all user agents.
+    """
+    try:
+        user_id = current_user.get_id()
+        db = _db()
+        if not db:
+            return jsonify({"error": "Database unavailable"}), 503
+
+        target_slug = request.args.get('ws_slug')
+        
+        # 1. Total Agents & Active Agents
+        if target_slug:
+            # Agent-wide
+            agents_res = db.table('api_agents').select('agent_id, agent_slug, status').eq('user_id', user_id).eq('agent_slug', target_slug).execute()
+        else:
+            # User-wide
+            agents_res = db.table('api_agents').select('agent_id, agent_slug, status').eq('user_id', user_id).execute()
+            
+        agents = agents_res.data or []
+        total_agents = len(agents)
+        active_agents = sum(1 for a in agents if a.get('status') == 'active')
+        
+        # 2. Total Tool Calls & Memories Generated
+        agent_ids = [a['agent_id'] for a in agents]
+        agent_slugs = [a['agent_slug'] for a in agents]
+        
+        total_tool_calls = 0
+        total_memories = 0
+        
+        if agent_ids:
+            # Tool calls (from activity logs)
+            # Some queries use UUID (agent_id) and some use slug. 
+            # We will try with IDs first.
+            try:
+                logs_res = db.table('gitmem_activity_logs').select('id, action').in_('agent_id', agent_ids).execute()
+                logs = logs_res.data or []
+                total_tool_calls += sum(1 for log in logs if 'tool' in str(log.get('action', '')).lower() or 'decision' in str(log.get('action', '')).lower())
+            except Exception as e:
+                # Fallback to slugs
+                logs_res = db.table('gitmem_activity_logs').select('id, action').in_('agent_id', agent_slugs).execute()
+                logs = logs_res.data or []
+                total_tool_calls += sum(1 for log in logs if 'tool' in str(log.get('action', '')).lower() or 'decision' in str(log.get('action', '')).lower())
+
+            # Memories
+            try:
+                memories_res = db.table('gitmem_memories').select('id').in_('agent_id', agent_ids).execute()
+                total_memories += len(memories_res.data or [])
+            except Exception:
+                memories_res = db.table('gitmem_memories').select('id').in_('agent_id', agent_slugs).execute()
+                total_memories += len(memories_res.data or [])
+        
+        return jsonify({
+            "status": "success",
+            "stats": {
+                "total_agents": total_agents,
+                "active_agents": active_agents,
+                "total_tool_calls": total_tool_calls,
+                "total_memories": total_memories
+            }
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "error": str(e)}), 500
 
 @gitmem_bp.route('/api/search')
 @login_required

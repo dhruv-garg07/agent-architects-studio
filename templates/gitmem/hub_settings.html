@@ -1,0 +1,189 @@
+{% extends "layouts/mission_control_shell.html" %}
+
+{% set active_page = 'settings' %}
+
+{% block workspace_content %}
+
+<!-- Page Header -->
+<div class="gm-page-header">
+    <h1 class="gm-page-title">Settings</h1>
+    <p class="gm-page-subtitle">Configure workspace behavior, retention, and developer options.</p>
+</div>
+
+<!-- Workspace Settings -->
+<div class="gm-section">
+    <div class="gm-section-header">
+        <h2 class="gm-section-title"><i data-lucide="settings"></i> Workspace</h2>
+    </div>
+    <div class="gm-section-body">
+        <div class="gm-settings-group">
+            <label class="gm-settings-label">Workspace Name</label>
+            <input type="text" value="{{ workspace.name if workspace else '' }}" class="gm-settings-input" placeholder="My Organization">
+        </div>
+        <div class="gm-settings-group">
+            <label class="gm-settings-label">Description</label>
+            <textarea class="gm-settings-input" rows="2" placeholder="What this workspace is for...">{{ workspace.description if workspace else '' }}</textarea>
+        </div>
+    </div>
+</div>
+
+<!-- Context Settings -->
+<div class="gm-section">
+    <div class="gm-section-header">
+        <h2 class="gm-section-title"><i data-lucide="layers"></i> Context Governance</h2>
+    </div>
+    <div class="gm-section-body">
+        <div class="gm-settings-row">
+            <div class="gm-settings-row-info">
+                <span class="gm-settings-row-title">Auto-approve agent learnings</span>
+                <span class="gm-settings-row-desc">Skip manual review for low-risk context updates from agents.</span>
+            </div>
+            <div class="gm-toggle-switch" onclick="this.classList.toggle('active')">
+                <div class="gm-toggle-knob"></div>
+            </div>
+        </div>
+        <div class="gm-settings-row">
+            <div class="gm-settings-row-info">
+                <span class="gm-settings-row-title">Require approval for decisions</span>
+                <span class="gm-settings-row-desc">All items categorized as "Decisions" require manual approval before merging.</span>
+            </div>
+            <div class="gm-toggle-switch active" onclick="this.classList.toggle('active')">
+                <div class="gm-toggle-knob"></div>
+            </div>
+        </div>
+        <div class="gm-settings-row" style="border-bottom: none;">
+            <div class="gm-settings-row-info">
+                <span class="gm-settings-row-title">Conflict detection</span>
+                <span class="gm-settings-row-desc">Automatically detect contradicting context across agents.</span>
+            </div>
+            <div class="gm-toggle-switch active" onclick="this.classList.toggle('active')">
+                <div class="gm-toggle-knob"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Developer Mode -->
+<div class="gm-section" style="border-color: hsla(38, 92%, 55%, 0.15);">
+    <div class="gm-section-header">
+        <h2 class="gm-section-title" style="-webkit-text-fill-color: hsl(38,92%,55%) !important;">
+            <i data-lucide="terminal" style="color: hsl(38,92%,55%);"></i> Developer Mode
+        </h2>
+        <div class="gm-toggle-switch" id="gm-settings-devtoggle" onclick="toggleDevMode(); this.classList.toggle('active')">
+            <div class="gm-toggle-knob"></div>
+        </div>
+    </div>
+    <div class="gm-section-body">
+        <p style="font-size: 13px; color: hsl(225,10%,50%); line-height: 1.6; margin-bottom: 16px;">
+            Enable Developer Mode to access the underlying infrastructure — repositories, branches, commits, diffs, DAG visualization, checkpoints, and the merge engine. These tools are for developers who need direct access to GitMem's version control system.
+        </p>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px;">
+            {% set dev_features = [
+                ('git-branch', 'Repositories'),
+                ('git-commit-horizontal', 'Commit Graph'),
+                ('file-diff', 'Diff Viewer'),
+                ('save', 'Checkpoints'),
+                ('git-merge', 'Merge Engine'),
+                ('network', 'Knowledge Graph'),
+            ] %}
+            {% for icon, label in dev_features %}
+            <div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 8px; background: hsl(225,14%,7%); border: 1px solid hsl(225,10%,14%);">
+                <i data-lucide="{{ icon }}" style="width: 14px; height: 14px; color: hsl(38,70%,50%);"></i>
+                <span style="font-size: 12px; color: hsl(225,10%,50%);">{{ label }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Danger Zone -->
+<div class="gm-section" style="border-color: hsla(0, 72%, 55%, 0.15);">
+    <div class="gm-section-header">
+        <h2 class="gm-section-title" style="-webkit-text-fill-color: hsl(0,72%,55%) !important;">
+            <i data-lucide="alert-triangle" style="color: hsl(0,72%,55%);"></i> Danger Zone
+        </h2>
+    </div>
+    <div class="gm-section-body">
+        <div class="gm-settings-row" style="border-bottom: none;">
+            <div class="gm-settings-row-info">
+                <span class="gm-settings-row-title" style="color: hsl(0,72%,65%);">Delete Workspace</span>
+                <span class="gm-settings-row-desc">Permanently delete this workspace and all its context. This action cannot be undone.</span>
+            </div>
+            <button style="background: hsla(0,72%,55%,0.1); color: hsl(0,72%,55%); border: 1px solid hsla(0,72%,55%,0.2); padding: 6px 14px; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.15s ease; flex-shrink: 0;"
+                    onmouseover="this.style.background='hsla(0,72%,55%,0.15)'"
+                    onmouseout="this.style.background='hsla(0,72%,55%,0.1)'">
+                Delete
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+.gm-settings-group {
+    margin-bottom: 18px;
+}
+.gm-settings-group:last-child { margin-bottom: 0; }
+
+.gm-settings-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: hsl(225, 10%, 50%);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.gm-settings-input {
+    width: 100%;
+    max-width: 400px;
+    background: hsl(225, 14%, 7%);
+    border: 1px solid hsl(225, 10%, 16%);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: white;
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.15s ease;
+    resize: vertical;
+}
+.gm-settings-input:focus {
+    border-color: var(--mc-primary, hsl(230, 80%, 62%));
+}
+
+.gm-settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 0;
+    border-bottom: 1px solid hsl(225, 10%, 13%);
+    gap: 16px;
+}
+.gm-settings-row-info { flex: 1; min-width: 0; }
+.gm-settings-row-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: white;
+    display: block;
+    margin-bottom: 3px;
+}
+.gm-settings-row-desc {
+    font-size: 12px;
+    color: hsl(225, 10%, 45%);
+    display: block;
+    line-height: 1.5;
+}
+</style>
+
+<script>
+    // Sync settings page dev toggle with global state
+    document.addEventListener('DOMContentLoaded', () => {
+        const settingsToggle = document.getElementById('gm-settings-devtoggle');
+        if (settingsToggle && localStorage.getItem('gitmem_devmode') === 'true') {
+            settingsToggle.classList.add('active');
+        }
+    });
+</script>
+
+{% endblock %}

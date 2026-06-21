@@ -1,0 +1,396 @@
+{% extends "layouts/mission_control_shell.html" %}
+
+{% set active_page = 'chat' %}
+
+{% block workspace_content %}
+
+<style>
+    /* Chat Layout Fixes for GitMem Container */
+    .gm-chat-container {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        background-color: transparent;
+        position: relative;
+    }
+
+    .gm-chat-header {
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid var(--gm-border);
+        background: var(--gm-bg-secondary);
+        flex-shrink: 0;
+    }
+
+    .gm-chat-header h2 {
+        font-family: 'Outfit', sans-serif;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--gm-text-primary);
+        margin: 0;
+    }
+
+    .gm-chat-header p {
+        font-size: 0.85rem;
+        color: var(--gm-text-muted);
+        margin-top: 0.25rem;
+    }
+
+    /* Conversation History Scroll Area */
+    .gm-chat-history-wrapper {
+        flex: 1;
+        overflow-y: auto;
+        position: relative;
+        padding: 2rem;
+        scroll-behavior: smooth;
+    }
+
+    /* Conversation Message Styling */
+    .gm-message {
+        display: flex;
+        margin-bottom: 1.5rem;
+        width: 100%;
+    }
+
+    .gm-message.user {
+        justify-content: flex-end;
+    }
+
+    .gm-message.assistant {
+        justify-content: flex-start;
+    }
+
+    .gm-message-content {
+        max-width: 80%;
+        position: relative;
+    }
+
+    .gm-message.user .gm-message-content {
+        background: linear-gradient(135deg, hsl(230, 80%, 60%), hsl(220, 80%, 55%));
+        color: #ffffff;
+        border-radius: 16px;
+        border-bottom-right-radius: 4px;
+        padding: 0.85rem 1.1rem;
+        font-size: 0.925rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .gm-message.assistant .gm-message-content {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--gm-border);
+        border-radius: 16px;
+        border-bottom-left-radius: 4px;
+        padding: 0.85rem 1.1rem;
+        color: var(--gm-text-primary);
+        font-size: 0.95rem;
+        line-height: 1.65;
+    }
+
+    .gm-message-time {
+        font-size: 0.7rem;
+        color: var(--gm-text-muted);
+        margin-top: 0.4rem;
+        text-align: right;
+    }
+
+    .gm-message.assistant .gm-message-time {
+        text-align: left;
+    }
+
+    /* Chat Input Area */
+    .gm-chat-input-area {
+        padding: 1.5rem 2rem;
+        background: var(--gm-bg-primary);
+        border-top: 1px solid var(--gm-border);
+        flex-shrink: 0;
+    }
+
+    .gm-chat-input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        background: var(--gm-bg-secondary);
+        border: 1px solid var(--gm-border);
+        border-radius: 12px;
+        padding: 0.5rem 1rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .gm-chat-input-wrapper input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        color: var(--gm-text-primary);
+        font-size: 0.95rem;
+        padding: 0.5rem 0;
+    }
+
+    .gm-chat-input-wrapper input:focus {
+        outline: none;
+    }
+
+    .gm-chat-send-btn {
+        background: var(--gm-accent-primary);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: opacity 0.2s;
+    }
+
+    .gm-chat-send-btn:hover {
+        opacity: 0.8;
+    }
+
+    .gm-chat-send-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    /* Empty State */
+    .gm-chat-empty {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        color: var(--gm-text-muted);
+    }
+
+    .gm-chat-empty i {
+        width: 48px;
+        height: 48px;
+        margin-bottom: 1rem;
+        color: var(--gm-accent-primary);
+        opacity: 0.8;
+    }
+
+    .gm-chat-empty h3 {
+        color: var(--gm-text-primary);
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+        font-family: 'Outfit', sans-serif;
+    }
+
+    /* Loading indicator */
+    .typing-indicator {
+        display: flex;
+        gap: 4px;
+        padding: 12px 16px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--gm-border);
+        border-radius: 16px;
+        border-bottom-left-radius: 4px;
+        width: fit-content;
+        margin-bottom: 1.5rem;
+    }
+
+    .typing-dot {
+        width: 6px;
+        height: 6px;
+        background: var(--gm-text-muted);
+        border-radius: 50%;
+        animation: typing 1.4s infinite ease-in-out;
+    }
+
+    .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+    .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+    @keyframes typing {
+        0%, 80%, 100% { transform: scale(0); }
+        40% { transform: scale(1); }
+    }
+</style>
+
+<div class="gm-chat-container">
+    
+    <!-- Header -->
+    <div class="gm-chat-header">
+        <h2>Playground</h2>
+        <p>Chat directly with your agent {{ workspace.name }}</p>
+    </div>
+
+    <!-- Scrollable Chat History -->
+    <div class="gm-chat-history-wrapper" id="chatHistory">
+        <!-- Empty State -->
+        <div class="gm-chat-empty" id="emptyState">
+            <i data-lucide="bot"></i>
+            <h3>How can I help you today?</h3>
+            <p>Ask anything. I have access to your workspace documents, vectors, and commits.</p>
+        </div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="gm-chat-input-area">
+        <form id="chatForm" class="gm-chat-input-wrapper">
+            <input type="text" id="chatInput" placeholder="Message {{ workspace.name }}..." autocomplete="off" />
+            <button type="submit" class="gm-chat-send-btn" id="sendBtn">
+                <i data-lucide="send" style="width: 18px; height: 18px;"></i>
+            </button>
+        </form>
+    </div>
+
+</div>
+
+<!-- Marked.js for markdown parsing -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('chatForm');
+        const input = document.getElementById('chatInput');
+        const history = document.getElementById('chatHistory');
+        const emptyState = document.getElementById('emptyState');
+        const sendBtn = document.getElementById('sendBtn');
+        const agentId = "{{ workspace.id }}";
+
+        // Auto scroll to bottom
+        const scrollToBottom = () => {
+            history.scrollTop = history.scrollHeight;
+        };
+
+        // Render Message
+        const appendMessage = (role, content) => {
+            if(emptyState) emptyState.style.display = 'none';
+
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `gm-message ${role}`;
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'gm-message-content';
+
+            // Parse markdown for assistant, plain text for user
+            if(role === 'assistant') {
+                contentDiv.innerHTML = marked.parse(content);
+            } else {
+                contentDiv.textContent = content;
+            }
+
+            const timeDiv = document.createElement('div');
+            timeDiv.className = 'gm-message-time';
+            timeDiv.textContent = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+            contentDiv.appendChild(timeDiv);
+            msgDiv.appendChild(contentDiv);
+            history.appendChild(msgDiv);
+            
+            scrollToBottom();
+        };
+
+        // Show/Hide Loading
+        let typingIndicator = null;
+        const showLoading = () => {
+            typingIndicator = document.createElement('div');
+            typingIndicator.className = 'typing-indicator';
+            typingIndicator.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+            history.appendChild(typingIndicator);
+            scrollToBottom();
+            sendBtn.disabled = true;
+            input.disabled = true;
+        };
+
+        const hideLoading = () => {
+            if(typingIndicator) {
+                typingIndicator.remove();
+                typingIndicator = null;
+            }
+            sendBtn.disabled = false;
+            input.disabled = false;
+            input.focus();
+        };
+
+        // Form Submit
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const message = input.value.trim();
+            if(!message) return;
+
+            // Optimistic UI update
+            input.value = '';
+            appendMessage('user', message);
+            showLoading();
+
+            try {
+                const response = await fetch('/agent_chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        agent_id: agentId,
+                        message: message,
+                        mode: 'auto',
+                        stream: true
+                    })
+                });
+
+                if(!response.ok) throw new Error('API Error');
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                let currentMessageContent = '';
+                
+                hideLoading();
+
+                // Create assistant message container
+                const msgDiv = document.createElement('div');
+                msgDiv.className = `gm-message assistant`;
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'gm-message-content';
+                msgDiv.appendChild(contentDiv);
+                history.appendChild(msgDiv);
+
+                let buffer = '';
+                
+                while(true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n\n');
+                    
+                    // Keep the last incomplete chunk in the buffer
+                    buffer = lines.pop();
+                    
+                    for (const chunk of lines) {
+                        const line = chunk.trim();
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                if (data.type === 'token') {
+                                    currentMessageContent += data.content;
+                                    contentDiv.innerHTML = marked.parse(currentMessageContent);
+                                    scrollToBottom();
+                                } else if (data.type === 'done') {
+                                    // Add timestamp when done
+                                    const timeDiv = document.createElement('div');
+                                    timeDiv.className = 'gm-message-time';
+                                    timeDiv.textContent = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                                    contentDiv.appendChild(timeDiv);
+                                    scrollToBottom();
+                                }
+                            } catch(e) {
+                                console.error('Error parsing stream chunk', e, line);
+                            }
+                        }
+                    }
+                }
+
+            } catch (err) {
+                console.error(err);
+                hideLoading();
+                appendMessage('assistant', "Connection failed. Please check if the backend is running.");
+            }
+        });
+    });
+</script>
+
+{% endblock %}

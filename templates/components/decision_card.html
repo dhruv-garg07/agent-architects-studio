@@ -1,0 +1,62 @@
+<!-- Decision Card Component -->
+<div class="group p-5 rounded-xl bg-[var(--mc-surface)] hover:bg-[var(--mc-surface-2)] border {{ 'border-mc-warning/50' if status == 'pending' else 'border-mc-border hover:border-mc-success/50' }} transition-all flex flex-col md:flex-row md:items-start gap-4">
+    
+    <!-- Left: Status Icon -->
+    <div class="flex items-center md:flex-col md:items-center gap-3 md:w-16 shrink-0">
+        {% if status == 'pending' %}
+        <div class="w-10 h-10 rounded-xl bg-mc-warning/10 border border-mc-warning/20 flex items-center justify-center shrink-0">
+            <i data-lucide="clock" class="w-5 h-5 text-mc-warning"></i>
+        </div>
+        <span class="text-[9px] font-bold uppercase tracking-wider text-mc-warning">Pending</span>
+        {% elif status == 'approved' %}
+        <div class="w-10 h-10 rounded-xl bg-mc-success/10 border border-mc-success/20 flex items-center justify-center shrink-0">
+            <i data-lucide="check-circle" class="w-5 h-5 text-mc-success"></i>
+        </div>
+        <span class="text-[9px] font-bold uppercase tracking-wider text-mc-success">Approved</span>
+        {% else %}
+        <div class="w-10 h-10 rounded-xl bg-mc-danger/10 border border-mc-danger/20 flex items-center justify-center shrink-0">
+            <i data-lucide="x-circle" class="w-5 h-5 text-mc-danger"></i>
+        </div>
+        <span class="text-[9px] font-bold uppercase tracking-wider text-mc-danger">Rejected</span>
+        {% endif %}
+    </div>
+
+    <!-- Center: Content -->
+    <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 mb-2 flex-wrap">
+            <h4 class="text-base font-bold text-white">{{ title }}</h4>
+            {% if status == 'pending' %}
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-mc-warning bg-mc-warning/10 border border-mc-warning/20">Needs Review</span>
+            {% endif %}
+        </div>
+        
+        <div class="text-sm text-gray-300 leading-relaxed font-medium break-words mb-3 border-l-2 border-mc-border pl-3">
+            {{ content }}
+        </div>
+
+        <div class="flex items-center gap-4 text-xs text-gray-400">
+            <span class="flex items-center gap-1"><i data-lucide="user" class="w-3.5 h-3.5"></i> Proposed by {{ author }}</span>
+            <span>•</span>
+            <span class="flex items-center gap-1"><i data-lucide="clock" class="w-3.5 h-3.5"></i> {{ time_ago }}</span>
+            {% if review_track %}
+            <span>•</span>
+            <span class="flex items-center gap-1 text-mc-primary"><i data-lucide="git-branch" class="w-3.5 h-3.5"></i> Track: {{ review_track }}</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Right: Actions -->
+    <div class="flex md:flex-col items-center gap-2 shrink-0 md:opacity-0 group-hover:opacity-100 transition-opacity mt-4 md:mt-0">
+        {% if status == 'pending' %}
+        <button class="w-8 h-8 rounded-lg bg-mc-success/10 border border-mc-success/20 flex items-center justify-center text-mc-success hover:bg-mc-success hover:text-white transition-all shadow-sm" title="Approve Decision">
+            <i data-lucide="check" class="w-4 h-4"></i>
+        </button>
+        <button class="w-8 h-8 rounded-lg bg-mc-danger/10 border border-mc-danger/20 flex items-center justify-center text-mc-danger hover:bg-mc-danger hover:text-white transition-all shadow-sm" title="Reject Decision">
+            <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+        {% endif %}
+        <button class="w-8 h-8 rounded-lg bg-[var(--mc-surface-2)] border border-mc-border flex items-center justify-center text-gray-400 hover:text-white hover:border-gray-500 transition-colors" title="View Context Thread">
+            <i data-lucide="message-square" class="w-4 h-4"></i>
+        </button>
+    </div>
+</div>

@@ -1,0 +1,514 @@
+{% extends "layouts/mission_control_shell.html" %}
+
+{% set active_page = 'history' %}
+
+{% block workspace_content %}
+
+<!-- Page Header -->
+<div class="gm-page-header" style="display: flex; align-items: center; justify-content: space-between;">
+    <div>
+        <h1 class="gm-page-title">Version History</h1>
+        <p class="gm-page-subtitle">Track every context change — commits, branches, and diffs across {{ workspace.name if workspace else 'your workspace' }}.</p>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+        <!-- Branch Selector -->
+        <div class="gm-hist-branch-select">
+            <i data-lucide="git-branch" style="width: 14px; height: 14px; color: hsl(225,10%,50%);"></i>
+            <select onchange="handleBranchChange(this.value)">
+                {% for branch in branches %}
+                {% set b_name = branch.name if branch is mapping else branch %}
+                <option value="{{ b_name }}" {% if b_name == current_branch %}selected{% endif %}>{{ b_name }}</option>
+                {% endfor %}
+            </select>
+            <i data-lucide="chevron-down" style="width: 12px; height: 12px; color: hsl(225,10%,40%); position: absolute; right: 10px; top: 50%; transform: translateY(-50%); pointer-events: none;"></i>
+        </div>
+        <button onclick="createBranch()" class="gm-hist-btn-primary">
+            <i data-lucide="git-branch" style="width: 14px; height: 14px;"></i> New Branch
+        </button>
+    </div>
+</div>
+
+<!-- Stats -->
+<div class="gm-stats-row">
+    <div class="gm-stat-card">
+        <div class="gm-stat-label">Total Commits</div>
+        <div class="gm-stat-value gm-stat-accent">{{ commit_count | default(0) }}</div>
+    </div>
+    <div class="gm-stat-card">
+        <div class="gm-stat-label">Branches</div>
+        <div class="gm-stat-value">{{ branches | length }}</div>
+    </div>
+    <div class="gm-stat-card">
+        <div class="gm-stat-label">Memories</div>
+        <div class="gm-stat-value gm-stat-success">{{ memory_count | default(0) }}</div>
+    </div>
+    <div class="gm-stat-card">
+        <div class="gm-stat-label">Active Branch</div>
+        <div class="gm-stat-value" style="font-size: 18px; font-family: 'SF Mono', 'Fira Code', monospace;">{{ current_branch }}</div>
+    </div>
+</div>
+
+<!-- Tabs: Commits | Branches | Diffs -->
+<div class="gm-hist-tabs">
+    <button class="gm-hist-tab active" onclick="switchHistTab('commits', this)">
+        <i data-lucide="git-commit-horizontal" style="width: 14px; height: 14px;"></i> Commits
+    </button>
+    <button class="gm-hist-tab" onclick="switchHistTab('branches', this)">
+        <i data-lucide="git-branch" style="width: 14px; height: 14px;"></i> Branches
+    </button>
+    <button class="gm-hist-tab" onclick="switchHistTab('diffs', this)">
+        <i data-lucide="file-diff" style="width: 14px; height: 14px;"></i> Diffs
+    </button>
+</div>
+
+<!-- Commits Tab -->
+<div class="gm-section" id="tab-commits">
+    <div class="gm-section-body" style="padding-top: 16px;">
+        {% if commits %}
+        <div class="gm-commit-graph">
+            {% for commit in commits %}
+            <div class="gm-commit-row">
+                <div class="gm-commit-track">
+                    <div class="gm-commit-dot {% if commit.is_tip %}gm-commit-tip{% endif %}" style="--track-color: {{ ['hsl(230,80%,62%)', 'hsl(155,70%,45%)', 'hsl(38,92%,55%)', 'hsl(270,60%,60%)', 'hsl(0,72%,55%)'][commit.track % 5] }};"></div>
+                    {% if not loop.last %}
+                    <div class="gm-commit-line" style="--track-color: {{ ['hsl(230,80%,62%)', 'hsl(155,70%,45%)', 'hsl(38,92%,55%)', 'hsl(270,60%,60%)', 'hsl(0,72%,55%)'][commit.track % 5] }};"></div>
+                    {% endif %}
+                </div>
+                <div class="gm-commit-info">
+                    <div class="gm-commit-message">{{ commit.message or 'No message' }}</div>
+                    <div class="gm-commit-meta">
+                        <span class="gm-commit-hash">{{ commit.hash[:8] }}</span>
+                        <span>·</span>
+                        <span>{{ (commit.timestamp or '')[:16] }}</span>
+                        {% if commit.author_id %}
+                        <span>·</span>
+                        <span>{{ commit.author_id[:12] }}</span>
+                        {% endif %}
+                        {% if commit.is_tip %}
+                        <span class="gm-commit-branch-badge">HEAD</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="gm-commit-actions">
+                    <button class="gm-commit-action-btn" onclick="viewCommitDiff('{{ commit.hash }}')" title="View diff">
+                        <i data-lucide="file-diff" style="width: 14px; height: 14px;"></i>
+                    </button>
+                    <button class="gm-commit-action-btn" onclick="rollbackToCommit('{{ commit.hash }}')" title="Rollback to this commit">
+                        <i data-lucide="undo-2" style="width: 14px; height: 14px;"></i>
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 48px 0;">
+            <div style="width: 56px; height: 56px; border-radius: 14px; background: hsla(230,80%,62%,0.1); color: hsl(230,80%,62%); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+                <i data-lucide="git-commit-horizontal" style="width: 28px; height: 28px;"></i>
+            </div>
+            <h3 style="font-size: 16px; font-weight: 700; color: white; margin-bottom: 6px; background: none !important; -webkit-text-fill-color: white !important;">No commits yet</h3>
+            <p style="font-size: 13px; color: hsl(225,10%,45%); max-width: 360px; margin: 0 auto;">Commits will appear here as context changes are tracked through the version control system.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Branches Tab -->
+<div class="gm-section" id="tab-branches" style="display: none;">
+    <div class="gm-section-body" style="padding-top: 16px;">
+        {% for branch in branches %}
+        <div class="gm-branch-row">
+            <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                <i data-lucide="git-branch" style="width: 16px; height: 16px; color: {{ 'hsl(230,80%,62%)' if branch.name == current_branch else 'hsl(225,10%,40%)' }};"></i>
+                <span style="font-size: 14px; font-weight: {{ '700' if branch.name == current_branch else '500' }}; color: {{ 'white' if branch.name == current_branch else 'hsl(0,0%,80%)' }}; font-family: 'SF Mono', 'Fira Code', monospace;">{{ branch.name }}</span>
+                {% if branch.name == current_branch %}
+                <span style="font-size: 10px; font-weight: 700; background: hsla(230,80%,62%,0.15); color: hsl(230,80%,62%); padding: 2px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px;">Current</span>
+                {% endif %}
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+                {% if branch.hash and branch.hash != 'HEAD' %}
+                <span style="font-size: 11px; font-family: 'SF Mono','Fira Code',monospace; color: hsl(225,10%,40%);">{{ branch.hash[:8] }}</span>
+                {% endif %}
+                {% if branch.name != 'main' %}
+                <button class="gm-commit-action-btn" onclick="mergeBranch('{{ branch.name }}')" title="Merge into main">
+                    <i data-lucide="git-merge" style="width: 14px; height: 14px;"></i>
+                </button>
+                <button class="gm-commit-action-btn" style="color: hsl(0,72%,55%);" onclick="deleteBranch('{{ branch.name }}')" title="Delete branch">
+                    <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Diffs Tab -->
+<div class="gm-section" id="tab-diffs" style="display: none;">
+    <div class="gm-section-body" style="padding-top: 16px;">
+        <div style="display: flex; gap: 12px; margin-bottom: 20px; align-items: center;">
+            <div style="flex: 1;">
+                <label style="display: block; font-size: 11px; font-weight: 600; color: hsl(225,10%,45%); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">From Commit</label>
+                <select id="diff-from" class="gm-hist-select">
+                    {% for commit in commits %}
+                    <option value="{{ commit.hash }}">{{ commit.hash[:8] }} — {{ (commit.message or 'No message')[:40] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <i data-lucide="arrow-right" style="width: 18px; height: 18px; color: hsl(225,10%,35%); margin-top: 18px;"></i>
+            <div style="flex: 1;">
+                <label style="display: block; font-size: 11px; font-weight: 600; color: hsl(225,10%,45%); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">To Commit</label>
+                <select id="diff-to" class="gm-hist-select">
+                    {% for commit in commits %}
+                    <option value="{{ commit.hash }}" {% if loop.first %}selected{% endif %}>{{ commit.hash[:8] }} — {{ (commit.message or 'No message')[:40] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button onclick="computeDiff()" class="gm-hist-btn-primary" style="margin-top: 18px;">Compare</button>
+        </div>
+        <div id="diff-result" style="padding: 20px; text-align: center; color: hsl(225,10%,42%); font-size: 13px;">
+            Select two commits and click Compare to view the diff.
+        </div>
+    </div>
+</div>
+
+<style>
+/* ─── History Page Styles ─── */
+.gm-hist-branch-select {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: hsl(225, 14%, 7%);
+    border: 1px solid hsl(225, 10%, 20%);
+    padding: 6px 28px 6px 10px;
+    border-radius: 8px;
+    position: relative;
+}
+.gm-hist-branch-select select {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 13px;
+    font-weight: 600;
+    outline: none;
+    appearance: none;
+    cursor: pointer;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.gm-hist-btn-primary {
+    background: var(--mc-primary, hsl(230,80%,62%));
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: inherit;
+    transition: all 0.15s ease;
+    box-shadow: 0 2px 8px hsla(230,80%,62%,0.25);
+}
+.gm-hist-btn-primary:hover { transform: translateY(-1px); }
+
+.gm-hist-tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 16px;
+    background: hsl(225, 12%, 11%);
+    border: 1px solid hsl(225, 10%, 16%);
+    border-radius: 10px;
+    padding: 4px;
+    width: fit-content;
+}
+.gm-hist-tab {
+    background: none;
+    border: none;
+    color: hsl(225, 10%, 50%);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 7px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: inherit;
+    transition: all 0.15s ease;
+}
+.gm-hist-tab:hover { color: hsl(0, 0%, 85%); background: hsl(225, 10%, 14%); }
+.gm-hist-tab.active {
+    color: white;
+    background: hsl(225, 10%, 18%);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
+.gm-hist-select {
+    width: 100%;
+    background: hsl(225, 14%, 7%);
+    border: 1px solid hsl(225, 10%, 20%);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: white;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    outline: none;
+}
+.gm-hist-select:focus { border-color: hsl(230, 80%, 62%); }
+
+/* ─── Commit Graph ─── */
+.gm-commit-graph { }
+.gm-commit-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 0;
+}
+.gm-commit-track {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 20px;
+    flex-shrink: 0;
+    padding-top: 4px;
+}
+.gm-commit-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--track-color);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--track-color) 40%, transparent);
+    flex-shrink: 0;
+    z-index: 1;
+}
+.gm-commit-tip {
+    width: 14px;
+    height: 14px;
+    border: 2px solid white;
+}
+.gm-commit-line {
+    width: 2px;
+    flex: 1;
+    min-height: 24px;
+    background: color-mix(in srgb, var(--track-color) 25%, transparent);
+}
+
+.gm-commit-info {
+    flex: 1;
+    min-width: 0;
+    padding: 2px 0 18px;
+}
+.gm-commit-message {
+    font-size: 14px;
+    font-weight: 600;
+    color: white;
+    margin-bottom: 4px;
+    line-height: 1.4;
+}
+.gm-commit-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: hsl(225, 10%, 42%);
+    flex-wrap: wrap;
+}
+.gm-commit-hash {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    color: hsl(230, 80%, 62%);
+    font-weight: 600;
+}
+.gm-commit-branch-badge {
+    font-size: 9px;
+    font-weight: 700;
+    background: hsla(155,70%,45%,0.15);
+    color: hsl(155,70%,45%);
+    padding: 1px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.gm-commit-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+    padding-top: 2px;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+.gm-commit-row:hover .gm-commit-actions { opacity: 1; }
+
+.gm-commit-action-btn {
+    background: none;
+    border: 1px solid hsl(225, 10%, 20%);
+    color: hsl(225, 10%, 50%);
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+.gm-commit-action-btn:hover {
+    color: white;
+    border-color: hsl(225, 10%, 30%);
+    background: hsl(225, 10%, 14%);
+}
+
+/* ─── Branch Row ─── */
+.gm-branch-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 0;
+    border-bottom: 1px solid hsl(225, 10%, 13%);
+}
+.gm-branch-row:last-child { border-bottom: none; }
+</style>
+
+<script>
+    const wsId = "{{ workspace.id if workspace else '' }}";
+
+    function switchHistTab(tabId, btn) {
+        document.querySelectorAll('.gm-hist-tab').forEach(b => b.classList.remove('active'));
+        if (btn) btn.classList.add('active');
+        ['commits', 'branches', 'diffs'].forEach(id => {
+            const el = document.getElementById('tab-' + id);
+            if (el) el.style.display = id === tabId ? 'block' : 'none';
+        });
+    }
+
+    function handleBranchChange(branch) {
+        const url = new URL(window.location);
+        url.searchParams.set('branch', branch);
+        window.location.href = url.toString();
+    }
+
+    async function createBranch() {
+        const name = prompt('New branch name:');
+        if (!name || !wsId) return;
+        try {
+            const resp = await fetch(`/gitmem/api/agent/${wsId}/branches`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name: name, source: '{{ current_branch }}'})
+            });
+            if (resp.ok) window.location.reload();
+            else {
+                const data = await resp.json();
+                alert(data.error || 'Failed to create branch');
+            }
+        } catch (e) { alert('Error: ' + e.message); }
+    }
+
+    async function deleteBranch(name) {
+        if (!confirm(`Delete branch "${name}"?`)) return;
+        try {
+            const resp = await fetch(`/gitmem/api/agent/${wsId}/branches/${name}`, {method: 'DELETE'});
+            if (resp.ok) window.location.reload();
+        } catch (e) { alert('Error: ' + e.message); }
+    }
+
+    async function mergeBranch(source) {
+        if (!confirm(`Merge "${source}" into main?`)) return;
+        try {
+            const resp = await fetch(`/gitmem/api/agent/${wsId}/merge`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({source: source, target: 'main'})
+            });
+            if (resp.ok) window.location.reload();
+            else {
+                const data = await resp.json();
+                alert(data.error || 'Merge failed');
+            }
+        } catch (e) { alert('Error: ' + e.message); }
+    }
+
+    function viewCommitDiff(hash) {
+        const fromSelect = document.getElementById('diff-from');
+        const toSelect = document.getElementById('diff-to');
+        // Set from = this commit, to = previous
+        const commits = {{ commits_json | safe }};
+        const idx = commits.findIndex(c => c.sha === hash);
+        if (idx >= 0 && idx < commits.length - 1) {
+            fromSelect.value = commits[idx + 1].sha;
+            toSelect.value = hash;
+        }
+        switchHistTab('diffs', document.querySelectorAll('.gm-hist-tab')[2]);
+        computeDiff();
+    }
+
+    async function rollbackToCommit(hash) {
+        if (!confirm(`Rollback to commit ${hash.substring(0,8)}? This cannot be undone.`)) return;
+        try {
+            const resp = await fetch(`/gitmem/api/agent/${wsId}/rollback`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({branch: '{{ current_branch }}', hash: hash})
+            });
+            if (resp.ok) window.location.reload();
+            else {
+                const data = await resp.json();
+                alert(data.error || 'Rollback failed');
+            }
+        } catch (e) { alert('Error: ' + e.message); }
+    }
+
+    async function computeDiff() {
+        const from = document.getElementById('diff-from').value;
+        const to = document.getElementById('diff-to').value;
+        const resultEl = document.getElementById('diff-result');
+        if (!from || !to || from === to) {
+            resultEl.innerHTML = '<p style="color: hsl(225,10%,42%);">Select two different commits to compare.</p>';
+            return;
+        }
+        resultEl.innerHTML = '<p style="color: hsl(230,80%,62%);">Computing diff...</p>';
+        try {
+            const resp = await fetch(`/gitmem/api/diff?from=${from}&to=${to}`);
+            const data = await resp.json();
+            if (data.diff) {
+                const d = data.diff;
+                let html = `<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px;">
+                    <div style="background: hsla(155,70%,45%,0.08); border: 1px solid hsla(155,70%,45%,0.15); border-radius: 8px; padding: 12px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: 800; color: hsl(155,70%,45%);">${d.summary?.added || 0}</div>
+                        <div style="font-size: 10px; font-weight: 600; color: hsl(225,10%,45%); text-transform: uppercase;">Added</div>
+                    </div>
+                    <div style="background: hsla(38,92%,55%,0.08); border: 1px solid hsla(38,92%,55%,0.15); border-radius: 8px; padding: 12px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: 800; color: hsl(38,92%,55%);">${d.summary?.modified || 0}</div>
+                        <div style="font-size: 10px; font-weight: 600; color: hsl(225,10%,45%); text-transform: uppercase;">Modified</div>
+                    </div>
+                    <div style="background: hsla(0,72%,55%,0.08); border: 1px solid hsla(0,72%,55%,0.15); border-radius: 8px; padding: 12px; text-align: center;">
+                        <div style="font-size: 24px; font-weight: 800; color: hsl(0,72%,55%);">${d.summary?.removed || 0}</div>
+                        <div style="font-size: 10px; font-weight: 600; color: hsl(225,10%,45%); text-transform: uppercase;">Removed</div>
+                    </div>
+                </div>`;
+                // Show individual items
+                if (d.added && d.added.length) {
+                    d.added.forEach(item => {
+                        const label = typeof item === 'string' ? item : (item.content || item.id || JSON.stringify(item)).substring(0, 120);
+                        html += `<div style="padding: 8px 12px; margin-bottom: 4px; background: hsla(155,70%,45%,0.05); border-left: 3px solid hsl(155,70%,45%); border-radius: 4px; font-size: 12px; color: hsl(0,0%,80%);">+ ${label}</div>`;
+                    });
+                }
+                if (d.removed && d.removed.length) {
+                    d.removed.forEach(item => {
+                        const label = typeof item === 'string' ? item : (item.content || item.id || JSON.stringify(item)).substring(0, 120);
+                        html += `<div style="padding: 8px 12px; margin-bottom: 4px; background: hsla(0,72%,55%,0.05); border-left: 3px solid hsl(0,72%,55%); border-radius: 4px; font-size: 12px; color: hsl(0,0%,80%);">- ${label}</div>`;
+                    });
+                }
+                resultEl.innerHTML = html;
+            } else {
+                resultEl.innerHTML = '<p style="color: hsl(225,10%,42%);">No differences found or error computing diff.</p>';
+            }
+        } catch (e) {
+            resultEl.innerHTML = `<p style="color: hsl(0,72%,55%);">Error: ${e.message}</p>`;
+        }
+    }
+</script>
+
+{% endblock %}

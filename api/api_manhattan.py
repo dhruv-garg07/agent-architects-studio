@@ -73,7 +73,7 @@ sys.path.insert(0, project_root)
 sys.path.insert(0, os.path.join(project_root, 'lib'))
 
 # Third-party imports
-from flask import Blueprint, jsonify, request, g
+from flask import Blueprint, jsonify, request, g, Response
 from supabase import create_client
 from werkzeug.exceptions import BadRequest
 
@@ -81,6 +81,7 @@ from werkzeug.exceptions import BadRequest
 from key_utils import hash_key, parse_json_field
 from backend_examples.python.services.api_agents import ApiAgentsService
 from Octave_mem.RAG_DB_CONTROLLER_AGENTS.agent_RAG import Agentic_RAG
+from Octave_mem.SqlDB.sqlDbController import add_message
 
 # Create a server-side supabase client (service role) for validation and lookups
 _SUPABASE_URL = os.environ.get('SUPABASE_URL')
@@ -234,6 +235,13 @@ def extract_and_validate_api_key(data: dict = None):
     
     Returns (user_id, error_response) tuple.
     """
+    try:
+        from flask_login import current_user
+        if current_user and current_user.is_authenticated:
+            return current_user.get_id(), None
+    except ImportError:
+        pass
+
     api_key = extract_api_key_from_request(data)
 
     if not api_key:
@@ -1630,50 +1638,85 @@ def agent_chat():
         from datetime import datetime
         timestamp = datetime.utcnow().isoformat()
         
-        # Ask SimpleMem system to generate response (retrieval + answer generation)
-        # In-memory history in dialogue_buffer is automatically injected inside ask()
-        agent_response = memory_system.ask(user_message)
-        
         # Process dialogue storing and finalization asynchronously in a background thread.
-        # This frees the HTTP request thread from all write and vectorization overhead.
         import threading
-        def _background_save_and_finalize(mem_sys, query, reply, ts):
+        def _background_save_and_finalize(mem_sys, query, reply, ts, u_id, a_id):
             try:
-                # Buffer user dialogue asynchronously (extremely fast)
+                # 1. Log sequential chat history to Supabase explicitly
+                reply_str = json.dumps(reply) if isinstance(reply, (dict, list)) else str(reply)
+                try:
+                    add_message(u_id, "human", query, session_id=a_id)
+                    add_message(u_id, "llm", reply_str, session_id=a_id)
+                except Exception as db_err:
+                    print(f"[agent_chat] Error saving to Supabase chat history: {db_err}")
+
+                # 2. Buffer user dialogue asynchronously to SimpleMem
                 mem_sys.add_dialogue(
                     speaker="user",
                     content=query,
                     timestamp=ts,
                     auto_process=False
                 )
-                # Buffer agent dialogue asynchronously (extremely fast)
-                agent_content = json.dumps(reply) if isinstance(reply, (dict, list)) else str(reply)
+                # 3. Buffer agent dialogue asynchronously to SimpleMem
                 mem_sys.add_dialogue(
                     speaker="agent",
-                    content=agent_content,
+                    content=reply_str,
                     timestamp=datetime.utcnow().isoformat(),
                     auto_process=False
                 )
-                # Vectorize and save all buffered dialogues in background
+                # 4. Vectorize and save all buffered dialogues to Chroma DB in background
                 mem_sys.finalize()
             except Exception as bg_err:
                 print(f"[agent_chat] Background save/finalize error: {bg_err}")
-        
-        threading.Thread(
-            target=_background_save_and_finalize,
-            args=(memory_system, user_message, agent_response, timestamp),
-            daemon=True
-        ).start()
-        
-        return jsonify({
-            'ok': True,
-            'agent_id': agent_id,
-            'user_message': user_message,
-            'agent_response': agent_response,
-            'strategy': strategy,
-            'user_id': user_id,
-            'timestamp': timestamp
-        }), 200
+
+        is_stream = str(data.get('stream', '')).lower() == 'true'
+
+        if is_stream:
+            # Generate response via SSE generator
+            def generate_stream():
+                import time
+                yield f"data: {json.dumps({'type': 'loading', 'status': 'initializing', 'message': 'Preparing context...'})}\n\n"
+                
+                # Fetch answer synchronously
+                agent_response_obj = memory_system.ask(user_message)
+                reply_str = json.dumps(agent_response_obj) if isinstance(agent_response_obj, (dict, list)) else str(agent_response_obj)
+                
+                yield f"data: {json.dumps({'type': 'loading', 'status': 'streaming', 'message': 'Generating response...'})}\n\n"
+                
+                # Simulate streaming chunk by chunk
+                tokens = reply_str.split(' ')
+                for t in tokens:
+                    yield f"data: {json.dumps({'type': 'token', 'content': t + ' '})}\n\n"
+                    time.sleep(0.02)
+                
+                yield f"data: {json.dumps({'type': 'done', 'full_response': reply_str})}\n\n"
+                
+                # Trigger background save
+                threading.Thread(
+                    target=_background_save_and_finalize,
+                    args=(memory_system, user_message, agent_response_obj, timestamp, user_id, agent_id),
+                    daemon=True
+                ).start()
+                
+            return Response(generate_stream(), mimetype='text/event-stream')
+        else:
+            agent_response = memory_system.ask(user_message)
+            
+            threading.Thread(
+                target=_background_save_and_finalize,
+                args=(memory_system, user_message, agent_response, timestamp, user_id, agent_id),
+                daemon=True
+            ).start()
+            
+            return jsonify({
+                'ok': True,
+                'agent_id': agent_id,
+                'user_message': user_message,
+                'agent_response': agent_response,
+                'strategy': strategy,
+                'user_id': user_id,
+                'timestamp': timestamp
+            }), 200
     except Exception as e:
         print(f"Error in agent_chat: {str(e)}")
         import traceback

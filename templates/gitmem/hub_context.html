@@ -1,0 +1,1023 @@
+{% extends "layouts/mission_control_shell.html" %}
+
+{% set active_page = 'context' %}
+
+{% block workspace_content %}
+
+<!-- vis-network CDN for Knowledge Graph -->
+<script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+
+<div class="gm-ctx-container">
+
+    <!-- Top Action Bar -->
+    <div class="gm-ctx-header">
+        
+        <!-- Agent Selector -->
+        <div class="gm-ctx-agent-select">
+            <i data-lucide="bot" style="color: hsl(225,10%,50%);"></i>
+            <select onchange="window.location.href=this.value">
+                {% if all_agents %}
+                    {% for ag in all_agents %}
+                    {% set ag_val = ag.get('agent_slug') or ag.get('agent_id') %}
+                    <option value="{{ url_for('gitmem.hub_context', ws_slug=ag_val) }}" 
+                            {% if workspace and (workspace.id == ag.get('agent_id') or workspace.slug == ag.get('agent_slug') or workspace.id == ag.get('agent_slug')) %}selected{% endif %}>
+                        {{ ag.get('agent_name') or ag.get('agent_id')[:8] }}
+                    </option>
+                    {% endfor %}
+                {% else %}
+                    <option value="#">{{ workspace.name if workspace else 'Select Agent' }}</option>
+                {% endif %}
+            </select>
+            <i data-lucide="chevron-down" class="select-chevron"></i>
+        </div>
+
+        <!-- Metrics -->
+        <div class="gm-ctx-metrics">
+            <div class="gm-ctx-metric">
+                <span class="label">Memories</span>
+                <span class="value" style="color: hsl(230,80%,62%);">{{ total_memories | default(0) }}</span>
+            </div>
+            <div class="gm-ctx-metric">
+                <span class="label">Vectors</span>
+                <span class="value" style="color: hsl(270,60%,60%);">{{ vector_count | default(0) }}</span>
+            </div>
+            <div class="gm-ctx-metric">
+                <span class="label">Docs</span>
+                <span class="value" style="color: hsl(190,80%,50%);">{{ doc_count | default(0) }}</span>
+            </div>
+            <div class="gm-ctx-metric">
+                <span class="label">Commits</span>
+                <span class="value" style="color: hsl(155,70%,45%);">{{ commit_count | default(0) }}</span>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="gm-ctx-actions">
+            <button class="gm-ctx-btn gm-ctx-btn-primary" onclick="showAddMemoryModal()">
+                <i data-lucide="plus"></i> Add Memory
+            </button>
+            <a href="{{ url_for('gitmem.hub_explorer', ws_slug=workspace.id) if workspace else '#' }}" class="gm-ctx-btn">
+                <i data-lucide="folder-tree"></i> Browse Files
+            </a>
+            <a href="{{ url_for('gitmem.hub_governance', ws_slug=workspace.id) if workspace else '#' }}" class="gm-ctx-btn">
+                <i data-lucide="shield-check"></i> Governance
+            </a>
+            <a href="{{ url_for('gitmem.hub_history', ws_slug=workspace.id) if workspace else '#' }}" class="gm-ctx-btn">
+                <i data-lucide="git-branch"></i> History
+            </a>
+        </div>
+
+    </div>
+
+    <!-- Main Split Pane Layout -->
+    <div class="gm-ctx-split">
+        
+        <!-- Left Panel: Data Explorer -->
+        <div class="gm-ctx-explorer">
+            
+            <div class="gm-explorer-header">
+                <div class="gm-explorer-tabs">
+                    <button class="gm-explorer-tab active" onclick="switchTab('memories', this)">Memories</button>
+                    <button class="gm-explorer-tab" onclick="switchTab('vectors', this)">Vectors</button>
+                    <button class="gm-explorer-tab" onclick="switchTab('documents', this)">Documents</button>
+                </div>
+                <div class="gm-explorer-search">
+                    <i data-lucide="search"></i>
+                    <input type="text" placeholder="Filter context data..." id="memory-search-input">
+                </div>
+            </div>
+
+            <!-- Memories List -->
+            <div class="gm-explorer-list" id="tab-memories">
+                {% if memories %}
+                    {% for m in memories %}
+                    <div class="gm-mem-row" onclick="selectMemory('{{ m.id }}', this)" oncontextmenu="showMemoryContextMenu(event, '{{ m.id }}')" data-content="{{ m.content | e | lower }}">
+                        <div class="gm-mem-id">{{ m.id[:8] }}</div>
+                        <div class="gm-mem-type gm-mem-type-{{ m.type | default('unknown') }}">{{ m.type | capitalize }}</div>
+                        <div class="gm-mem-preview">{{ m.content[:80] }}...</div>
+                        <div class="gm-mem-meta">{{ (m.created_at or '')[:10] }}</div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="padding: 30px; text-align: center; color: hsl(225,10%,45%); font-size: 13px;">
+                        No memories found for this agent.
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Vectors List (Placeholder for now) -->
+            <div class="gm-explorer-list" id="tab-vectors" style="display: none;">
+                <div style="padding: 30px; text-align: center; color: hsl(225,10%,45%); font-size: 13px;">
+                    <i data-lucide="cpu" style="width: 24px; height: 24px; margin-bottom: 12px; opacity: 0.5;"></i><br>
+                    {% if vector_count > 0 %}
+                    {{ vector_count }} vectors stored in ChromaDB.<br>Raw embeddings visualization coming soon.
+                    {% else %}
+                    No vectors found in ChromaDB.
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Documents List (Placeholder for now) -->
+            <div class="gm-explorer-list" id="tab-documents" style="display: none;">
+                <div style="padding: 30px; text-align: center; color: hsl(225,10%,45%); font-size: 13px;">
+                    <i data-lucide="file-text" style="width: 24px; height: 24px; margin-bottom: 12px; opacity: 0.5;"></i><br>
+                    {% if doc_count > 0 %}
+                    {{ doc_count }} documents attached.<br>Document viewer coming soon.
+                    {% else %}
+                    No documents found.
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Panel: Knowledge Graph -->
+        <div class="gm-ctx-graph-panel">
+            <div class="gm-graph-header">
+                <span class="gm-graph-title"><i data-lucide="network"></i> Knowledge Graph Visualizer</span>
+                <div class="gm-graph-controls">
+                    <button class="gm-graph-btn" onclick="network.fit()"><i data-lucide="maximize"></i> Fit</button>
+                </div>
+            </div>
+            
+            <div id="vis-network-container" class="gm-graph-container"></div>
+
+            <!-- Detail Overlay -->
+            <div class="gm-graph-overlay" id="node-detail-overlay">
+                <div class="overlay-header">
+                    <span class="overlay-title" id="overlay-title">Node ID</span>
+                    <button onclick="document.getElementById('node-detail-overlay').style.display='none'"><i data-lucide="x"></i></button>
+                </div>
+                <div class="overlay-content" id="overlay-content">
+                    Select a node in the graph or a memory in the list to view its raw data.
+                </div>
+                <div class="overlay-footer">
+                    <button class="gm-ctx-btn" id="overlay-btn-fs"><i data-lucide="folder"></i> View in File Explorer</button>
+                    <button class="gm-ctx-btn" id="overlay-btn-copy"><i data-lucide="copy"></i> Copy ID</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+
+    <!-- Context Menu -->
+    <div id="memory-context-menu" class="gm-context-menu" style="display: none;">
+        <div class="gm-cm-item" onclick="cmViewFile()"><i data-lucide="file-code-2"></i> View Raw File</div>
+        <div class="gm-cm-item" onclick="cmViewGraph()"><i data-lucide="network"></i> View in Graph</div>
+        <div class="gm-cm-divider"></div>
+        <div class="gm-cm-item" onclick="cmCopyId()"><i data-lucide="copy"></i> Copy ID</div>
+        <div class="gm-cm-item" onclick="cmViewHistory()"><i data-lucide="git-commit-horizontal"></i> Commit History</div>
+    </div>
+
+</div>
+
+<!-- Add Memory Modal -->
+<div id="add-memory-modal" class="gm-modal" style="display: none;">
+    <div class="gm-modal-content">
+        <div class="gm-modal-header">
+            <h3>Add Knowledge</h3>
+            <button onclick="document.getElementById('add-memory-modal').style.display='none'"><i data-lucide="x"></i></button>
+        </div>
+        <div class="gm-modal-body">
+            <div class="gm-form-group">
+                <label>Memory Type</label>
+                <select id="new-mem-type">
+                    <option value="episodic">Episodic (Event/Interaction)</option>
+                    <option value="semantic">Semantic (Fact/Concept)</option>
+                    <option value="procedural">Procedural (Rule/Instruction)</option>
+                    <option value="decision">Decision</option>
+                    <option value="state">State</option>
+                </select>
+            </div>
+            <div class="gm-form-group">
+                <label>Content</label>
+                <textarea id="new-mem-content" rows="4" placeholder="Enter memory content..."></textarea>
+            </div>
+            <div class="gm-form-group">
+                <label>Importance (0.0 to 1.0)</label>
+                <input type="number" id="new-mem-imp" step="0.1" min="0" max="1" value="0.5">
+            </div>
+        </div>
+        <div class="gm-modal-footer">
+            <button class="gm-ctx-btn" onclick="document.getElementById('add-memory-modal').style.display='none'">Cancel</button>
+            <button class="gm-ctx-btn gm-ctx-btn-primary" onclick="submitMemory()">Save Memory</button>
+        </div>
+    </div>
+</div>
+
+<!-- Styles to override shell layout and build high-density IDE view -->
+<style>
+/* Override gm-main padding to make full bleed */
+.gm-main {
+    padding: 0 !important;
+    max-width: none !important;
+    height: 100%;
+}
+
+.gm-ctx-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 57px); /* fill viewport under nav */
+    background: hsl(225, 14%, 7%);
+    overflow: hidden;
+}
+
+/* ─── Top Bar ─── */
+.gm-ctx-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: hsl(225, 12%, 11%);
+    border-bottom: 1px solid hsl(225, 10%, 16%);
+    height: 52px;
+    flex-shrink: 0;
+}
+
+.gm-ctx-agent-select {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: hsl(225, 14%, 7%);
+    border: 1px solid hsl(225, 10%, 20%);
+    padding: 4px 10px;
+    border-radius: 6px;
+    position: relative;
+}
+.gm-ctx-agent-select i { width: 14px; height: 14px; }
+.gm-ctx-agent-select select {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 13px;
+    font-weight: 600;
+    outline: none;
+    appearance: none;
+    padding-right: 16px;
+    cursor: pointer;
+    font-family: inherit;
+}
+.select-chevron {
+    position: absolute;
+    right: 8px;
+    pointer-events: none;
+}
+
+.gm-ctx-metrics {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 20px;
+    border-left: 1px solid hsl(225, 10%, 16%);
+    border-right: 1px solid hsl(225, 10%, 16%);
+}
+.gm-ctx-metric {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+}
+.gm-ctx-metric .label {
+    color: hsl(225, 10%, 45%);
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+.gm-ctx-metric .value {
+    font-weight: 800;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.gm-ctx-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.gm-ctx-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: hsl(225, 14%, 7%);
+    border: 1px solid hsl(225, 10%, 20%);
+    color: hsl(225, 10%, 75%);
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    cursor: pointer;
+}
+.gm-ctx-btn i { width: 14px; height: 14px; color: hsl(225, 10%, 50%); transition: color 0.15s ease; }
+.gm-ctx-btn:hover {
+    background: hsl(225, 10%, 14%);
+    border-color: hsl(225, 10%, 30%);
+    color: white;
+}
+.gm-ctx-btn:hover i { color: white; }
+.gm-ctx-btn-primary {
+    background: var(--mc-primary, hsl(230,80%,62%));
+    color: white;
+    border: none;
+    box-shadow: 0 2px 8px hsla(230,80%,62%,0.25);
+}
+.gm-ctx-btn-primary:hover {
+    background: hsl(230,80%,58%);
+    border-color: transparent;
+    transform: translateY(-1px);
+}
+.gm-ctx-btn-primary i { color: white; }
+
+/* ─── Split Layout ─── */
+.gm-ctx-split {
+    display: flex;
+    flex: 1;
+    min-height: 0; /* Important for flex children scrolling */
+}
+
+/* ─── Explorer Pane (Left) ─── */
+.gm-ctx-explorer {
+    width: 400px;
+    min-width: 300px;
+    background: hsl(225, 14%, 7%);
+    border-right: 1px solid hsl(225, 10%, 16%);
+    display: flex;
+    flex-direction: column;
+}
+
+.gm-explorer-header {
+    flex-shrink: 0;
+}
+.gm-explorer-tabs {
+    display: flex;
+    border-bottom: 1px solid hsl(225, 10%, 16%);
+    background: hsl(225, 12%, 11%);
+}
+.gm-explorer-tab {
+    flex: 1;
+    background: none;
+    border: none;
+    color: hsl(225, 10%, 45%);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 10px 0;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s ease;
+}
+.gm-explorer-tab:hover { color: hsl(0, 0%, 85%); background: hsla(0,0%,100%,0.02); }
+.gm-explorer-tab.active {
+    color: white;
+    border-bottom-color: var(--mc-primary, hsl(230,80%,62%));
+}
+
+.gm-explorer-search {
+    padding: 10px;
+    position: relative;
+    border-bottom: 1px solid hsl(225, 10%, 16%);
+}
+.gm-explorer-search i {
+    position: absolute;
+    left: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    color: hsl(225, 10%, 40%);
+}
+.gm-explorer-search input {
+    width: 100%;
+    background: hsl(225, 12%, 11%);
+    border: 1px solid hsl(225, 10%, 20%);
+    border-radius: 6px;
+    padding: 6px 10px 6px 30px;
+    font-size: 12px;
+    color: white;
+    outline: none;
+}
+.gm-explorer-search input:focus { border-color: hsl(230, 80%, 62%); }
+
+.gm-explorer-list {
+    flex: 1;
+    overflow-y: auto;
+}
+.gm-explorer-list::-webkit-scrollbar { width: 6px; }
+.gm-explorer-list::-webkit-scrollbar-thumb { background: hsl(225,10%,20%); border-radius: 3px; }
+
+/* Memory Row */
+.gm-mem-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-bottom: 1px solid hsl(225, 10%, 12%);
+    cursor: pointer;
+    transition: background 0.1s ease;
+}
+.gm-mem-row:hover { background: hsl(225, 10%, 12%); }
+.gm-mem-row.selected { background: hsla(230, 80%, 62%, 0.1); border-left: 2px solid hsl(230, 80%, 62%); padding-left: 10px; }
+
+.gm-mem-id {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 11px;
+    color: hsl(225, 10%, 45%);
+    width: 60px;
+    flex-shrink: 0;
+}
+
+.gm-mem-type {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    letter-spacing: 0.5px;
+}
+.gm-mem-type-episodic { background: hsla(270,60%,60%,0.15); color: hsl(270,60%,60%); }
+.gm-mem-type-semantic { background: hsla(210,80%,60%,0.15); color: hsl(210,80%,60%); }
+.gm-mem-type-procedural { background: hsla(155,70%,45%,0.15); color: hsl(155,70%,45%); }
+.gm-mem-type-decision { background: hsla(38,92%,55%,0.15); color: hsl(38,92%,55%); }
+.gm-mem-type-state { background: hsla(330,60%,55%,0.15); color: hsl(330,60%,55%); }
+.gm-mem-type-unknown { background: hsla(0,0%,50%,0.15); color: hsl(0,0%,70%); }
+
+.gm-mem-preview {
+    font-size: 12px;
+    color: hsl(0, 0%, 80%);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+}
+
+.gm-mem-meta {
+    font-size: 10px;
+    color: hsl(225, 10%, 35%);
+    flex-shrink: 0;
+}
+
+
+/* ─── Graph Pane (Right) ─── */
+.gm-ctx-graph-panel {
+    flex: 1;
+    position: relative;
+    background: radial-gradient(circle at center, hsl(225,12%,11%) 0%, hsl(225,14%,7%) 100%);
+    display: flex;
+    flex-direction: column;
+}
+
+.gm-graph-header {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    right: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 10;
+    pointer-events: none;
+}
+.gm-graph-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: hsl(0, 0%, 90%);
+    background: hsla(225, 14%, 7%, 0.8);
+    backdrop-filter: blur(8px);
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid hsl(225, 10%, 20%);
+    pointer-events: auto;
+}
+.gm-graph-title i { width: 16px; height: 16px; color: hsl(230, 80%, 62%); }
+
+.gm-graph-controls {
+    pointer-events: auto;
+}
+.gm-graph-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: hsla(225, 14%, 7%, 0.8);
+    backdrop-filter: blur(8px);
+    border: 1px solid hsl(225, 10%, 20%);
+    color: hsl(225, 10%, 60%);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.gm-graph-btn:hover { color: white; border-color: hsl(225, 10%, 30%); }
+.gm-graph-btn i { width: 14px; height: 14px; }
+
+.gm-graph-container {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    outline: none;
+}
+
+/* Detail Overlay */
+.gm-graph-overlay {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    max-width: 90%;
+    background: hsla(225, 14%, 8%, 0.95);
+    backdrop-filter: blur(12px);
+    border: 1px solid hsl(225, 10%, 22%);
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    z-index: 20;
+    display: none;
+    flex-direction: column;
+}
+.overlay-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    border-bottom: 1px solid hsl(225, 10%, 18%);
+}
+.overlay-title {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    color: hsl(230, 80%, 62%);
+    font-weight: 600;
+}
+.overlay-header button {
+    background: none;
+    border: none;
+    color: hsl(225, 10%, 50%);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+}
+.overlay-header button:hover { color: white; background: hsl(225, 10%, 20%); }
+.overlay-header button i { width: 14px; height: 14px; }
+
+.overlay-content {
+    padding: 16px;
+    font-size: 13px;
+    color: hsl(0, 0%, 85%);
+    line-height: 1.6;
+    max-height: 200px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.overlay-content::-webkit-scrollbar { width: 6px; }
+.overlay-content::-webkit-scrollbar-thumb { background: hsl(225,10%,20%); border-radius: 3px; }
+
+.overlay-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 10px 16px;
+    border-top: 1px solid hsl(225, 10%, 18%);
+    background: hsla(225, 14%, 6%, 0.5);
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+}
+
+/* ─── File Explorer Panel ─── */
+.gm-fs-panel {
+    position: absolute;
+    right: 0;
+    top: 52px; /* Below header */
+    bottom: 0;
+    width: 320px;
+    background: hsl(225, 14%, 7%);
+    border-left: 1px solid hsl(225, 10%, 16%);
+    display: flex;
+    flex-direction: column;
+    z-index: 30;
+    box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+}
+.gm-fs-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid hsl(225, 10%, 16%);
+    background: hsl(225, 12%, 11%);
+}
+.gm-fs-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.gm-fs-title i { width: 16px; height: 16px; color: hsl(230,80%,62%); }
+.gm-fs-close {
+    background: none;
+    border: none;
+    color: hsl(225, 10%, 50%);
+    cursor: pointer;
+}
+.gm-fs-close:hover { color: white; }
+
+.gm-fs-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 0;
+}
+.gm-fs-tree { font-size: 13px; color: hsl(0,0%,85%); }
+.gm-fs-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    cursor: pointer;
+    user-select: none;
+}
+.gm-fs-item:hover { background: hsl(225, 10%, 14%); }
+.gm-fs-icon { width: 14px; height: 14px; color: hsl(225, 10%, 50%); }
+.gm-fs-chevron { width: 14px; height: 14px; color: hsl(225, 10%, 40%); transition: transform 0.15s; }
+.gm-fs-folder.expanded .gm-fs-chevron { transform: rotate(90deg); }
+.gm-fs-children { display: none; padding-left: 20px; }
+.gm-fs-folder.expanded + .gm-fs-children { display: block; }
+.gm-fs-file { padding-left: 36px; }
+.gm-fs-file .gm-fs-icon { color: hsl(190,80%,50%); }
+.gm-fs-empty { padding: 6px 36px; font-size: 11px; color: hsl(225,10%,40%); font-style: italic; }
+
+/* ─── Context Menu ─── */
+.gm-context-menu {
+    position: fixed;
+    background: hsl(225, 14%, 9%);
+    border: 1px solid hsl(225, 10%, 20%);
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    padding: 6px;
+    z-index: 100;
+    min-width: 180px;
+}
+.gm-cm-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: hsl(0,0%,85%);
+    cursor: pointer;
+    border-radius: 4px;
+}
+.gm-cm-item:hover { background: hsl(230,80%,62%); color: white; }
+.gm-cm-item i { width: 14px; height: 14px; }
+.gm-cm-divider {
+    height: 1px;
+    background: hsl(225, 10%, 20%);
+    margin: 4px 0;
+}
+
+/* ─── Modal ─── */
+.gm-modal {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.gm-modal-content {
+    background: hsl(225, 14%, 9%);
+    border: 1px solid hsl(225, 10%, 20%);
+    border-radius: 12px;
+    width: 480px;
+    max-width: 90%;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+}
+.gm-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid hsl(225, 10%, 16%);
+}
+.gm-modal-header h3 { margin: 0; font-size: 15px; color: white; }
+.gm-modal-header button { background: none; border: none; color: hsl(225, 10%, 50%); cursor: pointer; }
+.gm-modal-header button:hover { color: white; }
+.gm-modal-body { padding: 20px; }
+.gm-form-group { margin-bottom: 16px; }
+.gm-form-group label { display: block; font-size: 12px; color: hsl(225, 10%, 60%); margin-bottom: 6px; }
+.gm-form-group input, .gm-form-group select, .gm-form-group textarea {
+    width: 100%;
+    background: hsl(225, 12%, 11%);
+    border: 1px solid hsl(225, 10%, 20%);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: white;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+}
+.gm-form-group input:focus, .gm-form-group select:focus, .gm-form-group textarea:focus { border-color: hsl(230,80%,62%); }
+.gm-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 16px 20px;
+    border-top: 1px solid hsl(225, 10%, 16%);
+}
+</style>
+
+<script>
+    // Tab Switching Logic
+    function switchTab(tabId, btnElement) {
+        // Update Buttons
+        document.querySelectorAll('.gm-explorer-tab').forEach(b => b.classList.remove('active'));
+        if (btnElement) btnElement.classList.add('active');
+
+        // Update Panels
+        document.querySelectorAll('.gm-explorer-list').forEach(p => p.style.display = 'none');
+        document.getElementById('tab-' + tabId).style.display = 'block';
+    }
+
+    // Initialize Search
+    document.getElementById('memory-search-input').addEventListener('input', function(e) {
+        const query = e.target.value.toLowerCase();
+        const rows = document.querySelectorAll('.gm-mem-row');
+        rows.forEach(row => {
+            const content = row.getAttribute('data-content');
+            if (content.includes(query)) {
+                row.style.display = 'flex';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+
+    // Parse memories JSON securely
+    const rawMemories = {{ memories_json | safe if memories_json else '[]' }};
+    let network = null;
+
+    // Type to color mapping for graph
+    const typeColors = {
+        'episodic': '#a855f7', // purple
+        'semantic': '#3b82f6', // blue
+        'procedural': '#10b981', // green
+        'decision': '#f59e0b', // amber
+        'state': '#ec4899', // pink
+        'unknown': '#6b7280' // gray
+    };
+
+    function initGraph() {
+        const container = document.getElementById('vis-network-container');
+        if (!container || rawMemories.length === 0) return;
+
+        // Build nodes and basic edges
+        const nodes = new vis.DataSet();
+        const edges = new vis.DataSet();
+
+        rawMemories.forEach((mem, index) => {
+            // Label truncates content
+            const label = (mem.content && mem.content.length > 20) ? mem.content.substring(0, 20) + '...' : (mem.content || 'Memory');
+            const safeType = mem.type || 'unknown';
+            
+            nodes.add({
+                id: mem.id,
+                label: label,
+                title: safeType.toUpperCase(), // tooltip
+                color: {
+                    background: typeColors[safeType] || typeColors.unknown,
+                    border: 'rgba(255,255,255,0.2)',
+                    highlight: {
+                        background: '#ffffff',
+                        border: typeColors[safeType] || typeColors.unknown
+                    }
+                },
+                font: { color: '#ffffff', size: 12, face: 'Inter' },
+                shape: 'dot',
+                size: 15 + ((mem.importance || 0.5) * 15), // size based on importance
+                shadow: { enabled: true, color: 'rgba(0,0,0,0.5)', size: 10, x: 0, y: 4 }
+            });
+
+            // Connect procedural to some random nodes just for visualization structure if no hard links exist
+            if (index > 0 && Math.random() > 0.7) {
+                edges.add({
+                    from: mem.id,
+                    to: rawMemories[Math.floor(Math.random() * index)].id,
+                    color: { color: 'rgba(255,255,255,0.1)', highlight: '#4f46e5' },
+                    width: 1,
+                    smooth: { type: 'continuous' }
+                });
+            }
+        });
+
+        const data = { nodes: nodes, edges: edges };
+        const options = {
+            nodes: {
+                borderWidth: 2,
+                borderWidthSelected: 4
+            },
+            edges: {
+                arrows: { to: { enabled: true, scaleFactor: 0.5 } }
+            },
+            physics: {
+                forceAtlas2Based: {
+                    gravitationalConstant: -100,
+                    centralGravity: 0.01,
+                    springLength: 150,
+                    springConstant: 0.08
+                },
+                maxVelocity: 50,
+                solver: 'forceAtlas2Based',
+                timestep: 0.35,
+                stabilization: { iterations: 150 }
+            },
+            interaction: {
+                hover: true,
+                tooltipDelay: 200,
+                zoomView: true,
+                dragView: true
+            }
+        };
+
+        network = new vis.Network(container, data, options);
+
+        // Click event to show overlay
+        network.on("click", function (params) {
+            if (params.nodes.length > 0) {
+                const nodeId = params.nodes[0];
+                showMemoryDetail(nodeId);
+                
+                // Also highlight row in list
+                document.querySelectorAll('.gm-mem-row').forEach(r => r.classList.remove('selected'));
+                const row = Array.from(document.querySelectorAll('.gm-mem-row')).find(r => r.querySelector('.gm-mem-id').textContent.trim() === nodeId.substring(0,8));
+                if(row) {
+                    row.classList.add('selected');
+                    row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            } else {
+                document.getElementById('node-detail-overlay').style.display = 'none';
+                document.querySelectorAll('.gm-mem-row').forEach(r => r.classList.remove('selected'));
+            }
+        });
+    }
+
+    function selectMemory(id, rowElement) {
+        // Highlight row
+        document.querySelectorAll('.gm-mem-row').forEach(r => r.classList.remove('selected'));
+        if (rowElement) rowElement.classList.add('selected');
+
+        // Show overlay
+        showMemoryDetail(id);
+
+        // Focus node in graph
+        if (network) {
+            network.selectNodes([id]);
+            network.focus(id, {
+                scale: 1.2,
+                animation: { duration: 500, easingFunction: "easeInOutQuad" }
+            });
+        }
+    }
+
+    function showMemoryDetail(id) {
+        const mem = rawMemories.find(m => m.id === id);
+        if (!mem) return;
+
+        const overlay = document.getElementById('node-detail-overlay');
+        const title = document.getElementById('overlay-title');
+        const content = document.getElementById('overlay-content');
+
+        const safeType = mem.type || 'unknown';
+        title.innerHTML = `ID: ${mem.id} <span style="background: ${typeColors[safeType]||typeColors.unknown}; color: white; padding: 2px 6px; border-radius: 4px; font-family: 'Inter'; font-size: 10px; margin-left: 8px;">${safeType.toUpperCase()}</span>`;
+        content.textContent = mem.content;
+
+        overlay.style.display = 'flex';
+    }
+
+    // Context Menu Logic
+    let currentCmId = null;
+    const cm = document.getElementById('memory-context-menu');
+    
+    function showMemoryContextMenu(e, id) {
+        e.preventDefault();
+        currentCmId = id;
+        cm.style.display = 'block';
+        cm.style.left = e.pageX + 'px';
+        cm.style.top = e.pageY + 'px';
+        
+        // Ensure it doesn't go off screen
+        const rect = cm.getBoundingClientRect();
+        if (rect.bottom > window.innerHeight) cm.style.top = (window.innerHeight - rect.height - 10) + 'px';
+        if (rect.right > window.innerWidth) cm.style.left = (window.innerWidth - rect.width - 10) + 'px';
+    }
+
+    document.addEventListener('click', (e) => {
+        if (cm && !cm.contains(e.target)) cm.style.display = 'none';
+    });
+
+    function cmViewFile() {
+        if (!currentCmId) return;
+        const mem = rawMemories.find(m => m.id === currentCmId);
+        if (!mem) return;
+        const safeType = mem.type || 'unknown';
+        const path = `context/${safeType}/${mem.id}.json`;
+        
+        // Redirect to real file view
+        const baseUrl = "{{ url_for('gitmem.hub_file_view', ws_slug=workspace.id) if workspace else '#' }}";
+        if (baseUrl !== '#') {
+            window.location.href = `${baseUrl}${path}`;
+        }
+    }
+
+    function cmViewGraph() {
+        if (currentCmId) {
+            selectMemory(currentCmId);
+            cm.style.display = 'none';
+        }
+    }
+
+    function cmCopyId() {
+        if (currentCmId) {
+            navigator.clipboard.writeText(currentCmId);
+            alert('Copied ID to clipboard');
+            cm.style.display = 'none';
+        }
+    }
+
+    function cmViewHistory() {
+        if (currentCmId) {
+            window.location.href = `{{ url_for('gitmem.hub_history', ws_slug=workspace.id) if workspace else '#' }}?file=${currentCmId}`;
+        }
+    }
+
+
+    // Add Memory
+    function showAddMemoryModal() {
+        document.getElementById('add-memory-modal').style.display = 'flex';
+    }
+
+    async function submitMemory() {
+        const type = document.getElementById('new-mem-type').value;
+        const content = document.getElementById('new-mem-content').value;
+        const importance = document.getElementById('new-mem-imp').value;
+        
+        if (!content) return alert('Content is required');
+        
+        const wsId = "{{ workspace.id if workspace else '' }}";
+        if (!wsId) return alert('Workspace ID not found');
+
+        try {
+            const resp = await fetch(`/gitmem/api/agent/${wsId}/memories`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    type: type,
+                    content: content,
+                    importance: parseFloat(importance)
+                })
+            });
+            if (resp.ok) window.location.reload();
+            else {
+                const data = await resp.json();
+                alert(data.error || 'Failed to add memory');
+            }
+        } catch (e) {
+            alert('Error: ' + e.message);
+        }
+    }
+
+    // Connect overlay buttons
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            initGraph();
+        }, 100);
+
+        document.getElementById('overlay-btn-fs').addEventListener('click', () => {
+            const title = document.getElementById('overlay-title').textContent;
+            const id = title.split(' ')[1]; // "ID: abc12345..."
+            if (id) {
+                currentCmId = id;
+                cmViewFile();
+            }
+        });
+        
+        document.getElementById('overlay-btn-copy').addEventListener('click', () => {
+            const title = document.getElementById('overlay-title').textContent;
+            const id = title.split(' ')[1];
+            if (id) {
+                navigator.clipboard.writeText(id);
+                alert('Copied ID');
+            }
+        });
+    });
+</script>
+
+{% endblock %}

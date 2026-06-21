@@ -1,0 +1,63 @@
+<!-- Context Item Card Component -->
+<div class="group p-5 rounded-xl bg-[var(--mc-surface)] hover:bg-[var(--mc-surface-2)] border border-mc-border transition-all flex flex-col md:flex-row md:items-start gap-4">
+    
+    <!-- Left: Type Icon & Relevance -->
+    <div class="flex items-center md:flex-col md:items-center gap-3 md:w-16 shrink-0">
+        <div class="w-10 h-10 rounded-xl bg-{{ color_class|default('mc-primary') }}/10 border border-{{ color_class|default('mc-primary') }}/20 flex items-center justify-center shrink-0">
+            <i data-lucide="{{ icon }}" class="w-5 h-5 text-{{ color_class|default('mc-primary') }}"></i>
+        </div>
+        <div class="flex flex-col items-center gap-1 w-full" title="Relevance Score: {{ (relevance|default(0.5) * 100)|int }}%">
+            <div class="w-full h-1 bg-black/40 rounded-full overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-{{ color_class|default('mc-primary') }} to-white rounded-full" style="width: {{ (relevance|default(0.5) * 100) }}%"></div>
+            </div>
+            <span class="text-[9px] font-mono text-gray-500">{{ (relevance|default(0.5) * 100)|int }}%</span>
+        </div>
+    </div>
+
+    <!-- Center: Content -->
+    <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 mb-1.5 flex-wrap">
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-{{ color_class|default('mc-primary') }} bg-{{ color_class|default('mc-primary') }}/10 border border-{{ color_class|default('mc-primary') }}/20">
+                {{ category_name }}
+            </span>
+            {% if source %}
+            <span class="text-xs text-gray-400 flex items-center gap-1">
+                <i data-lucide="folder-tree" class="w-3 h-3"></i> {{ source }}
+            </span>
+            {% endif %}
+            <span class="text-xs text-gray-500">•</span>
+            <span class="text-xs text-gray-500 flex items-center gap-1" title="{{ timestamp }}">
+                <i data-lucide="clock" class="w-3 h-3"></i> {{ time_ago }}
+            </span>
+        </div>
+        
+        <div class="text-sm text-gray-200 leading-relaxed font-medium break-words mb-3">
+            {{ content|truncate(200) }}
+        </div>
+        
+        <!-- Metadata Tags -->
+        {% if tags %}
+        <div class="flex flex-wrap gap-1.5">
+            {% for tag in tags[:3] %}
+            <span class="px-1.5 py-0.5 rounded bg-black/30 border border-white/5 text-[10px] text-gray-400">#{{ tag }}</span>
+            {% endfor %}
+            {% if tags|length > 3 %}
+            <span class="px-1.5 py-0.5 rounded bg-black/30 border border-white/5 text-[10px] text-gray-500">+{{ tags|length - 3 }}</span>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Right: Actions -->
+    <div class="flex md:flex-col items-center gap-2 shrink-0 md:opacity-0 group-hover:opacity-100 transition-opacity mt-4 md:mt-0">
+        <button class="w-8 h-8 rounded-lg bg-[var(--mc-surface-2)] border border-mc-border flex items-center justify-center text-gray-400 hover:text-white hover:border-gray-500 transition-colors" title="Edit Context">
+            <i data-lucide="pencil" class="w-4 h-4"></i>
+        </button>
+        <button class="w-8 h-8 rounded-lg bg-[var(--mc-surface-2)] border border-mc-border flex items-center justify-center text-gray-400 hover:text-mc-primary hover:border-mc-primary transition-colors" title="View in Advanced Mode">
+            <i data-lucide="braces" class="w-4 h-4"></i>
+        </button>
+        <button class="w-8 h-8 rounded-lg bg-[var(--mc-surface-2)] border border-mc-border flex items-center justify-center text-gray-400 hover:text-mc-danger hover:border-mc-danger transition-colors" title="Archive">
+            <i data-lucide="archive" class="w-4 h-4"></i>
+        </button>
+    </div>
+</div>

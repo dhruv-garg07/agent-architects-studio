@@ -1,0 +1,227 @@
+{% extends "layouts/mission_control_shell.html" %}
+
+{% set active_page = 'governance' %}
+
+{% block workspace_content %}
+
+<!-- Page Header -->
+<div class="gm-page-header" style="display: flex; align-items: center; justify-content: space-between;">
+    <div>
+        <h1 class="gm-page-title">Trust Center</h1>
+        <p class="gm-page-subtitle">Verify knowledge requests, resolve conflicts, and audit organizational changes.</p>
+    </div>
+</div>
+
+<!-- Governance Stats -->
+<div class="gm-stats-row">
+    <div class="gm-stat-card">
+        <div class="gm-stat-label">Pending Reviews</div>
+        <div class="gm-stat-value gm-stat-warning">{{ pending_count | default('4') }}</div>
+    </div>
+    <div class="gm-stat-card">
+        <div class="gm-stat-label">Conflicts</div>
+        <div class="gm-stat-value gm-stat-danger">{{ conflict_count | default('1') }}</div>
+    </div>
+    <div class="gm-stat-card">
+        <div class="gm-stat-label">Trust Score</div>
+        <div class="gm-stat-value gm-stat-success">{{ trust_score | default('92') }}%</div>
+    </div>
+    <div class="gm-stat-card">
+        <div class="gm-stat-label">Review Tracks</div>
+        <div class="gm-stat-value gm-stat-accent">{{ track_count | default('3') }}</div>
+    </div>
+</div>
+
+<!-- Knowledge Requests Queue -->
+<div class="gm-section">
+    <div class="gm-section-header">
+        <h2 class="gm-section-title"><i data-lucide="inbox"></i> Knowledge Requests</h2>
+        <div style="display: flex; gap: 4px;">
+            <button class="gm-tab-btn gm-tab-active">All</button>
+            <button class="gm-tab-btn">Pending</button>
+            <button class="gm-tab-btn">Resolved</button>
+        </div>
+    </div>
+    <div class="gm-section-body">
+
+        {% if requests %}
+            {% for req in requests %}
+            <!-- Dynamic requests -->
+            {% endfor %}
+        {% else %}
+            <div class="p-4 text-center text-sm text-gray-500">
+                No active knowledge requests or conflicts.
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Audit Trail -->
+<div class="gm-section">
+    <div class="gm-section-header">
+        <h2 class="gm-section-title"><i data-lucide="history"></i> Audit Trail</h2>
+    </div>
+    <div class="gm-section-body">
+        <div class="p-4 text-center text-sm text-gray-500">
+            No recent audit events.
+        </div>
+    </div>
+</div>
+
+<style>
+/* ─── Tab Buttons ─── */
+.gm-tab-btn {
+    background: none;
+    border: none;
+    color: hsl(225, 10%, 45%);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+}
+.gm-tab-btn:hover { color: white; background: hsl(225, 10%, 14%); }
+.gm-tab-active {
+    color: white !important;
+    background: hsl(225, 10%, 16%) !important;
+}
+
+/* ─── Knowledge Request Items ─── */
+.gm-kr-item {
+    display: flex;
+    gap: 14px;
+    padding: 18px 0;
+    border-bottom: 1px solid hsl(225, 10%, 13%);
+}
+.gm-kr-item:last-child { border-bottom: none; }
+
+.gm-kr-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+.gm-kr-icon i { width: 18px; height: 18px; }
+.gm-kr-icon-danger { background: hsla(0, 72%, 55%, 0.1); color: hsl(0, 72%, 55%); }
+.gm-kr-icon-warning { background: hsla(38, 92%, 55%, 0.1); color: hsl(38, 92%, 55%); }
+.gm-kr-icon-success { background: hsla(155, 70%, 45%, 0.1); color: hsl(155, 70%, 45%); }
+
+.gm-kr-content { flex: 1; min-width: 0; }
+
+.gm-kr-header-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+}
+.gm-kr-badge {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 7px;
+    border-radius: 5px;
+}
+.gm-kr-badge-danger { background: hsla(0,72%,55%,0.1); color: hsl(0,72%,55%); border: 1px solid hsla(0,72%,55%,0.2); }
+.gm-kr-badge-warning { background: hsla(38,92%,55%,0.1); color: hsl(38,92%,55%); border: 1px solid hsla(38,92%,55%,0.2); }
+.gm-kr-badge-success { background: hsla(155,70%,45%,0.1); color: hsl(155,70%,45%); border: 1px solid hsla(155,70%,45%,0.2); }
+
+.gm-kr-source {
+    font-size: 11px;
+    color: hsl(225, 10%, 45%);
+}
+.gm-kr-time {
+    font-size: 11px;
+    color: hsl(225, 10%, 38%);
+    margin-left: auto;
+}
+
+.gm-kr-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 8px;
+}
+
+.gm-kr-body { margin-bottom: 10px; }
+
+/* Conflict diff view */
+.gm-kr-diff {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.gm-kr-diff-side {
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: hsl(225, 14%, 7%);
+    border-left: 3px solid hsl(225, 10%, 20%);
+    font-size: 13px;
+    color: hsl(0, 0%, 75%);
+}
+.gm-kr-diff-label {
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    color: hsl(225, 10%, 45%);
+    margin-bottom: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.gm-kr-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: hsl(225, 10%, 42%);
+    margin-bottom: 12px;
+}
+.gm-kr-meta i { vertical-align: middle; }
+
+.gm-kr-actions {
+    display: flex;
+    gap: 6px;
+}
+.gm-kr-btn {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 7px;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s ease;
+}
+.gm-kr-btn-approve {
+    background: hsl(155, 70%, 45%);
+    color: white;
+}
+.gm-kr-btn-approve:hover { background: hsl(155, 70%, 40%); }
+.gm-kr-btn-reject {
+    background: hsla(0, 72%, 55%, 0.1);
+    color: hsl(0, 72%, 55%);
+    border: 1px solid hsla(0, 72%, 55%, 0.2);
+}
+.gm-kr-btn-reject:hover { background: hsla(0, 72%, 55%, 0.15); }
+.gm-kr-btn-modify {
+    background: none;
+    color: hsl(225, 10%, 55%);
+    border: 1px solid hsl(225, 10%, 20%);
+}
+.gm-kr-btn-modify:hover { color: white; border-color: hsl(225, 10%, 30%); }
+.gm-kr-btn-resolve {
+    background: hsl(0, 72%, 55%);
+    color: white;
+}
+.gm-kr-btn-resolve:hover { background: hsl(0, 72%, 50%); }
+</style>
+
+{% endblock %}

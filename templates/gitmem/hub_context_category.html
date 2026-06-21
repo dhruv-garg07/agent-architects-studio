@@ -1,0 +1,137 @@
+{% extends "layouts/mission_control_shell.html" %}
+
+{% set active_page = 'context' %}
+
+{% set category_meta = {
+    'decisions': {'title': 'Decisions', 'icon': 'scale', 'color': 'hsl(38,92%,55%)', 'bg': 'hsla(38,92%,55%,0.1)', 'desc': 'Strategic choices and their rationale'},
+    'processes': {'title': 'Processes', 'icon': 'workflow', 'color': 'hsl(155,70%,45%)', 'bg': 'hsla(155,70%,45%,0.1)', 'desc': 'Playbooks, SOPs, and how-to guides'},
+    'learnings': {'title': 'Learnings', 'icon': 'lightbulb', 'color': 'hsl(270,60%,60%)', 'bg': 'hsla(270,60%,60%,0.1)', 'desc': 'Insights discovered from interactions'},
+    'facts': {'title': 'Core Facts', 'icon': 'database', 'color': 'hsl(210,80%,60%)', 'bg': 'hsla(210,80%,60%,0.1)', 'desc': 'Foundational knowledge and ground truth'},
+    'documents': {'title': 'Documents', 'icon': 'file-text', 'color': 'hsl(190,80%,50%)', 'bg': 'hsla(190,80%,50%,0.1)', 'desc': 'Uploaded files and reference materials'},
+    'live': {'title': 'Live Context', 'icon': 'radio', 'color': 'hsl(330,60%,55%)', 'bg': 'hsla(330,60%,55%,0.1)', 'desc': 'Current state and real-time information'},
+} %}
+
+{% set meta = category_meta.get(category, category_meta['facts']) %}
+
+{% block workspace_content %}
+
+<!-- Breadcrumb -->
+<div style="display: flex; align-items: center; gap: 6px; margin-bottom: 20px; font-size: 13px;">
+    <a href="{{ url_for('gitmem.hub_context', ws_slug=workspace.slug) if workspace else '#' }}" style="color: hsl(225,10%,45%); text-decoration: none;">Context</a>
+    <i data-lucide="chevron-right" style="width: 14px; height: 14px; color: hsl(225,10%,30%);"></i>
+    <span style="color: white; font-weight: 600;">{{ meta.title }}</span>
+</div>
+
+<!-- Page Header -->
+<div class="gm-page-header" style="display: flex; align-items: center; gap: 16px;">
+    <div style="width: 48px; height: 48px; border-radius: 12px; background: {{ meta.bg }}; color: {{ meta.color }}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <i data-lucide="{{ meta.icon }}" style="width: 24px; height: 24px;"></i>
+    </div>
+    <div>
+        <h1 class="gm-page-title">{{ meta.title }}</h1>
+        <p class="gm-page-subtitle">{{ meta.desc }}</p>
+    </div>
+</div>
+
+<!-- Search within category -->
+<div style="margin-bottom: 24px; max-width: 480px;">
+    <div style="position: relative;">
+        <i data-lucide="search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: hsl(225,10%,40%);"></i>
+        <input type="text" 
+               placeholder="Search {{ meta.title | lower }}..." 
+               style="width: 100%; background: hsl(225,12%,11%); border: 1px solid hsl(225,10%,16%); border-radius: 10px; padding: 10px 12px 10px 38px; font-size: 13px; color: white; outline: none; font-family: inherit;"
+               onfocus="this.style.borderColor='hsl(230,80%,62%)'"
+               onblur="this.style.borderColor='hsl(225,10%,16%)'">
+    </div>
+</div>
+
+<!-- Items List -->
+<div class="gm-section">
+    <div class="gm-section-body" style="padding-top: 16px;">
+        {% if items %}
+            {% for item in items %}
+            <div class="gm-ctx-item">
+                <div class="gm-ctx-item-dot" style="background: {{ meta.color }}; box-shadow: 0 0 6px {{ meta.bg }};"></div>
+                <div class="gm-ctx-item-content">
+                    <div class="gm-ctx-item-text">{{ item.content[:200] }}</div>
+                    <div class="gm-ctx-item-meta">
+                        {% if item.get('importance') %}
+                        <span style="color: {{ meta.color }};">Relevance: {{ (item.importance * 100) | int }}%</span>
+                        <span>·</span>
+                        {% endif %}
+                        <span>{{ (item.created_at or '')[:10] }}</span>
+                        {% if item.get('tags') and item.tags %}
+                        <span>·</span>
+                        {% for tag in item.tags[:3] %}
+                        <span style="background: hsl(225,10%,16%); padding: 1px 6px; border-radius: 4px; font-size: 10px;">{{ tag }}</span>
+                        {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="gm-ctx-item-actions">
+                    <button style="background: none; border: 1px solid hsl(225,10%,20%); border-radius: 6px; padding: 4px 8px; color: hsl(225,10%,50%); cursor: pointer; font-size: 11px; transition: all 0.15s ease;" 
+                            onmouseover="this.style.borderColor='hsl(225,10%,30%)'; this.style.color='white'"
+                            onmouseout="this.style.borderColor='hsl(225,10%,20%)'; this.style.color='hsl(225,10%,50%)'">
+                        View
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div style="text-align: center; padding: 48px 0;">
+                <div style="width: 56px; height: 56px; border-radius: 14px; background: {{ meta.bg }}; color: {{ meta.color }}; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+                    <i data-lucide="{{ meta.icon }}" style="width: 28px; height: 28px;"></i>
+                </div>
+                <h3 style="font-size: 16px; font-weight: 700; color: white; margin-bottom: 6px; background: none !important; -webkit-text-fill-color: white !important;">No {{ meta.title | lower }} yet</h3>
+                <p style="font-size: 13px; color: hsl(225,10%,45%); max-width: 360px; margin: 0 auto 20px;">{{ meta.title }} will appear here as your agents learn and your team records organizational knowledge.</p>
+                <button style="background: {{ meta.color }}; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: opacity 0.15s ease;"
+                        onmouseover="this.style.opacity='0.85'"
+                        onmouseout="this.style.opacity='1'">
+                    Add {{ meta.title | lower | replace('core facts', 'fact') }}
+                </button>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.gm-ctx-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 0;
+    border-bottom: 1px solid hsl(225, 10%, 13%);
+}
+.gm-ctx-item:last-child { border-bottom: none; }
+
+.gm-ctx-item-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-top: 7px;
+    flex-shrink: 0;
+}
+.gm-ctx-item-content { flex: 1; min-width: 0; }
+.gm-ctx-item-text {
+    font-size: 13px;
+    font-weight: 500;
+    color: hsl(0, 0%, 85%);
+    line-height: 1.6;
+    word-break: break-word;
+}
+.gm-ctx-item-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: hsl(225, 10%, 42%);
+    margin-top: 6px;
+    flex-wrap: wrap;
+}
+.gm-ctx-item-actions {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+</style>
+
+{% endblock %}

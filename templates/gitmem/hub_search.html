@@ -1,0 +1,123 @@
+{% extends "layouts/mission_control_shell.html" %}
+
+{% set active_page = 'search' %}
+
+{% block workspace_content %}
+
+<div style="max-width: 800px; margin: 0 auto; padding-top: 40px;">
+    
+    <div style="text-align: center; margin-bottom: 32px;">
+        <h1 style="font-size: 32px; font-weight: 800; color: white; margin-bottom: 12px;">Universal Organizational Search</h1>
+        <p style="font-size: 14px; color: hsl(225, 10%, 55%);">Search across all repositories, agent memories, and decisions.</p>
+    </div>
+
+    <!-- Search Bar -->
+    <div style="position: relative; margin-bottom: 40px;">
+        <i data-lucide="search" style="position: absolute; left: 24px; top: 50%; transform: translateY(-50%); width: 24px; height: 24px; color: hsl(225, 10%, 40%);"></i>
+        <input type="text" id="searchInput" placeholder="e.g., How does our refund policy work?" 
+               style="width: 100%; background: hsl(225, 12%, 11%); border: 1px solid hsl(225, 10%, 20%); border-radius: 16px; padding: 20px 24px 20px 64px; font-size: 18px; color: white; outline: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: all 0.2s ease;"
+               onfocus="this.style.borderColor='hsl(230,80%,62%)'" onblur="this.style.borderColor='hsl(225, 10%, 20%)'">
+    </div>
+
+    <!-- Search Results -->
+    <div id="searchResults" style="display: flex; flex-direction: column; gap: 16px;">
+        <!-- Results will be injected here -->
+    </div>
+
+    <!-- Empty/Loading State -->
+    <div id="searchState" style="text-align: center; margin-top: 60px;">
+        <p style="font-size: 14px; color: hsl(225, 10%, 40%);">Type your query and press Enter to search through agent memories and knowledge repositories.</p>
+    </div>
+
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const searchInput = document.getElementById('searchInput');
+        const searchResults = document.getElementById('searchResults');
+        const searchState = document.getElementById('searchState');
+        const agentId = "{{ workspace.id }}";
+
+        searchInput.addEventListener('keypress', async (e) => {
+            if (e.key === 'Enter') {
+                const query = searchInput.value.trim();
+                if (!query) return;
+
+                // UI Loading
+                searchResults.innerHTML = '';
+                searchState.innerHTML = '<p style="color: hsl(230,80%,62%); font-size: 14px;">Searching across organizational knowledge...</p>';
+
+                try {
+                    // Call Search Documents
+                    const docRes = await fetch('/search_documents', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ agent_id: agentId, query: query, top_k: 5 })
+                    });
+                    
+                    if (!docRes.ok) throw new Error(`Search Documents API failed: ${docRes.status}`);
+                    const docData = await docRes.json();
+                    
+                    // Call Search Chat History
+                    const chatRes = await fetch('/search_chat_history', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ agent_id: agentId, query: query, top_k: 5 })
+                    });
+
+                    if (!chatRes.ok) throw new Error(`Search Chat History API failed: ${chatRes.status}`);
+                    const chatData = await chatRes.json();
+
+                    searchState.innerHTML = ''; // clear loading
+
+                    let hasResults = false;
+
+                    const renderResult = (title, content, type, score) => {
+                        hasResults = true;
+                        const card = document.createElement('div');
+                        card.style.background = 'hsl(225, 12%, 11%)';
+                        card.style.border = '1px solid hsl(225, 10%, 15%)';
+                        card.style.borderRadius = '12px';
+                        card.style.padding = '20px';
+                        
+                        card.innerHTML = `
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span style="color: ${type === 'Document' ? 'hsl(190,80%,50%)' : 'hsl(270,60%,60%)'}; font-size: 12px; font-weight: bold; text-transform: uppercase;">${type}</span>
+                                ${score ? `<span style="color: hsl(225, 10%, 50%); font-size: 12px;">Score: ${score.toFixed(2)}</span>` : ''}
+                            </div>
+                            <h3 style="color: white; font-size: 16px; margin-bottom: 8px;">${title}</h3>
+                            <p style="color: hsl(225, 10%, 70%); font-size: 14px; line-height: 1.5;">${content}</p>
+                        `;
+                        searchResults.appendChild(card);
+                    };
+
+                    // Process docData
+                    if (docData.results && Array.isArray(docData.results)) {
+                        docData.results.forEach(res => {
+                            const meta = res.metadata || {};
+                            renderResult(meta.filename || meta.topic || 'Document Match', res.document || res.content || '', 'Document', res.score);
+                        });
+                    }
+
+                    // Process chatData
+                    if (chatData.history && Array.isArray(chatData.history)) {
+                        chatData.history.forEach(res => {
+                            const meta = res.metadata || {};
+                            renderResult(meta.topic || 'Chat History Match', res.document || res.content || '', 'Memory', res.score);
+                        });
+                    }
+
+                    if (!hasResults) {
+                        searchState.innerHTML = '<p style="color: hsl(225, 10%, 40%); font-size: 14px;">No relevant knowledge found for that query.</p>';
+                    }
+
+                } catch (err) {
+                    console.error(err);
+                    searchState.innerHTML = '<p style="color: hsl(0,80%,60%); font-size: 14px;">An error occurred while searching.</p>';
+                }
+            }
+        });
+    });
+</script>
+
+{% endblock %}

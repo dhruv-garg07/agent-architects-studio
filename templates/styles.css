@@ -1,5 +1,27 @@
 /* Modern Creator Studio Styles */
 :root {
+    /* Mission Control Core Backgrounds */
+    --mc-bg:          hsl(225, 15%, 8%);
+    --mc-surface:     hsl(225, 12%, 12%);
+    --mc-surface-2:   hsl(225, 10%, 16%);
+    --mc-border:      hsl(225, 10%, 20%);
+
+    /* Mission Control Accents */
+    --mc-primary:     hsl(230, 80%, 62%);
+    --mc-secondary:   hsl(270, 60%, 60%);
+    --mc-success:     hsl(155, 70%, 45%);
+    --mc-warning:     hsl(38, 92%, 55%);
+    --mc-danger:      hsl(0, 72%, 55%);
+
+    /* Context Category Colors */
+    --cat-facts:      hsl(270, 60%, 60%);
+    --cat-events:     hsl(210, 80%, 60%);
+    --cat-playbooks:  hsl(155, 70%, 45%);
+    --cat-decisions:  hsl(38, 92%, 55%);
+    --cat-documents:  hsl(190, 80%, 50%);
+    --cat-live:       hsl(330, 60%, 55%);
+
+    /* Existing Creator Studio Variables */
     --bg-primary: #0a0a0f;
     --bg-secondary: #15151f;
     --bg-card: #1a1a2e;
@@ -11,7 +33,7 @@
     --muted-foreground: #94a3b8;
     --success: #10b981;
     --error: #ef4444;
-    --radius: 14px; /* increased radius for sleeker, more oval visuals */
+    --radius: 14px;
     --transition: all 0.22s cubic-bezier(0.2, 0.9, 0.2, 1);
 }
 

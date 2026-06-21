@@ -1,0 +1,231 @@
+{% extends "layouts/mission_control_shell.html" %}
+{% set active_page = 'explorer' %}
+
+{% block title %}Context Explorer | GitMem{% endblock %}
+
+{% block workspace_content %}
+<div class="p-6 h-full flex flex-col">
+    <!-- Breadcrumbs & Navigation Header -->
+    <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
+        <div class="flex items-center gap-2">
+            <h1 class="text-2xl font-bold text-white tracking-tight">Context Explorer</h1>
+            {% if current_path %}
+            <span class="text-gray-500 mx-2">/</span>
+            <span class="text-gray-300 font-mono text-sm bg-white/5 px-2 py-1 rounded">{{ current_path }}</span>
+            {% endif %}
+        </div>
+
+        <div class="flex items-center gap-3">
+            <div
+                class="flex items-center gap-2 px-4 py-2 rounded-xl bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] text-xs text-gray-400 backdrop-blur-md">
+                <i data-lucide="search" class="w-4 h-4 text-[#93c5fd]/70"></i>
+                <span class="hidden sm:inline">Go to file</span>
+                <kbd
+                    class="text-[10px] bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] px-1.5 py-0.5 rounded text-gray-500">⌘T</kbd>
+            </div>
+        </div>
+    </div>
+
+    <!-- Virtual Filesystem Container -->
+    <div
+        class="flex-1 backdrop-blur-xl bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.1)] rounded-2xl overflow-hidden shadow-xl transition-all duration-300 flex flex-col">
+
+        <!-- Browser Header -->
+        <div class="px-6 py-4 border-b border-[rgba(255,255,255,0.03)] bg-[rgba(255,255,255,0.02)] flex flex-col gap-3 shrink-0">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 border border-[rgba(255,255,255,0.1)] flex items-center justify-center shadow-inner">
+                        <i data-lucide="folder-tree" class="w-5 h-5 text-gray-400"></i>
+                    </div>
+                    <div>
+                        <div class="text-sm font-bold text-white tracking-wide">{{ workspace.name or workspace.id }}</div>
+                        <div class="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-bold">Virtual Storage Layer</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2 px-3 py-1 rounded-lg bg-[rgba(0,0,0,0.3)] border border-[rgba(255,255,255,0.05)] text-[11px] font-mono text-gray-400">
+                        <span class="w-1.5 h-1.5 rounded-full bg-[#3b82f6]/60"></span>
+                        main
+                    </div>
+                    <i data-lucide="cloud" class="w-4 h-4 text-[#93c5fd]"></i>
+                </div>
+            </div>
+            
+            <!-- Commit History Info (Restored from previous view) -->
+            <div class="flex items-center justify-between text-xs mt-1 pt-3 border-t border-[rgba(255,255,255,0.03)]">
+                <div class="flex items-center gap-3">
+                    <img src="https://github.com/github.png" class="w-5 h-5 rounded-full grayscale opacity-70">
+                    <span class="font-semibold text-gray-300 hover:text-white cursor-pointer">{{ workspace.name or 'system-agent' }}</span>
+                    <span class="text-gray-500 truncate max-w-md hover:text-[#93c5fd] cursor-pointer" title="{{ commits[0].message if commits else 'Initial commit for memory store' }}">
+                        {{ commits[0].message if commits else 'Initial commit for memory store' }}
+                    </span>
+                </div>
+                <div class="flex items-center gap-4 text-gray-500 font-mono">
+                    <span>{{ commits[0].hash[:7] if commits else 'init' }}</span>
+                    <a href="{{ url_for('gitmem.hub_history', ws_slug=workspace.id) }}" class="flex items-center gap-1.5 font-sans font-semibold text-gray-400 hover:text-[#93c5fd] transition-colors cursor-pointer text-decoration-none">
+                        <i data-lucide="history" class="w-3.5 h-3.5"></i>
+                        <span>{{ commits|length }} commits</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- File Explorer List -->
+        <div class="divide-y divide-[rgba(255,255,255,0.03)] flex-1 overflow-y-auto">
+
+            <!-- Parent Directory Link -->
+            {% if current_path %}
+            <div class="group hover:bg-[rgba(59,130,246,0.03)] transition-colors">
+                {% set parent_path = current_path.rsplit('/', 1)[0] if '/' in current_path else '' %}
+                {% if parent_path %}
+                <a href="{{ url_for('gitmem.hub_explorer', ws_slug=workspace.id, virtual_path=parent_path) }}"
+                    class="flex items-center gap-4 px-6 py-4 text-sm text-gray-500 group-hover:text-[#93c5fd] transition-colors">
+                    <i data-lucide="corner-left-up"
+                        class="w-4 h-4 opacity-40 group-hover:opacity-100 transition-opacity"></i>
+                    <span class="font-mono font-bold">..</span>
+                    <span
+                        class="text-[10px] uppercase tracking-widest ml-auto opacity-0 group-hover:opacity-100 transition-opacity">Parent
+                        directory</span>
+                </a>
+                {% else %}
+                <a href="{{ url_for('gitmem.hub_explorer', ws_slug=workspace.id) }}"
+                    class="flex items-center gap-4 px-6 py-4 text-sm text-gray-500 group-hover:text-[#93c5fd] transition-colors">
+                    <i data-lucide="corner-left-up"
+                        class="w-4 h-4 opacity-40 group-hover:opacity-100 transition-opacity"></i>
+                    <span class="font-mono font-bold">..</span>
+                    <span
+                        class="text-[10px] uppercase tracking-widest ml-auto opacity-0 group-hover:opacity-100 transition-opacity">Back
+                        to Root</span>
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            {% for item in items %}
+            {# Define Semantic Branding based on Folder Path #}
+            {% set is_checkpoints = item.path.startswith('checkpoints') %}
+            {% set is_logs = item.path.startswith('logs') %}
+            {% set is_vectors = item.path.startswith('vectors') %}
+            {% set is_context = item.path and (item.path.startswith('context') or item.path.startswith('docs') or
+            item.path.startswith('documents')) %}
+
+            {# Default / Context Theme (Blue) #}
+            {% set theme_color = 'text-primary' %}
+            {% set theme_bg = 'bg-primary/10' %}
+            {% set theme_hover_bg = 'group-hover:bg-primary/20' %}
+            {% set theme_hover_border = 'group-hover:border-primary/30' %}
+            {% set file_icon = 'file-code-2' %}
+            {% set folder_icon = 'folder' %}
+
+            {% if is_checkpoints %}
+            {# Checkpoints Theme (Emerald Green) #}
+            {% set theme_color = 'text-[#34d399]' %}
+            {% set theme_bg = 'bg-[rgba(16,185,129,0.1)]' %}
+            {% set theme_hover_bg = 'group-hover:bg-[rgba(16,185,129,0.2)]' %}
+            {% set theme_hover_border = 'group-hover:border-[rgba(16,185,129,0.3)]' %}
+            {% set file_icon = 'save' %}
+            {% set folder_icon = 'save' %}
+            {% elif is_vectors %}
+            {# Vectors Theme (Purple) #}
+            {% set theme_color = 'text-[#a78bfa]' %}
+            {% set theme_bg = 'bg-[rgba(139,92,246,0.1)]' %}
+            {% set theme_hover_bg = 'group-hover:bg-[rgba(139,92,246,0.2)]' %}
+            {% set theme_hover_border = 'group-hover:border-[rgba(139,92,246,0.3)]' %}
+            {% set file_icon = 'database-zap' %}
+            {% set folder_icon = 'database-zap' %}
+            {% elif is_logs %}
+            {# Logs Theme (Amber/Warning) #}
+            {% set theme_color = 'text-[#fbbf24]' %}
+            {% set theme_bg = 'bg-[rgba(245,158,11,0.1)]' %}
+            {% set theme_hover_bg = 'group-hover:bg-[rgba(245,158,11,0.2)]' %}
+            {% set theme_hover_border = 'group-hover:border-[rgba(245,158,11,0.3)]' %}
+            {% set file_icon = 'scroll-text' %}
+            {% set folder_icon = 'scroll-text' %}
+            {% endif %}
+
+            <div
+                class="group flex items-center justify-between px-6 py-4 hover:bg-[rgba(255,255,255,0.02)] transition-all duration-200">
+                <div class="flex items-center gap-4 w-5/12">
+                    <div class="flex-shrink-0">
+                        {% if item.type == 'directory' %}
+                        <!-- Directory Icon with Semantic Theme -->
+                        <div
+                            class="p-2 rounded-lg {{ theme_bg }} {{ theme_color }} {{ theme_hover_bg }} transition-all border border-transparent {{ theme_hover_border }}">
+                            <i data-lucide="{{ folder_icon if (is_logs or is_checkpoints) else 'folder' }}"
+                                class="w-4 h-4 {% if not (is_logs or is_checkpoints) %}fill-current opacity-80{% endif %}"></i>
+                        </div>
+                        {% else %}
+                        <!-- File Icon with Hover Theme -->
+                        <div
+                            class="p-2 rounded-lg bg-[rgba(255,255,255,0.05)] text-gray-500 group-hover:text-gray-200 transition-all border border-transparent {{ theme_hover_border }} {{ theme_hover_bg }}">
+                            <i data-lucide="{{ file_icon }}"
+                                class="w-4 h-4 {{ 'text-gray-400 group-hover:' + theme_color if not (is_logs or is_checkpoints) else '' }}"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% if item.type == 'directory' %}
+                    <a href="{{ url_for('gitmem.hub_explorer', ws_slug=workspace.id, virtual_path=item.path) }}"
+                        class="text-sm font-bold text-gray-300 group-hover:text-white transition-colors truncate">
+                        {{ item.name }}
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('gitmem.hub_file_view', ws_slug=workspace.id, virtual_path=item.path) }}"
+                        class="text-sm font-bold text-gray-300 group-hover:text-white transition-colors truncate">
+                        {{ item.name }}
+                    </a>
+                    {% endif %}
+                </div>
+
+                <div
+                    class="flex-1 px-4 text-[10px] text-gray-600 font-mono truncate opacity-30 group-hover:opacity-60 transition-opacity">
+                    virtual://{{ item.path }}
+                </div>
+
+                <div class="flex items-center gap-12">
+                    <div
+                        class="hidden lg:block text-[10px] text-gray-500 font-bold uppercase tracking-widest text-right w-32">
+                        {{ item.last_modified[:10] if item.last_modified else '2026-01-24' }}
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <!-- Empty State -->
+            <div class="py-32 text-center">
+                <div
+                    class="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] mb-8 relative group">
+                    <div
+                        class="absolute inset-0 bg-[rgba(59,130,246,0.1)] rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity">
+                    </div>
+                    <i data-lucide="folder-open" class="w-12 h-12 text-gray-700 relative z-10"></i>
+                </div>
+                <h4 class="text-2xl font-bold text-white mb-3">Empty Repository</h4>
+                <p class="text-gray-500 text-sm max-w-sm mx-auto leading-relaxed">
+                    This virtual directory doesn't contain any entries yet. Push memories or document nodes to populate
+                    this space.
+                </p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Footer / Summary -->
+        <div
+            class="px-8 py-4 border-t border-[rgba(255,255,255,0.03)] bg-[rgba(0,0,0,0.2)] flex items-center justify-between text-[10px] text-gray-500 font-bold uppercase tracking-[0.2em] shrink-0">
+            <div class="flex items-center gap-6">
+                <span class="flex items-center gap-2">
+                    <span class="text-white">{{ items|length }}</span> Items Total
+                </span>
+                <span class="w-1 h-1 rounded-full bg-[rgba(255,255,255,0.1)]"></span>
+                <span>Virtual Storage Layer</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="text-[#93c5fd]/80">Live Sync Active</span>
+                <div class="relative w-2 h-2">
+                    <div class="absolute inset-0 rounded-full bg-[rgba(16,185,129,0.4)] animate-ping"></div>
+                    <div class="relative w-2 h-2 rounded-full bg-[#10b981]"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

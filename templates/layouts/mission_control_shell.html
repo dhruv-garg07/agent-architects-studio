@@ -1,0 +1,714 @@
+{% extends "base.html" %}
+
+{% block title %}GitMem — {{ workspace.name if workspace else 'Intelligence' }}{% endblock %}
+
+{% block content %}
+<!-- Organizational Intelligence OS Layout -->
+<div class="gm-shell">
+
+    <!-- Sidebar -->
+    <aside class="gm-sidebar" id="gm-sidebar">
+        
+        <!-- Workspace Switcher -->
+        <div class="gm-sidebar-header">
+            <div class="gm-ws-switcher" id="ws-switcher">
+                <div class="gm-ws-icon">
+                    <span>{{ (workspace.name if workspace else 'W')[0] | upper }}</span>
+                </div>
+                <div class="gm-ws-info">
+                    <span class="gm-ws-name">{{ workspace.name if workspace else 'Workspace' }}</span>
+                    <span class="gm-ws-label">Intelligence OS</span>
+                </div>
+                <i data-lucide="chevrons-up-down" class="gm-ws-chevron"></i>
+            </div>
+            
+            <!-- Dropdown Menu -->
+            <div id="ws-dropdown" class="absolute top-full left-3 right-3 mt-1 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50 transition-all duration-200 opacity-0 pointer-events-none translate-y-[-10px]">
+                <div class="p-2 border-b border-white/10 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Switch Agent
+                </div>
+                <div id="ws-dropdown-list" class="max-h-64 overflow-y-auto p-1 space-y-1">
+                    <div class="p-4 text-center text-xs text-gray-500">Loading agents...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Primary Navigation -->
+        <nav class="gm-nav-primary">
+            <!-- MISSION CONTROL / AGENTS -->
+            <a href="{{ url_for('gitmem.hub_agents', ws_slug=workspace.id) if workspace else '#' }}"
+               class="gm-nav-item {{ 'gm-nav-active' if active_page == 'agents' else '' }}"
+               data-tooltip="Agents" style="margin-bottom: 8px;">
+                <i data-lucide="bot" class="gm-nav-icon"></i>
+                <span class="gm-nav-label" style="font-weight: 700;">Agents</span>
+            </a>
+
+            <!-- KNOWLEDGE -->
+            <div class="gm-nav-group">
+                <div class="gm-nav-group-label">Knowledge</div>
+                <a href="{{ url_for('gitmem.hub_search', ws_slug=workspace.id) if workspace else '#' }}"
+                   class="gm-nav-item {{ 'gm-nav-active' if active_page == 'search' else '' }}">
+                    <i data-lucide="search" class="gm-nav-icon"></i>
+                    <span class="gm-nav-label">Search</span>
+                </a>
+                <a href="{{ url_for('gitmem.hub_context', ws_slug=workspace.id) if workspace else '#' }}"
+                   class="gm-nav-item {{ 'gm-nav-active' if active_page == 'context' else '' }}">
+                    <i data-lucide="folder-tree" class="gm-nav-icon"></i>
+                    <span class="gm-nav-label">Explorer</span>
+                </a>
+                <a href="{{ url_for('gitmem.hub_chat', ws_slug=workspace.id) if workspace else '#' }}"
+                   class="gm-nav-item {{ 'gm-nav-active' if active_page == 'chat' else '' }}">
+                    <i data-lucide="message-square" class="gm-nav-icon"></i>
+                    <span class="gm-nav-label">Playground (Chat)</span>
+                </a>
+            </div>
+
+            <!-- CHANGES -->
+            <div class="gm-nav-group">
+                <div class="gm-nav-group-label">Changes</div>
+                <a href="{{ url_for('gitmem.hub_history', ws_slug=workspace.id) if workspace else '#' }}"
+                   class="gm-nav-item {{ 'gm-nav-active' if active_page == 'history' else '' }}">
+                    <i data-lucide="git-branch" class="gm-nav-icon"></i>
+                    <span class="gm-nav-label">History</span>
+                </a>
+            </div>
+
+            <!-- TRUST -->
+            <div class="gm-nav-group">
+                <div class="gm-nav-group-label">Trust</div>
+                <a href="{{ url_for('gitmem.hub_governance', ws_slug=workspace.id) if workspace else '#' }}"
+                   class="gm-nav-item {{ 'gm-nav-active' if active_page == 'governance' else '' }}">
+                    <i data-lucide="shield-check" class="gm-nav-icon"></i>
+                    <span class="gm-nav-label">Governance</span>
+                    {% if pending_reviews is defined and pending_reviews > 0 %}
+                    <span class="gm-nav-badge">{{ pending_reviews }}</span>
+                    {% endif %}
+                </a>
+                <a href="{{ url_for('gitmem.hub_permissions', ws_slug=workspace.id) if workspace else '#' }}"
+                   class="gm-nav-item {{ 'gm-nav-active' if active_page == 'permissions' else '' }}">
+                    <i data-lucide="key" class="gm-nav-icon"></i>
+                    <span class="gm-nav-label">Permissions</span>
+                </a>
+                <a href="{{ url_for('gitmem.hub_audit', ws_slug=workspace.id) if workspace else '#' }}"
+                   class="gm-nav-item {{ 'gm-nav-active' if active_page == 'audit' else '' }}">
+                    <i data-lucide="file-check" class="gm-nav-icon"></i>
+                    <span class="gm-nav-label">Audit Logs</span>
+                </a>
+            </div>
+
+            <!-- INTEGRATIONS -->
+            <div class="gm-nav-group">
+                <div class="gm-nav-group-label">Integrations</div>
+                <a href="{{ url_for('gitmem.hub_integrations', ws_slug=workspace.id) if workspace else '#' }}"
+                   class="gm-nav-item {{ 'gm-nav-active' if active_page == 'connections' else '' }}">
+                    <i data-lucide="cable" class="gm-nav-icon"></i>
+                    <span class="gm-nav-label">Connectors</span>
+                </a>
+            </div>
+        </nav>
+
+
+
+        <!-- Sidebar Footer -->
+        <div class="gm-sidebar-footer">
+            <a href="{{ url_for('gitmem.hub_settings', ws_slug=workspace.id) if workspace else '#' }}"
+               class="gm-nav-item {{ 'gm-nav-active' if active_page == 'settings' else '' }}"
+               data-tooltip="Settings">
+                <i data-lucide="settings" class="gm-nav-icon"></i>
+                <span class="gm-nav-label">Settings</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="gm-main">
+        {% block workspace_content %}{% endblock %}
+    </main>
+
+</div>
+
+<style>
+/* ═══════════════════════════════════════════════════════
+   GitMem Intelligence OS — Layout System
+   ═══════════════════════════════════════════════════════ */
+
+.gm-shell {
+    display: flex;
+    min-height: calc(100vh - 57px); /* below base.html navbar */
+    background: var(--mc-bg, hsl(225, 15%, 8%));
+}
+
+/* ─── Sidebar ─── */
+.gm-sidebar {
+    width: 240px;
+    min-width: 240px;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 57px; /* navbar height */
+    height: calc(100vh - 57px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    z-index: 30;
+    transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                min-width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Scrollbar for sidebar */
+.gm-sidebar::-webkit-scrollbar { width: 0; }
+.gm-sidebar { scrollbar-width: none; }
+
+/* ─── Workspace Switcher ─── */
+.gm-sidebar-header {
+    padding: 16px 12px 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+}
+
+.gm-ws-switcher {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+.gm-ws-switcher:hover { background: rgba(255, 255, 255, 0.05); }
+
+.gm-ws-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 9999px;
+    background: linear-gradient(to bottom right, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.1));
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 14px;
+    color: #3b82f6;
+    flex-shrink: 0;
+}
+
+.gm-ws-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+.gm-ws-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: hsl(0, 0%, 93%);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+}
+.gm-ws-label {
+    font-size: 10px;
+    font-weight: 500;
+    color: hsl(225, 10%, 50%);
+    letter-spacing: 0.3px;
+}
+
+.gm-ws-chevron {
+    width: 14px;
+    height: 14px;
+    color: hsl(225, 10%, 40%);
+    flex-shrink: 0;
+}
+
+/* ─── Navigation Items ─── */
+.gm-nav-primary {
+    flex: 1;
+    padding: 12px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.gm-nav-group {
+    margin-bottom: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.gm-nav-group-label {
+    padding: 8px 12px 4px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: hsl(225, 10%, 40%);
+}
+
+.gm-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    color: hsl(225, 10%, 55%);
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    cursor: pointer;
+    position: relative;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+}
+.gm-nav-item:hover {
+    color: hsl(0, 0%, 90%);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.gm-nav-active {
+    color: white !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+}
+.gm-nav-active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 20px;
+    border-radius: 0 3px 3px 0;
+    background: var(--mc-primary, hsl(230, 80%, 62%));
+    box-shadow: 0 0 8px var(--mc-primary, hsl(230, 80%, 62%));
+}
+
+.gm-nav-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+.gm-nav-active .gm-nav-icon {
+    color: var(--mc-primary, hsl(230, 80%, 62%));
+}
+
+.gm-nav-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.gm-nav-badge {
+    margin-left: auto;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: hsl(0, 72%, 55%);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* ─── Developer Mode Nav ─── */
+.gm-nav-devmode {
+    padding: 0 8px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.gm-nav-divider {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px 4px;
+    margin-bottom: 4px;
+}
+.gm-nav-divider span {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: hsl(38, 92%, 55%);
+    white-space: nowrap;
+}
+.gm-nav-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: hsl(225, 10%, 14%);
+}
+
+.gm-nav-dev .gm-nav-icon { color: hsl(38, 70%, 50%); }
+.gm-nav-dev:hover .gm-nav-icon { color: hsl(38, 92%, 55%); }
+
+/* ─── Sidebar Footer ─── */
+.gm-sidebar-footer {
+    padding: 8px;
+    border-top: 1px solid hsl(225, 10%, 14%);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+/* ─── Developer Mode Toggle Switch ─── */
+.gm-toggle-switch {
+    margin-left: auto;
+    width: 32px;
+    height: 18px;
+    border-radius: 9px;
+    background: hsl(225, 10%, 20%);
+    position: relative;
+    transition: background 0.2s ease;
+    flex-shrink: 0;
+}
+.gm-toggle-switch.active {
+    background: hsl(38, 92%, 55%);
+}
+.gm-toggle-knob {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 7px;
+    background: white;
+    transition: transform 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.gm-toggle-switch.active .gm-toggle-knob {
+    transform: translateX(14px);
+}
+
+/* ─── Main Content ─── */
+.gm-main {
+    flex: 1;
+    min-width: 0;
+    padding: 28px 36px;
+    max-width: 1200px;
+}
+
+/* ─── Page Header Utility ─── */
+.gm-page-header {
+    margin-bottom: 28px;
+}
+.gm-page-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: white;
+    letter-spacing: -0.3px;
+    line-height: 1.2;
+    margin: 0;
+    /* Override base.html gradient text for our pages */
+    background: none !important;
+    -webkit-text-fill-color: white !important;
+}
+.gm-page-subtitle {
+    font-size: 13px;
+    color: hsl(225, 10%, 50%);
+    margin-top: 4px;
+    font-weight: 400;
+}
+
+/* ─── Stat Cards Row ─── */
+.gm-stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+}
+.gm-stat-card {
+    background: hsl(225, 12%, 11%);
+    border: 1px solid hsl(225, 10%, 16%);
+    border-radius: 12px;
+    padding: 18px 20px;
+    transition: border-color 0.2s ease;
+}
+.gm-stat-card:hover { border-color: hsl(225, 10%, 22%); }
+.gm-stat-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: hsl(225, 10%, 45%);
+    margin-bottom: 8px;
+}
+.gm-stat-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: white;
+    line-height: 1;
+    letter-spacing: -0.5px;
+}
+.gm-stat-accent { color: var(--mc-primary, hsl(230, 80%, 62%)); }
+.gm-stat-success { color: var(--mc-success, hsl(155, 70%, 45%)); }
+.gm-stat-warning { color: var(--mc-warning, hsl(38, 92%, 55%)); }
+.gm-stat-danger { color: var(--mc-danger, hsl(0, 72%, 55%)); }
+
+/* ─── Section Blocks ─── */
+.gm-section {
+    background: hsl(225, 12%, 11%);
+    border: 1px solid hsl(225, 10%, 16%);
+    border-radius: 14px;
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+.gm-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 22px 14px;
+}
+.gm-section-title {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: hsl(0, 0%, 85%);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    /* Override base.html gradient */
+    background: none !important;
+    -webkit-text-fill-color: hsl(0, 0%, 85%) !important;
+}
+.gm-section-title i { 
+    width: 16px; height: 16px; 
+    color: var(--mc-primary, hsl(230, 80%, 62%)); 
+}
+.gm-section-body {
+    padding: 0 22px 20px;
+}
+
+/* ─── Feed Items ─── */
+.gm-feed-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid hsl(225, 10%, 13%);
+}
+.gm-feed-item:last-child { border-bottom: none; }
+
+.gm-feed-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-top: 6px;
+    flex-shrink: 0;
+}
+.gm-feed-dot-blue { background: hsl(230, 80%, 62%); box-shadow: 0 0 6px hsla(230, 80%, 62%, 0.4); }
+.gm-feed-dot-green { background: hsl(155, 70%, 45%); box-shadow: 0 0 6px hsla(155, 70%, 45%, 0.4); }
+.gm-feed-dot-amber { background: hsl(38, 92%, 55%); box-shadow: 0 0 6px hsla(38, 92%, 55%, 0.4); }
+.gm-feed-dot-purple { background: hsl(270, 60%, 60%); box-shadow: 0 0 6px hsla(270, 60%, 60%, 0.4); }
+
+.gm-feed-content { flex: 1; min-width: 0; }
+.gm-feed-text {
+    font-size: 13px;
+    font-weight: 500;
+    color: hsl(0, 0%, 85%);
+    line-height: 1.5;
+}
+.gm-feed-text strong {
+    color: white;
+    font-weight: 700;
+}
+.gm-feed-meta {
+    font-size: 11px;
+    color: hsl(225, 10%, 42%);
+    margin-top: 3px;
+}
+
+/* ─── Alert / Attention Cards ─── */
+.gm-alert {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    transition: background 0.15s ease;
+    cursor: pointer;
+}
+.gm-alert:last-child { margin-bottom: 0; }
+
+.gm-alert-warning {
+    background: hsla(38, 92%, 55%, 0.06);
+    border: 1px solid hsla(38, 92%, 55%, 0.15);
+}
+.gm-alert-warning:hover { background: hsla(38, 92%, 55%, 0.1); }
+
+.gm-alert-danger {
+    background: hsla(0, 72%, 55%, 0.06);
+    border: 1px solid hsla(0, 72%, 55%, 0.15);
+}
+.gm-alert-danger:hover { background: hsla(0, 72%, 55%, 0.1); }
+
+.gm-alert-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.gm-alert-warning .gm-alert-icon {
+    background: hsla(38, 92%, 55%, 0.12);
+    color: hsl(38, 92%, 55%);
+}
+.gm-alert-danger .gm-alert-icon {
+    background: hsla(0, 72%, 55%, 0.12);
+    color: hsl(0, 72%, 55%);
+}
+.gm-alert-icon i { width: 18px; height: 18px; }
+
+.gm-alert-text {
+    font-size: 13px;
+    font-weight: 600;
+    color: hsl(0, 0%, 85%);
+    flex: 1;
+}
+.gm-alert-time {
+    font-size: 11px;
+    color: hsl(225, 10%, 40%);
+    flex-shrink: 0;
+}
+
+/* ─── Quick Access Cards ─── */
+.gm-quick-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+}
+.gm-quick-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 20px;
+    border-radius: 12px;
+    background: hsl(225, 12%, 11%);
+    border: 1px solid hsl(225, 10%, 16%);
+    text-decoration: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+.gm-quick-card:hover {
+    border-color: hsl(225, 10%, 24%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+.gm-quick-card-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 14px;
+}
+.gm-quick-card-icon i { width: 20px; height: 20px; }
+.gm-quick-card-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 4px;
+}
+.gm-quick-card-desc {
+    font-size: 12px;
+    color: hsl(225, 10%, 50%);
+    line-height: 1.5;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 768px) {
+    .gm-sidebar {
+        width: 60px;
+        min-width: 60px;
+    }
+    .gm-ws-info,
+    .gm-ws-chevron,
+    .gm-nav-label,
+    .gm-nav-badge,
+    .gm-nav-divider span,
+    .gm-toggle-switch { display: none; }
+    .gm-ws-switcher { justify-content: center; padding: 8px; }
+    .gm-nav-item { justify-content: center; padding: 10px; }
+    .gm-main { padding: 20px 16px; }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const switcher = document.getElementById('ws-switcher');
+    const dropdown = document.getElementById('ws-dropdown');
+    const dropdownList = document.getElementById('ws-dropdown-list');
+    let agentsLoaded = false;
+    let isOpen = false;
+
+    switcher.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        isOpen = !isOpen;
+        if (isOpen) {
+            dropdown.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-[-10px]');
+            if (!agentsLoaded) {
+                agentsLoaded = true;
+                try {
+                    const res = await fetch('/dashboard/agents');
+                    const payload = await res.json();
+                    let agents = Array.isArray(payload) ? payload : (payload.data || payload.agents || []);
+                    
+                    dropdownList.innerHTML = '';
+                    if (agents.length === 0) {
+                        dropdownList.innerHTML = '<div class="p-4 text-center text-xs text-gray-500">No agents found</div>';
+                        return;
+                    }
+                    
+                    agents.forEach(agent => {
+                        const name = agent.agent_name || agent.name;
+                        const slug = agent.agent_slug;
+                        const initial = name.charAt(0).toUpperCase();
+                        
+                        const item = document.createElement('a');
+                        item.href = `/gitmem/w/${slug}/overview`;
+                        item.className = 'flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer text-decoration-none';
+                        item.innerHTML = `
+                            <div class="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs border border-primary/20 shrink-0">
+                                ${initial}
+                            </div>
+                            <div class="overflow-hidden">
+                                <div class="text-sm font-medium text-white truncate">${name}</div>
+                                <div class="text-[10px] text-gray-500 truncate">${slug}</div>
+                            </div>
+                        `;
+                        dropdownList.appendChild(item);
+                    });
+                } catch (e) {
+                    console.error('Failed to load agents', e);
+                    dropdownList.innerHTML = '<div class="p-4 text-center text-xs text-red-400">Failed to load</div>';
+                }
+            }
+        } else {
+            dropdown.classList.add('opacity-0', 'pointer-events-none', 'translate-y-[-10px]');
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        if (isOpen && !dropdown.contains(e.target) && !switcher.contains(e.target)) {
+            isOpen = false;
+            dropdown.classList.add('opacity-0', 'pointer-events-none', 'translate-y-[-10px]');
+        }
+    });
+});
+</script>
+{% endblock %}

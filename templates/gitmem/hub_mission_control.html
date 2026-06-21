@@ -1,0 +1,95 @@
+{% extends "layouts/mission_control_shell.html" %}
+
+{% set active_page = 'overview' %}
+
+{% block workspace_content %}
+
+<!-- Page Header -->
+<div class="gm-page-header">
+    <h1 class="gm-page-title">MISSION CONTROL</h1>
+    <p class="gm-page-subtitle">What is happening across your organization right now.</p>
+</div>
+
+<!-- Organization Intelligence Status -->
+<div class="gm-section" style="margin-bottom: 24px;">
+    <div class="gm-section-header" style="border-bottom: 1px solid hsl(225, 10%, 16%); padding-bottom: 12px; margin-bottom: 16px;">
+        <h2 class="gm-section-title" style="font-size: 14px; color: white;">
+            <i data-lucide="bar-chart-2" style="color: hsl(230,80%,62%); width: 18px; height: 18px;"></i> Organization Intelligence Status
+        </h2>
+    </div>
+    
+    <div class="gm-stats-row" style="padding: 0 22px 20px;">
+        <div class="gm-stat-card">
+            <div class="gm-stat-label">Agents Active</div>
+            <div class="gm-stat-value">{{ agent_count | default('1') }}</div>
+        </div>
+        <div class="gm-stat-card">
+            <div class="gm-stat-label">Total Memories</div>
+            <div class="gm-stat-value" style="color: hsl(230,80%,62%);">{{ memory_count | default('0') }}</div>
+        </div>
+        <div class="gm-stat-card">
+            <div class="gm-stat-label">Total Commits</div>
+            <div class="gm-stat-value" style="color: hsl(270,60%,60%);">{{ commit_count | default('0') }}</div>
+        </div>
+        <div class="gm-stat-card">
+            <div class="gm-stat-label">Retrieval Health</div>
+            <div class="gm-stat-value gm-stat-success">{{ health_pct | default('100') }}%</div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Split for Feed & Alerts -->
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+    
+    <!-- Recent Events -->
+    <div class="gm-section">
+        <div class="gm-section-header">
+            <h2 class="gm-section-title">
+                <i data-lucide="activity"></i> Recent Events
+            </h2>
+        </div>
+        <div class="gm-section-body">
+            {% if changes %}
+                {% for change in changes %}
+                <div class="gm-feed-item">
+                    <div class="gm-feed-dot {{ change.dot_class | default('gm-feed-dot-blue') }}"></div>
+                    <div class="gm-feed-content">
+                        <div class="gm-feed-text">{{ change.text | safe }}</div>
+                        <div class="gm-feed-meta">{{ change.meta }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="p-4 text-center text-sm text-gray-500">
+                    No recent events found.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Needs Attention -->
+    <div class="gm-section">
+        <div class="gm-section-header">
+            <h2 class="gm-section-title" style="color: hsl(38, 92%, 55%);">
+                <i data-lucide="alert-triangle" style="color: hsl(38, 92%, 55%);"></i> Needs Attention
+            </h2>
+        </div>
+        <div class="gm-section-body">
+            {% if alerts and alerts|length > 0 %}
+                {% for alert in alerts %}
+                <div class="gm-alert gm-alert-{{ alert.type | default('warning') }}">
+                    <div class="gm-alert-icon"><i data-lucide="{{ alert.icon | default('alert-triangle') }}"></i></div>
+                    <span class="gm-alert-text">{{ alert.message }}</span>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="p-4 text-center text-sm text-gray-500">
+                    No active alerts.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+</div>
+
+{% endblock %}

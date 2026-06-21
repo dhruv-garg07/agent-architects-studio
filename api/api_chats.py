@@ -1,4 +1,7 @@
 # api_chats.py
+# [DEPRECATED]
+# NOTE: This file is deprecated. Chat logic has been migrated to api_manhattan.py (/agent_chat).
+# Endpoint `/web/chat` should no longer be used. `/web/get_sessions` will soon be replaced by `/list_agents`.
 import os
 import time
 import uuid

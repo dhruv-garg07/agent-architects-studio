@@ -1,0 +1,322 @@
+{% extends "layouts/mission_control_shell.html" %}
+
+{% set active_page = 'agents' %}
+
+{% block workspace_content %}
+
+<!-- Page Header -->
+<div class="gm-page-header" style="display: flex; align-items: center; justify-content: space-between;">
+    <div>
+        <h1 class="gm-page-title">Agents</h1>
+        <p class="gm-page-subtitle">AI systems consuming and generating organizational context.</p>
+    </div>
+    <button id="create-agent-btn" style="background: var(--mc-primary, hsl(230,80%,62%)); color: white; border: none; padding: 10px 18px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; font-family: inherit; box-shadow: 0 2px 8px hsla(230,80%,62%,0.3); transition: all 0.15s ease;"
+            onmouseover="this.style.transform='translateY(-1px)'"
+            onmouseout="this.style.transform='none'">
+        <i data-lucide="plus" style="width: 16px; height: 16px;"></i> Connect Agent
+    </button>
+</div>
+
+<!-- Stats -->
+<div class="gm-stats-row">
+    <div class="gm-stat-card">
+        <div class="gm-stat-label">Total Agents</div>
+        <div class="gm-stat-value" id="stat-total-agents">...</div>
+    </div>
+    <div class="gm-stat-card">
+        <div class="gm-stat-label">Active Now</div>
+        <div class="gm-stat-value gm-stat-success" id="stat-active-agents">...</div>
+    </div>
+    <div class="gm-stat-card">
+        <div class="gm-stat-label">Knowledge Retrieved</div>
+        <div class="gm-stat-value gm-stat-accent" id="stat-total-memories">...</div>
+    </div>
+    <div class="gm-stat-card">
+        <div class="gm-stat-label">Knowledge Generated</div>
+        <div class="gm-stat-value" id="stat-total-tool-calls">...</div>
+    </div>
+</div>
+
+<div id="agents-empty" class="p-8 text-center text-muted-foreground hidden mt-10">
+    <i data-lucide="box" class="w-12 h-12 mx-auto text-gray-600 mb-4"></i>
+    <p class="text-lg mb-2">No agents found</p>
+    <p class="text-sm">Create or import agents to see them here</p>
+</div>
+
+<div id="agents-container" class="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mt-8">
+</div>
+
+<!-- Modals -->
+<!-- Create/Edit Agent Modal -->
+<div id="agent-modal" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true" style="backdrop-filter: blur(4px);">
+    <div class="fixed inset-0 bg-black/80 transition-opacity"></div>
+    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div class="relative transform overflow-hidden rounded-xl bg-[#1a1a1a] border border-white/10 text-left shadow-2xl transition-all sm:w-full sm:max-w-lg">
+                <div class="p-6">
+                    <h3 class="text-lg font-semibold text-white mb-4" id="modal-title">Create New Agent</h3>
+                    <div class="space-y-4">
+                        <input type="hidden" id="agent-id">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Agent Name</label>
+                            <input type="text" id="agent-name" class="w-full bg-black/50 border border-white/10 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-primary">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Slug</label>
+                            <input type="text" id="agent-slug" class="w-full bg-black/50 border border-white/10 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-primary">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-1">Description</label>
+                            <textarea id="agent-description" rows="3" class="w-full bg-black/50 border border-white/10 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-primary"></textarea>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-1">Status</label>
+                                <select id="agent-status" class="w-full bg-black/50 border border-white/10 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-primary">
+                                    <option value="active">Active</option>
+                                    <option value="disabled">Disabled</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-1">RPM Limit</label>
+                                <input type="number" id="agent-rpm" value="10" class="w-full bg-black/50 border border-white/10 rounded-md px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-primary">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white/5 px-6 py-4 flex flex-row-reverse gap-3">
+                    <button type="button" id="confirm-agent-btn" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">Save Agent</button>
+                    <button type="button" id="cancel-agent-btn" class="px-4 py-2 text-sm text-gray-300 hover:text-white transition-colors">Cancel</button>
+                    <button type="button" id="delete-agent-btn" class="hidden text-red-400 hover:text-red-300 text-sm mr-auto font-medium transition-colors">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const agentsContainer = document.getElementById('agents-container');
+    const agentsEmpty = document.getElementById('agents-empty');
+    
+    // Stats elements
+    const statTotalAgents = document.getElementById('stat-total-agents');
+    const statActiveAgents = document.getElementById('stat-active-agents');
+    const statTotalMemories = document.getElementById('stat-total-memories');
+    const statTotalToolCalls = document.getElementById('stat-total-tool-calls');
+
+    // Modal elements
+    const agentModal = document.getElementById('agent-modal');
+    const createAgentBtn = document.getElementById('create-agent-btn');
+    const cancelAgentBtn = document.getElementById('cancel-agent-btn');
+    const confirmAgentBtn = document.getElementById('confirm-agent-btn');
+    const deleteAgentBtn = document.getElementById('delete-agent-btn');
+
+    function toggleModal(modal, show) {
+        if (show) modal.classList.remove('hidden');
+        else modal.classList.add('hidden');
+    }
+
+    createAgentBtn.addEventListener('click', () => {
+        document.getElementById('agent-id').value = '';
+        document.getElementById('agent-name').value = '';
+        document.getElementById('agent-slug').value = '';
+        document.getElementById('agent-description').value = '';
+        document.getElementById('modal-title').textContent = 'Create New Agent';
+        deleteAgentBtn.classList.add('hidden');
+        toggleModal(agentModal, true);
+    });
+
+    cancelAgentBtn.addEventListener('click', () => toggleModal(agentModal, false));
+
+    const nameInput = document.getElementById('agent-name');
+    const slugInput = document.getElementById('agent-slug');
+    if (nameInput) {
+        nameInput.addEventListener('input', function () {
+            if (!document.getElementById('agent-id').value) {
+                slugInput.value = this.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+            }
+        });
+    }
+
+    async function loadStats() {
+        try {
+            const wsSlug = '{{ workspace.slug if workspace else "" }}';
+            const url = wsSlug ? `/gitmem/api/workspace_stats?ws_slug=${wsSlug}` : '/gitmem/api/workspace_stats';
+            const res = await fetch(url);
+            const data = await res.json();
+            if (data.status === 'success') {
+                statTotalAgents.textContent = data.stats.total_agents;
+                statActiveAgents.textContent = data.stats.active_agents;
+                statTotalMemories.textContent = data.stats.total_memories;
+                statTotalToolCalls.textContent = data.stats.total_tool_calls;
+            }
+        } catch (e) {
+            console.error("Failed to load workspace stats", e);
+        }
+    }
+
+    async function loadAgents() {
+        try {
+            const res = await fetch('/list_agents', { credentials: 'same-origin' });
+            let payload = await res.json();
+            
+            // Fallback if list_agents fails or is not available
+            if (res.status === 404 || res.status >= 500) {
+                 const dbRes = await fetch('/dashboard/agents', { credentials: 'same-origin' });
+                 payload = await dbRes.json();
+            }
+
+            let agents = Array.isArray(payload) ? payload : (payload.data || payload.agents || []);
+
+            agentsContainer.innerHTML = '';
+            if (agents.length === 0) {
+                agentsEmpty.classList.remove('hidden');
+                return;
+            }
+            agentsEmpty.classList.add('hidden');
+
+            agents.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+            agents.forEach(agent => {
+                const card = document.createElement('div');
+                card.className = "bg-[#161616] border border-white/5 rounded-xl p-5 hover:border-primary/50 transition-all shadow-xl";
+                
+                // Card header with Edit button
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center gap-3 cursor-pointer" onclick="window.location.href = '/gitmem/w/${agent.agent_slug}/overview'">
+                            <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                                <i data-lucide="bot" class="w-5 h-5 text-primary"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-medium text-white hover:text-primary transition-colors">${agent.agent_name || agent.name}</h4>
+                                <p class="text-xs text-gray-500">${agent.agent_slug}</p>
+                            </div>
+                        </div>
+                        <button class="bg-white/5 hover:bg-white/10 p-2 rounded-lg text-gray-400 hover:text-white transition-colors edit-btn">
+                            <i data-lucide="edit-3" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <p class="text-sm text-gray-400 line-clamp-2 mb-4 h-10">${agent.description || (agent.metadata && agent.metadata.description) || 'No description'}</p>
+                    <div class="flex items-center justify-between pt-3 border-t border-white/5">
+                        <span class="text-xs px-2 py-1 rounded-full ${agent.status === 'active' ? 'bg-green-500/10 text-green-500' : 'bg-gray-500/10 text-gray-500'} uppercase font-bold tracking-wide">
+                            ${agent.status}
+                        </span>
+                        <a href="/gitmem/w/${agent.agent_slug}/overview" class="text-xs font-medium text-primary hover:underline">View Agent &rarr;</a>
+                    </div>
+                 `;
+
+                // Edit handler
+                card.querySelector('.edit-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    document.getElementById('agent-id').value = agent.agent_id || agent.id;
+                    document.getElementById('agent-name').value = agent.agent_name || agent.name;
+                    document.getElementById('agent-slug').value = agent.agent_slug;
+                    document.getElementById('agent-description').value = agent.description || (agent.metadata && agent.metadata.description) || '';
+                    document.getElementById('agent-status').value = agent.status || 'active';
+                    document.getElementById('modal-title').textContent = 'Edit Agent';
+                    deleteAgentBtn.classList.remove('hidden');
+                    toggleModal(agentModal, true);
+                });
+
+                agentsContainer.appendChild(card);
+            });
+            if (window.lucide) lucide.createIcons();
+
+        } catch (e) {
+            console.error("Failed to load agents", e);
+            agentsEmpty.classList.remove('hidden');
+            agentsEmpty.innerHTML = '<p class="text-red-500">Failed to load agents. Please try again.</p>';
+        }
+    }
+
+    confirmAgentBtn.addEventListener('click', async () => {
+        const id = document.getElementById('agent-id').value;
+        const isEdit = !!id;
+        
+        const body = {
+            agent_id: document.getElementById('agent-slug').value, 
+            name: document.getElementById('agent-name').value,
+            description: document.getElementById('agent-description').value,
+            workspace_id: 'default'
+        };
+
+        if (isEdit) {
+            const updates = {
+                agent_name: document.getElementById('agent-name').value,
+                agent_slug: document.getElementById('agent-slug').value,
+                status: document.getElementById('agent-status').value,
+                metadata: { description: document.getElementById('agent-description').value }
+            };
+            try {
+                const res = await fetch('/update_agent', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ agent_id: id, updates: updates })
+                });
+                
+                if (res.ok) {
+                    toggleModal(agentModal, false);
+                    loadAgents();
+                    loadStats();
+                } else {
+                    alert("Failed to update agent");
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        } else {
+            try {
+                const res = await fetch('/gitmem/api/create-agent', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                
+                if (res.ok) {
+                    toggleModal(agentModal, false);
+                    loadAgents();
+                    loadStats();
+                } else {
+                    const errorData = await res.json();
+                    alert("Failed to create agent: " + (errorData.error || "Unknown Error"));
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
+    });
+
+    deleteAgentBtn.addEventListener('click', async () => {
+        const id = document.getElementById('agent-id').value;
+        if (!id) return;
+        
+        if (confirm('Are you sure you want to permanently delete this agent and all its associated data? This action cannot be undone.')) {
+            try {
+                const res = await fetch('/delete_agent', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ agent_id: id })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    toggleModal(agentModal, false);
+                    loadAgents();
+                    loadStats();
+                } else {
+                    alert("Failed to delete agent: " + (data.error || 'Unknown error'));
+                }
+            } catch (e) {
+                console.error(e);
+                alert("An error occurred while deleting the agent.");
+            }
+        }
+    });
+
+    loadAgents();
+    loadStats();
+});
+</script>
+
+{% endblock %}

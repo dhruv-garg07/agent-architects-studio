@@ -1,0 +1,95 @@
+{% extends "layouts/mission_control_shell.html" %}
+
+{% set active_page = 'agents' %}
+
+{% block workspace_content %}
+
+<div class="gm-page-header" style="display: flex; align-items: flex-start; justify-content: space-between;">
+    <div style="display: flex; gap: 20px; align-items: center;">
+        <div style="width: 64px; height: 64px; border-radius: 16px; background: hsla(210,80%,60%,0.2); border: 1px solid hsla(210,80%,60%,0.5); display: flex; align-items: center; justify-content: center;">
+            <i data-lucide="bot" style="width: 32px; height: 32px; color: hsl(210,80%,60%);"></i>
+        </div>
+        <div>
+            <h1 class="gm-page-title" style="display: flex; align-items: center; gap: 12px;">
+                {{ workspace.name if workspace else 'Sales Agent' }}
+                <span style="font-size: 11px; padding: 4px 8px; border-radius: 20px; background: hsla(155,70%,45%,0.15); color: hsl(155,70%,45%); border: 1px solid hsla(155,70%,45%,0.3); font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;">Active</span>
+            </h1>
+            <p class="gm-page-subtitle">Customer interactions, objection handling, and pricing model intelligence.</p>
+        </div>
+    </div>
+    <div style="display: flex; gap: 10px;">
+        <button class="gm-ctx-btn"><i data-lucide="pause-circle"></i> Pause Agent</button>
+        <button class="gm-ctx-btn gm-ctx-btn-primary"><i data-lucide="brain-circuit"></i> View Reasoning Trace</button>
+    </div>
+</div>
+
+<!-- Grid Layout -->
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+        <!-- Knowledge Dependency Map -->
+        <div class="gm-section" style="margin-bottom: 0;">
+            <div class="gm-section-header">
+                <h2 class="gm-section-title"><i data-lucide="git-merge"></i> Knowledge Dependency Map</h2>
+            </div>
+            <div class="gm-section-body" style="padding-top: 10px;">
+                <div style="background: hsl(225,14%,7%); border: 1px solid hsl(225,10%,16%); border-radius: 12px; padding: 20px; display: flex; justify-content: center; color: hsl(225,10%,50%); font-size: 13px;">
+                    Dependencies tracking not yet implemented.
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Learning / Memory Usage -->
+        <div class="gm-section" style="margin-bottom: 0;">
+            <div class="gm-section-header">
+                <h2 class="gm-section-title"><i data-lucide="brain"></i> Recent Learning & Memory Usage</h2>
+            </div>
+            <div class="gm-section-body" style="padding-top: 10px;">
+                <div class="p-4 text-center text-sm text-gray-500">
+                    No recent learning events found.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column (Stats) -->
+    <div style="display: flex; flex-direction: column; gap: 24px;">
+        
+        <div class="gm-section" style="margin-bottom: 0;">
+            <div class="gm-section-header">
+                <h2 class="gm-section-title"><i data-lucide="activity"></i> Intelligence Stats</h2>
+            </div>
+            <div class="gm-section-body" style="padding-top: 10px; display: flex; flex-direction: column; gap: 16px;">
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid hsl(225,10%,16%); padding-bottom: 12px;">
+                    <div style="font-size: 13px; color: hsl(225,10%,50%);">Memories Generated</div>
+                    <div style="font-size: 15px; font-weight: 700; color: white;">{{ memory_count | default('0') }}</div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid hsl(225,10%,16%); padding-bottom: 12px;">
+                    <div style="font-size: 13px; color: hsl(225,10%,50%);">Commits</div>
+                    <div style="font-size: 15px; font-weight: 700; color: white;">{{ commit_count | default('0') }}</div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid hsl(225,10%,16%); padding-bottom: 12px;">
+                    <div style="font-size: 13px; color: hsl(225,10%,50%);">Avg Trust Score</div>
+                    <div style="font-size: 15px; font-weight: 700; color: hsl(155,70%,45%);">100%</div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="gm-section" style="margin-bottom: 0;">
+            <div class="gm-section-header">
+                <h2 class="gm-section-title"><i data-lucide="shield"></i> Governance</h2>
+            </div>
+            <div class="gm-section-body" style="padding-top: 10px;">
+                <div class="p-4 text-center text-sm text-gray-500" style="padding-top: 0;">
+                    No pending governance actions.
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

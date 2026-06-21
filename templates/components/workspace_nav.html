@@ -1,0 +1,24 @@
+<!-- Tier 2: Workspace Navigation -->
+<nav class="flex items-center gap-1 mt-6 border-b border-mc-border px-6 overflow-x-auto hide-scrollbar">
+    {% set nav_items = [
+        ('workspace', 'layout-dashboard', 'Workspace', 'gitmem.hub_workspace'),
+        ('context', 'brain', 'Context', 'gitmem.hub_context'),
+        ('agents', 'bot', 'Agents', 'gitmem.hub_agents'),
+        ('integrations', 'plug-zap', 'Integrations', 'gitmem.hub_integrations'),
+        ('governance', 'shield-check', 'Governance', 'gitmem.hub_governance'),
+        ('activity', 'scroll-text', 'Activity', 'gitmem.hub_activity'),
+        ('analytics', 'bar-chart-3', 'Analytics', 'gitmem.hub_analytics'),
+        ('settings', 'settings', 'Settings', 'gitmem.hub_settings')
+    ] %}
+
+    {% for id, icon, label, route in nav_items %}
+    <a href="{{ url_for(route, ws_slug=workspace.slug) if workspace else '#' }}"
+        class="relative flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all whitespace-nowrap {{ 'text-white' if active_page == id else 'text-gray-400 hover:text-white hover:bg-white/5 rounded-t-lg' }}">
+        <i data-lucide="{{ icon }}" class="w-4 h-4 {{ 'text-mc-primary' if active_page == id else '' }}"></i>
+        <span>{{ label }}</span>
+        {% if active_page == id %}
+        <span class="absolute bottom-0 left-0 w-full h-[2px] bg-mc-primary rounded-t-sm shadow-[0_0_8px_var(--mc-primary)]"></span>
+        {% endif %}
+    </a>
+    {% endfor %}
+</nav>

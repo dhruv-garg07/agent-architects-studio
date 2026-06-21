@@ -1,0 +1,166 @@
+{% extends "layouts/mission_control_shell.html" %}
+
+{% set active_page = 'overview' %}
+
+{% block workspace_content %}
+
+<!-- Page Header -->
+<div class="gm-page-header">
+    <h1 class="gm-page-title">Overview Dashboard</h1>
+    <p class="gm-page-subtitle">What's happening across {{ workspace.name if workspace else 'your organization' }} right now.</p>
+</div>
+
+<!-- Health Stats Bar -->
+<div class="gm-stats-row">
+    <div class="gm-stat-card">
+        <div class="gm-stat-label">Context Health</div>
+        <div class="gm-stat-value gm-stat-success">{{ health_pct | default('92') }}%</div>
+    </div>
+    <div class="gm-stat-card">
+        <div class="gm-stat-label">Knowledge Sources</div>
+        <div class="gm-stat-value">{{ source_count | default('6') }}</div>
+    </div>
+    <div class="gm-stat-card">
+        <div class="gm-stat-label">Active Agents</div>
+        <div class="gm-stat-value gm-stat-accent">{{ agent_count | default('14') }}</div>
+    </div>
+    <div class="gm-stat-card">
+        <div class="gm-stat-label">Pending Reviews</div>
+        <div class="gm-stat-value gm-stat-warning">{{ pending_reviews | default('3') }}</div>
+    </div>
+</div>
+
+<!-- What Changed Today -->
+<div class="gm-section">
+    <div class="gm-section-header">
+        <h2 class="gm-section-title">
+            <i data-lucide="sparkles"></i> What Changed Today
+        </h2>
+        <span style="font-size: 11px; color: hsl(225,10%,42%);">{{ changes | length if changes else '4' }} updates</span>
+    </div>
+    <div class="gm-section-body">
+        {% if changes %}
+            {% for change in changes %}
+            <div class="gm-feed-item">
+                <div class="gm-feed-dot {{ change.dot_class | default('gm-feed-dot-blue') }}"></div>
+                <div class="gm-feed-content">
+                    <div class="gm-feed-text">{{ change.text | safe }}</div>
+                    <div class="gm-feed-meta">{{ change.meta }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <!-- Demo data — replaced by real data when backend wired -->
+            <div class="gm-feed-item">
+                <div class="gm-feed-dot gm-feed-dot-purple"></div>
+                <div class="gm-feed-content">
+                    <div class="gm-feed-text"><strong>Claude</strong> learned new <strong>pricing policy</strong> from support interactions</div>
+                    <div class="gm-feed-meta">AI Discovery · 2 hours ago</div>
+                </div>
+            </div>
+            <div class="gm-feed-item">
+                <div class="gm-feed-dot gm-feed-dot-green"></div>
+                <div class="gm-feed-content">
+                    <div class="gm-feed-text"><strong>Engineering</strong> approved <strong>authentication migration</strong> decision</div>
+                    <div class="gm-feed-meta">Decision Approved · 4 hours ago</div>
+                </div>
+            </div>
+            <div class="gm-feed-item">
+                <div class="gm-feed-dot gm-feed-dot-blue"></div>
+                <div class="gm-feed-content">
+                    <div class="gm-feed-text"><strong>Support process</strong> updated — SLA response times revised to 12h</div>
+                    <div class="gm-feed-meta">Process Update · 5 hours ago</div>
+                </div>
+            </div>
+            <div class="gm-feed-item">
+                <div class="gm-feed-dot gm-feed-dot-amber"></div>
+                <div class="gm-feed-content">
+                    <div class="gm-feed-text"><strong>Slack</strong> imported <strong>23 new organizational learnings</strong> from #engineering</div>
+                    <div class="gm-feed-meta">Integration Sync · 6 hours ago</div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Needs Attention -->
+<div class="gm-section">
+    <div class="gm-section-header">
+        <h2 class="gm-section-title">
+            <i data-lucide="alert-triangle"></i> Needs Attention
+        </h2>
+    </div>
+    <div class="gm-section-body">
+        {% if alerts %}
+            {% for alert in alerts %}
+            <div class="gm-alert {{ alert.alert_class }}">
+                <div class="gm-alert-icon"><i data-lucide="{{ alert.icon }}"></i></div>
+                <span class="gm-alert-text">{{ alert.text }}</span>
+                <span class="gm-alert-time">{{ alert.time }}</span>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="gm-alert gm-alert-danger">
+                <div class="gm-alert-icon"><i data-lucide="zap"></i></div>
+                <span class="gm-alert-text">Knowledge conflict detected — pricing policy contradicts across agents</span>
+                <span class="gm-alert-time">2h ago</span>
+            </div>
+            <div class="gm-alert gm-alert-warning">
+                <div class="gm-alert-icon"><i data-lucide="clock"></i></div>
+                <span class="gm-alert-text">3 learnings awaiting approval</span>
+                <span class="gm-alert-time">5h ago</span>
+            </div>
+            <div class="gm-alert gm-alert-warning">
+                <div class="gm-alert-icon"><i data-lucide="unplug"></i></div>
+                <span class="gm-alert-text">Confluence sync failed — re-authentication required</span>
+                <span class="gm-alert-time">1d ago</span>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Quick Access -->
+<div style="margin-top: 8px;">
+    <h2 class="gm-section-title" style="margin-bottom: 16px; padding-left: 4px;">
+        <i data-lucide="layout-grid"></i> Quick Access
+    </h2>
+    <div class="gm-quick-grid">
+        <a href="{{ url_for('gitmem.hub_context', ws_slug=workspace.id) if workspace else '#' }}" class="gm-quick-card">
+            <div class="gm-quick-card-icon" style="background: hsla(270,60%,60%,0.12); color: hsl(270,60%,60%);">
+                <i data-lucide="layers"></i>
+            </div>
+            <div class="gm-quick-card-title">Context</div>
+            <div class="gm-quick-card-desc">Search and browse organizational knowledge — decisions, processes, learnings.</div>
+        </a>
+        <a href="{{ url_for('gitmem.hub_agents', ws_slug=workspace.id) if workspace else '#' }}" class="gm-quick-card">
+            <div class="gm-quick-card-icon" style="background: hsla(210,80%,60%,0.12); color: hsl(210,80%,60%);">
+                <i data-lucide="bot"></i>
+            </div>
+            <div class="gm-quick-card-title">Agents</div>
+            <div class="gm-quick-card-desc">See which AI systems consume and generate organizational context.</div>
+        </a>
+        <a href="{{ url_for('gitmem.hub_history', ws_slug=workspace.id) if workspace else '#' }}" class="gm-quick-card">
+            <div class="gm-quick-card-icon" style="background: hsla(230,80%,62%,0.12); color: hsl(230,80%,62%);">
+                <i data-lucide="git-branch"></i>
+            </div>
+            <div class="gm-quick-card-title">History</div>
+            <div class="gm-quick-card-desc">Version control — commits, branches, diffs across your context.</div>
+        </a>
+        <a href="{{ url_for('gitmem.hub_governance', ws_slug=workspace.id) if workspace else '#' }}" class="gm-quick-card">
+            <div class="gm-quick-card-icon" style="background: hsla(155,70%,45%,0.12); color: hsl(155,70%,45%);">
+                <i data-lucide="shield-check"></i>
+            </div>
+            <div class="gm-quick-card-title">Governance</div>
+            <div class="gm-quick-card-desc">Review knowledge requests, resolve conflicts, audit changes.</div>
+        </a>
+        <a href="{{ url_for('gitmem.hub_integrations', ws_slug=workspace.id) if workspace else '#' }}" class="gm-quick-card">
+            <div class="gm-quick-card-icon" style="background: hsla(38,92%,55%,0.12); color: hsl(38,92%,55%);">
+                <i data-lucide="cable"></i>
+            </div>
+            <div class="gm-quick-card-title">Connections</div>
+            <div class="gm-quick-card-desc">Manage knowledge sources and AI consumer integrations.</div>
+        </a>
+    </div>
+</div>
+
+{% endblock %}
