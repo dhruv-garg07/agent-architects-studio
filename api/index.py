@@ -358,6 +358,16 @@ def deck():
         return f"<h1>Deck</h1><p>Unable to render page: {e}</p>", 500
     
 
+@app.route('/for_investors')
+@app.route('/for-investors')
+def for_investors():
+    """Investors deck page."""
+    try:
+        return render_template('investors_deck.html')
+    except Exception as e:
+        return f"<h1>Investors Deck</h1><p>Unable to render page: {e}</p>", 500
+
+
 @app.route('/submit')
 @login_required
 def creator_studio():
