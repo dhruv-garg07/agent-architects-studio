@@ -26,32 +26,38 @@ class AnswerGenerator:
     def __init__(self, llm_client: LLMClient):
         self.llm_client = llm_client
 
-    def generate_answer(self, query: str, contexts: List[MemoryEntry]) -> str:
+    def generate_answer(self, query: str, contexts: List[MemoryEntry], system_prompt: str = None) -> str:
         """
         Generate answer
 
         Args:
         - query: User question
         - contexts: List of retrieved relevant MemoryEntry
+        - system_prompt: Optional custom system prompt overriding default behavior
 
         Returns:
-        - Generated answer (concise phrase)
+        - Generated answer
         """
         # Build prompt and system instruction depending on context availability
         if contexts:
             context_str = self._format_contexts(contexts)
-            prompt = self._build_answer_prompt(query, context_str)
-            is_complex = len(query.split()) > 15
-            if is_complex:
-                system_instruction = (
-                    "You are a professional Q&A assistant. Extract a detailed, synthesized, "
-                    "and comprehensive explanation from the context addressing all parts of the question thoroughly. "
-                    "You must output valid JSON format."
-                )
+            prompt = self._build_answer_prompt(query, context_str, system_prompt)
+            
+            if system_prompt:
+                system_instruction = system_prompt
             else:
-                system_instruction = "You are a professional Q&A assistant. Extract concise answers from context. You must output valid JSON format."
+                # Legacy fallback
+                is_complex = len(query.split()) > 15
+                if is_complex:
+                    system_instruction = (
+                        "You are a professional Q&A assistant. Extract a detailed, synthesized, "
+                        "and comprehensive explanation from the context addressing all parts of the question thoroughly. "
+                        "You must output valid JSON format."
+                    )
+                else:
+                    system_instruction = "You are a professional Q&A assistant. Extract concise answers from context. You must output valid JSON format."
         else:
-            # Friendly conversational fallback when no memories are retrieved (e.g., greetings or new conversations)
+            # Friendly conversational fallback when no memories are retrieved
             prompt = f"""
             Respond to the user's message directly, friendly, and naturally.
             
@@ -72,7 +78,14 @@ class AnswerGenerator:
             
             Return ONLY the JSON, no other text.
             """
-            system_instruction = "You are a helpful, friendly, and natural AI assistant. You must output valid JSON format."
+            if system_prompt:
+                system_instruction = system_prompt
+            else:
+                system_instruction = "You are a helpful, friendly, and natural AI assistant. You must output valid JSON format."
+
+        # Ensure JSON requirement is met if not explicitly stated by custom prompt
+        if system_prompt and "json" not in system_instruction.lower():
+            system_instruction += " You must output valid JSON format."
 
         # Call LLM to generate answer
         messages = [
@@ -145,22 +158,33 @@ class AnswerGenerator:
 
         return "\n\n".join(formatted)
 
-    def _build_answer_prompt(self, query: str, context_str: str) -> str:
+    def _build_answer_prompt(self, query: str, context_str: str, system_prompt: str = None) -> str:
         """
         Build answer generation prompt
         """
+        is_chat = system_prompt and ("conversational" in system_prompt.lower() or "chat" in system_prompt.lower())
         is_complex = len(query.split()) > 15
-        answer_requirement = (
-            "Then provide a detailed, synthesized, and comprehensive answer "
-            "that addresses all parts and questions within the query thoroughly using the context"
-            if is_complex else
-            "Then provide a very CONCISE answer (short phrase about core information)"
-        )
-        answer_format_example = (
-            "Detailed complete explanation addressing all parts of the complex query thoroughly"
-            if is_complex else
-            "Concise answer in a short phrase"
-        )
+        
+        if is_chat:
+            answer_requirement = (
+                "Provide a natural, conversational response. Use the provided context to inform your answer. "
+                "If the context is irrelevant or missing, use your general knowledge, but clearly state what you recall from memory versus general knowledge."
+            )
+            answer_format_example = "A friendly and helpful conversational response."
+            constraint_3 = "Use the provided context to inform your answer, but you can rely on general knowledge if needed."
+        else:
+            answer_requirement = (
+                "Then provide a detailed, synthesized, and comprehensive answer "
+                "that addresses all parts and questions within the query thoroughly using the context"
+                if is_complex else
+                "Then provide a very CONCISE answer (short phrase about core information)"
+            )
+            answer_format_example = (
+                "Detailed complete explanation addressing all parts of the complex query thoroughly"
+                if is_complex else
+                "Concise answer in a short phrase"
+            )
+            constraint_3 = "Answer must be based ONLY on the provided context"
 
         return f"""
 Answer the user's question based on the provided context.
@@ -173,7 +197,7 @@ Relevant Context:
 Requirements:
 1. First, think through the reasoning process
 2. {answer_requirement}
-3. Answer must be based ONLY on the provided context
+3. {constraint_3}
 4. All dates in the response must be formatted as 'DD Month YYYY' but you can output more or less details if needed
 5. The 'answer' field in the JSON MUST be a plain text string, NOT a nested JSON object or dictionary
 6. Return your response in JSON format

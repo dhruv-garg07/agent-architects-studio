@@ -388,6 +388,210 @@ def hub_explorer(ws_slug, virtual_path=''):
         items=items,
         commits=commits
     )
+
+@gitmem_bp.route('/w/<ws_slug>/sync', methods=['POST'])
+@login_required
+def hub_sync_memories(ws_slug):
+    """Sync memories from ChromaDB to Supabase.
+    
+    Reads from TWO ChromaDB sources:
+    1. gitmem_app.vector_engine (GitMem's VectorEngine — what Explorer/KG reads)
+    2. SimpleMem's Agentic_RAG per-agent collections (what /add_memory API writes to)
+    
+    Maps ChromaDB metadata fields to Supabase gitmem_memories schema:
+        memory_type → type, timestamp → created_at, scope → visibility
+    """
+    import json as _json
+    from datetime import datetime as _dt
+    
+    agent_raw = _get_agent(ws_slug, user_id=current_user.get_id())
+    if not agent_raw:
+        flash("Workspace not found.", "error")
+        return redirect(url_for('gitmem.landing'))
+        
+    actual_agent_id = agent_raw.get('agent_id')
+    db = _db()
+    if not db:
+        flash("Supabase not connected.", "error")
+        return redirect(url_for('gitmem.hub_explorer', ws_slug=ws_slug))
+
+    # ── 1. Fetch existing Supabase IDs to avoid duplicates ──
+    existing_ids = set()
+    try:
+        res = db.table('gitmem_memories').select('id').eq('agent_id', actual_agent_id).execute()
+        existing_ids = {row['id'] for row in (res.data or [])}
+        print(f"[Sync] Found {len(existing_ids)} existing memories in Supabase for agent {actual_agent_id}")
+    except Exception as e:
+        print(f"[Sync] Warning: Could not fetch existing IDs: {e}")
+
+    # ── 2. Ensure repo/workspace FK entries exist ──
+    try:
+        from gitmem.core.storage.supabase_connector import SupabaseConnector
+        supa_conn = SupabaseConnector()
+        if not supa_conn._disabled:
+            supa_conn._ensure_repo(actual_agent_id, 'default')
+            print(f"[Sync] Ensured repo/workspace exist for agent {actual_agent_id}")
+    except Exception as e:
+        print(f"[Sync] Warning: Could not ensure repo: {e}")
+
+    synced_count = 0
+    errors = []
+
+    # ── 3. Sync from GitMem VectorEngine (gitmem_global + per-agent collections) ──
+    ve = gitmem_app.vector_engine
+    if ve and ve.client:
+        chroma_vectors = []
+        try:
+            chroma_vectors = ve.get_agent_vectors(actual_agent_id, limit=500)
+            print(f"[Sync] VectorEngine returned {len(chroma_vectors)} vectors for agent {actual_agent_id}")
+        except Exception as e:
+            print(f"[Sync] VectorEngine fetch error: {e}")
+            errors.append(f"VectorEngine: {e}")
+
+        for v in chroma_vectors:
+            vid = v.get('id', '')
+            if not vid or vid in existing_ids:
+                continue
+
+            meta = v.get('metadata') or {}
+            content = v.get('content') or ''
+
+            # Map ChromaDB metadata → Supabase columns
+            mem_type = (meta.get('memory_type') or meta.get('type') or 'episodic').lower()
+            if mem_type not in ('episodic', 'semantic', 'procedural', 'state'):
+                mem_type = 'episodic'
+            
+            importance = 0.0
+            try:
+                importance = float(meta.get('importance', 0.0))
+            except (ValueError, TypeError):
+                pass
+
+            created_at = meta.get('timestamp') or meta.get('created_at') or _dt.now().isoformat()
+            visibility = meta.get('scope') or meta.get('visibility') or 'private'
+
+            # Clean metadata for JSONB — must be JSON-serializable
+            clean_meta = {}
+            for k, val in meta.items():
+                if isinstance(val, (str, int, float, bool)) or val is None:
+                    clean_meta[k] = val
+                else:
+                    clean_meta[k] = str(val)
+
+            data = {
+                'id': vid,
+                'agent_id': actual_agent_id,
+                'repo_id': actual_agent_id,
+                'workspace_id': 'default',
+                'content': content,
+                'type': mem_type,
+                'importance': importance,
+                'visibility': visibility,
+                'metadata': clean_meta,
+                'created_at': str(created_at),
+            }
+
+            try:
+                db.table('gitmem_memories').insert(data).execute()
+                existing_ids.add(vid)
+                synced_count += 1
+                print(f"[Sync] ✓ Synced VectorEngine entry {vid[:12]}... ({mem_type})")
+            except Exception as e:
+                err_str = str(e)
+                if '23505' in err_str or 'duplicate' in err_str.lower():
+                    existing_ids.add(vid)  # Already exists, skip silently
+                else:
+                    print(f"[Sync] ✗ Failed to insert {vid[:12]}...: {e}")
+                    errors.append(f"{vid[:8]}: {e}")
+
+    # ── 4. Sync from SimpleMem Agentic_RAG per-agent collection ──
+    try:
+        from Octave_mem.RAG_DB_CONTROLLER_AGENTS.agent_RAG import Agentic_RAG
+        import os
+        database_path = os.getenv("CHROMA_DATABASE_CHAT_HISTORY")
+        rag = Agentic_RAG(database=database_path, enable_cache=False, enable_monitoring=False)
+        
+        try:
+            collection = rag.wrapper.manager.get_collection(actual_agent_id)
+            chroma_data = collection.get(include=["documents", "metadatas"])
+            
+            sm_ids = chroma_data.get("ids", [])
+            sm_docs = chroma_data.get("documents", [])
+            sm_metas = chroma_data.get("metadatas", [])
+            print(f"[Sync] SimpleMem Agentic_RAG returned {len(sm_ids)} entries for agent {actual_agent_id}")
+            
+            for i, sid in enumerate(sm_ids):
+                if not sid or sid in existing_ids:
+                    continue
+
+                meta = sm_metas[i] if sm_metas and i < len(sm_metas) else {}
+                doc = sm_docs[i] if sm_docs and i < len(sm_docs) else ""
+
+                # SimpleMem stores "Content: ..." prefix in documents
+                content = doc
+                if content.startswith("Content: "):
+                    content = content[9:]  # Strip "Content: " prefix
+                # Also strip trailing Keywords/Topic lines
+                content_lines = content.split("\n")
+                clean_lines = [l for l in content_lines if not l.startswith("Keywords:") and not l.startswith("Topic:")]
+                content = "\n".join(clean_lines).strip()
+
+                mem_type = (meta.get('memory_type') or meta.get('entry_type') or 'episodic').lower()
+                if mem_type not in ('episodic', 'semantic', 'procedural', 'state'):
+                    mem_type = 'episodic'
+
+                created_at = meta.get('timestamp') or _dt.now().isoformat()
+
+                clean_meta = {}
+                for k, val in meta.items():
+                    if isinstance(val, (str, int, float, bool)) or val is None:
+                        clean_meta[k] = val
+                    else:
+                        clean_meta[k] = str(val)
+
+                data = {
+                    'id': sid,
+                    'agent_id': actual_agent_id,
+                    'repo_id': actual_agent_id,
+                    'workspace_id': 'default',
+                    'content': content or "(empty)",
+                    'type': mem_type,
+                    'importance': 0.5,
+                    'visibility': 'private',
+                    'metadata': clean_meta,
+                    'created_at': str(created_at),
+                }
+
+                try:
+                    db.table('gitmem_memories').insert(data).execute()
+                    existing_ids.add(sid)
+                    synced_count += 1
+                    print(f"[Sync] ✓ Synced SimpleMem entry {sid[:12]}... ({mem_type})")
+                except Exception as e:
+                    err_str = str(e)
+                    if '23505' in err_str or 'duplicate' in err_str.lower():
+                        existing_ids.add(sid)
+                    else:
+                        print(f"[Sync] ✗ Failed to insert SimpleMem {sid[:12]}...: {e}")
+                        errors.append(f"SM-{sid[:8]}: {e}")
+        except Exception as e:
+            print(f"[Sync] SimpleMem collection not found or error: {e}")
+    except Exception as e:
+        print(f"[Sync] Could not import/init Agentic_RAG: {e}")
+
+    # ── 5. Report result ──
+    if errors:
+        flash(f"Sync done: {synced_count} synced, {len(errors)} errors. Check terminal.", "warning")
+    elif synced_count > 0:
+        flash(f"✓ Sync complete! Pushed {synced_count} missing memories to Supabase.", "success")
+    else:
+        flash("All memories already in sync — nothing new to push.", "info")
+    
+    print(f"[Sync] === COMPLETE: {synced_count} synced, {len(errors)} errors ===")
+    return redirect(url_for('gitmem.hub_explorer', ws_slug=ws_slug))
+
+
+
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # File View (single memory/document)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1177,7 +1381,7 @@ def api_delete_memory(memory_id):
         db.table('gitmem_memories').delete().eq('id', memory_id).execute()
         # Clean up vector index
         try:
-            gitmem_app.vector_engine.delete_memory(memory_id)
+            gitmem_app.vector_engine.delete_memory(memory_id, agent_id=agent_id)
         except Exception:
             pass  # Vector cleanup is best-effort
         return jsonify({"status": "success"})
@@ -1226,7 +1430,7 @@ def api_update_memory(memory_id):
                 from gitmem.core.models import MemoryItem
                 updated = {**existing, **updates}
                 mem = MemoryItem(**{k: v for k, v in updated.items() if k != 'embedding'})
-                gitmem_app.vector_engine.delete_memory(memory_id)
+                gitmem_app.vector_engine.delete_memory(memory_id, agent_id=agent_id)
                 gitmem_app.vector_engine.add_memory(mem)
             except Exception:
                 pass  # Vector re-index is best-effort

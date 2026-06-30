@@ -21,6 +21,7 @@ import json
 from dataclasses import asdict
 import hashlib
 import threading
+from gitmem.core.storage.supabase_connector import SupabaseConnector
 
 # Add parent and grandparent directories to sys.path for imports
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -243,8 +244,12 @@ class VectorStore:
         """
         metadata = {
             "agent_id": agent_id or self.agent_id,
-            "entry_type": "memory_entry",
-            "timestamp": entry.timestamp or datetime.now().isoformat(),
+            "entry_type": "memory_entry",  # SimpleMem specific
+            "created_at": entry.timestamp or datetime.now().isoformat(),
+            "timestamp": entry.timestamp or datetime.now().isoformat(), # Legacy for fallback
+            "type": entry.memory_type,
+            "importance": 1.0,  # Default importance for SimpleMem chats
+            "visibility": "private",
             "has_keywords": len(entry.keywords) > 0,
             "has_persons": len(entry.persons) > 0,
             "has_entities": len(entry.entities) > 0,
@@ -256,9 +261,6 @@ class VectorStore:
             
         if entry.topic:
             metadata["topic"] = entry.topic
-            
-        # Add memory_type to metadata for categorization
-        metadata["memory_type"] = entry.memory_type
             
         # Store lists as JSON strings for metadata filtering
         if entry.keywords:
@@ -294,12 +296,12 @@ class VectorStore:
             entry_id=metadata.get("entry_id", ""),
             lossless_restatement=content,
             keywords=keywords,
-            timestamp=metadata.get("timestamp"),
+            timestamp=metadata.get("created_at", metadata.get("timestamp")),
             location=metadata.get("location"),
             persons=persons,
             entities=entities,
             topic=metadata.get("topic"),
-            memory_type=metadata.get("memory_type", "episodic")
+            memory_type=metadata.get("type", metadata.get("memory_type", "episodic"))
         )
     
     def _update_cache(self, entry_id: str, entry: MemoryEntry):
@@ -409,6 +411,34 @@ class VectorStore:
         
         if result.get('success'):
             print(f"[SUCCESS] Added {len(entries)} memory entries to {current_agent_id}")
+            
+            # Replicate to Supabase
+            try:
+                supabase = SupabaseConnector()
+                if not supabase._disabled:
+                    for entry in entries:
+                        metadata = self._entry_to_metadata(entry, agent_id=current_agent_id)
+                        data = {
+                            "id": entry.entry_id,
+                            "agent_id": current_agent_id,
+                            "repo_id": current_agent_id,
+                            "workspace_id": "default",
+                            "content": entry.lossless_restatement,
+                            "type": metadata.get("memory_type", "episodic"),
+                            "importance": 1,
+                            "metadata": metadata,
+                            "created_at": entry.timestamp or datetime.now().isoformat()
+                        }
+                        # Use internal client directly to handle exceptions safely
+                        try:
+                            # We attempt to insert, utilizing add_memory to ensure repo provisioning
+                            supabase.add_memory(data)
+                        except Exception as e:
+                            if "23505" not in str(e) and "duplicate key" not in str(e).lower():
+                                print(f"[Supabase] Error replicating entry {entry.entry_id}: {e}")
+            except Exception as e:
+                print(f"[Supabase] Error during replication: {e}")
+
             return {
                 "success": True,
                 "operations_completed": result.get("operations", 0),
@@ -422,6 +452,70 @@ class VectorStore:
         """Add a single memory entry."""
         self.add_entries([entry])
         return True
+    
+    def sync_to_supabase(self) -> Dict[str, Any]:
+        """
+        Sync all memories for the current agent from Chroma DB to Supabase.
+        Finds missing entries in Supabase and inserts them.
+        """
+        current_agent_id = self.agent_id
+        try:
+            # 1. Fetch existing memories from Supabase
+            supabase = SupabaseConnector()
+            if supabase._disabled or not supabase.client:
+                return {"success": False, "error": "Supabase not configured or disabled"}
+            
+            # Get IDs of all memories already in Supabase for this agent
+            supabase_res = supabase.client.table("gitmem_memories").select("id").eq("agent_id", current_agent_id).execute()
+            existing_ids = {row["id"] for row in supabase_res.data} if supabase_res.data else set()
+            
+            # 2. Fetch all memories from ChromaDB
+            try:
+                collection = self.agentic_RAG.wrapper.manager.get_collection(current_agent_id)
+                chroma_data = collection.get(include=["documents", "metadatas"])
+            except Exception as e:
+                return {"success": False, "error": f"Failed to get Chroma collection: {e}"}
+            
+            if not chroma_data or not chroma_data.get("ids"):
+                return {"success": True, "synced": 0, "message": "No records in Chroma"}
+            
+            chroma_ids = chroma_data["ids"]
+            chroma_docs = chroma_data.get("documents", [])
+            chroma_metas = chroma_data.get("metadatas", [])
+            
+            synced_count = 0
+            for i, c_id in enumerate(chroma_ids):
+                if c_id not in existing_ids:
+                    meta = chroma_metas[i] if chroma_metas else {}
+                    doc = chroma_docs[i] if chroma_docs else ""
+                    
+                    # Parse document back to entry to get lossless_restatement (or just use raw doc)
+                    lines = doc.split("\n")
+                    content = lines[0].replace("Content: ", "") if lines else doc
+                    
+                    data = {
+                        "id": c_id,
+                        "agent_id": current_agent_id,
+                        "repo_id": current_agent_id,
+                        "workspace_id": "default",
+                        "content": content,
+                        "type": meta.get("memory_type", "episodic"),
+                        "importance": 1,
+                        "metadata": meta,
+                        "created_at": meta.get("timestamp") or datetime.now().isoformat()
+                    }
+                    
+                    try:
+                        # add_memory handles provisioning the repo if it's missing (foreign key constraints)
+                        supabase.add_memory(data)
+                        synced_count += 1
+                    except Exception as e:
+                        print(f"Error syncing {c_id}: {e}")
+            
+            return {"success": True, "synced": synced_count}
+            
+        except Exception as e:
+            return {"success": False, "error": str(e)}
     
     def semantic_search(self, query: str, top_k: int = 5, **kwargs) -> List[MemoryEntry]:
         """

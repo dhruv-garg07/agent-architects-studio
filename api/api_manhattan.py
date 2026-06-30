@@ -1180,6 +1180,112 @@ def add_memory():
         return jsonify({'error': str(e)}), 500
 
 
+@manhattan_api.route("/sync_memories", methods=["POST"])
+def sync_memories():
+    """Sync ChromaDB memories to Supabase for a given agent_id.
+    
+    Reads from SimpleMem's Agentic_RAG per-agent collection and maps fields
+    to Supabase gitmem_memories schema.
+    
+    Expects JSON body with:
+    - agent_id: str (required)
+    """
+    data = request.get_json(silent=True) or {}
+    agent_id = data.get('agent_id')
+
+    if not agent_id:
+        return jsonify({'error': 'agent_id is required'}), 400
+
+    user_id, error = extract_and_validate_api_key(data)
+    if error:
+        return error
+
+    try:
+        # Verify ownership
+        agent_record, err_resp = _verify_agent_ownership(agent_id, user_id)
+        if err_resp:
+            return err_resp
+        
+        # Use the correct approach: read from Agentic_RAG, write to Supabase with proper field mapping
+        from gitmem.core.storage.supabase_connector import SupabaseConnector
+        supa = SupabaseConnector()
+        if supa._disabled or not supa.client:
+            return jsonify({"error": "Supabase not configured"}), 500
+        
+        # Ensure FK entries exist
+        supa._ensure_repo(agent_id, 'default')
+        
+        # Fetch existing IDs
+        existing_res = supa.client.table("gitmem_memories").select("id").eq("agent_id", agent_id).execute()
+        existing_ids = {row["id"] for row in (existing_res.data or [])}
+        
+        # Read from SimpleMem Agentic_RAG
+        memory_system = _get_or_create_memory_system(agent_id)
+        try:
+            collection = memory_system.vector_store.agentic_RAG.wrapper.manager.get_collection(agent_id)
+            chroma_data = collection.get(include=["documents", "metadatas"])
+        except Exception as e:
+            return jsonify({"error": f"ChromaDB collection error: {e}"}), 500
+        
+        if not chroma_data or not chroma_data.get("ids"):
+            return jsonify({"ok": True, "message": "no_records", "synced_count": 0}), 200
+        
+        synced = 0
+        for i, cid in enumerate(chroma_data["ids"]):
+            if cid in existing_ids:
+                continue
+            
+            meta = (chroma_data.get("metadatas") or [])[i] if chroma_data.get("metadatas") and i < len(chroma_data["metadatas"]) else {}
+            doc = (chroma_data.get("documents") or [])[i] if chroma_data.get("documents") and i < len(chroma_data["documents"]) else ""
+            
+            # Clean content
+            content = doc
+            if content.startswith("Content: "):
+                content = content[9:]
+            content_lines = content.split("\n")
+            content = "\n".join(l for l in content_lines if not l.startswith("Keywords:") and not l.startswith("Topic:")).strip()
+            
+            mem_type = (meta.get('memory_type') or 'episodic').lower()
+            if mem_type not in ('episodic', 'semantic', 'procedural', 'state'):
+                mem_type = 'episodic'
+            
+            # Clean metadata for JSONB
+            clean_meta = {}
+            for k, v in meta.items():
+                if isinstance(v, (str, int, float, bool)) or v is None:
+                    clean_meta[k] = v
+                else:
+                    clean_meta[k] = str(v)
+            
+            row = {
+                'id': cid,
+                'agent_id': agent_id,
+                'repo_id': agent_id,
+                'workspace_id': 'default',
+                'content': content or "(empty)",
+                'type': mem_type,
+                'importance': 0.5,
+                'visibility': 'private',
+                'metadata': clean_meta,
+                'created_at': str(meta.get('timestamp') or datetime.now().isoformat()),
+            }
+            
+            try:
+                supa.client.table("gitmem_memories").insert(row).execute()
+                synced += 1
+            except Exception as e:
+                if '23505' not in str(e) and 'duplicate' not in str(e).lower():
+                    print(f"[sync_memories API] Error inserting {cid[:12]}: {e}")
+        
+        return jsonify({
+            "ok": True,
+            "message": "sync_completed",
+            "synced_count": synced,
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @manhattan_api.route("/read_memory", methods=["POST"])
 def read_memory():
     """Read/search memories using hybrid retrieval.
@@ -1240,6 +1346,8 @@ def read_memory():
         }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
 
 
 @manhattan_api.route("/get_memories_by_bin", methods=["POST"])
@@ -1359,7 +1467,9 @@ def get_context():
             {
                 'entry_id': ctx.entry_id,
                 'lossless_restatement': ctx.lossless_restatement,
-                'topic': ctx.topic
+                'topic': ctx.topic,
+                'timestamp': ctx.timestamp,
+                'type': getattr(ctx, 'memory_type', 'episodic')
             }
             for ctx in contexts[:5]
         ]
@@ -1677,8 +1787,15 @@ def agent_chat():
                 import time
                 yield f"data: {json.dumps({'type': 'loading', 'status': 'initializing', 'message': 'Preparing context...'})}\n\n"
                 
+                # Conversational Assistant Prompt
+                chat_prompt = (
+                    "You are a helpful, conversational AI assistant. Use the retrieved context to inform your responses, "
+                    "but reply naturally as a friendly chatbot. Do not act like a rigid search engine. "
+                    "You must output valid JSON format."
+                )
+                
                 # Fetch answer synchronously
-                agent_response_obj = memory_system.ask(user_message)
+                agent_response_obj = memory_system.ask(user_message, system_prompt=chat_prompt)
                 reply_str = json.dumps(agent_response_obj) if isinstance(agent_response_obj, (dict, list)) else str(agent_response_obj)
                 
                 yield f"data: {json.dumps({'type': 'loading', 'status': 'streaming', 'message': 'Generating response...'})}\n\n"
@@ -1700,7 +1817,13 @@ def agent_chat():
                 
             return Response(generate_stream(), mimetype='text/event-stream')
         else:
-            agent_response = memory_system.ask(user_message)
+            # Conversational Assistant Prompt
+            chat_prompt = (
+                "You are a helpful, conversational AI assistant. Use the retrieved context to inform your responses, "
+                "but reply naturally as a friendly chatbot. Do not act like a rigid search engine. "
+                "You must output valid JSON format."
+            )
+            agent_response = memory_system.ask(user_message, system_prompt=chat_prompt)
             
             threading.Thread(
                 target=_background_save_and_finalize,

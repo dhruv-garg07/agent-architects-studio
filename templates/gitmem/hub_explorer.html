@@ -16,6 +16,12 @@
         </div>
 
         <div class="flex items-center gap-3">
+            <form action="{{ url_for('gitmem.hub_sync_memories', ws_slug=workspace.id) }}" method="POST" class="inline m-0">
+                <button type="submit" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-xs text-blue-400 font-semibold transition-all cursor-pointer">
+                    <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                    <span>Sync Supabase</span>
+                </button>
+            </form>
             <div
                 class="flex items-center gap-2 px-4 py-2 rounded-xl bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] text-xs text-gray-400 backdrop-blur-md">
                 <i data-lucide="search" class="w-4 h-4 text-[#93c5fd]/70"></i>

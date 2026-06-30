@@ -11,68 +11,33 @@ class VectorEngine:
 
     def _initialize(self):
         try:
-            import chromadb
             import os
-            from chromadb.config import Settings
-            from chromadb.utils import embedding_functions
+            import sys
             
-            # Load environment variables just in case
-            from dotenv import load_dotenv
-            load_dotenv()
-            
-            # 1. Setup Embedding Function (Hugging Face API)
-            hf_token = os.getenv("HF_TOKEN") or os.getenv("HUGGINGFACE_API_KEY")
-            self.ef = None
-            if hf_token:
-                model_name = os.getenv("HF_EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
-                print(f"Initializing HuggingFace Inference API Embedding Function (Model: {model_name})")
-                self.ef = embedding_functions.HuggingFaceInferenceAPIEmbeddingFunction(
-                    api_key=hf_token,
-                    model_name=model_name
-                )
-            
-            api_key = os.getenv("CHROMA_API_KEY")
-            tenant = os.getenv("CHROMA_TENANT")
-            host = os.getenv("CHROMA_SERVER_HOST")
-            
-            self.is_cloud = False
-            
-            if api_key and tenant:
-                print(f"Initializing ChromaDB Cloud Client (Tenant: {tenant})")
-                self.client = chromadb.CloudClient(
-                    api_key=api_key,
-                    tenant=tenant,
-                    database=os.getenv("CHROMA_DATABASE_CHAT_HISTORY") or "default_database"
-                )
-                self.is_cloud = True
-            elif host:
-                 port = os.getenv("CHROMA_SERVER_HTTP_PORT", "8000")
-                 print(f"Initializing ChromaDB HttpClient to {host}:{port}")
-                 self.client = chromadb.HttpClient(
-                     host=host, 
-                     port=int(port),
-                     settings=Settings(allow_reset=True, anonymized_telemetry=False)
-                 )
-                 self.is_cloud = True
-            else:
-                # Use EphemeralClient (in-memory) only as last resort
-                print("Warning: No ChromaDB credentials found. Using volatile in-memory client.")
-                self.client = chromadb.EphemeralClient()
-            
-            # Try to get the GLOBAL collection first, as that's what UnifiedContext uses
-            try:
-                self.collection = self.client.get_or_create_collection(
-                    name="gitmem_global",
-                    embedding_function=self.ef
-                )
-            except Exception as e:
-                print(f"Failed to get global collection: {e}")
+            # Add parent directories to sys.path to ensure we can import Octave_mem
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            # current_dir is gitmem/core/storage
+            project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
+            if project_root not in sys.path:
+                sys.path.insert(0, project_root)
                 
-        except ImportError:
-            print("ChromaDB not installed. Vector search disabled.")
-            self.client = None
+            from Octave_mem.RAG_DB.chroma_collection_manager import get_chroma_client, ChromaCollectionManager
+            
+            self.client = get_chroma_client()
+            self.is_cloud = hasattr(self.client, 'tenant') and self.client.tenant is not None
+            
+            # Share the single RemoteEmbeddingClient
+            if ChromaCollectionManager._shared_embedder is None:
+                from Octave_mem.RAG_DB.chroma_collection_manager import RemoteEmbeddingClient
+                ChromaCollectionManager._shared_embedder = RemoteEmbeddingClient()
+            self.ef = ChromaCollectionManager._shared_embedder
+            
+            # Note: We no longer eagerly create gitmem_global. 
+            # We defer to agent-specific collections in operations.
+            self.collection = None
+                
         except Exception as e:
-            print(f"ChromaDB initialization failed: {e}")
+            print(f"ChromaDB initialization failed in VectorEngine: {e}")
             self.client = None
 
     def add_texts(self, texts: List[str], metadatas: List[Dict[str, Any]], ids: List[str], collection_name: str = None):
@@ -149,22 +114,28 @@ class VectorEngine:
             else:
                 m_dict = memory
                 
+            agent_id = m_dict.get("agent_id", "unknown")
+            
+            # Map to standard schema
             metadata = {
-                "agent_id": m_dict.get("agent_id", "unknown"),
-                "memory_type": m_dict.get("type", "episodic"),
+                "agent_id": agent_id,
+                "type": m_dict.get("type", "episodic"),
                 "importance": m_dict.get("importance", 0.0),
-                "timestamp": str(m_dict.get("created_at", "")),
-                "scope": m_dict.get("scope", "private")
+                "created_at": str(m_dict.get("created_at", "")),
+                "visibility": m_dict.get("visibility", m_dict.get("scope", "private"))
             }
             
             # Merge extra metadata if any
             if "metadata" in m_dict and isinstance(m_dict["metadata"], dict):
-                metadata.update(m_dict["metadata"])
+                for k, v in m_dict["metadata"].items():
+                    if k not in metadata:
+                        metadata[k] = v
                 
             self.add_texts(
                 texts=[m_dict["content"]],
                 metadatas=[metadata],
-                ids=[m_dict["id"]]
+                ids=[m_dict["id"]],
+                collection_name=agent_id  # Default to agent collection
             )
         except Exception as e:
             print(f"[VectorEngine] Error adding memory: {e}")
@@ -176,22 +147,19 @@ class VectorEngine:
         
         # 1. Determine collection
         target_collection = self.collection
-        if collection_name:
+        target_collection = None
+        
+        # Determine agent_id to find the collection
+        agent_id = collection_name
+        if not agent_id and where and where.get("agent_id"):
+            agent_id = where["agent_id"]
+            
+        if agent_id:
             try:
-                target_collection = self.client.get_collection(name=collection_name)
-            except:
-                pass
-        elif where and where.get("agent_id") and self.is_cloud:
-            try:
-                agent_id = where["agent_id"]
                 target_collection = self.client.get_collection(name=agent_id)
-                # Cleanup where if implicit
-                local_where = where.copy()
-                del local_where["agent_id"]
-                where = local_where if local_where else None
             except:
                 pass
-
+                
         if not target_collection:
             return []
             
@@ -228,22 +196,11 @@ class VectorEngine:
         
         total_count = 0
         
-        # 1. Try agent-specific collection first (Cloud/Manhattan style)
         try:
             col = self.client.get_collection(name=agent_id)
             total_count = col.count()
         except:
-            # 2. Fallback to global collection with filter
-            try:
-                if self.collection:
-                    results = self.collection.get(
-                        where={"agent_id": agent_id},
-                        include=["metadatas"] # Minimal fetch
-                    )
-                    if results and results.get("ids"):
-                        total_count = len(results["ids"])
-            except:
-                pass
+            pass
             
         return {
             "embeddings": total_count,
@@ -267,45 +224,45 @@ class VectorEngine:
             "latency": "12ms"
         }
 
-    def delete_memory(self, memory_id: str) -> bool:
-        """Delete a single memory vector from ChromaDB by its ID.
-
-        Called by routes that delete or update a memory so that stale
-        vectors do not accumulate in ChromaDB.
-        """
-        if not self.client:
+    def delete_memory(self, memory_id: str, agent_id: str = None) -> bool:
+        """Delete a single memory vector from ChromaDB by its ID."""
+        if not self.client or not agent_id:
             return False
         try:
-            target_collection = self.collection
-            if not target_collection:
-                return False
+            target_collection = self.client.get_collection(name=agent_id)
             target_collection.delete(ids=[memory_id])
             return True
         except Exception as e:
             print(f"[VectorEngine] delete_memory failed for {memory_id}: {e}")
             return False
 
-    def update_memory(self, memory_id: str, content: str, metadata: Dict[str, Any]) -> bool:
-        """Update the document and metadata for an existing vector by ID.
-
-        ChromaDB's `update()` modifies an existing item in place (the
-        embedding is re-generated by the collection's embedding function
-        if one was set, otherwise the old embedding is kept).
-        """
-        if not self.client:
+    def update_memory(self, memory_id: str, content: str, metadata: Dict[str, Any], agent_id: str = None) -> bool:
+        """Update the document and metadata for an existing vector by ID."""
+        if not self.client or not agent_id:
             return False
         try:
-            target_collection = self.collection
-            if not target_collection:
-                return False
-            # Flatten nested structures — ChromaDB metadata values must be scalars.
-            flat_meta: Dict[str, Any] = {}
+            target_collection = self.client.get_collection(name=agent_id)
+            
+            # Standardize schema on update
+            clean_meta = {
+                "agent_id": agent_id,
+                "type": metadata.get("type", metadata.get("memory_type", "episodic")),
+                "importance": metadata.get("importance", 0.0),
+                "created_at": str(metadata.get("created_at", metadata.get("timestamp", ""))),
+                "visibility": metadata.get("visibility", metadata.get("scope", "private"))
+            }
+            
             for k, v in metadata.items():
-                flat_meta[k] = str(v) if isinstance(v, (list, dict)) else v
+                if k not in clean_meta:
+                    if isinstance(v, (list, dict)):
+                        clean_meta[k] = str(v)
+                    else:
+                        clean_meta[k] = v
+                        
             target_collection.update(
                 ids=[memory_id],
                 documents=[content],
-                metadatas=[flat_meta]
+                metadatas=[clean_meta]
             )
             return True
         except Exception as e:
@@ -317,19 +274,13 @@ class VectorEngine:
         if not self.client:
             return []
             
-        # Target collection logic - same as query/stats
-        target_collection = self.collection
-        use_agent_filter = True
-        
-        # 1. Try agent-specific collection first
-        if self.is_cloud:
-            try:
-                agent_col = self.client.get_collection(name=agent_id)
-                target_collection = agent_col
-                use_agent_filter = False # Agent collection implies agent_id
-            except:
-                pass
-                
+        # Target collection is the agent's collection
+        target_collection = None
+        try:
+            target_collection = self.client.get_collection(name=agent_id)
+        except:
+            pass
+            
         if not target_collection:
             return []
             
@@ -339,9 +290,6 @@ class VectorEngine:
                 "limit": limit,
                 "include": ["documents", "metadatas"]
             }
-            
-            if use_agent_filter:
-                get_args["where"] = {"agent_id": agent_id}
                 
             results = target_collection.get(**get_args)
             
@@ -435,17 +383,13 @@ class VectorEngine:
 
     def get_vector(self, vector_id: str, agent_id: str = None) -> Optional[Dict]:
         """Get a single vector by ID."""
-        if not self.client:
+        if not self.client or not agent_id:
             return None
             
-        target_collection = self.collection
-        
-        # Try agent specific collection if cloud and agent_id provided
-        if agent_id and self.is_cloud:
-            try:
-                agent_col = self.client.get_collection(name=agent_id)
-                target_collection = agent_col
-            except: pass
+        target_collection = None
+        try:
+            target_collection = self.client.get_collection(name=agent_id)
+        except: pass
 
         if not target_collection:
             return None

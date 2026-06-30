@@ -160,12 +160,13 @@ class SimpleMemSystem:
         """
         self.memory_builder.process_remaining()
 
-    def ask(self, question: str) -> str:
+    def ask(self, question: str, system_prompt: str = None) -> str:
         """
         Ask question - Core Q&A interface
 
         Args:
         - question: User question
+        - system_prompt: Optional custom system prompt overriding default behavior
 
         Returns:
         - Answer
@@ -191,7 +192,7 @@ class SimpleMemSystem:
             contexts = buffered_entries + contexts
 
         # Stage 3: Answer generation
-        answer = self.answer_generator.generate_answer(question, contexts)
+        answer = self.answer_generator.generate_answer(question, contexts, system_prompt=system_prompt)
 
         print("\nAnswer:")
         print(answer)
@@ -199,7 +200,7 @@ class SimpleMemSystem:
 
         return answer
 
-    def ask_with_contexts(self, question: str):
+    def ask_with_contexts(self, question: str, system_prompt: str = None):
         """
         Ask question and return both the answer and the retrieved contexts.
         
@@ -208,6 +209,7 @@ class SimpleMemSystem:
 
         Args:
         - question: User question
+        - system_prompt: Optional custom system prompt overriding default behavior
 
         Returns:
         - Tuple of (answer: str, contexts: List[MemoryEntry])
@@ -233,7 +235,7 @@ class SimpleMemSystem:
             contexts = buffered_entries + contexts
 
         # Generate answer from retrieved contexts
-        answer = self.answer_generator.generate_answer(question, contexts)
+        answer = self.answer_generator.generate_answer(question, contexts, system_prompt=system_prompt)
 
         print("\nAnswer:")
         print(answer)

@@ -3,120 +3,380 @@
 {% set active_page = 'search' %}
 
 {% block workspace_content %}
+<style>
+    .memory-qa-container {
+        display: grid;
+        grid-template-columns: 1fr 450px;
+        height: calc(100vh - 80px); /* Adjust based on navbar */
+        width: 100%;
+        background-color: transparent;
+    }
 
-<div style="max-width: 800px; margin: 0 auto; padding-top: 40px;">
+    /* --- Left Panel (Chat) --- */
+    .gm-chat-container {
+        display: flex;
+        flex-direction: column;
+        border-right: 1px solid var(--gm-border, hsl(225, 10%, 15%));
+        height: 100%;
+        background: var(--gm-bg, hsl(225, 12%, 10%));
+    }
+    .gm-chat-header {
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid var(--gm-border, hsl(225, 10%, 15%));
+        background: var(--gm-bg-secondary, hsl(225, 12%, 11%));
+        flex-shrink: 0;
+    }
+    .gm-chat-header h2 {
+        font-family: 'Outfit', sans-serif;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--gm-text-primary, white);
+        margin: 0;
+    }
+    .gm-chat-header p {
+        font-size: 0.85rem;
+        color: var(--gm-text-muted, hsl(225, 10%, 55%));
+        margin-top: 0.25rem;
+    }
+
+    .gm-chat-history-wrapper {
+        flex: 1;
+        overflow-y: auto;
+        padding: 2rem;
+        scroll-behavior: smooth;
+    }
+    .gm-message {
+        display: flex;
+        margin-bottom: 1.5rem;
+        width: 100%;
+    }
+    .gm-message.user {
+        justify-content: flex-end;
+    }
+    .gm-message.assistant {
+        justify-content: flex-start;
+    }
+    .gm-message-content {
+        max-width: 80%;
+    }
+    .gm-message.user .gm-message-content {
+        background: linear-gradient(135deg, hsl(230, 80%, 60%), hsl(220, 80%, 55%));
+        color: #ffffff;
+        border-radius: 16px;
+        border-bottom-right-radius: 4px;
+        padding: 0.85rem 1.1rem;
+        font-size: 0.925rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+    .gm-message.assistant .gm-message-content {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--gm-border, hsl(225, 10%, 20%));
+        border-radius: 16px;
+        border-bottom-left-radius: 4px;
+        padding: 0.85rem 1.1rem;
+        color: var(--gm-text-primary, white);
+        font-size: 0.95rem;
+        line-height: 1.65;
+    }
+
+    .gm-chat-input-area {
+        padding: 1.5rem 2rem;
+        background: var(--gm-bg-secondary, hsl(225, 12%, 11%));
+        border-top: 1px solid var(--gm-border, hsl(225, 10%, 15%));
+    }
+    .gm-input-wrapper {
+        display: flex;
+        align-items: center;
+        background: var(--gm-bg, hsl(225, 12%, 10%));
+        border: 1px solid var(--gm-border, hsl(225, 10%, 20%));
+        border-radius: 24px;
+        padding: 0.5rem 1rem;
+        transition: all 0.2s ease;
+    }
+    .gm-input-wrapper:focus-within {
+        border-color: hsl(230, 80%, 60%);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    }
+    .gm-input-wrapper input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        color: var(--gm-text-primary, white);
+        font-size: 1rem;
+        padding: 0.75rem;
+        outline: none;
+    }
+    .gm-input-wrapper button {
+        background: hsl(230, 80%, 60%);
+        border: none;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .gm-input-wrapper button:hover {
+        background: hsl(230, 80%, 65%);
+        transform: scale(1.05);
+    }
+
+    /* --- Right Panel (Sources) --- */
+    .sources-container {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        background: hsl(225, 12%, 11%);
+    }
+    .sources-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--gm-border, hsl(225, 10%, 15%));
+        background: hsl(225, 12%, 11%);
+        flex-shrink: 0;
+    }
+    .sources-header h2 {
+        font-family: 'Outfit', sans-serif;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--gm-text-primary, white);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
     
-    <div style="text-align: center; margin-bottom: 32px;">
-        <h1 style="font-size: 32px; font-weight: 800; color: white; margin-bottom: 12px;">Universal Organizational Search</h1>
-        <p style="font-size: 14px; color: hsl(225, 10%, 55%);">Search across all repositories, agent memories, and decisions.</p>
+    .sources-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .source-card {
+        background: hsl(225, 12%, 14%);
+        border: 1px solid var(--gm-border, hsl(225, 10%, 20%));
+        border-radius: 12px;
+        padding: 1rem;
+        transition: border-color 0.2s ease;
+    }
+    .source-card:hover {
+        border-color: hsl(225, 10%, 30%);
+    }
+    
+    .source-meta {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+        align-items: center;
+    }
+    
+    .source-type {
+        font-size: 0.7rem;
+        font-weight: bold;
+        text-transform: uppercase;
+        color: hsl(190,80%,50%);
+        background: rgba(0, 212, 255, 0.1);
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+    }
+    
+    .source-time {
+        font-size: 0.75rem;
+        color: hsl(225, 10%, 50%);
+    }
+    
+    .source-content {
+        color: hsl(225, 10%, 75%);
+        font-size: 0.85rem;
+        line-height: 1.5;
+        word-wrap: break-word;
+        white-space: pre-wrap;
+    }
+
+    .empty-state {
+        text-align: center;
+        color: hsl(225, 10%, 40%);
+        font-size: 0.9rem;
+        margin-top: 2rem;
+    }
+
+</style>
+
+<div class="memory-qa-container">
+    <!-- Left Panel: Chat Interface -->
+    <div class="gm-chat-container">
+        <div class="gm-chat-header">
+            <h2>Memory Q&A Bot</h2>
+            <p>Ask precise questions directly against the agent's memory bank.</p>
+        </div>
+
+        <div class="gm-chat-history-wrapper" id="chatHistory">
+            <!-- Initial Greeting -->
+            <div class="gm-message assistant">
+                <div class="gm-message-content">
+                    Hello! I'm your Memory Assistant. Ask me anything, and I'll synthesize an answer using explicit context from my memory banks. I'll also show you exactly which memories I referenced on the right.
+                </div>
+            </div>
+        </div>
+
+        <div class="gm-chat-input-area">
+            <div class="gm-input-wrapper">
+                <input type="text" id="chatInput" placeholder="e.g., How does our refund policy work?" autocomplete="off">
+                <button id="sendBtn">
+                    <i data-lucide="send" style="width: 16px; height: 16px;"></i>
+                </button>
+            </div>
+        </div>
     </div>
 
-    <!-- Search Bar -->
-    <div style="position: relative; margin-bottom: 40px;">
-        <i data-lucide="search" style="position: absolute; left: 24px; top: 50%; transform: translateY(-50%); width: 24px; height: 24px; color: hsl(225, 10%, 40%);"></i>
-        <input type="text" id="searchInput" placeholder="e.g., How does our refund policy work?" 
-               style="width: 100%; background: hsl(225, 12%, 11%); border: 1px solid hsl(225, 10%, 20%); border-radius: 16px; padding: 20px 24px 20px 64px; font-size: 18px; color: white; outline: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: all 0.2s ease;"
-               onfocus="this.style.borderColor='hsl(230,80%,62%)'" onblur="this.style.borderColor='hsl(225, 10%, 20%)'">
+    <!-- Right Panel: Sources Viewer -->
+    <div class="sources-container">
+        <div class="sources-header">
+            <h2><i data-lucide="database" style="width: 18px; height: 18px; color: hsl(190,80%,50%);"></i> Memory Sources</h2>
+        </div>
+        <div class="sources-list" id="sourcesList">
+            <div class="empty-state">
+                <i data-lucide="search" style="width: 32px; height: 32px; opacity: 0.5; margin-bottom: 1rem;"></i>
+                <br>
+                Sources will appear here once you ask a question.
+            </div>
+        </div>
     </div>
-
-    <!-- Search Results -->
-    <div id="searchResults" style="display: flex; flex-direction: column; gap: 16px;">
-        <!-- Results will be injected here -->
-    </div>
-
-    <!-- Empty/Loading State -->
-    <div id="searchState" style="text-align: center; margin-top: 60px;">
-        <p style="font-size: 14px; color: hsl(225, 10%, 40%);">Type your query and press Enter to search through agent memories and knowledge repositories.</p>
-    </div>
-
 </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        const searchInput = document.getElementById('searchInput');
-        const searchResults = document.getElementById('searchResults');
-        const searchState = document.getElementById('searchState');
+        const chatInput = document.getElementById('chatInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const chatHistory = document.getElementById('chatHistory');
+        const sourcesList = document.getElementById('sourcesList');
         const agentId = "{{ workspace.id }}";
 
-        searchInput.addEventListener('keypress', async (e) => {
-            if (e.key === 'Enter') {
-                const query = searchInput.value.trim();
-                if (!query) return;
+        // Append message to chat UI
+        function appendMessage(role, text) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `gm-message ${role}`;
+            msgDiv.innerHTML = `<div class="gm-message-content">${text}</div>`;
+            chatHistory.appendChild(msgDiv);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
 
-                // UI Loading
-                searchResults.innerHTML = '';
-                searchState.innerHTML = '<p style="color: hsl(230,80%,62%); font-size: 14px;">Searching across organizational knowledge...</p>';
+        // Render sources in the right panel
+        function renderSources(sources) {
+            sourcesList.innerHTML = ''; // Clear current sources
 
-                try {
-                    // Call Search Documents
-                    const docRes = await fetch('/search_documents', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ agent_id: agentId, query: query, top_k: 5 })
-                    });
-                    
-                    if (!docRes.ok) throw new Error(`Search Documents API failed: ${docRes.status}`);
-                    const docData = await docRes.json();
-                    
-                    // Call Search Chat History
-                    const chatRes = await fetch('/search_chat_history', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ agent_id: agentId, query: query, top_k: 5 })
-                    });
-
-                    if (!chatRes.ok) throw new Error(`Search Chat History API failed: ${chatRes.status}`);
-                    const chatData = await chatRes.json();
-
-                    searchState.innerHTML = ''; // clear loading
-
-                    let hasResults = false;
-
-                    const renderResult = (title, content, type, score) => {
-                        hasResults = true;
-                        const card = document.createElement('div');
-                        card.style.background = 'hsl(225, 12%, 11%)';
-                        card.style.border = '1px solid hsl(225, 10%, 15%)';
-                        card.style.borderRadius = '12px';
-                        card.style.padding = '20px';
-                        
-                        card.innerHTML = `
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                                <span style="color: ${type === 'Document' ? 'hsl(190,80%,50%)' : 'hsl(270,60%,60%)'}; font-size: 12px; font-weight: bold; text-transform: uppercase;">${type}</span>
-                                ${score ? `<span style="color: hsl(225, 10%, 50%); font-size: 12px;">Score: ${score.toFixed(2)}</span>` : ''}
-                            </div>
-                            <h3 style="color: white; font-size: 16px; margin-bottom: 8px;">${title}</h3>
-                            <p style="color: hsl(225, 10%, 70%); font-size: 14px; line-height: 1.5;">${content}</p>
-                        `;
-                        searchResults.appendChild(card);
-                    };
-
-                    // Process docData
-                    if (docData.results && Array.isArray(docData.results)) {
-                        docData.results.forEach(res => {
-                            const meta = res.metadata || {};
-                            renderResult(meta.filename || meta.topic || 'Document Match', res.document || res.content || '', 'Document', res.score);
-                        });
-                    }
-
-                    // Process chatData
-                    if (chatData.history && Array.isArray(chatData.history)) {
-                        chatData.history.forEach(res => {
-                            const meta = res.metadata || {};
-                            renderResult(meta.topic || 'Chat History Match', res.document || res.content || '', 'Memory', res.score);
-                        });
-                    }
-
-                    if (!hasResults) {
-                        searchState.innerHTML = '<p style="color: hsl(225, 10%, 40%); font-size: 14px;">No relevant knowledge found for that query.</p>';
-                    }
-
-                } catch (err) {
-                    console.error(err);
-                    searchState.innerHTML = '<p style="color: hsl(0,80%,60%); font-size: 14px;">An error occurred while searching.</p>';
-                }
+            if (!sources || sources.length === 0) {
+                sourcesList.innerHTML = `
+                    <div class="empty-state">
+                        No explicit memory sources found to inform this answer.
+                    </div>`;
+                return;
             }
+
+            sources.forEach(src => {
+                const card = document.createElement('div');
+                card.className = 'source-card';
+                
+                // Format timestamp
+                let timeStr = src.timestamp;
+                try {
+                    const date = new Date(src.timestamp);
+                    if (!isNaN(date)) timeStr = date.toLocaleString();
+                } catch(e) {}
+
+                card.innerHTML = `
+                    <div class="source-meta">
+                        <span class="source-type">${src.type || 'Episodic'}</span>
+                        <span class="source-time">${timeStr}</span>
+                    </div>
+                    <div class="source-content">${src.content}</div>
+                `;
+                sourcesList.appendChild(card);
+            });
+        }
+
+        async function handleSend() {
+            const query = chatInput.value.trim();
+            if (!query) return;
+
+            chatInput.value = '';
+            appendMessage('user', query);
+
+            // Add a temporary loading message
+            const loadingId = 'loading-' + Date.now();
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'gm-message assistant';
+            loadingDiv.id = loadingId;
+            loadingDiv.innerHTML = `<div class="gm-message-content" style="opacity: 0.6;">Synthesizing memory...</div>`;
+            chatHistory.appendChild(loadingDiv);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+
+            // Clear sources panel during load
+            sourcesList.innerHTML = `
+                <div class="empty-state">
+                    <div style="animation: pulse 1.5s infinite; opacity: 0.6;">Retrieving relevant memories...</div>
+                </div>`;
+
+            try {
+                const res = await fetch('/get_context', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ agent_id: agentId, question: query })
+                });
+
+                document.getElementById(loadingId).remove();
+
+                if (!res.ok) throw new Error(`API failed: ${res.status}`);
+                const data = await res.json();
+                
+                if(data.error) {
+                    appendMessage('assistant', `<span style="color: hsl(0,80%,70%)">Error: ${data.error}</span>`);
+                    return;
+                }
+
+                // Append answer
+                appendMessage('assistant', data.answer || "No answer generated.");
+                
+                // Map contexts_used to the expected structure for renderSources
+                const mappedSources = (data.contexts_used || []).map(ctx => ({
+                    type: 'Memory',
+                    timestamp: ctx.timestamp || new Date().toISOString(), // Fallback if timestamp isn't in contexts_used
+                    content: ctx.lossless_restatement || ctx.topic
+                }));
+
+                // Render sources
+                renderSources(mappedSources);
+
+            } catch (err) {
+                console.error(err);
+                const loader = document.getElementById(loadingId);
+                if(loader) loader.remove();
+                appendMessage('assistant', '<span style="color: hsl(0,80%,70%)">An error occurred while synthesizing memory.</span>');
+                sourcesList.innerHTML = `<div class="empty-state">Failed to load sources.</div>`;
+            }
+        }
+
+        sendBtn.addEventListener('click', handleSend);
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleSend();
         });
+        
+        // Add simple CSS animation for loading pulse
+        const style = document.createElement('style');
+        style.innerHTML = `
+            @keyframes pulse {
+                0% { opacity: 0.4; }
+                50% { opacity: 0.8; }
+                100% { opacity: 0.4; }
+            }
+        `;
+        document.head.appendChild(style);
+        lucide.createIcons();
     });
 </script>
 
