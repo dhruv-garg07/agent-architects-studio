@@ -236,6 +236,75 @@ class VectorEngine:
             print(f"[VectorEngine] delete_memory failed for {memory_id}: {e}")
             return False
 
+    def remove_duplicates(self, agent_id: str, similarity_threshold: float = 0.95) -> Dict[str, Any]:
+        """
+        Detect and remove duplicates based on cosine similarity threshold.
+        """
+        if not self.client:
+            return {"success": False, "error": "Client not initialized"}
+            
+        print(f"[VectorEngine] Checking for duplicates for agent {agent_id} with threshold {similarity_threshold}...")
+        try:
+            target_collection = self.client.get_collection(name=agent_id)
+            
+            all_ids = []
+            all_embeddings = []
+            
+            batch_size = 300
+            offset = 0
+            while True:
+                chroma_data = target_collection.get(
+                    include=["embeddings"],
+                    limit=batch_size,
+                    offset=offset
+                )
+                
+                if not chroma_data or not chroma_data.get("ids"):
+                    break
+                    
+                if chroma_data.get("embeddings") is not None and len(chroma_data["embeddings"]) > 0:
+                    all_ids.extend(chroma_data["ids"])
+                    all_embeddings.extend(chroma_data["embeddings"])
+                    
+                if len(chroma_data["ids"]) < batch_size:
+                    break
+                offset += batch_size
+            
+            if not all_ids or not all_embeddings:
+                return {"success": True, "removed": 0, "message": "No embeddings to compare"}
+            
+            import numpy as np
+            ids = all_ids
+            embeddings = np.array(all_embeddings)
+            
+            # Normalize embeddings for cosine similarity
+            norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
+            norms[norms == 0] = 1e-10
+            normalized_embeddings = embeddings / norms
+            
+            # Compute pairwise similarity matrix
+            similarity_matrix = np.dot(normalized_embeddings, normalized_embeddings.T)
+            
+            duplicates_to_remove = set()
+            # Find pairs with similarity >= threshold
+            for i in range(len(ids)):
+                if ids[i] in duplicates_to_remove:
+                    continue
+                for j in range(i + 1, len(ids)):
+                    if similarity_matrix[i, j] >= similarity_threshold:
+                        duplicates_to_remove.add(ids[j])
+                        
+            if duplicates_to_remove:
+                print(f"[VectorEngine] Found {len(duplicates_to_remove)} duplicates. Removing...")
+                target_collection.delete(ids=list(duplicates_to_remove))
+                return {"success": True, "removed": len(duplicates_to_remove)}
+                
+            return {"success": True, "removed": 0}
+            
+        except Exception as e:
+            print(f"[VectorEngine] Error in remove_duplicates: {e}")
+            return {"success": False, "error": str(e)}
+
     def update_memory(self, memory_id: str, content: str, metadata: Dict[str, Any], agent_id: str = None) -> bool:
         """Update the document and metadata for an existing vector by ID."""
         if not self.client or not agent_id:
@@ -286,19 +355,38 @@ class VectorEngine:
             
         try:
             # Fetch simpler data - exclude embeddings to save bandwidth/memory
-            get_args = {
-                "limit": limit,
-                "include": ["documents", "metadatas"]
-            }
+            all_results = {"ids": [], "documents": [], "metadatas": []}
+            batch_size = 300
+            
+            for offset in range(0, limit, batch_size):
+                current_limit = min(batch_size, limit - offset)
                 
-            results = target_collection.get(**get_args)
+                get_args = {
+                    "limit": current_limit,
+                    "offset": offset,
+                    "include": ["documents", "metadatas"]
+                }
+                    
+                results = target_collection.get(**get_args)
+                
+                if not results or not results.get('ids'):
+                    break
+                    
+                all_results["ids"].extend(results["ids"])
+                if results.get("documents"):
+                    all_results["documents"].extend(results["documents"])
+                if results.get("metadatas"):
+                    all_results["metadatas"].extend(results["metadatas"])
+                    
+                if len(results["ids"]) < current_limit:
+                    break
             
             normalized = []
-            if results and results.get('ids'):
-                metadatas = results.get('metadatas') or []
-                documents = results.get('documents') or []
+            if all_results['ids']:
+                metadatas = all_results.get('metadatas') or []
+                documents = all_results.get('documents') or []
                 
-                for i, vid in enumerate(results['ids']):
+                for i, vid in enumerate(all_results['ids']):
                     metadata = metadatas[i] if i < len(metadatas) and metadatas[i] is not None else {}
                     metadata["agent_id"] = agent_id
                     

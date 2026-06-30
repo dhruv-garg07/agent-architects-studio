@@ -434,6 +434,21 @@ def hub_sync_memories(ws_slug):
     except Exception as e:
         print(f"[Sync] Warning: Could not ensure repo: {e}")
 
+    # ── 2.5 Clean up duplicates before syncing ──
+    try:
+        from lib.SimpleMem.database.vector_store import VectorStore
+        vs = VectorStore(agent_id=actual_agent_id)
+        vs.remove_duplicates(0.95)
+    except Exception as e:
+        print(f"[Sync] Warning: Failed to deduplicate SimpleMem: {e}")
+        
+    ve = gitmem_app.vector_engine
+    if ve:
+        try:
+            ve.remove_duplicates(actual_agent_id, 0.95)
+        except Exception as e:
+            print(f"[Sync] Warning: Failed to deduplicate VectorEngine: {e}")
+
     synced_count = 0
     errors = []
 

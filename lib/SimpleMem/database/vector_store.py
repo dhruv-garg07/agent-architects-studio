@@ -377,7 +377,59 @@ class VectorStore:
         documents = []
         metadatas = []
         
+        unique_entries = []
         for entry in entries:
+            # Generate or use existing entry_id
+            if not entry.entry_id:
+                entry.entry_id = self._generate_entry_id(entry)
+                
+            # Check for duplicates before adding
+            try:
+                document_text = self._entry_to_document(entry)
+                query_emb = np.array(self.embedding_model.encode([document_text])[0])
+                query_norm = np.linalg.norm(query_emb)
+                if query_norm > 0:
+                    query_emb = query_emb / query_norm
+                    
+                raw_results = self.agentic_RAG.search_agent_collection(
+                    agent_ID=current_agent_id,
+                    query=document_text,
+                    n_results=5
+                )
+                
+                is_duplicate = False
+                if raw_results and len(raw_results) > 0:
+                    result_ids = [res.get('id') for res in raw_results if res.get('id')]
+                    if result_ids:
+                        collection = self.agentic_RAG.wrapper.manager.get_collection(current_agent_id)
+                        chroma_data = collection.get(ids=result_ids, include=["embeddings"])
+                        
+                        if chroma_data and chroma_data.get("embeddings") is not None and len(chroma_data["embeddings"]) > 0:
+                            embeddings = np.array(chroma_data["embeddings"])
+                            norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
+                            norms[norms == 0] = 1e-10
+                            normalized_embeddings = embeddings / norms
+                            
+                            similarities = np.dot(normalized_embeddings, query_emb)
+                            max_sim = np.max(similarities)
+                            
+                            if max_sim >= 0.95:
+                                print(f"[VectorStore] Skipping duplicate entry: {entry.lossless_restatement[:50]}... (similarity: {max_sim:.4f})")
+                                is_duplicate = True
+                                
+                if is_duplicate:
+                    continue
+                    
+            except Exception as e:
+                print(f"[VectorStore] Error during duplicate check: {e}")
+                
+            unique_entries.append(entry)
+            
+        if not unique_entries:
+            print(f"[VectorStore] All entries were duplicates. Nothing to add.")
+            return {"success": True, "operations_completed": 0, "ids": []}
+            
+        for entry in unique_entries:
             # Generate or use existing entry_id
             if not entry.entry_id:
                 entry.entry_id = self._generate_entry_id(entry)
@@ -410,13 +462,13 @@ class VectorStore:
         print(f"[DEBUG VectorStore.add_entries] Batch execute result: {result}")
         
         if result.get('success'):
-            print(f"[SUCCESS] Added {len(entries)} memory entries to {current_agent_id}")
+            print(f"[SUCCESS] Added {len(unique_entries)} memory entries to {current_agent_id}")
             
             # Replicate to Supabase
             try:
                 supabase = SupabaseConnector()
                 if not supabase._disabled:
-                    for entry in entries:
+                    for entry in unique_entries:
                         metadata = self._entry_to_metadata(entry, agent_id=current_agent_id)
                         data = {
                             "id": entry.entry_id,
@@ -458,6 +510,9 @@ class VectorStore:
         Sync all memories for the current agent from Chroma DB to Supabase.
         Finds missing entries in Supabase and inserts them.
         """
+        # Deduplicate ChromaDB entries before syncing
+        self.remove_duplicates(similarity_threshold=0.95)
+        
         current_agent_id = self.agent_id
         try:
             # 1. Fetch existing memories from Supabase
@@ -472,16 +527,45 @@ class VectorStore:
             # 2. Fetch all memories from ChromaDB
             try:
                 collection = self.agentic_RAG.wrapper.manager.get_collection(current_agent_id)
-                chroma_data = collection.get(include=["documents", "metadatas"])
+                chroma_ids = []
+                chroma_docs = []
+                chroma_metas = []
+                
+                # Fetch in batches to avoid quota limits
+                batch_size = 300
+                offset = 0
+                while True:
+                    chroma_data = collection.get(
+                        include=["documents", "metadatas"],
+                        limit=batch_size,
+                        offset=offset
+                    )
+                    if not chroma_data or not chroma_data.get("ids"):
+                        break
+                        
+                    chroma_ids.extend(chroma_data["ids"])
+                    
+                    if chroma_data.get("documents"):
+                        chroma_docs.extend(chroma_data["documents"])
+                    else:
+                        # Pad with empty strings if missing
+                        chroma_docs.extend([""] * len(chroma_data["ids"]))
+                        
+                    if chroma_data.get("metadatas"):
+                        chroma_metas.extend(chroma_data["metadatas"])
+                    else:
+                        # Pad with empty dicts if missing
+                        chroma_metas.extend([{}] * len(chroma_data["ids"]))
+                    
+                    if len(chroma_data["ids"]) < batch_size:
+                        break
+                    offset += batch_size
+                    
             except Exception as e:
                 return {"success": False, "error": f"Failed to get Chroma collection: {e}"}
             
-            if not chroma_data or not chroma_data.get("ids"):
+            if not chroma_ids:
                 return {"success": True, "synced": 0, "message": "No records in Chroma"}
-            
-            chroma_ids = chroma_data["ids"]
-            chroma_docs = chroma_data.get("documents", [])
-            chroma_metas = chroma_data.get("metadatas", [])
             
             synced_count = 0
             for i, c_id in enumerate(chroma_ids):
@@ -515,6 +599,80 @@ class VectorStore:
             return {"success": True, "synced": synced_count}
             
         except Exception as e:
+            return {"success": False, "error": str(e)}
+            
+    def remove_duplicates(self, similarity_threshold: float = 0.95) -> Dict[str, Any]:
+        """
+        Detect and remove duplicates based on cosine similarity threshold.
+        """
+        print(f"[VectorStore] Checking for duplicates with threshold {similarity_threshold}...")
+        try:
+            collection = self.agentic_RAG.wrapper.manager.get_collection(self.agent_id)
+            
+            all_ids = []
+            all_embeddings = []
+            
+            batch_size = 300
+            offset = 0
+            while True:
+                chroma_data = collection.get(
+                    include=["embeddings"],
+                    limit=batch_size,
+                    offset=offset
+                )
+                
+                if not chroma_data or not chroma_data.get("ids"):
+                    break
+                    
+                if chroma_data.get("embeddings") is not None and len(chroma_data["embeddings"]) > 0:
+                    all_ids.extend(chroma_data["ids"])
+                    all_embeddings.extend(chroma_data["embeddings"])
+                    
+                if len(chroma_data["ids"]) < batch_size:
+                    break
+                offset += batch_size
+            
+            if not all_ids or not all_embeddings:
+                return {"success": True, "removed": 0, "message": "No embeddings to compare"}
+            
+            ids = all_ids
+            embeddings = np.array(all_embeddings)
+            
+            # Normalize embeddings for cosine similarity
+            norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
+            norms[norms == 0] = 1e-10
+            normalized_embeddings = embeddings / norms
+            
+            # Compute pairwise similarity matrix
+            similarity_matrix = np.dot(normalized_embeddings, normalized_embeddings.T)
+            
+            duplicates_to_remove = set()
+            # Find pairs with similarity >= threshold
+            for i in range(len(ids)):
+                if ids[i] in duplicates_to_remove:
+                    continue
+                for j in range(i + 1, len(ids)):
+                    if similarity_matrix[i, j] >= similarity_threshold:
+                        duplicates_to_remove.add(ids[j])
+                        
+            if duplicates_to_remove:
+                print(f"[VectorStore] Found {len(duplicates_to_remove)} duplicates. Removing...")
+                self.agentic_RAG.delete_chat_history(
+                    agent_ID=self.agent_id,
+                    ids=list(duplicates_to_remove)
+                )
+                
+                # Also remove from cache
+                for doc_id in duplicates_to_remove:
+                    if doc_id in self.entry_cache:
+                        del self.entry_cache[doc_id]
+                        
+                return {"success": True, "removed": len(duplicates_to_remove)}
+                
+            return {"success": True, "removed": 0}
+            
+        except Exception as e:
+            print(f"[VectorStore] Error in remove_duplicates: {e}")
             return {"success": False, "error": str(e)}
     
     def semantic_search(self, query: str, top_k: int = 5, **kwargs) -> List[MemoryEntry]:

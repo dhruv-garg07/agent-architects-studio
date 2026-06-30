@@ -92,9 +92,19 @@ class EmbeddingModel:
 
         Raises on HTTP errors or if no embedding data is returned.
         """
-        base_url = getattr(config, "REMOTE_EMBEDDING_URL", None)
+        base_url = REMOTE_EMBEDDING_URL
         if not base_url:
-            raise RuntimeError("REMOTE_EMBEDDING_URL not configured in config.py")
+            raise RuntimeError("REMOTE_EMBEDDING_URL not configured")
+            
+        if base_url == "hf-inference":
+            from Octave_mem.RAG_DB.chroma_collection_manager import RemoteEmbeddingClient
+            client = RemoteEmbeddingClient()
+            emb = client._embed_one(text)
+            emb_arr = np.array(emb, dtype=np.float32)
+            norm = np.linalg.norm(emb_arr)
+            if norm > 0:
+                emb_arr = emb_arr / norm
+            return emb_arr
 
         payload = {"data": [text]}
         try:
