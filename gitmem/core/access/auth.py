@@ -42,11 +42,49 @@ class AuthService:
         return False, None, None
 
     def _is_valid_api_key(self, api_key: str) -> bool:
-        """Validate API key format/presence (stub)."""
-        # Stub implementation
-        return len(api_key) > 20 and api_key.startswith("gm_")
+        """Validate an API key.
+
+        Checks format first (must start with 'gm_' and be > 20 chars), then
+        performs a Supabase lookup against the `gitmem_api_keys` table when a
+        client is available.  Falls back to format-only validation when the
+        table doesn't exist or the DB is unreachable.
+        """
+        if not api_key or len(api_key) <= 20 or not api_key.startswith("gm_"):
+            return False
+        if self.client:
+            try:
+                res = (
+                    self.client.table("gitmem_api_keys")
+                    .select("id")
+                    .eq("key_hash", api_key)
+                    .limit(1)
+                    .execute()
+                )
+                return bool(res.data)
+            except Exception:
+                # Table may not exist yet (early deployment) — fall back to
+                # format-only check so existing integrations keep working.
+                pass
+        # Fallback: format check only (stub behaviour)
+        return True
 
     def _get_actor_for_api_key(self, api_key: str) -> str:
-        """Lookup the actor ID for a given API key (stub)."""
-        # Stub implementation
+        """Return the user_id (or agent actor) associated with an API key.
+
+        Performs a DB lookup when possible; returns 'system_agent' as a
+        safe fallback when the table is unavailable.
+        """
+        if self.client:
+            try:
+                res = (
+                    self.client.table("gitmem_api_keys")
+                    .select("user_id")
+                    .eq("key_hash", api_key)
+                    .limit(1)
+                    .execute()
+                )
+                if res.data:
+                    return res.data[0]["user_id"]
+            except Exception:
+                pass
         return "system_agent"

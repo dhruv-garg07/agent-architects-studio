@@ -13,7 +13,7 @@ Data Model:
 One agent == one repository. agent_id IS the repo_id.
 """
 
-from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash
+from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash, Response
 from flask_login import login_required, current_user
 import re
 
@@ -353,91 +353,8 @@ def landing():
 @gitmem_bp.route('/agent/<agent_id>/advanced')
 @login_required
 def agent_dashboard(agent_id):
-    """Legacy dashboard route redirects to Overview."""
+    """Legacy dashboard route — redirects to the new Overview hub."""
     return redirect(url_for('gitmem.hub_overview', ws_slug=agent_id))
-
-    # Folder structure
-    folder_structure = _build_folder_structure(agent_id)
-
-    # Recent memories (latest 5)
-    recent_context = []
-    try:
-        res = _db().table('gitmem_memories').select('*') \
-            .eq('agent_id', agent_id) \
-            .order('created_at', desc=True).limit(5).execute()
-        recent_context = res.data or []
-    except Exception:
-        pass
-
-    # Activity Feed (latest 6)
-    activity_feed = []
-    try:
-        res = _db().table('gitmem_activity_logs').select('*') \
-            .eq('agent_id', agent_id) \
-            .order('created_at', desc=True).limit(6).execute()
-        for row in (res.data or []):
-            activity_feed.append({
-                'content': f"{row.get('action', '')} {row.get('resource_type', '')}",
-                'timestamp': (row.get('created_at', '') or '')[:16],
-                'icon': 'activity',
-            })
-    except Exception:
-        pass
-
-    # Index stats from vector engine
-    index_stats = {'embeddings': 0, 'latency': '—', 'freshness': 'N/A'}
-    try:
-        index_stats = gitmem_app.vector_engine.get_agent_stats(agent_id)
-    except Exception:
-        pass
-
-    # Latest commit
-    latest_commit = None
-    try:
-        res = _db().table('gitmem_commits').select('*') \
-            .eq('agent_id', agent_id) \
-            .order('timestamp', desc=True).limit(1).execute()
-        if res.data:
-            latest_commit = res.data[0]
-    except Exception:
-        pass
-
-    # Context sources count (sum of all folder items)
-    context_sources = []
-    for section in folder_structure.values():
-        for sub in section.values():
-            if sub.get('count', 0) > 0:
-                context_sources.append(sub)
-
-    # Branches
-    current_branch = request.args.get('branch', 'main')
-    branches = []
-    try:
-        branches_raw = gitmem_app.vcs.branch_manager.list_branches(agent_id)
-        branches = [b.get('ref_name') for b in branches_raw if b.get('ref_name')]
-        if not branches or 'main' not in branches:
-            branches.insert(0, 'main')
-    except Exception:
-        branches = ['main']
-
-    memory_count = _count_table('gitmem_memories', 'agent_id', agent_id)
-    commit_count = _count_table('gitmem_commits', 'agent_id', agent_id)
-
-    return render_template(
-        'agent_dashboard.html',
-        agent=agent,
-        folder_structure=folder_structure,
-        recent_context=recent_context,
-        activity_feed=activity_feed,
-        index_stats=index_stats,
-        latest_commit=latest_commit,
-        context_sources=context_sources,
-        memory_count=memory_count,
-        commit_count=commit_count,
-        branches=branches,
-        current_branch=current_branch,
-        sources=get_sources_status(),
-    )
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1845,15 +1762,6 @@ def api_rollback(agent_id):
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Checkpoints API
-# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

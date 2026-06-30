@@ -148,15 +148,19 @@ class VCSOrchestrator:
             agent_id=repo_id,
             parents=parents
         )
-        
-        commit_sha = self.store.store_commit(commit)
-        
-        # 5. Calculate diff stats against parent
+
+        # 5. Calculate diff stats BEFORE storing the commit, so the stored
+        # blob contains the correct stats.  commit.sha is stable because it
+        # does NOT include stats (see MemoryCommit._canonical_dict).
+        commit_sha = commit.sha  # pre-compute SHA before mutation
         if parents:
             diff = self.diff_engine.diff_commits(parents[0], commit_sha)
             commit.stats = self.diff_engine.compute_stats(diff).model_dump()
         else:
             commit.stats = {"added": len(tree.entries), "modified": 0, "deleted": 0}
+
+        # 4. Store the commit (with stats now populated)
+        self.store.store_commit(commit)
             
         # 6. Persist metadata & update branch
         self._persist_commit_metadata(commit, workspace_id)
@@ -220,8 +224,14 @@ class VCSOrchestrator:
         target_sha = target_ref["target_hash"]
         source_sha = source_ref["target_hash"]
         
-        # Find common ancestor (simplified: assuming target parent for now, a real implementation needs LCA)
-        base_sha = None # TODO: Implement Lowest Common Ancestor
+        # TODO: Implement Lowest Common Ancestor (LCA) algorithm.
+        # KNOWN ISSUE: Without a real LCA, base_sha is always None, which causes
+        # MergeEngine to treat every merge as a 2-way merge from an empty base tree.
+        # Consequence: memories that exist identically in both branches are incorrectly
+        # flagged as conflicts (both sides "added" them from the empty base), rather
+        # than being recognised as unchanged.  Fix: walk the parent-pointer DAG to
+        # find the most-recent common ancestor commit.
+        base_sha = None
         
         try:
             # 1. Merge trees

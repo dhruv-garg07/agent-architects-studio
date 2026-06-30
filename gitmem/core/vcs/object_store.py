@@ -125,11 +125,29 @@ class MemoryCommit:
     
     @property
     def sha(self) -> str:
-        """Compute SHA-256 hash of the commit."""
-        raw = json.dumps(self.to_dict(), sort_keys=True).encode('utf-8')
+        """Compute SHA-256 hash of the commit.
+
+        Stats are intentionally excluded from the canonical hash so that:
+        1. Stats can be computed *after* the SHA is known (no circular dependency).
+        2. Stats can be updated without invalidating the commit identity.
+        """
+        raw = json.dumps(self._canonical_dict(), sort_keys=True).encode('utf-8')
         return hashlib.sha256(raw).hexdigest()
-    
+
+    def _canonical_dict(self) -> Dict:
+        """Return only the content-addressed fields (no stats) used for SHA computation."""
+        return {
+            "type": ObjectType.COMMIT.value,
+            "tree": self.tree_sha,
+            "parents": self.parents,
+            "author": self.author,
+            "agent_id": self.agent_id,
+            "message": self.message,
+            "timestamp": self.timestamp,
+        }
+
     def to_dict(self) -> Dict:
+        """Return the full dict for storage (includes stats)."""
         return {
             "type": ObjectType.COMMIT.value,
             "tree": self.tree_sha,
@@ -244,30 +262,37 @@ class ObjectStore:
             return None
     
     def object_exists(self, sha: str) -> bool:
-        """Check if an object exists in Supabase Storage."""
+        """Check if an object exists in Supabase Storage.
+
+        Uses a targeted single-object download probe instead of listing
+        the entire bucket (which is O(N) and can miss results due to
+        pagination limits).  A successful download means the object exists;
+        a 404 / "not found" error means it does not.
+        """
         if not sha or len(sha) < 8 or sha in ("init", "HEAD", "undefined"):
             return False
-            
+
+        # Cache hit — no network call required.
         if self.cache and self.cache.get(sha) is not None:
             return True
-            
+
         if not self.storage:
             return False
-            
+
         try:
             path = self._blob_path(sha)
-            # Check if bucket exists first by a small operation or assume it exists
-            # but handle error in list
-            files = self.storage.list("objects")
-            for f in files:
-                if f.get("name") == f"{sha}.json.zlib":
-                    return True
-            return False
+            self.storage.download(path)  # raises on 404 / object-not-found
+            return True
         except Exception as e:
-            if "Bucket not found" in str(e):
-                 print(f"[ObjectStore] Critical: Bucket '{self.bucket}' missing.")
+            err = str(e).lower()
+            if "not found" in err or "404" in err or "object not found" in err:
+                return False
+            if "bucket not found" in err:
+                print(f"[ObjectStore] Critical: Bucket '{self.bucket}' missing.")
+            else:
+                print(f"[ObjectStore] object_exists check error for {sha}: {e}")
             return False
-    
+
     # ========== High-Level Operations ==========
     
     def store_blob(self, blob: MemoryBlob) -> str:

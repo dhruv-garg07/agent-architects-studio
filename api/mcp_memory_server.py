@@ -422,26 +422,49 @@ async def remove_agent(agent_id: str, delete_memories: bool = False) -> str:
     global _current_agent_id
     
     try:
-        # Delete from Supabase
+        # 1. Delete the agent record from mcp_agents table
         deleted = _agents_service.delete_agent(user_id=_default_user_id, agent_id=agent_id)
-        
-        # Optionally clear memories in GitMem V2
-        # (Command handler delete logic would go here)
-        pass
-        
-        # Clear current agent if deleted
+
+        memories_deleted_count = 0
+
+        # 2. Optionally delete all memories from GitMem V2 (Supabase + ChromaDB)
+        if delete_memories:
+            db = gitmem_app.supabase_client
+            if db:
+                try:
+                    # Delete all gitmem_memories rows for this agent (repo_id = agent_id)
+                    del_res = (
+                        db.table("gitmem_memories")
+                        .delete()
+                        .eq("repo_id", agent_id)
+                        .execute()
+                    )
+                    memories_deleted_count = len(del_res.data) if del_res.data else 0
+                except Exception as mem_err:
+                    print(f"[MCP] Warning: Could not delete memories for {agent_id}: {mem_err}")
+
+            # Also drop the ChromaDB collection for this agent (best-effort)
+            if gitmem_app.vector_engine and gitmem_app.vector_engine.client:
+                try:
+                    gitmem_app.vector_engine.client.delete_collection(agent_id)
+                except Exception as vec_err:
+                    print(f"[MCP] Warning: Could not drop ChromaDB collection {agent_id}: {vec_err}")
+
+        # 3. Clear session context if this was the active agent
+        global _current_agent_id
         if _current_agent_id == agent_id:
             _current_agent_id = None
-        
+
         return json.dumps({
-            'ok': True,
-            'message': 'agent_removed',
-            'agent_id': agent_id,
-            'memories_deleted': delete_memories,
-            'current_agent': _current_agent_id
+            "ok": True,
+            "message": "agent_removed",
+            "agent_id": agent_id,
+            "memories_deleted": delete_memories,
+            "memories_deleted_count": memories_deleted_count,
+            "current_agent": _current_agent_id
         })
     except Exception as e:
-        return json.dumps({'ok': False, 'error': str(e)})
+        return json.dumps({"ok": False, "error": str(e)})
 
 
 @mcp.tool()
@@ -732,42 +755,60 @@ async def get_context_answer(
     question: str
 ) -> str:
     """
-    Get a context-aware answer using SimpleMem's ask function.
-    
-    Full Q&A flow: Query → HybridRetrieval → AnswerGenerator → Response.
-    Returns both the LLM-generated answer and the memory contexts used.
-    
+    Get a context-aware answer using GitMem V2 hybrid retrieval.
+
+    Full Q&A flow: Query -> HybridRetrieval -> AnswerGenerator -> Response.
+    Returns retrieved memory context and the sources used.
+
     Args:
-        agent_id: Unique identifier for the agent
+        agent_id: Unique identifier for the agent (maps to repo_id in GitMem V2)
         question: The question to answer using memory context
-    
+
     Returns:
-        JSON string with the answer and contexts used
+        JSON string with the context string and sources used
     """
     try:
-        memory_system = _get_or_create_memory_system(agent_id)
-        
-        answer = memory_system.ask(question)
-        
-        contexts = memory_system.hybrid_retriever.retrieve(question)
+        res = gitmem_app.command_handler.execute(
+            command_name="retrieve_context",
+            actor_id=_default_user_id,
+            workspace_id=_current_workspace_id,
+            payload={
+                "repo_id": agent_id,
+                "query": question,
+                "max_tokens": 2000
+            },
+            skip_auth=True
+        )
+
+        if res.get("status") != "success":
+            return json.dumps({"ok": False, "error": res.get("error", "Retrieval failed")})
+
+        data = res.get("data", {})
+        context_string = data.get("context_string", "")
+        sources = data.get("sources", [])
+
         contexts_used = [
             {
-                'entry_id': ctx.entry_id,
-                'lossless_restatement': ctx.lossless_restatement,
-                'topic': ctx.topic
+                "entry_id": src.get("id"),
+                "content": src.get("content"),
+                "type": src.get("type"),
+                "created_at": src.get("created_at"),
+                "importance": src.get("importance")
             }
-            for ctx in contexts[:5]
+            for src in sources[:5]
         ]
-        
+
         return json.dumps({
-            'ok': True,
-            'agent_id': agent_id,
-            'question': question,
-            'answer': answer,
-            'contexts_used': contexts_used
+            "ok": True,
+            "agent_id": agent_id,
+            "question": question,
+            "context_string": context_string,
+            "memories_used": data.get("memories_used", len(contexts_used)),
+            "tokens_used": data.get("tokens_used", 0),
+            "contexts_used": contexts_used
         })
     except Exception as e:
-        return json.dumps({'ok': False, 'error': str(e)})
+        return json.dumps({"ok": False, "error": str(e)})
 
 
 @mcp.tool()
@@ -777,66 +818,74 @@ async def update_memory_entry(
     updates: Dict[str, Any]
 ) -> str:
     """
-    Update an existing memory entry in ChromaDB.
-    
-    You can update the document content (lossless_restatement) and/or
-    metadata fields (timestamp, location, persons, entities, topic, keywords).
-    
+    Update an existing memory entry in GitMem V2 (Supabase + ChromaDB).
+
+    You can update the content and/or metadata fields.
+
     Args:
-        agent_id: Unique identifier for the agent
-        entry_id: The ID of the memory entry to update
-        updates: Dictionary of fields to update. Keys can be:
-                 - lossless_restatement: New document content
-                 - timestamp: New timestamp
-                 - location: New location
-                 - persons: New list of persons
-                 - entities: New list of entities
-                 - topic: New topic
-                 - keywords: New list of keywords
-    
+        agent_id: Unique identifier for the agent (maps to repo_id in GitMem V2)
+        entry_id: The ID of the memory entry to update (gitmem_memories.id)
+        updates: Dictionary of fields to update. Supported keys:
+                 - content: New text content (also re-embeds in ChromaDB)
+                 - metadata: Dict of metadata to merge
+                 - tags: New list of tags
+                 - importance: New importance score (0.0-1.0)
+                 - type: New memory type string
+
     Returns:
         JSON string with update status
     """
     try:
         if not updates:
-            return json.dumps({'ok': False, 'error': 'updates dict is required'})
-        
-        memory_system = _get_or_create_memory_system(agent_id)
-        
-        document_content = updates.get('lossless_restatement')
-        
-        metadata = {}
-        updateable_metadata = ['timestamp', 'location', 'persons', 'entities', 'topic', 'keywords']
-        for field in updateable_metadata:
-            if field in updates:
-                value = updates[field]
-                if isinstance(value, list):
-                    metadata[field] = json.dumps(value)
-                else:
-                    metadata[field] = value
-        
-        if document_content:
-            memory_system.vector_store.rag.update_docs(
-                agent_ID=agent_id,
-                ids=[entry_id],
-                documents=[document_content],
-                metadatas=[metadata] if metadata else None
-            )
-        elif metadata:
-            memory_system.vector_store.rag.update_doc_metadata(
-                agent_ID=agent_id,
-                ids=[entry_id],
-                metadatas=[metadata]
-            )
-        
+            return json.dumps({"ok": False, "error": "updates dict is required"})
+
+        db = gitmem_app.supabase_client
+        if not db:
+            return json.dumps({"ok": False, "error": "Database not available"})
+
+        # Build the Supabase update payload — only include recognised columns
+        patch: Dict[str, Any] = {}
+        if "content" in updates:
+            patch["content"] = updates["content"]
+        if "metadata" in updates and isinstance(updates["metadata"], dict):
+            patch["metadata"] = updates["metadata"]
+        if "tags" in updates:
+            patch["tags"] = updates["tags"]
+        if "importance" in updates:
+            patch["importance"] = float(updates["importance"])
+        if "type" in updates:
+            patch["type"] = updates["type"]
+
+        if not patch:
+            return json.dumps({"ok": False, "error": "No valid update fields provided"})
+
+        res = db.table("gitmem_memories").update(patch).eq("id", entry_id).eq("repo_id", agent_id).execute()
+
+        if not res.data:
+            return json.dumps({"ok": False, "error": "Entry not found or not updated"})
+
+        # If content was updated, also refresh the ChromaDB vector
+        if "content" in patch and gitmem_app.vector_engine:
+            try:
+                meta_for_vec = patch.get("metadata") or {}
+                gitmem_app.vector_engine.update_memory(
+                    memory_id=entry_id,
+                    content=patch["content"],
+                    metadata=meta_for_vec
+                )
+            except Exception as vec_err:
+                # Vector update failure is non-fatal — Supabase is source of truth
+                print(f"[MCP] Warning: ChromaDB update failed for {entry_id}: {vec_err}")
+
         return json.dumps({
-            'ok': True,
-            'message': 'memory_updated',
-            'agent_id': agent_id,
-            'entry_id': entry_id
+            "ok": True,
+            "message": "memory_updated",
+            "agent_id": agent_id,
+            "entry_id": entry_id,
+            "fields_updated": list(patch.keys())
         })
     except Exception as e:
-        return json.dumps({'ok': False, 'error': str(e)})
+        return json.dumps({"ok": False, "error": str(e)})
 
 
 @mcp.tool()
@@ -845,78 +894,122 @@ async def delete_memory_entries(
     entry_ids: List[str]
 ) -> str:
     """
-    Delete memory entries from ChromaDB by their entry IDs.
-    
-    This permanently removes the memory entries from the agent's vector store.
-    
+    Delete memory entries from GitMem V2 (Supabase + ChromaDB) by their entry IDs.
+
+    This permanently removes memory entries from both the relational store and
+    the vector store.
+
     Args:
-        agent_id: Unique identifier for the agent
-        entry_ids: List of entry IDs to delete
-    
+        agent_id: Unique identifier for the agent (maps to repo_id in GitMem V2)
+        entry_ids: List of entry IDs to delete (gitmem_memories.id values)
+
     Returns:
         JSON string with deletion status
     """
     try:
         if not entry_ids:
-            return json.dumps({'ok': False, 'error': 'entry_ids list is required'})
-        
-        memory_system = _get_or_create_memory_system(agent_id)
-        
-        memory_system.vector_store.rag.delete_chat_history(
-            agent_ID=agent_id,
-            ids=entry_ids
-        )
-        
+            return json.dumps({"ok": False, "error": "entry_ids list is required"})
+
+        db = gitmem_app.supabase_client
+        deleted_count = 0
+
+        # 1. Delete from Supabase (source of truth)
+        if db:
+            try:
+                res = (
+                    db.table("gitmem_memories")
+                    .delete()
+                    .in_("id", entry_ids)
+                    .eq("repo_id", agent_id)
+                    .execute()
+                )
+                deleted_count = len(res.data) if res.data else len(entry_ids)
+            except Exception as db_err:
+                return json.dumps({"ok": False, "error": f"Database delete failed: {db_err}"})
+
+        # 2. Delete from ChromaDB vector store (best-effort)
+        if gitmem_app.vector_engine:
+            for eid in entry_ids:
+                try:
+                    gitmem_app.vector_engine.delete_memory(memory_id=eid)
+                except Exception as vec_err:
+                    # Vector deletion failure is non-fatal
+                    print(f"[MCP] Warning: ChromaDB delete failed for {eid}: {vec_err}")
+
         return json.dumps({
-            'ok': True,
-            'message': 'memories_deleted',
-            'agent_id': agent_id,
-            'deleted_count': len(entry_ids),
-            'entry_ids': entry_ids
+            "ok": True,
+            "message": "memories_deleted",
+            "agent_id": agent_id,
+            "deleted_count": deleted_count,
+            "entry_ids": entry_ids
         })
     except Exception as e:
-        return json.dumps({'ok': False, 'error': str(e)})
+        return json.dumps({"ok": False, "error": str(e)})
 
 
 @mcp.tool()
 async def list_all_memories(agent_id: str, limit: int = 50) -> str:
     """
-    List all memory entries for an agent.
-    
+    List all memory entries for an agent from GitMem V2.
+
     Args:
-        agent_id: Unique identifier for the agent
-        limit: Maximum number of entries to return (default: 50)
-    
+        agent_id: Unique identifier for the agent (maps to repo_id in GitMem V2)
+        limit: Maximum number of entries to return (default: 50, max: 200)
+
     Returns:
         JSON string with list of all memory entries
     """
     try:
-        memory_system = _get_or_create_memory_system(agent_id)
-        
-        memories = memory_system.get_all_memories()
-        
+        db = gitmem_app.supabase_client
+        if not db:
+            return json.dumps({"ok": False, "error": "Database not available"})
+
+        safe_limit = min(int(limit), 200)
+
+        res = (
+            db.table("gitmem_memories")
+            .select("id, content, type, importance, tags, metadata, created_at, agent_id, repo_id, workspace_id")
+            .eq("repo_id", agent_id)
+            .order("created_at", desc=True)
+            .limit(safe_limit)
+            .execute()
+        )
+
+        memories_data = res.data or []
+
+        # Also get the total count for the agent
+        count_res = (
+            db.table("gitmem_memories")
+            .select("id", count="exact")
+            .eq("repo_id", agent_id)
+            .execute()
+        )
+        total = count_res.count if hasattr(count_res, "count") and count_res.count is not None else len(memories_data)
+
         results = []
-        for mem in memories[:limit]:
+        for mem in memories_data:
             results.append({
-                'entry_id': mem.entry_id,
-                'lossless_restatement': mem.lossless_restatement,
-                'keywords': mem.keywords,
-                'timestamp': mem.timestamp,
-                'location': mem.location,
-                'persons': mem.persons,
-                'entities': mem.entities,
-                'topic': mem.topic
+                "entry_id": mem.get("id"),
+                "content": mem.get("content"),
+                "type": mem.get("type"),
+                "importance": mem.get("importance"),
+                "tags": mem.get("tags", []),
+                "metadata": mem.get("metadata", {}),
+                "created_at": mem.get("created_at"),
+                "agent_id": mem.get("agent_id"),
+                "repo_id": mem.get("repo_id"),
+                "workspace_id": mem.get("workspace_id")
             })
-        
+
         return json.dumps({
-            'ok': True,
-            'agent_id': agent_id,
-            'total_memories': len(memories),
-            'returned': len(results),
-            'memories': results
+            "ok": True,
+            "agent_id": agent_id,
+            "total_memories": total,
+            "returned": len(results),
+            "memories": results
         })
     except Exception as e:
-        return json.dumps({'ok': False, 'error': str(e)})
+        return json.dumps({"ok": False, "error": str(e)})
 
 
 # ============================================================================
@@ -925,11 +1018,15 @@ async def list_all_memories(agent_id: str, limit: int = 50) -> str:
 
 @mcp.resource("memory://agents/list")
 async def list_active_agents() -> str:
-    """List all agents with active memory systems."""
-    return json.dumps({
-        'active_agents': list(_memory_systems_cache.keys()),
-        'count': len(_memory_systems_cache)
-    })
+    """List all registered agents from the mcp_agents table."""
+    try:
+        agents = _agents_service.list_agents(user_id=_default_user_id)
+        return json.dumps({
+            "agents": agents,
+            "count": len(agents)
+        })
+    except Exception as e:
+        return json.dumps({"agents": [], "count": 0, "error": str(e)})
 
 
 @mcp.resource("memory://config/info")

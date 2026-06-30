@@ -9,9 +9,25 @@ from typing import List, Dict, Any
 
 
 class Chunker:
-    """Splits large texts into manageable chunks."""
-    
+    """Splits large texts into manageable chunks for embedding and storage.
+
+    NOTE on units: `chunk_size` and `chunk_overlap` are measured in **words**
+    (whitespace-delimited tokens), not in LLM sub-word tokens.  As a rough
+    guide, 1 English word ≈ 1.3 LLM tokens, so:
+        chunk_size=500 words  ≈  650 tokens
+        chunk_size=350 words  ≈  455 tokens  (good for a ~512-token budget)
+    Adjust accordingly when integrating with the TokenPacker, which measures
+    context in LLM tokens (tiktoken).
+    """
+
     def __init__(self, chunk_size: int = 500, chunk_overlap: int = 50):
+        """
+        Args:
+            chunk_size:    Maximum number of *words* per chunk (≈ 1.3× tokens).
+            chunk_overlap: Number of *words* from the end of one chunk to
+                           include at the start of the next, for context
+                           continuity across chunk boundaries.
+        """
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
 

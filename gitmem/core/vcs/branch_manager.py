@@ -61,8 +61,10 @@ class BranchManager:
                 return False
                 
             if existing.get("is_protected") and action not in ["merge", "revert"]:
-                # Basic protection logic - in real life, would tie to RBAC
-                print(f"[BranchManager] Branch {branch_name} is protected.")
+                # Protected branches may only be updated via merge or revert actions.
+                print(f"[BranchManager] Branch '{branch_name}' is protected. "
+                      f"Action '{action}' denied.")
+                return False
                 
             old_hash = existing.get("target_hash")
             
