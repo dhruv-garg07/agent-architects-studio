@@ -37,10 +37,7 @@
                 <span class="label">Memories</span>
                 <span class="value" style="color: hsl(230,80%,62%);">{{ total_memories | default(0) }}</span>
             </div>
-            <div class="gm-ctx-metric">
-                <span class="label">Vectors</span>
-                <span class="value" style="color: hsl(270,60%,60%);">{{ vector_count | default(0) }}</span>
-            </div>
+
             <div class="gm-ctx-metric">
                 <span class="label">Docs</span>
                 <span class="value" style="color: hsl(190,80%,50%);">{{ doc_count | default(0) }}</span>
@@ -78,7 +75,6 @@
             <div class="gm-explorer-header">
                 <div class="gm-explorer-tabs">
                     <button class="gm-explorer-tab active" onclick="switchTab('memories', this)">Memories</button>
-                    <button class="gm-explorer-tab" onclick="switchTab('vectors', this)">Vectors</button>
                     <button class="gm-explorer-tab" onclick="switchTab('documents', this)">Documents</button>
                 </div>
                 <div class="gm-explorer-search">
@@ -105,17 +101,7 @@
                 {% endif %}
             </div>
 
-            <!-- Vectors List (Placeholder for now) -->
-            <div class="gm-explorer-list" id="tab-vectors" style="display: none;">
-                <div style="padding: 30px; text-align: center; color: hsl(225,10%,45%); font-size: 13px;">
-                    <i data-lucide="cpu" style="width: 24px; height: 24px; margin-bottom: 12px; opacity: 0.5;"></i><br>
-                    {% if vector_count > 0 %}
-                    {{ vector_count }} vectors stored in ChromaDB.<br>Raw embeddings visualization coming soon.
-                    {% else %}
-                    No vectors found in ChromaDB.
-                    {% endif %}
-                </div>
-            </div>
+
 
             <!-- Documents List (Placeholder for now) -->
             <div class="gm-explorer-list" id="tab-documents" style="display: none;">
@@ -893,7 +879,7 @@
         const mem = rawMemories.find(m => m.id === currentCmId);
         if (!mem) return;
         const safeType = mem.type || 'unknown';
-        const path = `context/${safeType}/${mem.id}.json`;
+        const path = `memory/${safeType}/${mem.id}.json`;
         
         // Redirect to real file view
         const baseUrl = "{{ url_for('gitmem.hub_file_view', ws_slug=workspace.id) if workspace else '#' }}";

@@ -1,4 +1,4 @@
-"""
+﻿"""
 Unit tests for MemoryClassifier — heuristic classification and importance scoring.
 
 Tests:
@@ -45,9 +45,9 @@ def make_entry(**kwargs):
 classifier = MemoryClassifier()
 
 
-# ═══════════════════════════════════════════════════════════════════
+# ===================================================================
 # Test 1: Cognitive Type Classification
-# ═══════════════════════════════════════════════════════════════════
+# ===================================================================
 
 def test_procedural_classification():
     """Code/instruction content should be classified as procedural."""
@@ -57,7 +57,7 @@ def test_procedural_classification():
     )
     result = classifier.classify_and_score(entry)
     assert result.memory_type == "procedural", f"Expected 'procedural', got '{result.memory_type}'"
-    print("✓ test_procedural_classification passed")
+    print("[PASS] test_procedural_classification passed")
 
 
 def test_procedural_code_block():
@@ -67,7 +67,7 @@ def test_procedural_code_block():
     )
     result = classifier.classify_and_score(entry)
     assert result.memory_type == "procedural", f"Expected 'procedural', got '{result.memory_type}'"
-    print("✓ test_procedural_code_block passed")
+    print("[PASS] test_procedural_code_block passed")
 
 
 def test_semantic_classification():
@@ -78,7 +78,7 @@ def test_semantic_classification():
     )
     result = classifier.classify_and_score(entry)
     assert result.memory_type == "semantic", f"Expected 'semantic', got '{result.memory_type}'"
-    print("✓ test_semantic_classification passed")
+    print("[PASS] test_semantic_classification passed")
 
 
 def test_episodic_classification():
@@ -92,7 +92,7 @@ def test_episodic_classification():
     )
     result = classifier.classify_and_score(entry)
     assert result.memory_type == "episodic", f"Expected 'episodic', got '{result.memory_type}'"
-    print("✓ test_episodic_classification passed")
+    print("[PASS] test_episodic_classification passed")
 
 
 def test_working_classification():
@@ -103,7 +103,7 @@ def test_working_classification():
     )
     result = classifier.classify_and_score(entry)
     assert result.memory_type == "working", f"Expected 'working', got '{result.memory_type}'"
-    print("✓ test_working_classification passed")
+    print("[PASS] test_working_classification passed")
 
 
 def test_state_classification():
@@ -114,7 +114,7 @@ def test_state_classification():
     )
     result = classifier.classify_and_score(entry)
     assert result.memory_type == "state", f"Expected 'state', got '{result.memory_type}'"
-    print("✓ test_state_classification passed")
+    print("[PASS] test_state_classification passed")
 
 
 def test_llm_hint_used_when_weak_signal():
@@ -128,7 +128,7 @@ def test_llm_hint_used_when_weak_signal():
         llm_suggestion={"memory_type": "semantic", "storage_bin": "context"}
     )
     assert result.memory_type == "semantic", f"Expected 'semantic' (LLM hint), got '{result.memory_type}'"
-    print("✓ test_llm_hint_used_when_weak_signal passed")
+    print("[PASS] test_llm_hint_used_when_weak_signal passed")
 
 
 def test_heuristic_overrides_llm_on_strong_signal():
@@ -142,12 +142,12 @@ def test_heuristic_overrides_llm_on_strong_signal():
         llm_suggestion={"memory_type": "episodic"}  # LLM says episodic, but it's clearly procedural
     )
     assert result.memory_type == "procedural", f"Expected 'procedural' (override), got '{result.memory_type}'"
-    print("✓ test_heuristic_overrides_llm_on_strong_signal passed")
+    print("[PASS] test_heuristic_overrides_llm_on_strong_signal passed")
 
 
-# ═══════════════════════════════════════════════════════════════════
+# ===================================================================
 # Test 2: Storage Bin Classification
-# ═══════════════════════════════════════════════════════════════════
+# ===================================================================
 
 def test_storage_bin_context():
     """Short facts with rich metadata should be 'context'."""
@@ -159,8 +159,8 @@ def test_storage_bin_context():
         topic="Employment"
     )
     result = classifier.classify_and_score(entry)
-    assert result.storage_bin == "context", f"Expected 'context', got '{result.storage_bin}'"
-    print("✓ test_storage_bin_context passed")
+    assert result.storage_bin == "memory", f"Expected 'memory', got '{result.storage_bin}'"
+    print("[PASS] test_storage_bin_memory passed")
 
 
 def test_storage_bin_document():
@@ -170,7 +170,7 @@ def test_storage_bin_document():
     )
     result = classifier.classify_and_score(entry)
     assert result.storage_bin == "document", f"Expected 'document', got '{result.storage_bin}'"
-    print("✓ test_storage_bin_document passed")
+    print("[PASS] test_storage_bin_document passed")
 
 
 def test_storage_bin_document_code():
@@ -180,7 +180,7 @@ def test_storage_bin_document_code():
     )
     result = classifier.classify_and_score(entry)
     assert result.storage_bin == "document", f"Expected 'document', got '{result.storage_bin}'"
-    print("✓ test_storage_bin_document_code passed")
+    print("[PASS] test_storage_bin_document_code passed")
 
 
 def test_storage_bin_vector():
@@ -189,20 +189,20 @@ def test_storage_bin_vector():
         lossless_restatement="This is a moderately long sentence that doesn't have much structured metadata associated with it but is not super long either."
     )
     result = classifier.classify_and_score(entry)
-    assert result.storage_bin == "vector", f"Expected 'vector', got '{result.storage_bin}'"
-    print("✓ test_storage_bin_vector passed")
+    assert result.storage_bin == "memory", f"Expected 'memory', got '{result.storage_bin}'"
+    print("[PASS] test_storage_bin_memory_default passed")
 
 
-# ═══════════════════════════════════════════════════════════════════
+# ===================================================================
 # Test 3: Importance Scoring
-# ═══════════════════════════════════════════════════════════════════
+# ===================================================================
 
 def test_importance_range():
     """Importance should always be between 0.0 and 1.0."""
     entry = make_entry(lossless_restatement="Test.")
     result = classifier.classify_and_score(entry)
     assert 0.0 <= result.importance <= 1.0, f"Importance {result.importance} out of range"
-    print("✓ test_importance_range passed")
+    print("[PASS] test_importance_range passed")
 
 
 def test_rich_entry_high_importance():
@@ -218,7 +218,7 @@ def test_rich_entry_high_importance():
     )
     result = classifier.classify_and_score(entry)
     assert result.importance >= 0.5, f"Expected importance >= 0.5, got {result.importance}"
-    print(f"✓ test_rich_entry_high_importance passed (importance={result.importance})")
+    print(f"[PASS] test_rich_entry_high_importance passed (importance={result.importance})")
 
 
 def test_sparse_entry_low_importance():
@@ -228,7 +228,7 @@ def test_sparse_entry_low_importance():
     )
     result = classifier.classify_and_score(entry)
     assert result.importance <= 0.3, f"Expected importance <= 0.3, got {result.importance}"
-    print(f"✓ test_sparse_entry_low_importance passed (importance={result.importance})")
+    print(f"[PASS] test_sparse_entry_low_importance passed (importance={result.importance})")
 
 
 def test_procedural_importance_bonus():
@@ -250,12 +250,12 @@ def test_procedural_importance_bonus():
     # Procedural should have higher importance due to type bonus
     assert proc_result.importance > gen_result.importance, \
         f"Procedural ({proc_result.importance}) should be > generic ({gen_result.importance})"
-    print(f"✓ test_procedural_importance_bonus passed (proc={proc_result.importance}, gen={gen_result.importance})")
+    print(f"[PASS] test_procedural_importance_bonus passed (proc={proc_result.importance}, gen={gen_result.importance})")
 
 
-# ═══════════════════════════════════════════════════════════════════
+# ===================================================================
 # Run all tests
-# ═══════════════════════════════════════════════════════════════════
+# ===================================================================
 
 if __name__ == "__main__":
     print("=" * 60)
@@ -289,10 +289,10 @@ if __name__ == "__main__":
             test_fn()
             passed += 1
         except AssertionError as e:
-            print(f"✗ {test_fn.__name__} FAILED: {e}")
+            print(f"[FAIL] {test_fn.__name__} FAILED: {e}")
             failed += 1
         except Exception as e:
-            print(f"✗ {test_fn.__name__} ERROR: {e}")
+            print(f"[FAIL] {test_fn.__name__} ERROR: {e}")
             failed += 1
     
     print("=" * 60)

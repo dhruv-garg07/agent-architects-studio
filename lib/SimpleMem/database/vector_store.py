@@ -303,7 +303,7 @@ class VectorStore:
             entities=entities,
             topic=metadata.get("topic"),
             memory_type=metadata.get("type", metadata.get("memory_type", "episodic")),
-            storage_bin=metadata.get("storage_bin", "vector"),
+            storage_bin=metadata.get("storage_bin", "memory"),
             importance=float(metadata.get("importance", 0.5))
         )
     

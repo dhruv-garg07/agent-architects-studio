@@ -90,7 +90,7 @@
                         </div>
                         <div id="context-folders" class="bg-[rgba(0,0,0,0.3)]">
                             {% for key, item in folder_structure.context.items() %}
-                            <a href="{{ url_for('gitmem.agent_fs_view', agent_id=agent.id, virtual_path='context/' + key) }}"
+                            <a href="{{ url_for('gitmem.agent_fs_view', agent_id=agent.id, virtual_path='memory/' + key) }}"
                                 class="flex items-center justify-between px-4 py-2 pl-14 hover:bg-[rgba(255,255,255,0.05)] transition-colors group/subitem">
                                 <div class="flex items-center gap-3">
                                     <i data-lucide="folder"
@@ -138,107 +138,7 @@
                         </div>
                     </div>
 
-                    <!-- Vectors -->
-                    <div class="group">
-                        <div class="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-[rgba(255,255,255,0.05)] transition-colors"
-                            onclick="toggleFolderGroup('vectors')">
-                            <div class="flex items-center gap-3">
-                                <i data-lucide="chevron-right" class="w-4 h-4 text-gray-500 transition-transform"
-                                    id="vectors-toggle"></i>
-                                <div class="p-1.5 rounded-lg bg-[rgba(139,92,246,0.2)] text-[#a78bfa]">
-                                    <i data-lucide="database-zap" class="w-5 h-5"></i>
-                                </div>
-                                <div>
-                                    <div
-                                        class="text-sm font-medium text-gray-200 group-hover:text-white transition-colors">
-                                        Vectors</div>
-                                    <div class="text-xs text-gray-500">Chroma DB</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="vectors-folders" class="bg-[rgba(0,0,0,0.3)] hidden">
-                            {% for key, item in folder_structure.vectors.items() %}
-                            <a href="{{ url_for('gitmem.agent_fs_view', agent_id=agent.id, virtual_path='vectors/' + key) }}"
-                                class="flex items-center justify-between px-4 py-2 pl-14 hover:bg-[rgba(255,255,255,0.05)] transition-colors group/subitem">
-                                <div class="flex items-center gap-3">
-                                    <i data-lucide="folder"
-                                        class="w-4 h-4 text-gray-600 group-hover/subitem:text-[#a78bfa] transition-colors"></i>
-                                    <span class="text-sm text-gray-400 group-hover/subitem:text-gray-200">{{ key
-                                        }}</span>
-                                </div>
-                                <span class="text-xs text-gray-600">{{ item.count }}</span>
-                            </a>
-                            {% endfor %}
-                        </div>
-                    </div>
 
-                    <!-- Checkpoints -->
-                    <div class="group">
-                        <div class="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-[rgba(255,255,255,0.05)] transition-colors"
-                            onclick="toggleFolderGroup('checkpoints')">
-                            <div class="flex items-center gap-3">
-                                <i data-lucide="chevron-right" class="w-4 h-4 text-gray-500 transition-transform"
-                                    id="checkpoints-toggle"></i>
-                                <div class="p-1.5 rounded-lg bg-[rgba(16,185,129,0.2)] text-[#34d399]">
-                                    <i data-lucide="save" class="w-5 h-5"></i>
-                                </div>
-                                <div>
-                                    <div
-                                        class="text-sm font-medium text-gray-200 group-hover:text-white transition-colors">
-                                        Checkpoints</div>
-                                    <div class="text-xs text-gray-500">State History</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="checkpoints-folders" class="bg-[rgba(0,0,0,0.3)] hidden">
-                            {% for key, item in folder_structure.checkpoints.items() %}
-                            <a href="{{ url_for('gitmem.agent_fs_view', agent_id=agent.id, virtual_path='checkpoints/' + key) }}"
-                                class="flex items-center justify-between px-4 py-2 pl-14 hover:bg-[rgba(255,255,255,0.05)] transition-colors group/subitem">
-                                <div class="flex items-center gap-3">
-                                    <i data-lucide="folder"
-                                        class="w-4 h-4 text-gray-600 group-hover/subitem:text-[#34d399] transition-colors"></i>
-                                    <span class="text-sm text-gray-400 group-hover/subitem:text-gray-200">{{ key
-                                        }}</span>
-                                </div>
-                                <span class="text-xs text-gray-600">{{ item.count }}</span>
-                            </a>
-                            {% endfor %}
-                        </div>
-                    </div>
-
-                    <!-- Activity Logs -->
-                    <div class="group">
-                        <div class="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-[rgba(255,255,255,0.05)] transition-colors"
-                            onclick="toggleFolderGroup('logs')">
-                            <div class="flex items-center gap-3">
-                                <i data-lucide="chevron-right" class="w-4 h-4 text-gray-500 transition-transform"
-                                    id="logs-toggle"></i>
-                                <div class="p-1.5 rounded-lg bg-[rgba(245,158,11,0.2)] text-[#fbbf24]">
-                                    <i data-lucide="scroll-text" class="w-5 h-5"></i>
-                                </div>
-                                <div>
-                                    <div
-                                        class="text-sm font-medium text-gray-200 group-hover:text-white transition-colors">
-                                        Activity Logs</div>
-                                    <div class="text-xs text-gray-500">System Events</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="logs-folders" class="bg-[rgba(0,0,0,0.3)] hidden">
-                            {% for key, item in folder_structure.logs.items() %}
-                            <a href="{{ url_for('gitmem.agent_fs_view', agent_id=agent.id, virtual_path='logs/' + key) }}"
-                                class="flex items-center justify-between px-4 py-2 pl-14 hover:bg-[rgba(255,255,255,0.05)] transition-colors group/subitem">
-                                <div class="flex items-center gap-3">
-                                    <i data-lucide="folder"
-                                        class="w-4 h-4 text-gray-600 group-hover/subitem:text-[#fbbf24] transition-colors"></i>
-                                    <span class="text-sm text-gray-400 group-hover/subitem:text-gray-200">{{ key
-                                        }}</span>
-                                </div>
-                                <span class="text-xs text-gray-600">{{ item.count }}</span>
-                            </a>
-                            {% endfor %}
-                        </div>
-                    </div>
                 </div>
             </div>
 
@@ -301,12 +201,7 @@
                     <a href="{{ url_for('gitmem.agent_documents', agent_id=agent.id) }}" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm text-gray-300 hover:bg-white/5 hover:text-white transition-colors">
                         <i data-lucide="file-text" class="w-3.5 h-3.5 text-blue-400"></i> Documents
                     </a>
-                    <a href="{{ url_for('gitmem.agent_checkpoints', agent_id=agent.id) }}" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm text-gray-300 hover:bg-white/5 hover:text-white transition-colors">
-                        <i data-lucide="save" class="w-3.5 h-3.5 text-green-400"></i> Checkpoints
-                    </a>
-                    <a href="{{ url_for('gitmem.agent_logs', agent_id=agent.id) }}" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm text-gray-300 hover:bg-white/5 hover:text-white transition-colors">
-                        <i data-lucide="activity" class="w-3.5 h-3.5 text-yellow-400"></i> Activity Logs
-                    </a>
+
                     <a href="{{ url_for('gitmem.agent_sources', agent_id=agent.id) }}" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm text-gray-300 hover:bg-white/5 hover:text-white transition-colors">
                         <i data-lucide="link" class="w-3.5 h-3.5 text-cyan-400"></i> Data Sources
                     </a>

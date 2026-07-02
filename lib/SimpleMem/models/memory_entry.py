@@ -60,8 +60,8 @@ class MemoryEntry(BaseModel):
         description="Cognitive type: episodic (events), semantic (facts/definitions), procedural (how-to/instructions), working (transient state), state (config/preferences)"
     )
     storage_bin: str = Field(
-        "context",
-        description="Storage classification: context (structured facts), vector (embedding-optimized), document (long-form reference)"
+        "memory",
+        description="Storage classification: memory (structured facts and embeddings), document (long-form reference material)"
     )
     importance: float = Field(
         0.5,
@@ -80,7 +80,7 @@ class MemoryEntry(BaseModel):
                 "entities": ["product XYZ"],
                 "topic": "Product marketing strategy discussion",
                 "memory_type": "episodic",
-                "storage_bin": "context",
+                "storage_bin": "memory",
                 "importance": 0.75
             }
         }

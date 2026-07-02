@@ -440,7 +440,7 @@ class VectorEngine:
                 "content": v.get("content"),
                 "type": target_bin if target_bin != "vectors" else "vector",
                 "importance": float(meta.get("importance", 0.5)),
-                "storage_bin": meta.get("storage_bin", "vector"),
+                "storage_bin": meta.get("storage_bin", "memory"),
                 "created_at": meta.get("created_at") or meta.get("timestamp") or "Unknown",
                 "metadata": meta,
                 "keywords": meta.get("keywords", []),

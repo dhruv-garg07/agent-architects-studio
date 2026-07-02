@@ -304,8 +304,7 @@ Your task is to extract all valuable information from the following dialogues an
      * "working" — transient or in-progress state, pending tasks, current status
      * "state" — configuration, preferences, settings, profile information
    - storage_bin: Classify where the memory best fits:
-     * "context" — short structured facts with clear entities/persons/topic
-     * "vector" — general information optimized for similarity search
+     * "memory" — structured facts, embeddings, short-to-medium content
      * "document" — long-form reference material, code blocks, multi-paragraph
 
 [Output Format]
@@ -322,7 +321,7 @@ Return a JSON array, each element is a memory entry:
     "entities": ["entity1", "entity2", ...],
     "topic": "topic phrase",
     "memory_type": "episodic | semantic | procedural | working | state",
-    "storage_bin": "context | vector | document"
+    "storage_bin": "memory | document"
   }},
   ...
 ]
@@ -345,7 +344,7 @@ Output:
     "entities": ["new product"],
     "topic": "Product discussion meeting arrangement",
     "memory_type": "episodic",
-    "storage_bin": "context"
+    "storage_bin": "memory"
   }},
   {{
     "lossless_restatement": "Bob agreed to attend the meeting and committed to prepare relevant materials.",
@@ -356,7 +355,7 @@ Output:
     "entities": [],
     "topic": "Meeting preparation confirmation",
     "memory_type": "episodic",
-    "storage_bin": "context"
+    "storage_bin": "memory"
   }}
 ]
 ```

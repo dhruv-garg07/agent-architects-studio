@@ -188,9 +188,8 @@ class MemoryClassifier:
         """
         Determine the storage bin based on content shape.
         
-        - context: Short structured facts (< 300 chars, has entities/persons/topic)
+        - memory: Structured facts, embeddings, short-to-medium content
         - document: Long-form reference (> 500 chars, or code blocks, or multi-paragraph)
-        - vector: Everything else (optimized for embedding similarity)
         """
         text = entry.lossless_restatement
         text_len = len(text)
@@ -203,26 +202,13 @@ class MemoryClassifier:
         if has_code_blocks or is_long_form or is_multi_paragraph:
             return "document"
 
-        # Strong signals for 'context'
-        has_structured_metadata = bool(entry.topic) and (
-            bool(entry.persons) or bool(entry.entities)
-        )
-        is_short = text_len < 300
-
-        if is_short and has_structured_metadata:
-            return "context"
-
-        # Medium-length with rich metadata → still context
-        if text_len < 400 and has_structured_metadata and entry.timestamp:
-            return "context"
-
-        # Check LLM hint
-        valid_bins = {"context", "vector", "document"}
+        # Check LLM hint (only accept valid bins)
+        valid_bins = {"memory", "document"}
         if llm_hint and llm_hint.lower() in valid_bins:
             return llm_hint.lower()
 
-        # Default: vector (optimized for similarity search)
-        return "vector"
+        # Default: memory
+        return "memory"
 
     def _score_importance(self, entry: MemoryEntry) -> float:
         """

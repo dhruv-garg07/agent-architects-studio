@@ -108,46 +108,13 @@
             {% endif %}
 
             {% for item in items %}
-            {# Define Semantic Branding based on Folder Path #}
-            {% set is_checkpoints = item.path.startswith('checkpoints') %}
-            {% set is_logs = item.path.startswith('logs') %}
-            {% set is_vectors = item.path.startswith('vectors') %}
-            {% set is_context = item.path and (item.path.startswith('context') or item.path.startswith('docs') or
-            item.path.startswith('documents')) %}
-
-            {# Default / Context Theme (Blue) #}
+            {# Default / Memory Theme (Blue) #}
             {% set theme_color = 'text-primary' %}
             {% set theme_bg = 'bg-primary/10' %}
             {% set theme_hover_bg = 'group-hover:bg-primary/20' %}
             {% set theme_hover_border = 'group-hover:border-primary/30' %}
             {% set file_icon = 'file-code-2' %}
             {% set folder_icon = 'folder' %}
-
-            {% if is_checkpoints %}
-            {# Checkpoints Theme (Emerald Green) #}
-            {% set theme_color = 'text-[#34d399]' %}
-            {% set theme_bg = 'bg-[rgba(16,185,129,0.1)]' %}
-            {% set theme_hover_bg = 'group-hover:bg-[rgba(16,185,129,0.2)]' %}
-            {% set theme_hover_border = 'group-hover:border-[rgba(16,185,129,0.3)]' %}
-            {% set file_icon = 'save' %}
-            {% set folder_icon = 'save' %}
-            {% elif is_vectors %}
-            {# Vectors Theme (Purple) #}
-            {% set theme_color = 'text-[#a78bfa]' %}
-            {% set theme_bg = 'bg-[rgba(139,92,246,0.1)]' %}
-            {% set theme_hover_bg = 'group-hover:bg-[rgba(139,92,246,0.2)]' %}
-            {% set theme_hover_border = 'group-hover:border-[rgba(139,92,246,0.3)]' %}
-            {% set file_icon = 'database-zap' %}
-            {% set folder_icon = 'database-zap' %}
-            {% elif is_logs %}
-            {# Logs Theme (Amber/Warning) #}
-            {% set theme_color = 'text-[#fbbf24]' %}
-            {% set theme_bg = 'bg-[rgba(245,158,11,0.1)]' %}
-            {% set theme_hover_bg = 'group-hover:bg-[rgba(245,158,11,0.2)]' %}
-            {% set theme_hover_border = 'group-hover:border-[rgba(245,158,11,0.3)]' %}
-            {% set file_icon = 'scroll-text' %}
-            {% set folder_icon = 'scroll-text' %}
-            {% endif %}
 
             <div
                 class="group flex items-center justify-between px-6 py-4 hover:bg-[rgba(255,255,255,0.02)] transition-all duration-200">
@@ -157,15 +124,15 @@
                         <!-- Directory Icon with Semantic Theme -->
                         <div
                             class="p-2 rounded-lg {{ theme_bg }} {{ theme_color }} {{ theme_hover_bg }} transition-all border border-transparent {{ theme_hover_border }}">
-                            <i data-lucide="{{ folder_icon if (is_logs or is_checkpoints) else 'folder' }}"
-                                class="w-4 h-4 {% if not (is_logs or is_checkpoints) %}fill-current opacity-80{% endif %}"></i>
+                            <i data-lucide="{{ folder_icon }}"
+                                class="w-4 h-4 fill-current opacity-80"></i>
                         </div>
                         {% else %}
                         <!-- File Icon with Hover Theme -->
                         <div
                             class="p-2 rounded-lg bg-[rgba(255,255,255,0.05)] text-gray-500 group-hover:text-gray-200 transition-all border border-transparent {{ theme_hover_border }} {{ theme_hover_bg }}">
                             <i data-lucide="{{ file_icon }}"
-                                class="w-4 h-4 {{ 'text-gray-400 group-hover:' + theme_color if not (is_logs or is_checkpoints) else '' }}"></i>
+                                class="w-4 h-4 text-gray-400 group-hover:{{ theme_color }}"></i>
                         </div>
                         {% endif %}
                     </div>

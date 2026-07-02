@@ -139,44 +139,29 @@ def _ensure_gitmem_repo(agent_id, workspace_id='default'):
 def _build_folder_structure(agent_id):
     """
     Build the virtual file-system hierarchy for agent_dashboard.html.
-    Returns {context, documents, vectors, checkpoints, logs} with counts.
+    Returns {memory, documents, checkpoints, logs} with counts.
     """
-    # Context Store → memories grouped by type
-    context = {}
+    # Memory → memories grouped by cognitive type (combines Supabase + ChromaDB)
+    memory = {}
     for mtype in ['episodic', 'semantic', 'procedural', 'working', 'state']:
-        context[mtype] = {'count': _count_table_where('gitmem_memories', {'agent_id': agent_id, 'type': mtype})}
+        db_count = _count_table_where('gitmem_memories', {'agent_id': agent_id, 'type': mtype})
+        chroma_count = 0
+        try:
+            raw = gitmem_app.vector_engine.get_agent_vectors(agent_id, limit=200)
+            bins = gitmem_app.vector_engine.categorize_vectors(raw)
+            chroma_count = len(bins.get(mtype, []))
+        except Exception:
+            pass
+        memory[mtype] = {'count': db_count + chroma_count}
 
     # Documents → grouped by folder
     documents = {}
     for folder in ['uploads', 'attachments', 'references']:
         documents[folder] = {'count': _count_table_where('gitmem_documents', {'agent_id': agent_id, 'folder': folder})}
 
-    # Vectors → from ChromaDB
-    vectors = {}
-    try:
-        raw = gitmem_app.vector_engine.get_agent_vectors(agent_id, limit=200)
-        bins = gitmem_app.vector_engine.categorize_vectors(raw)
-        for k in ['episodic', 'semantic', 'procedural', 'working', 'state']:
-            vectors[k] = {'count': len(bins.get(k, []))}
-    except Exception:
-        vectors = {'all': {'count': 0}}
-
-    # Checkpoints → grouped by type
-    checkpoints = {}
-    for ctype in ['snapshot', 'session', 'recovery', 'auto']:
-        checkpoints[ctype] = {'count': _count_table_where('gitmem_checkpoints', {'agent_id': agent_id, 'checkpoint_type': ctype})}
-
-    # Activity Logs → grouped by log_type
-    logs = {}
-    for ltype in ['access', 'mutation', 'error', 'system']:
-        logs[ltype] = {'count': _count_table_where('gitmem_activity_logs', {'agent_id': agent_id, 'log_type': ltype})}
-
     return {
-        'context': context,
+        'memory': memory,
         'documents': documents,
-        'vectors': vectors,
-        'checkpoints': checkpoints,
-        'logs': logs,
     }
 
 
@@ -191,7 +176,7 @@ def _build_fs_items(agent_id, virtual_path):
 
     # Root level → show top-level folders
     if depth == 0:
-        for name in ['context', 'docs', 'vectors', 'checkpoints', 'logs']:
+        for name in ['memory', 'docs']:
             items.append({'name': name, 'type': 'directory', 'path': name, 'last_modified': ''})
         return items
 
@@ -199,38 +184,48 @@ def _build_fs_items(agent_id, virtual_path):
 
     # Level 1: show subfolders
     if depth == 1:
-        if root == 'context':
+        if root == 'memory':
             for t in ['episodic', 'semantic', 'procedural', 'working', 'state']:
-                items.append({'name': t, 'type': 'directory', 'path': f'context/{t}', 'last_modified': ''})
+                items.append({'name': t, 'type': 'directory', 'path': f'memory/{t}', 'last_modified': ''})
         elif root in ('docs', 'documents'):
             for f in ['uploads', 'attachments', 'references']:
                 items.append({'name': f, 'type': 'directory', 'path': f'docs/{f}', 'last_modified': ''})
-        elif root == 'vectors':
-            for t in ['episodic', 'semantic', 'procedural', 'working', 'state']:
-                items.append({'name': t, 'type': 'directory', 'path': f'vectors/{t}', 'last_modified': ''})
-        elif root == 'checkpoints':
-            for t in ['snapshot', 'session', 'recovery', 'auto']:
-                items.append({'name': t, 'type': 'directory', 'path': f'checkpoints/{t}', 'last_modified': ''})
-        elif root == 'logs':
-            for t in ['access', 'mutation', 'error', 'system']:
-                items.append({'name': t, 'type': 'directory', 'path': f'logs/{t}', 'last_modified': ''})
         return items
 
     # Level 2: show actual data as files
     subfolder = parts[1] if len(parts) > 1 else ''
-    if root == 'context' and subfolder and _db():
+    if root == 'memory' and subfolder:
+        # Combine Supabase memories + ChromaDB vectors
+        seen_ids = set()
+        if _db():
+            try:
+                res = _db().table('gitmem_memories').select('id,content,created_at') \
+                    .eq('agent_id', agent_id).eq('type', subfolder) \
+                    .order('created_at', desc=True).limit(50).execute()
+                for row in (res.data or []):
+                    label = (row.get('content', '') or '')[:60].replace('\n', ' ')
+                    items.append({
+                        'name': f"{row['id'][:8]} — {label}",
+                        'type': 'file',
+                        'path': f"memory/{subfolder}/{row['id']}",
+                        'last_modified': row.get('created_at', ''),
+                    })
+                    seen_ids.add(row['id'])
+            except Exception:
+                pass
+        # Also pull from ChromaDB vectors categorized into same type
         try:
-            res = _db().table('gitmem_memories').select('id,content,created_at') \
-                .eq('agent_id', agent_id).eq('type', subfolder) \
-                .order('created_at', desc=True).limit(50).execute()
-            for row in (res.data or []):
-                label = (row.get('content', '') or '')[:60].replace('\n', ' ')
-                items.append({
-                    'name': f"{row['id'][:8]} — {label}",
-                    'type': 'file',
-                    'path': f"context/{subfolder}/{row['id']}",
-                    'last_modified': row.get('created_at', ''),
-                })
+            raw = gitmem_app.vector_engine.get_agent_vectors(agent_id, limit=100)
+            bins = gitmem_app.vector_engine.categorize_vectors(raw)
+            for v in bins.get(subfolder, []):
+                if v['id'] not in seen_ids:
+                    label = (v.get('content', '') or '')[:60].replace('\n', ' ')
+                    items.append({
+                        'name': f"{v['id'][:8]} — {label}",
+                        'type': 'file',
+                        'path': f"memory/{subfolder}/{v['id']}",
+                        'last_modified': v.get('created_at', ''),
+                    })
         except Exception:
             pass
 
@@ -244,51 +239,6 @@ def _build_fs_items(agent_id, virtual_path):
                     'name': row.get('filename', row['id'][:8]),
                     'type': 'file',
                     'path': f"docs/{subfolder}/{row['id']}",
-                    'last_modified': row.get('created_at', ''),
-                })
-        except Exception:
-            pass
-
-    elif root == 'vectors' and subfolder:
-        try:
-            raw = gitmem_app.vector_engine.get_agent_vectors(agent_id, limit=100)
-            bins = gitmem_app.vector_engine.categorize_vectors(raw)
-            for v in bins.get(subfolder, []):
-                label = (v.get('content', '') or '')[:60].replace('\n', ' ')
-                items.append({
-                    'name': f"{v['id'][:8]} — {label}",
-                    'type': 'file',
-                    'path': f"vectors/{subfolder}/{v['id']}",
-                    'last_modified': v.get('created_at', ''),
-                })
-        except Exception:
-            pass
-
-    elif root == 'checkpoints' and subfolder and _db():
-        try:
-            res = _db().table('gitmem_checkpoints').select('id,name,created_at') \
-                .eq('agent_id', agent_id).eq('checkpoint_type', subfolder) \
-                .order('created_at', desc=True).limit(50).execute()
-            for row in (res.data or []):
-                items.append({
-                    'name': row.get('name', row['id'][:8]),
-                    'type': 'file',
-                    'path': f"checkpoints/{subfolder}/{row['id']}",
-                    'last_modified': row.get('created_at', ''),
-                })
-        except Exception:
-            pass
-
-    elif root == 'logs' and subfolder and _db():
-        try:
-            res = _db().table('gitmem_activity_logs').select('id,action,resource_type,created_at') \
-                .eq('agent_id', agent_id).eq('log_type', subfolder) \
-                .order('created_at', desc=True).limit(50).execute()
-            for row in (res.data or []):
-                items.append({
-                    'name': f"{row.get('action', '?')} {row.get('resource_type', '')}",
-                    'type': 'file',
-                    'path': f"logs/{subfolder}/{row['id']}",
                     'last_modified': row.get('created_at', ''),
                 })
         except Exception:
@@ -623,27 +573,39 @@ def hub_file_view(ws_slug, virtual_path=''):
     agent = _agent_context(ws_slug, agent_raw)
     actual_agent_id = agent_raw.get('agent_id')
 
-    # Parse path to figure out source: context/{type}/{id}, docs/{folder}/{id}, vectors/{type}/{id}
+    # Parse path to figure out source: memory/{id}, docs/{folder}/{id}
     parts = [p for p in virtual_path.strip('/').split('/') if p]
     file_content = 'Item not found'
     metadata = {}
 
-    if len(parts) >= 3 and _db():
+    if len(parts) >= 3:
         root, subfolder, item_id = parts[0], parts[1], parts[2]
         try:
-            if root == 'context':
-                res = _db().table('gitmem_memories').select('*').eq('id', item_id).execute()
-                if res.data:
-                    row = res.data[0]
-                    file_content = row.get('content', '')
-                    metadata = row.get('metadata', {}) if isinstance(row.get('metadata'), dict) else {}
-                    metadata.update({
-                        'id': row.get('id'),
-                        'type': row.get('type'),
-                        'importance': row.get('importance'),
-                        'created_at': row.get('created_at')
-                    })
-            elif root in ('docs', 'documents'):
+            if root == 'memory':
+                # First try Supabase
+                found_in_db = False
+                if _db():
+                    res = _db().table('gitmem_memories').select('*').eq('id', item_id).execute()
+                    if res.data:
+                        row = res.data[0]
+                        file_content = row.get('content', '')
+                        metadata = row.get('metadata', {}) if isinstance(row.get('metadata'), dict) else {}
+                        metadata.update({
+                            'id': row.get('id'),
+                            'type': row.get('type'),
+                            'importance': row.get('importance'),
+                            'created_at': row.get('created_at')
+                        })
+                        found_in_db = True
+                
+                # If not in Supabase, try ChromaDB
+                if not found_in_db:
+                    v = gitmem_app.vector_engine.get_vector(item_id, actual_agent_id)
+                    if v:
+                        file_content = v.get('content', '')
+                        metadata = v.get('metadata', {})
+                        metadata.update({'id': v.get('id')})
+            elif root in ('docs', 'documents') and _db():
                 res = _db().table('gitmem_documents').select('*').eq('id', item_id).execute()
                 if res.data:
                     row = res.data[0]
