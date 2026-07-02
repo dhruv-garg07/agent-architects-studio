@@ -407,14 +407,15 @@ class VectorEngine:
     def categorize_vectors(self, vectors: List[Dict]) -> Dict[str, List[Dict]]:
         """
         Sort vectors into memory bins based on their 'memory_type' metadata field.
-        Returns a dictionary with keys: episodic, semantic, procedural, working.
+        Returns a dictionary with keys: episodic, semantic, procedural, working, state, vectors.
         """
         bins = {
             "episodic": [],
             "semantic": [],
             "procedural": [],
             "working": [],
-            "vectors": [] # Keep all here or just uncategorized/others?
+            "state": [],
+            "vectors": []
         }
         
         for v in vectors:
@@ -431,40 +432,28 @@ class VectorEngine:
                 elif "semantic" in mtype: target_bin = "semantic"
                 elif "procedural" in mtype: target_bin = "procedural"
                 elif "working" in mtype: target_bin = "working"
+                elif "state" in mtype: target_bin = "state"
             
             # Create a standard memory object structure
             mem_obj = {
                 "id": v.get("id"),
                 "content": v.get("content"),
-                "type": target_bin if target_bin != "vectors" else "vector", # Normalize type name
+                "type": target_bin if target_bin != "vectors" else "vector",
                 "importance": float(meta.get("importance", 0.5)),
+                "storage_bin": meta.get("storage_bin", "vector"),
                 "created_at": meta.get("created_at") or meta.get("timestamp") or "Unknown",
                 "metadata": meta,
                 "keywords": meta.get("keywords", []),
                 "source": "chromadb"
             }
             
-            # Add to specific bin
+            # Add to specific bin if categorized
             if target_bin != "vectors":
                 bins[target_bin].append(mem_obj)
             
-            # Also add to generic 'vectors' list, but maybe mark source as categorized?
-            # User wants them visible in UI bins.
-            # If we put them in bins, they show up in folders.
-            # If we put them in 'vectors', they show up in Vectors section.
-            # Let's verify what the user wants. "visible in this UI" implies bins.
-            # But we might double count if we add to both.
-            # Using specific bins is better for "Sorting".
-            # We add all to 'vectors' bin just in case UI expects it there too?
-            # Let's add to 'vectors' bin only if uncategorized, OR add a reference.
-            
-            # Decision: Add to both specific bin AND vectors bin, 
-            # OR just specific bin if categorized.
-            # Given the UI shows "Context Store" (folders) and "Vectors" (list),
-            # it's usually good to have comprehensive list in Vectors.
-            
+            # Also add to generic 'vectors' list for the Vectors UI section
             vector_display_obj = mem_obj.copy()
-            vector_display_obj["type"] = "vector" # Always call it vector in the vectors list
+            vector_display_obj["type"] = "vector"
             bins["vectors"].append(vector_display_obj)
             
         return bins

@@ -56,8 +56,16 @@ class MemoryEntry(BaseModel):
     
     # [Categorization Layer]
     memory_type: str = Field(
-        "episodic", # Default to episodic if not specified
-        description="Type of memory: episodic, semantic, procedural, working, or persistent"
+        "episodic",
+        description="Cognitive type: episodic (events), semantic (facts/definitions), procedural (how-to/instructions), working (transient state), state (config/preferences)"
+    )
+    storage_bin: str = Field(
+        "context",
+        description="Storage classification: context (structured facts), vector (embedding-optimized), document (long-form reference)"
+    )
+    importance: float = Field(
+        0.5,
+        description="Importance score 0.0-1.0, computed from content signals"
     )
 
     class Config:
@@ -70,7 +78,10 @@ class MemoryEntry(BaseModel):
                 "location": "Starbucks, Shanghai",
                 "persons": ["Alice", "Bob"],
                 "entities": ["product XYZ"],
-                "topic": "Product marketing strategy discussion"
+                "topic": "Product marketing strategy discussion",
+                "memory_type": "episodic",
+                "storage_bin": "context",
+                "importance": 0.75
             }
         }
 

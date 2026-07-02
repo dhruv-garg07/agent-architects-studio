@@ -248,7 +248,8 @@ class VectorStore:
             "created_at": entry.timestamp or datetime.now().isoformat(),
             "timestamp": entry.timestamp or datetime.now().isoformat(), # Legacy for fallback
             "type": entry.memory_type,
-            "importance": 1.0,  # Default importance for SimpleMem chats
+            "storage_bin": entry.storage_bin,
+            "importance": entry.importance,
             "visibility": "private",
             "has_keywords": len(entry.keywords) > 0,
             "has_persons": len(entry.persons) > 0,
@@ -301,7 +302,9 @@ class VectorStore:
             persons=persons,
             entities=entities,
             topic=metadata.get("topic"),
-            memory_type=metadata.get("type", metadata.get("memory_type", "episodic"))
+            memory_type=metadata.get("type", metadata.get("memory_type", "episodic")),
+            storage_bin=metadata.get("storage_bin", "vector"),
+            importance=float(metadata.get("importance", 0.5))
         )
     
     def _update_cache(self, entry_id: str, entry: MemoryEntry):
@@ -476,8 +479,8 @@ class VectorStore:
                             "repo_id": current_agent_id,
                             "workspace_id": "default",
                             "content": entry.lossless_restatement,
-                            "type": metadata.get("memory_type", "episodic"),
-                            "importance": 1,
+                            "type": entry.memory_type,
+                            "importance": entry.importance,
                             "metadata": metadata,
                             "created_at": entry.timestamp or datetime.now().isoformat()
                         }

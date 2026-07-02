@@ -15,6 +15,7 @@ import json
 import asyncio
 import concurrent.futures
 from functools import partial
+from SimpleMem.core.memory_classifier import MemoryClassifier
 
 
 class MemoryBuilder:
@@ -295,6 +296,17 @@ Your task is to extract all valuable information from the following dialogues an
    - persons: All person names mentioned
    - entities: Companies, products, organizations, etc.
    - topic: The topic of this information
+5. **Memory Classification**:
+   - memory_type: Classify each entry as one of:
+     * "episodic" — time-anchored events, experiences, meetings, conversations
+     * "semantic" — definitional facts, knowledge, specifications, standards
+     * "procedural" — how-to instructions, workflows, code, recipes, guides
+     * "working" — transient or in-progress state, pending tasks, current status
+     * "state" — configuration, preferences, settings, profile information
+   - storage_bin: Classify where the memory best fits:
+     * "context" — short structured facts with clear entities/persons/topic
+     * "vector" — general information optimized for similarity search
+     * "document" — long-form reference material, code blocks, multi-paragraph
 
 [Output Format]
 Return a JSON array, each element is a memory entry:
@@ -308,7 +320,9 @@ Return a JSON array, each element is a memory entry:
     "location": "location name or null",
     "persons": ["name1", "name2", ...],
     "entities": ["entity1", "entity2", ...],
-    "topic": "topic phrase"
+    "topic": "topic phrase",
+    "memory_type": "episodic | semantic | procedural | working | state",
+    "storage_bin": "context | vector | document"
   }},
   ...
 ]
@@ -329,7 +343,9 @@ Output:
     "location": "Starbucks",
     "persons": ["Alice", "Bob"],
     "entities": ["new product"],
-    "topic": "Product discussion meeting arrangement"
+    "topic": "Product discussion meeting arrangement",
+    "memory_type": "episodic",
+    "storage_bin": "context"
   }},
   {{
     "lossless_restatement": "Bob agreed to attend the meeting and committed to prepare relevant materials.",
@@ -338,7 +354,9 @@ Output:
     "location": null,
     "persons": ["Bob"],
     "entities": [],
-    "topic": "Meeting preparation confirmation"
+    "topic": "Meeting preparation confirmation",
+    "memory_type": "episodic",
+    "storage_bin": "context"
   }}
 ]
 ```
@@ -352,7 +370,11 @@ Now process the above dialogues. Return ONLY the JSON array, no other explanatio
         dialogue_ids: List[int]
     ) -> List[MemoryEntry]:
         """
-        Parse LLM response to MemoryEntry list
+        Parse LLM response to MemoryEntry list.
+        
+        After JSON parsing, runs the heuristic MemoryClassifier to:
+        1. Validate/override the LLM's memory_type and storage_bin suggestions
+        2. Compute an importance score from content signals
         """
         # Extract JSON
         data = self.llm_client.extract_json(response)
@@ -360,9 +382,10 @@ Now process the above dialogues. Return ONLY the JSON array, no other explanatio
         if not isinstance(data, list):
             raise ValueError(f"Expected JSON array but got: {type(data)}")
 
+        classifier = MemoryClassifier()
         entries = []
         for item in data:
-            # Create MemoryEntry
+            # Create MemoryEntry with base fields
             entry = MemoryEntry(
                 lossless_restatement=item["lossless_restatement"],
                 keywords=item.get("keywords", []),
@@ -371,6 +394,15 @@ Now process the above dialogues. Return ONLY the JSON array, no other explanatio
                 persons=item.get("persons", []),
                 entities=item.get("entities", []),
                 topic=item.get("topic")
+            )
+
+            # Run heuristic classifier with LLM suggestions as hints
+            entry = classifier.classify_and_score(
+                entry,
+                llm_suggestion={
+                    "memory_type": item.get("memory_type"),
+                    "storage_bin": item.get("storage_bin")
+                }
             )
             entries.append(entry)
 

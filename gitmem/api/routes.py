@@ -143,7 +143,7 @@ def _build_folder_structure(agent_id):
     """
     # Context Store → memories grouped by type
     context = {}
-    for mtype in ['episodic', 'semantic', 'procedural', 'state']:
+    for mtype in ['episodic', 'semantic', 'procedural', 'working', 'state']:
         context[mtype] = {'count': _count_table_where('gitmem_memories', {'agent_id': agent_id, 'type': mtype})}
 
     # Documents → grouped by folder
@@ -156,7 +156,7 @@ def _build_folder_structure(agent_id):
     try:
         raw = gitmem_app.vector_engine.get_agent_vectors(agent_id, limit=200)
         bins = gitmem_app.vector_engine.categorize_vectors(raw)
-        for k in ['episodic', 'semantic', 'procedural', 'working']:
+        for k in ['episodic', 'semantic', 'procedural', 'working', 'state']:
             vectors[k] = {'count': len(bins.get(k, []))}
     except Exception:
         vectors = {'all': {'count': 0}}
@@ -200,13 +200,13 @@ def _build_fs_items(agent_id, virtual_path):
     # Level 1: show subfolders
     if depth == 1:
         if root == 'context':
-            for t in ['episodic', 'semantic', 'procedural', 'state']:
+            for t in ['episodic', 'semantic', 'procedural', 'working', 'state']:
                 items.append({'name': t, 'type': 'directory', 'path': f'context/{t}', 'last_modified': ''})
         elif root in ('docs', 'documents'):
             for f in ['uploads', 'attachments', 'references']:
                 items.append({'name': f, 'type': 'directory', 'path': f'docs/{f}', 'last_modified': ''})
         elif root == 'vectors':
-            for t in ['episodic', 'semantic', 'procedural', 'working']:
+            for t in ['episodic', 'semantic', 'procedural', 'working', 'state']:
                 items.append({'name': t, 'type': 'directory', 'path': f'vectors/{t}', 'last_modified': ''})
         elif root == 'checkpoints':
             for t in ['snapshot', 'session', 'recovery', 'auto']:
