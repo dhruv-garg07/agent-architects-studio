@@ -769,15 +769,56 @@ def add_document():
     if error_resp:
         return error_resp
     try:
-        # Add documents to the agent's vector DB
-        metadatas_list = [metadata] * len(ids) if metadata else None
+        # Add documents to the agent's vector DB using UnifiedChunker
+        from utils.chunking import UnifiedChunker
+        import logging
+        
+        chunking_mode = data.get('chunking_mode', 'fast')
+        chunker = UnifiedChunker(mode=chunking_mode)
+        
+        all_chunk_ids = []
+        all_chunk_docs = []
+        all_chunk_metas = []
+        
+        for i, doc in enumerate(document_content):
+            doc_id = ids[i]
+            meta = metadata if metadata else {}
+            
+            chunks = chunker.chunk_text(doc, metadata=meta)
+            for chunk_idx, chunk in enumerate(chunks):
+                # Ensure unique IDs for chunks
+                all_chunk_ids.append(f"{doc_id}_chunk_{chunk_idx}")
+                all_chunk_docs.append(chunk['text'])
+                all_chunk_metas.append(chunk['metadata'])
+                
+        if not all_chunk_docs:
+            return jsonify({'error': 'No chunks generated from documents'}), 400
+
+        logging.info(f"[Ingestion] Agent {agent_id}: Ingesting {len(all_chunk_docs)} chunks (mode: {chunking_mode}). Zero LLM calls made.")
+        
         file_agentic_rag.add_docs(
             agent_ID=agent_id,
-            ids=ids,
-            documents=document_content,
-            metadatas=metadatas_list
+            ids=all_chunk_ids,
+            documents=all_chunk_docs,
+            metadatas=all_chunk_metas
         )
-        return jsonify({'ok': True, 'message': 'documents_added'}), 200
+        
+        from datetime import datetime
+        base_filename = metadata.get('filename') or metadata.get('title') or "Untitled Document"
+        for i, doc_id in enumerate(ids):
+            filename = f"{base_filename} ({i+1})" if len(ids) > 1 else base_filename
+            try:
+                _supabase_backend.table('gitmem_documents').insert({
+                    'id': doc_id,
+                    'agent_id': agent_id,
+                    'filename': filename,
+                    'folder': 'uploads',
+                    'created_at': datetime.utcnow().isoformat()
+                }).execute()
+            except Exception as e:
+                logging.error(f"Failed to insert doc {doc_id} to Supabase: {e}")
+
+        return jsonify({'ok': True, 'message': 'documents_added', 'chunks_count': len(all_chunk_docs)}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500  
 
@@ -883,13 +924,41 @@ def search_documents():
         return error_resp
     
     try:
-        # Search documents in the agent's vector DB
+        import logging
+        
+        # 1. Retrieve top-k chunks from Agentic_RAG
+        # Fetching a bit more (e.g. 2*top_k) to allow reranking to filter out noise
+        retrieve_k = top_k * 2
         results = file_agentic_rag.search_agent_collection(
             agent_ID=agent_id,
             query=query,
-            n_results=top_k
+            n_results=retrieve_k
         )
-        return jsonify({'results': results}), 200
+        
+        if not results:
+            return jsonify({'results': [], 'synthesized_answer': 'No relevant documents found to answer the query.'}), 200
+            
+        # 2. Rerank using CrossEncoder
+        from utils.reranking import Reranker
+        reranker = Reranker()
+        
+        # Convert results to expected format for reranker
+        docs_to_rerank = [{'text': r.get('document', r.get('text', '')), 'metadata': r.get('metadata', {})} for r in results]
+        reranked_docs = reranker.rerank(query=query, documents=docs_to_rerank, top_k=top_k)
+        
+        # 3. Late Enrichment Synthesis via SimpleMem (exactly 1 LLM call)
+        llm_client, _, _ = _get_shared_components()
+        from SimpleMem.core.document_synthesizer import DocumentSynthesizer
+        
+        synthesizer = DocumentSynthesizer(llm_client=llm_client)
+        logging.info(f"[Retrieval] Agent {agent_id}: Synthesizing answer for query '{query}' using {len(reranked_docs)} chunks.")
+        
+        synthesized_answer = synthesizer.synthesize(query=query, chunks=reranked_docs)
+        
+        return jsonify({
+            'results': reranked_docs,
+            'synthesized_answer': synthesized_answer
+        }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

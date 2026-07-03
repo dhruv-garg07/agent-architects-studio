@@ -100,16 +100,23 @@
                 {% endif %}
             </div>
 
-            <!-- Documents List (Placeholder for now) -->
+            <!-- Documents List -->
             <div class="gm-explorer-list" id="tab-documents" style="display: none;">
-                <div style="padding: 30px; text-align: center; color: hsl(225,10%,45%); font-size: 13px;">
-                    <i data-lucide="file-text" style="width: 24px; height: 24px; margin-bottom: 12px; opacity: 0.5;"></i><br>
-                    {% if doc_count > 0 %}
-                    {{ doc_count }} documents attached.<br>Document viewer coming soon.
-                    {% else %}
-                    No documents found.
-                    {% endif %}
-                </div>
+                {% if documents %}
+                    {% for doc in documents %}
+                    <div class="gm-mem-row" onclick="selectMemory('{{ doc.id }}', this)" oncontextmenu="showMemoryContextMenu(event, '{{ doc.id }}')" data-content="Document: {{ doc.filename | e }}">
+                        <div class="gm-mem-id">{{ doc.id[:8] }}</div>
+                        <div class="gm-mem-type gm-mem-type-semantic" style="display: flex; align-items: center; gap: 4px;"><i data-lucide="file-text" style="width: 12px; height: 12px;"></i> Doc</div>
+                        <div class="gm-mem-preview">{{ doc.filename }}</div>
+                        <div class="gm-mem-meta">{{ (doc.created_at or '')[:10] }}</div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="padding: 30px; text-align: center; color: hsl(225,10%,45%); font-size: 13px;">
+                        <i data-lucide="file-text" style="width: 24px; height: 24px; margin-bottom: 12px; opacity: 0.5;"></i><br>
+                        No documents found.
+                    </div>
+                {% endif %}
             </div>
 
         </div>

@@ -272,11 +272,13 @@
             "ids": [
               "string"
             ],
-            "metadata": {}
+            "metadata": {},
+            "chunking_mode": "string (optional, 'fast' or 'advanced')"
           },
           "response": {
             "ok": true,
-            "message": "documents_added"
+            "message": "documents_added",
+            "chunks_count": 0
           },
           "when_to_use": "Call this to seed an agent's knowledge base. Documents are chunked, embedded, and stored in vector storage for semantic retrieval. Do this before agent_chat to give the agent access to your content.",
           "use_cases": [
@@ -378,7 +380,13 @@
             "top_k": 5
           },
           "response": {
-            "results": []
+            "synthesized_answer": "string (LLM generated answer based on chunks)",
+            "results": [
+              {
+                "text": "string",
+                "metadata": {}
+              }
+            ]
           },
           "when_to_use": "Use when you need to retrieve specific document chunks by semantic similarity — useful for building a custom RAG pipeline or debugging what context the agent can see for a given query.",
           "use_cases": [

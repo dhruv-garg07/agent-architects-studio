@@ -23,6 +23,7 @@ pdfplumber
 dateparser==1.2.2
 mcp
 httpx>=0.24.0
+flashrank>=0.2.8
 
 # Async workers for Gunicorn (required for SocketIO/SSE)
 gevent>=23.9.0

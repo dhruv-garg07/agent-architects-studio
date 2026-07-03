@@ -900,6 +900,16 @@ def hub_context(ws_slug):
     # Document count
     doc_count = _count_table('gitmem_documents', 'agent_id', actual_agent_id)
 
+    # Fetch documents for this agent
+    documents = []
+    try:
+        res = _db().table('gitmem_documents').select('*') \
+            .eq('agent_id', actual_agent_id) \
+            .order('created_at', desc=True).limit(100).execute()
+        documents = res.data or []
+    except Exception as e:
+        print(f"Error fetching documents: {e}")
+
     # Commit count
     commit_count = _count_table('gitmem_commits', 'agent_id', actual_agent_id)
 
@@ -911,6 +921,7 @@ def hub_context(ws_slug):
         total_memories=len(memories),
         vector_count=vector_count,
         doc_count=doc_count,
+        documents=documents,
         commit_count=commit_count,
         all_agents=all_agents,
         memories_json=json.dumps([{
@@ -1271,6 +1282,133 @@ def api_workspace_stats():
         })
     except Exception as e:
         return jsonify({"status": "error", "error": str(e)}), 500
+
+# ==========================================
+# RAG Document Ingestion & Retrieval Endpoints
+# (Mirrors api_manhattan.py)
+# ==========================================
+
+@gitmem_bp.route('/api/add_document', methods=['POST'])
+@login_required
+def api_add_document():
+    data = request.get_json(silent=True) or {}
+    agent_id = data.get('agent_id')
+    document_content = data.get('documents')
+    ids = data.get('ids', [])
+    metadata = data.get('metadata', {})
+    
+    if not agent_id or not document_content or not ids:
+        return jsonify({'error': 'agent_id, documents, and ids are required'}), 400
+    
+    if len(document_content) != len(ids):
+        return jsonify({'error': 'Length of documents and ids must be the same'}), 400
+
+    try:
+        from utils.chunking import UnifiedChunker
+        import logging
+        import os
+        from Octave_mem.RAG_DB_CONTROLLER_AGENTS.agent_RAG import Agentic_RAG
+        
+        chunking_mode = data.get('chunking_mode', 'fast')
+        chunker = UnifiedChunker(mode=chunking_mode)
+        
+        all_chunk_ids = []
+        all_chunk_docs = []
+        all_chunk_metas = []
+        
+        for i, doc in enumerate(document_content):
+            doc_id = ids[i]
+            meta = metadata if metadata else {}
+            
+            chunks = chunker.chunk_text(doc, metadata=meta)
+            for chunk_idx, chunk in enumerate(chunks):
+                all_chunk_ids.append(f"{doc_id}_chunk_{chunk_idx}")
+                all_chunk_docs.append(chunk['text'])
+                all_chunk_metas.append(chunk['metadata'])
+                
+        if not all_chunk_docs:
+            return jsonify({'error': 'No chunks generated from documents'}), 400
+
+        logging.info(f"[GitMem Ingestion] Agent {agent_id}: Ingesting {len(all_chunk_docs)} chunks (mode: {chunking_mode}). Zero LLM calls made.")
+        
+        rag = Agentic_RAG(database=os.getenv("CHROMA_DATABASE_FILE_DATA"))
+        rag.add_docs(
+            agent_ID=agent_id,
+            ids=all_chunk_ids,
+            documents=all_chunk_docs,
+            metadatas=all_chunk_metas
+        )
+        
+        import datetime
+        db = _db()
+        if db:
+            base_filename = metadata.get('filename') or metadata.get('title') or "Untitled Document"
+            for i, doc_id in enumerate(ids):
+                filename = f"{base_filename} ({i+1})" if len(ids) > 1 else base_filename
+                try:
+                    db.table('gitmem_documents').insert({
+                        'id': doc_id,
+                        'agent_id': agent_id,
+                        'filename': filename,
+                        'folder': 'uploads',
+                        'created_at': datetime.datetime.utcnow().isoformat()
+                    }).execute()
+                except Exception as e:
+                    logging.error(f"Failed to insert doc {doc_id} to Supabase: {e}")
+                    
+        return jsonify({'ok': True, 'message': 'documents_added', 'chunks_count': len(all_chunk_docs)}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500  
+
+@gitmem_bp.route('/api/search_documents', methods=['POST'])
+@login_required
+def api_search_documents():
+    data = request.get_json(silent=True) or {}
+    agent_id = data.get('agent_id')
+    query = data.get('query')
+    top_k = data.get('top_k', 5)
+
+    if not agent_id or not query:
+        return jsonify({'error': 'agent_id and query are required'}), 400
+
+    try:
+        import logging
+        import os
+        from Octave_mem.RAG_DB_CONTROLLER_AGENTS.agent_RAG import Agentic_RAG
+        
+        rag = Agentic_RAG(database=os.getenv("CHROMA_DATABASE_FILE_DATA"))
+        retrieve_k = top_k * 2
+        results = rag.search_agent_collection(
+            agent_ID=agent_id,
+            query=query,
+            n_results=retrieve_k
+        )
+        
+        if not results:
+            return jsonify({'results': [], 'synthesized_answer': 'No relevant documents found to answer the query.'}), 200
+            
+        from utils.reranking import Reranker
+        reranker = Reranker()
+        
+        docs_to_rerank = [{'text': r.get('document', r.get('text', '')), 'metadata': r.get('metadata', {})} for r in results]
+        reranked_docs = reranker.rerank(query=query, documents=docs_to_rerank, top_k=top_k)
+        
+        from SimpleMem.utils.llm_client import LLMClient
+        from SimpleMem.core.document_synthesizer import DocumentSynthesizer
+        
+        llm_client = LLMClient()
+        synthesizer = DocumentSynthesizer(llm_client=llm_client)
+        logging.info(f"[GitMem Retrieval] Agent {agent_id}: Synthesizing answer for query '{query}' using {len(reranked_docs)} chunks.")
+        
+        synthesized_answer = synthesizer.synthesize(query=query, chunks=reranked_docs)
+        
+        return jsonify({
+            'results': reranked_docs,
+            'synthesized_answer': synthesized_answer
+        }), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 @gitmem_bp.route('/api/search')
 @login_required
