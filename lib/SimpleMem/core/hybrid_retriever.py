@@ -182,26 +182,26 @@ class HybridRetriever:
         """
         Use LLM to analyze query intent and extract structured information
         """
-        prompt = f"""
-Analyze the following query and extract key information:
+        prompt = f"""Analyze the following query and extract key information for memory retrieval:
 
 Query: {query}
 
 Please extract:
-1. keywords: List of keywords (names, places, topic words, etc.)
-2. persons: Person names mentioned
+1. keywords: List of core keywords (names, places, technical terms)
+2. topic_category: Optional string representing the broad topic.
 3. time_expression: Time expression (if any)
-4. location: Location (if any)
-5. entities: Entities (companies, products, etc.)
+4. metadata_filters: A dictionary of key-value pairs matching specific constraints in the user's query. You may extract ANY of the following fields if present: `timestamp`, `context_location`, `participants`, `event_type`, `outcome`, `sentiment`, `domain`, `related_entities`, `provenance`, `trigger_condition`, `steps`, `prerequisites`, `tools_required`, `decision_context`, `options_considered`, `chosen_option`, `state_key`, `state_value`, `scope`.
 
 Return in JSON format:
 ```json
 {{
   "keywords": ["keyword1", "keyword2", ...],
-  "persons": ["name1", "name2", ...],
+  "topic_category": "topic or null",
   "time_expression": "time expression or null",
-  "location": "location or null",
-  "entities": ["entity1", ...]
+  "metadata_filters": {{
+    "participants": ["name1", "name2"],
+    "event_type": "meeting"
+  }}
 }}
 ```
 
@@ -237,10 +237,9 @@ Return ONLY JSON, no other content.
                     # Return default values
                     return {
                         "keywords": [query],
-                        "persons": [],
+                        "topic_category": None,
                         "time_expression": None,
-                        "location": None,
-                        "entities": []
+                        "metadata_filters": {}
                     }
 
     def _semantic_search(self, query: str) -> List[MemoryEntry]:
@@ -277,25 +276,25 @@ Return ONLY JSON, no other content.
         Paper Reference: Section 3.3 - Part of hybrid scoring function S(q, m_k)
         Hard filter based on symbolic constraints: γ · 𝕀(R_k ⊨ C_meta)
         """
-        persons = query_analysis.get("persons", [])
-        location = query_analysis.get("location")
-        entities = query_analysis.get("entities", [])
+        metadata_filters = query_analysis.get("metadata_filters", {})
         time_expression = query_analysis.get("time_expression")
+        topic_category = query_analysis.get("topic_category")
 
         # Parse time range
         timestamp_range = None
         if time_expression:
             timestamp_range = self._parse_time_range(time_expression)
 
+        if topic_category:
+            metadata_filters["topic"] = topic_category
+
         # Return empty if no structured conditions
-        if not any([persons, location, entities, timestamp_range]):
+        if not metadata_filters and not timestamp_range:
             return []
 
         # Execute structured search
         return self.vector_store.structured_search(
-            persons=persons if persons else None,
-            location=location,
-            entities=entities if entities else None,
+            metadata_filters=metadata_filters,
             timestamp_range=timestamp_range,
             top_k=self.structured_top_k
         )

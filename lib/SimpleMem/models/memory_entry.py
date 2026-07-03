@@ -5,7 +5,7 @@ Paper Reference: Section 3.1 - Atomic Entries {m_k}
 Each MemoryEntry represents a self-contained, disambiguated fact extracted
 from dialogue via the De-linearization transformation F_θ
 """
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 import uuid
 
@@ -54,6 +54,12 @@ class MemoryEntry(BaseModel):
         description="Topic phrase summarized by LLM"
     )
     
+    # [Dynamic Category Schema Layer]
+    attributes: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Dynamic fields specific to the memory_type (e.g., event_type, trigger_condition, state_key, etc.)"
+    )
+    
     # [Categorization Layer]
     memory_type: str = Field(
         "episodic",
@@ -69,6 +75,7 @@ class MemoryEntry(BaseModel):
     )
 
     class Config:
+        extra = "allow"
         json_schema_extra = {
             "example": {
                 "entry_id": "550e8400-e29b-41d4-a716-446655440000",

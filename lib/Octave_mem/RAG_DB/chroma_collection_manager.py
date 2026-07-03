@@ -112,6 +112,13 @@ class RemoteEmbeddingClient:
 
         return embeddings
 
+    def __call__(self, input: List[str]) -> List[List[float]]:
+        """Conform to chromadb EmbeddingFunction protocol."""
+        return self.embed_remote(input)
+
+    def name(self) -> str:
+        return "RemoteEmbeddingClient"
+
 
 # -------------------------------------------------
 # Global Chroma Cloud Client (NO EMBEDDING FUNCTION)

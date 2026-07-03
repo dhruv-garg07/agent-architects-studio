@@ -47,6 +47,7 @@ class ApiAgentsService:
         description: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
+        print(f"[DEBUG] api_agents.py create_agent got user_id: {user_id!r}", flush=True)
         # Generate a unique agent_id
         agent_id = str(uuid.uuid4())
         

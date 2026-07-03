@@ -33,19 +33,73 @@ class RetrievalOrchestrator:
         self.summarizer = Summarizer()
         self.embedder = Embedder()
         
+        # New: LLM Client for dynamic query analysis
+        from SimpleMem.utils.llm_client import LLMClient
+        self.llm_client = LLMClient()
+        
         self._table = "gitmem_memories"
 
-    def _semantic_search(self, query: str, agent_id: str, limit: int = 10) -> List[Dict[str, Any]]:
+    def _analyze_query(self, query: str) -> Dict[str, Any]:
+        """
+        Use LLM to analyze query intent and extract structured information
+        """
+        prompt = f"""Analyze the following query and extract key information for memory retrieval:
+
+Query: {query}
+
+Please extract:
+1. keywords: List of core keywords (names, places, technical terms)
+2. topic_category: Optional string representing the broad topic.
+3. time_expression: Time expression (if any)
+4. metadata_filters: A dictionary of key-value pairs matching specific constraints in the user's query. You may extract ANY of the following fields if present: `timestamp`, `context_location`, `participants`, `event_type`, `outcome`, `sentiment`, `domain`, `related_entities`, `provenance`, `trigger_condition`, `steps`, `prerequisites`, `tools_required`, `decision_context`, `options_considered`, `chosen_option`, `state_key`, `state_value`, `scope`.
+
+Return in JSON format:
+```json
+{{
+  "keywords": ["keyword1", "keyword2", ...],
+  "topic_category": "topic or null",
+  "time_expression": "time expression or null",
+  "metadata_filters": {{
+    "participants": ["name1", "name2"],
+    "event_type": "meeting"
+  }}
+}}
+```
+
+Return ONLY JSON, no other content.
+"""
+        messages = [
+            {"role": "system", "content": "You are a query analysis assistant. You must output valid JSON format."},
+            {"role": "user", "content": prompt}
+        ]
+
+        try:
+            response = self.llm_client.chat_completion(messages, temperature=0.1)
+            analysis = self.llm_client.extract_json(response)
+            return analysis
+        except Exception as e:
+            print(f"Query analysis failed: {e}")
+            return {
+                "keywords": [query],
+                "topic_category": None,
+                "time_expression": None,
+                "metadata_filters": {}
+            }
+
+    def _semantic_search(self, query: str, agent_id: str, limit: int = 10, metadata_filters: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
         """1. Vector search via ChromaDB."""
         if not self.vector_store:
             return []
             
         try:
-            query_embedding = self.embedder.embed(query)
+            # Use metadata filters if provided
+            where_clause = metadata_filters if metadata_filters else None
+            
             results = self.vector_store.query(
+                query_text=query,
                 collection_name=agent_id,
-                query_embeddings=[query_embedding],
-                n_results=limit
+                n_results=limit,
+                where=where_clause
             )
             
             # VectorEngine.query returns normalized List[Dict]
@@ -112,8 +166,16 @@ class RetrievalOrchestrator:
         """
         self.packer.max_tokens = max_tokens
         
+        # 0. Analyze query with LLM to extract dynamic filters
+        query_analysis = self._analyze_query(query)
+        metadata_filters = query_analysis.get("metadata_filters", {})
+        topic_category = query_analysis.get("topic_category")
+        if topic_category:
+            metadata_filters["topic"] = topic_category
+            
         # 1. Gather candidates from all strategies
-        semantic_cands = self._semantic_search(query, agent_id, limit=10)
+        semantic_cands = self._semantic_search(query, agent_id, limit=10, metadata_filters=metadata_filters)
+        print(f"[DEBUG] semantic_cands: {semantic_cands}")
         recency_cands = self._recency_search(repo_id, limit=5)
         import_cands = self._importance_search(repo_id, limit=5)
         graph_cands = self._graph_traversal(query, repo_id)

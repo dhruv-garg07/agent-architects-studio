@@ -289,13 +289,13 @@ Your task is to extract all valuable information from the following dialogues an
 1. **Complete Coverage**: Generate enough memory entries to ensure ALL information in the dialogues is captured
 2. **Force Disambiguation**: Absolutely PROHIBIT using pronouns (he, she, it, they, this, that) and relative time (yesterday, today, last week, tomorrow)
 3. **Lossless Information**: Each entry's lossless_restatement must be a complete, independent, understandable sentence
-4. **Precise Extraction**:
-   - keywords: Core keywords (names, places, entities, topic words)
-   - timestamp: Absolute time in ISO 8601 format (if explicit time mentioned in dialogue)
-   - location: Specific location name (if mentioned)
-   - persons: All person names mentioned
-   - entities: Companies, products, organizations, etc.
-   - topic: The topic of this information
+4. **Dynamic Metadata Extraction**:
+   - ALL category-specific metadata MUST be placed inside the `attributes` dictionary.
+   - For `episodic`: Extract `event_type`, `participants`, `context_location`, `outcome`, `sentiment`
+   - For `semantic`: Extract `domain`, `related_entities`, `provenance`, `confidence_score`
+   - For `procedural`: Extract `trigger_condition`, `steps`, `prerequisites`, `tools_required`, `success_criteria`
+   - For `working`: Extract `state_key`, `state_value`, `expiration_ttl`, `scope`
+   - For `state`: Extract `state_key`, `state_value`
 5. **Memory Classification**:
    - memory_type: Classify each entry as one of:
      * "episodic" — time-anchored events, experiences, meetings, conversations
@@ -315,13 +315,13 @@ Return a JSON array, each element is a memory entry:
   {{
     "lossless_restatement": "Complete unambiguous restatement (must include all subjects, objects, time, location, etc.)",
     "keywords": ["keyword1", "keyword2", ...],
-    "timestamp": "YYYY-MM-DDTHH:MM:SS or null",
-    "location": "location name or null",
-    "persons": ["name1", "name2", ...],
-    "entities": ["entity1", "entity2", ...],
     "topic": "topic phrase",
     "memory_type": "episodic | semantic | procedural | working | state",
-    "storage_bin": "memory | document"
+    "storage_bin": "memory | document",
+    "attributes": {{
+       "timestamp": "YYYY-MM-DDTHH:MM:SS or null",
+       "participants": ["name1", "name2", ...]
+    }}
   }},
   ...
 ]
@@ -338,24 +338,28 @@ Output:
   {{
     "lossless_restatement": "Alice suggested at 2025-11-15T14:30:00 to meet with Bob at Starbucks on 2025-11-16T14:00:00 to discuss the new product.",
     "keywords": ["Alice", "Bob", "Starbucks", "new product", "meeting"],
-    "timestamp": "2025-11-16T14:00:00",
-    "location": "Starbucks",
-    "persons": ["Alice", "Bob"],
-    "entities": ["new product"],
     "topic": "Product discussion meeting arrangement",
     "memory_type": "episodic",
-    "storage_bin": "memory"
+    "storage_bin": "memory",
+    "attributes": {{
+      "timestamp": "2025-11-16T14:00:00",
+      "context_location": "Starbucks",
+      "participants": ["Alice", "Bob"],
+      "event_type": "meeting_proposed"
+    }}
   }},
   {{
     "lossless_restatement": "Bob agreed to attend the meeting and committed to prepare relevant materials.",
     "keywords": ["Bob", "prepare materials", "agree"],
-    "timestamp": null,
-    "location": null,
-    "persons": ["Bob"],
-    "entities": [],
     "topic": "Meeting preparation confirmation",
     "memory_type": "episodic",
-    "storage_bin": "memory"
+    "storage_bin": "memory",
+    "attributes": {{
+      "timestamp": null,
+      "context_location": null,
+      "participants": ["Bob"],
+      "event_type": "commitment"
+    }}
   }}
 ]
 ```

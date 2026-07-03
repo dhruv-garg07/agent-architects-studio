@@ -113,7 +113,7 @@ class RemoteEmbeddingClient:
                     texts,
                     model=self.model,
                 )
-                embeddings = [np.array(r).flatten().tolist() for r in results]
+                embeddings = [np.array(r).flatten() for r in results]
                 if len(embeddings) == len(texts):
                     return embeddings
                 # If count mismatch, fall through to sequential
@@ -132,7 +132,7 @@ class RemoteEmbeddingClient:
             for attempt in range(max_retries):
                 try:
                     vec = self._embed_one(text)
-                    embeddings.append(vec)
+                    embeddings.append(np.array(vec).flatten())
                     break  # Success
                 except Exception as e:
                     if attempt < max_retries - 1:
@@ -142,6 +142,21 @@ class RemoteEmbeddingClient:
                         raise RuntimeError(f"Failed to embed text after {max_retries} attempts: {e}")
 
         return embeddings
+
+    def __call__(self, input: List[str]) -> List[List[float]]:
+        """Conform to chromadb EmbeddingFunction protocol."""
+        return self._embed_remote_uncached(input)
+
+    def embed_query(self, input: List[str]) -> List[List[float]]:
+        """Conform to chromadb EmbeddingFunction query method."""
+        return self._embed_remote_uncached(input)
+
+    def embed_documents(self, input: List[str]) -> List[List[float]]:
+        """Conform to chromadb EmbeddingFunction document method."""
+        return self._embed_remote_uncached(input)
+
+    def name(self) -> str:
+        return "RemoteEmbeddingClient"
 
 
 # -------------------------------------------------

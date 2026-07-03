@@ -386,7 +386,7 @@ def hub_sync_memories(ws_slug):
 
     # ── 2.5 Clean up duplicates before syncing ──
     try:
-        from lib.SimpleMem.database.vector_store import VectorStore
+        from SimpleMem.database.vector_store import VectorStore
         vs = VectorStore(agent_id=actual_agent_id)
         vs.remove_duplicates(0.95)
     except Exception as e:
@@ -1299,7 +1299,11 @@ def api_add_memory():
     content = data.get('content', '').strip()
     mtype = data.get('type', 'episodic')
     importance = float(data.get('importance', 0.5))
+    
     tags = data.get('tags', [])
+    topic = data.get('topic', '')
+    storage_bin = data.get('storage_bin', 'memory')
+    attributes = data.get('attributes', {})
 
     if not agent_id or not content:
         return jsonify({"error": "agent_id and content required"}), 400
@@ -1322,6 +1326,11 @@ def api_add_memory():
             content=content,
             importance=importance,
             tags=tags,
+            metadata={
+                'topic': topic,
+                'storage_bin': storage_bin,
+                **attributes
+            }
         )
         db = _db()
         if not db:

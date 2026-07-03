@@ -51,8 +51,8 @@ class VectorEngine:
                     name=collection_name,
                     embedding_function=self.ef
                 )
-            except:
-                pass
+            except Exception as e:
+                print(f"[VectorEngine] get_or_create_collection failed for {collection_name}: {e}")
 
         if not target_collection:
             return
@@ -72,8 +72,8 @@ class VectorEngine:
         
         try:
             target_collection.add(documents=texts, metadatas=processed_metadatas, ids=ids)
-        except:
-            pass
+        except Exception as e:
+            print(f"[VectorEngine] add_texts error: {e}")
 
     def add_vectors(self, collection_name: str, vectors: List[List[float]], documents: List[str], metadatas: List[Dict[str, Any]], ids: List[str]):
         """Explicit vector ingestion for V2 pipeline."""
@@ -156,7 +156,10 @@ class VectorEngine:
             
         if agent_id:
             try:
-                target_collection = self.client.get_collection(name=agent_id)
+                target_collection = self.client.get_collection(
+                    name=agent_id,
+                    embedding_function=self.ef
+                )
             except:
                 pass
                 
@@ -186,7 +189,8 @@ class VectorEngine:
                         "distance": results['distances'][0][i] if 'distances' in results and results['distances'] else 0
                     })
             return normalized
-        except Exception:
+        except Exception as e:
+            print(f"[VectorEngine] query failed: {e}")
             return []
 
     def get_agent_stats(self, agent_id: str) -> Dict[str, Any]:

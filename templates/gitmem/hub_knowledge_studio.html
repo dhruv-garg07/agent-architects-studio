@@ -181,13 +181,19 @@
                 </select>
             </div>
             <div class="gm-form-group">
-                <label>Content</label>
-                <textarea id="new-mem-content" rows="4" placeholder="Enter memory content..."></textarea>
+                <label>Lossless Restatement (Content)</label>
+                <textarea id="new-mem-content" rows="4" placeholder="Enter self-contained fact with no unresolved pronouns..."></textarea>
             </div>
             <div class="gm-form-group">
                 <label>Importance (0.0 to 1.0)</label>
                 <input type="number" id="new-mem-imp" step="0.1" min="0" max="1" value="0.5">
             </div>
+            <div class="gm-form-group">
+                <label>Topic</label>
+                <input type="text" id="new-mem-topic" placeholder="e.g. Marketing Strategy">
+            </div>
+            <!-- Dynamic Fields will be rendered here based on Memory Type -->
+            <div id="dynamic-fields-container"></div>
         </div>
         <div class="gm-modal-footer">
             <button class="gm-ctx-btn" onclick="document.getElementById('add-memory-modal').style.display='none'">Cancel</button>
@@ -910,8 +916,74 @@
     }
 
 
+    // Dynamic Field Configuration
+    const dynamicFieldsMap = {
+        'episodic': [
+            {id: 'timestamp', label: 'Timestamp (ISO-8601)', placeholder: 'e.g. 2025-11-15T14:30:00'},
+            {id: 'context_location', label: 'Location', placeholder: 'e.g. Starbucks, Shanghai'},
+            {id: 'participants', label: 'Participants (comma separated)', placeholder: 'e.g. Alice, Bob'},
+            {id: 'event_type', label: 'Event Type', placeholder: 'e.g. meeting, tool_execution'},
+            {id: 'outcome', label: 'Outcome', placeholder: 'e.g. success, failure'},
+            {id: 'sentiment', label: 'Sentiment', placeholder: 'e.g. neutral'}
+        ],
+        'semantic': [
+            {id: 'domain', label: 'Domain/Topic', placeholder: 'e.g. Frontend'},
+            {id: 'related_entities', label: 'Related Entities (comma separated)', placeholder: 'e.g. React, API'},
+            {id: 'provenance', label: 'Provenance/Source', placeholder: 'e.g. User stated'},
+            {id: 'confidence_score', label: 'Confidence Score (0.0-1.0)', placeholder: 'e.g. 1.0'}
+        ],
+        'procedural': [
+            {id: 'trigger_condition', label: 'Trigger Condition', placeholder: 'e.g. When creating a component'},
+            {id: 'steps', label: 'Steps', placeholder: 'e.g. 1. Do X, 2. Do Y'},
+            {id: 'prerequisites', label: 'Prerequisites', placeholder: 'e.g. Needs Auth'},
+            {id: 'tools_required', label: 'Tools Required', placeholder: 'e.g. bash, grep'},
+            {id: 'success_criteria', label: 'Success Criteria', placeholder: 'e.g. Component compiles'}
+        ],
+        'decision': [
+            {id: 'decision_context', label: 'Context / Problem', placeholder: 'e.g. Need state management'},
+            {id: 'options_considered', label: 'Options Considered', placeholder: 'e.g. Redux, Zustand'},
+            {id: 'chosen_option', label: 'Chosen Option', placeholder: 'e.g. Zustand'},
+            {id: 'rationale', label: 'Rationale', placeholder: 'e.g. Less boilerplate'},
+            {id: 'implications', label: 'Implications', placeholder: 'e.g. Refactor hooks'}
+        ],
+        'state': [
+            {id: 'state_key', label: 'State Key', placeholder: 'e.g. active_task'},
+            {id: 'state_value', label: 'State Value', placeholder: 'e.g. memory_update'},
+            {id: 'expiration_ttl', label: 'Expiration / TTL', placeholder: 'e.g. End of session'},
+            {id: 'scope', label: 'Scope', placeholder: 'e.g. global'}
+        ]
+    };
+
+    function renderDynamicFields(type) {
+        const container = document.getElementById('dynamic-fields-container');
+        container.innerHTML = ''; // clear
+
+        // Always show tags
+        container.innerHTML += `
+            <div class="gm-form-group">
+                <label>Keywords/Tags (comma separated)</label>
+                <input type="text" id="new-mem-tags" placeholder="e.g. discussion, strategy">
+            </div>
+        `;
+
+        const fields = dynamicFieldsMap[type] || [];
+        fields.forEach(f => {
+            container.innerHTML += `
+                <div class="gm-form-group">
+                    <label>${f.label}</label>
+                    <input type="text" id="dyn-${f.id}" data-field="${f.id}" placeholder="${f.placeholder}">
+                </div>
+            `;
+        });
+    }
+
+    document.getElementById('new-mem-type').addEventListener('change', (e) => {
+        renderDynamicFields(e.target.value);
+    });
+
     // Add Memory
     function showAddMemoryModal() {
+        renderDynamicFields(document.getElementById('new-mem-type').value);
         document.getElementById('add-memory-modal').style.display = 'flex';
     }
 
@@ -919,20 +991,46 @@
         const type = document.getElementById('new-mem-type').value;
         const content = document.getElementById('new-mem-content').value;
         const importance = document.getElementById('new-mem-imp').value;
+        const topic = document.getElementById('new-mem-topic').value;
         
         if (!content) return alert('Content is required');
+        
+        const tagsInput = document.getElementById('new-mem-tags');
+        const tags = tagsInput ? tagsInput.value.split(',').map(s=>s.trim()).filter(s=>s) : [];
+
+        // Collect dynamic attributes
+        const attributes = {};
+        const fields = dynamicFieldsMap[type] || [];
+        fields.forEach(f => {
+            const el = document.getElementById(`dyn-${f.id}`);
+            if (el && el.value.trim() !== '') {
+                // If it's a list type (comma separated)
+                if (f.label.includes('comma separated')) {
+                    attributes[f.id] = el.value.split(',').map(s=>s.trim()).filter(s=>s);
+                } else if (f.id === 'confidence_score') {
+                    attributes[f.id] = parseFloat(el.value);
+                } else {
+                    attributes[f.id] = el.value.trim();
+                }
+            }
+        });
         
         const wsId = "{{ workspace.id if workspace else '' }}";
         if (!wsId) return alert('Workspace ID not found');
 
         try {
-            const resp = await fetch(`/gitmem/api/agent/${wsId}/memories`, {
+            const resp = await fetch(`/gitmem/api/memory`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
+                    agent_id: wsId,
                     type: type,
                     content: content,
-                    importance: parseFloat(importance)
+                    importance: parseFloat(importance),
+                    topic: topic,
+                    tags: tags,
+                    storage_bin: 'memory',
+                    attributes: attributes
                 })
             });
             if (resp.ok) window.location.reload();

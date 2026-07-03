@@ -845,11 +845,8 @@ class VectorStore:
     
     def structured_search(
         self,
-        persons: Optional[List[str]] = None,
+        metadata_filters: Optional[Dict[str, Any]] = None,
         timestamp_range: Optional[Tuple[datetime, datetime]] = None,
-        location: Optional[str] = None,
-        entities: Optional[List[str]] = None,
-        topic: Optional[str] = None,
         top_k: Optional[int] = None
     ) -> List[MemoryEntry]:
         """
@@ -860,28 +857,21 @@ class VectorStore:
         Uses ChromaDB's metadata filtering capabilities.
         
         Args:
-            persons: Filter by person names
+            metadata_filters: Dictionary of metadata key-value filters
             timestamp_range: Filter by time range (start, end)
-            location: Filter by location
-            entities: Filter by entities
-            topic: Filter by topic
             top_k: Maximum number of results to return
         """
         try:
             # Build metadata filters
             filters = {}
             
-            if persons:
-                filters["persons_json"] = json.dumps(persons)
-            
-            if location:
-                filters["location"] = location
-            
-            if topic:
-                filters["topic"] = topic
-            
-            if entities:
-                filters["entities_json"] = json.dumps(entities)
+            if metadata_filters:
+                for k, v in metadata_filters.items():
+                    # If it's a list (like participants), stringify it as expected by chroma
+                    if isinstance(v, list):
+                        filters[f"{k}_json"] = json.dumps(v)
+                    else:
+                        filters[k] = v
             
             if timestamp_range:
                 start_time, end_time = timestamp_range

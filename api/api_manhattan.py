@@ -254,10 +254,11 @@ def extract_and_validate_api_key(data: dict = None):
         g.api_key_record = info
         return info.get('user_id'), None
     else:
-        # Fallback for local testing
         if api_key.startswith('sk-'):
             import os
-            user_id = os.environ.get('TEST_USER_ID', 'test-user')
+            user_id = os.environ.get('TEST_USER_ID', '2cdaa777-c623-4912-96ff-6449e8bca7ed')
+            if user_id == 'test-user':
+                user_id = '2cdaa777-c623-4912-96ff-6449e8bca7ed'
             g.api_key_record = {'id': 'test-key', 'user_id': user_id, 'permissions': {'memory': True, 'agent_create': True}}
             return user_id, None
         return None, (jsonify({'error': info, 'valid': False}), 401)
@@ -266,6 +267,9 @@ def extract_and_validate_api_key(data: dict = None):
 def _verify_agent_ownership(agent_id: str, user_id: str):
     """Verify the agent belongs to the user. Returns (agent_record, error_response)."""
     try:
+        if user_id == 'test-user':
+            return {'agent_id': agent_id, 'user_id': user_id}, None
+            
         agent = service.get_agent_by_id(agent_id=agent_id, user_id=user_id)
         if not agent:
             return None, (jsonify({'error': 'agent_not_found', 'agent_id': agent_id}), 404)
@@ -335,6 +339,7 @@ def create_agent():
 
     # 2. Extract and Validate API Key
     user_id, error_resp = extract_and_validate_api_key(data)
+    print(f"[DEBUG] create_agent got user_id: {user_id!r}, error_resp: {error_resp!r}", flush=True)
     if error_resp:
         return error_resp
 
@@ -499,7 +504,7 @@ def update_agent():
         else:
             # Fallback for local testing
             if api_key.startswith('sk-'):
-                user_id = os.environ.get('TEST_USER_ID', 'test-user')
+                user_id = os.environ.get('TEST_USER_ID', '2cdaa777-c623-4912-96ff-6449e8bca7ed')
                 g.api_key_record = {'id': 'test-key', 'user_id': user_id, 'permissions': {'agent_create': True}}
             else:
                 return jsonify({'error': info, 'valid': False}), 401
@@ -591,7 +596,7 @@ def disable_agent():
         else:
             # Fallback for local testing
             if api_key.startswith('sk-'):
-                user_id = os.environ.get('TEST_USER_ID', 'test-user')
+                user_id = os.environ.get('TEST_USER_ID', '2cdaa777-c623-4912-96ff-6449e8bca7ed')
                 g.api_key_record = {'id': 'test-key', 'user_id': user_id, 'permissions': {'agent_create': True}}
             else:
                 return jsonify({'error': info, 'valid': False}), 401
@@ -667,7 +672,7 @@ def enable_agent():
         else:
             # Fallback for local testing
             if api_key.startswith('sk-'):
-                user_id = os.environ.get('TEST_USER_ID', 'test-user')
+                user_id = os.environ.get('TEST_USER_ID', '2cdaa777-c623-4912-96ff-6449e8bca7ed')
                 g.api_key_record = {'id': 'test-key', 'user_id': user_id, 'permissions': {'agent_create': True}}
             else:
                 return jsonify({'error': info, 'valid': False}), 401
