@@ -33,6 +33,21 @@ def _db():
     return gitmem_app.supabase_client
 
 
+def _count_chunks_in_chroma(agent_id):
+    try:
+        from Octave_mem.RAG_DB_CONTROLLER_AGENTS.agent_RAG import Agentic_RAG
+        import os
+        file_db_path = os.getenv("CHROMA_DATABASE_FILE_DATA")
+        if file_db_path:
+            file_rag = Agentic_RAG(database=file_db_path, enable_cache=False, enable_monitoring=False)
+            file_col = file_rag.wrapper.manager.get_collection(agent_id)
+            if file_col:
+                cdata = file_col.get(limit=1, include=[])
+                return len(cdata.get('ids', []))
+    except Exception:
+        pass
+    return 0
+
 def _get_agent(agent_id, user_id=None):
     """Fetch agent from api_agents by ID or slug. Returns dict or None."""
     if not _db():
@@ -154,10 +169,10 @@ def _build_folder_structure(agent_id):
             pass
         memory[mtype] = {'count': db_count + chroma_count}
 
-    # Documents → grouped by folder
-    documents = {}
-    for folder in ['uploads', 'attachments', 'references']:
-        documents[folder] = {'count': _count_table_where('gitmem_documents', {'agent_id': agent_id, 'folder': folder})}
+    # Documents → chunks from Chroma DB
+    documents = {
+        'chunks': {'count': _count_chunks_in_chroma(agent_id)}
+    }
 
     return {
         'memory': memory,
@@ -188,8 +203,7 @@ def _build_fs_items(agent_id, virtual_path):
             for t in ['episodic', 'semantic', 'procedural', 'working', 'state']:
                 items.append({'name': t, 'type': 'directory', 'path': f'memory/{t}', 'last_modified': ''})
         elif root in ('docs', 'documents'):
-            for f in ['uploads', 'attachments', 'references']:
-                items.append({'name': f, 'type': 'directory', 'path': f'docs/{f}', 'last_modified': ''})
+            items.append({'name': 'chunks', 'type': 'directory', 'path': 'docs/chunks', 'last_modified': ''})
         return items
 
     # Level 2: show actual data as files
@@ -229,18 +243,27 @@ def _build_fs_items(agent_id, virtual_path):
         except Exception:
             pass
 
-    elif root in ('docs', 'documents') and subfolder and _db():
+    elif root in ('docs', 'documents') and subfolder == 'chunks':
         try:
-            res = _db().table('gitmem_documents').select('id,filename,created_at') \
-                .eq('agent_id', agent_id).eq('folder', subfolder) \
-                .order('created_at', desc=True).limit(50).execute()
-            for row in (res.data or []):
-                items.append({
-                    'name': row.get('filename', row['id'][:8]),
-                    'type': 'file',
-                    'path': f"docs/{subfolder}/{row['id']}",
-                    'last_modified': row.get('created_at', ''),
-                })
+            from Octave_mem.RAG_DB_CONTROLLER_AGENTS.agent_RAG import Agentic_RAG
+            import os
+            file_db_path = os.getenv("CHROMA_DATABASE_FILE_DATA")
+            if file_db_path:
+                file_rag = Agentic_RAG(database=file_db_path, enable_cache=False, enable_monitoring=False)
+                file_col = file_rag.wrapper.manager.get_collection(agent_id)
+                if file_col:
+                    cdata = file_col.get(limit=100, include=["metadatas"])
+                    ids = cdata.get("ids", [])
+                    metas = cdata.get("metadatas", [])
+                    for i, cid in enumerate(ids):
+                        meta = metas[i] if metas and i < len(metas) else {}
+                        fname = meta.get('filename') or meta.get('source') or f'Chunk {i}'
+                        items.append({
+                            'name': f"{fname} ({cid[:8]}).json",
+                            'type': 'file',
+                            'path': f"docs/chunks/{cid}",
+                            'last_modified': meta.get('created_at', ''),
+                        })
         except Exception:
             pass
 
@@ -605,17 +628,22 @@ def hub_file_view(ws_slug, virtual_path=''):
                         file_content = v.get('content', '')
                         metadata = v.get('metadata', {})
                         metadata.update({'id': v.get('id')})
-            elif root in ('docs', 'documents') and _db():
-                res = _db().table('gitmem_documents').select('*').eq('id', item_id).execute()
-                if res.data:
-                    row = res.data[0]
-                    file_content = row.get('content', '')
-                    metadata = row.get('metadata', {}) if isinstance(row.get('metadata'), dict) else {}
-                    metadata.update({
-                        'filename': row.get('filename'),
-                        'folder': row.get('folder'),
-                        'created_at': row.get('created_at')
-                    })
+            elif root in ('docs', 'documents'):
+                try:
+                    from Octave_mem.RAG_DB_CONTROLLER_AGENTS.agent_RAG import Agentic_RAG
+                    import os
+                    file_db_path = os.getenv("CHROMA_DATABASE_FILE_DATA")
+                    if file_db_path:
+                        file_rag = Agentic_RAG(database=file_db_path, enable_cache=False, enable_monitoring=False)
+                        file_col = file_rag.wrapper.manager.get_collection(actual_agent_id)
+                        if file_col:
+                            cdata = file_col.get(ids=[item_id], include=["documents", "metadatas"])
+                            if cdata and cdata.get('ids'):
+                                file_content = cdata['documents'][0] if cdata.get('documents') else ''
+                                metadata = cdata['metadatas'][0] if cdata.get('metadatas') else {}
+                                metadata.update({'id': item_id, 'filename': metadata.get('filename') or metadata.get('source')})
+                except Exception:
+                    pass
             elif root == 'vectors':
                 v = gitmem_app.vector_engine.get_vector(item_id, actual_agent_id)
                 if v:
@@ -898,22 +926,62 @@ def hub_context(ws_slug):
         print(f"Error fetching vector stats: {e}")
 
     # Document count
-    doc_count = _count_table('gitmem_documents', 'agent_id', actual_agent_id)
+    doc_count = _count_chunks_in_chroma(actual_agent_id)
 
-    # Fetch documents for this agent
+    # Fetch documents for this agent natively from ChromaDB
     documents = []
     try:
-        res = _db().table('gitmem_documents').select('*') \
-            .eq('agent_id', actual_agent_id) \
-            .order('created_at', desc=True).limit(100).execute()
-        documents = res.data or []
+        import os
+        from Octave_mem.RAG_DB_CONTROLLER_AGENTS.agent_RAG import Agentic_RAG
+        file_db_path = os.getenv("CHROMA_DATABASE_FILE_DATA")
+        if file_db_path:
+            file_rag = Agentic_RAG(database=file_db_path, enable_cache=False, enable_monitoring=False)
+            file_col = file_rag.wrapper.manager.get_collection(actual_agent_id)
+            if file_col:
+                cdata = file_col.get(limit=100, include=["documents", "metadatas"])
+                f_ids = cdata.get("ids", [])
+                f_docs = cdata.get("documents", [])
+                f_metas = cdata.get("metadatas", [])
+                for i, cid in enumerate(f_ids):
+                    meta = f_metas[i] if f_metas and i < len(f_metas) else {}
+                    filename = meta.get('filename') or meta.get('source') or f'Chunk {i}'
+                    content = f_docs[i] if f_docs and i < len(f_docs) else ''
+                    doc_item = {
+                        'id': cid,
+                        'filename': filename,
+                        'content': content,
+                        'created_at': meta.get('created_at', '')
+                    }
+                    documents.append(doc_item)
     except Exception as e:
-        print(f"Error fetching documents: {e}")
+        print(f"Error fetching documents from Chroma: {e}")
 
     # Commit count
     commit_count = _count_table('gitmem_commits', 'agent_id', actual_agent_id)
 
     import json
+    
+    # Combine memories and documents for the Knowledge Graph nodes
+    graph_nodes = []
+    for m in memories:
+        graph_nodes.append({
+            'id': m.get('id',''),
+            'content': (m.get('content','') or '')[:200],
+            'type': m.get('type',''),
+            'importance': m.get('importance', 0.5),
+            'tags': m.get('tags', []),
+            'created_at': (m.get('created_at','') or '')[:16],
+        })
+    for d in documents:
+        graph_nodes.append({
+            'id': d.get('id',''),
+            'content': (d.get('content','') or '')[:200],
+            'type': 'document',
+            'importance': 0.5,
+            'tags': [],
+            'created_at': d.get('created_at','')[:16],
+        })
+
     return render_template('gitmem/hub_knowledge_studio.html',
         workspace=agent,
         memories=memories,
@@ -924,14 +992,7 @@ def hub_context(ws_slug):
         documents=documents,
         commit_count=commit_count,
         all_agents=all_agents,
-        memories_json=json.dumps([{
-            'id': m.get('id',''),
-            'content': (m.get('content','') or '')[:200],
-            'type': m.get('type',''),
-            'importance': m.get('importance', 0.5),
-            'tags': m.get('tags', []),
-            'created_at': (m.get('created_at','') or '')[:16],
-        } for m in memories]),
+        memories_json=json.dumps(graph_nodes)
     )
 
 @gitmem_bp.route('/w/<ws_slug>/context/<category>')
@@ -1661,6 +1722,8 @@ def _build_graph_data(memories, vectors_with_embeddings):
         'procedural': '#10b981',
         'state':      '#6b7280',
         'vector':     '#f59e0b',
+        'document':   '#06b6d4',
+        'docs':       '#06b6d4',
     }
 
     nodes = []
@@ -1866,6 +1929,33 @@ def api_agent_graph(agent_id):
             vectors = gitmem_app.vector_engine.get_agent_vectors(agent_id, limit=100)
         except Exception:
             pass
+
+    # 3. Fetch chunks from Document Agentic_RAG
+    try:
+        from Octave_mem.RAG_DB_CONTROLLER_AGENTS.agent_RAG import Agentic_RAG
+        import os
+        file_db_path = os.getenv("CHROMA_DATABASE_FILE_DATA")
+        if file_db_path:
+            file_rag = Agentic_RAG(database=file_db_path, enable_cache=False, enable_monitoring=False)
+            file_col = file_rag.wrapper.manager.get_collection(agent_id)
+            if file_col:
+                cdata = file_col.get(limit=100, include=["documents", "metadatas", "embeddings"])
+                f_ids = cdata.get("ids", [])
+                f_docs = cdata.get("documents", [])
+                f_metas = cdata.get("metadatas", [])
+                f_embs = cdata.get("embeddings", [])
+                
+                for i, cid in enumerate(f_ids):
+                    meta = f_metas[i] if f_metas and i < len(f_metas) else {}
+                    meta['memory_type'] = 'document'
+                    vectors.append({
+                        'id': cid,
+                        'content': f_docs[i] if f_docs and i < len(f_docs) else '',
+                        'metadata': meta,
+                        'embedding': f_embs[i] if f_embs and i < len(f_embs) else None,
+                    })
+    except Exception as e:
+        print(f"[Graph] Chunk fetch error: {e}")
 
     graph = _build_graph_data(memories, vectors)
     return jsonify(graph)
