@@ -38,6 +38,7 @@ class HybridRetriever:
         self,
         llm_client: LLMClient,
         vector_store: VectorStore,
+        doc_agentic_rag = None,
         semantic_top_k: int = None,
         keyword_top_k: int = None,
         structured_top_k: int = None,
@@ -49,6 +50,7 @@ class HybridRetriever:
     ):
         self.llm_client = llm_client
         self.vector_store = vector_store
+        self.doc_agentic_rag = doc_agentic_rag
         self.semantic_top_k = semantic_top_k or SEMANTIC_TOP_K
         self.keyword_top_k = keyword_top_k or KEYWORD_TOP_K
         self.structured_top_k = structured_top_k or STRUCTURED_TOP_K
@@ -75,8 +77,10 @@ class HybridRetriever:
         # This completely eliminates planning and reflection overhead for new agents!
         try:
             if not self.vector_store.get_all_entries(limit=1):
-                print("[Retrieval Bypass] Collection is empty. Skipping RAG planning & reflection.")
-                return []
+                # Only bypass if we also don't have docs
+                if not self.doc_agentic_rag:
+                    print("[Retrieval Bypass] Collection is empty. Skipping RAG planning & reflection.")
+                    return []
         except Exception as err:
             print(f"[Retrieval Bypass] Warning checking collection status: {err}")
 
@@ -246,10 +250,36 @@ Return ONLY JSON, no other content.
         """
         Semantic Layer Retrieval
 
-        Paper Reference: Section 3.3 - Part of hybrid scoring function S(q, m_k)
-        Retrieves based on dense vector similarity: λ₁ · cos(e_q, v_k)
+        Retrieves from BOTH memory (chat history) and documents (file uploads)
+        if doc_agentic_rag is available, then merges the contexts.
         """
-        return self.vector_store.semantic_search(query, top_k=self.semantic_top_k)
+        # 1. Retrieve from memory (chat history)
+        mem_results = self.vector_store.semantic_search(query, top_k=self.semantic_top_k)
+        
+        # 2. Retrieve from documents (if available)
+        doc_results = []
+        if self.doc_agentic_rag:
+            try:
+                raw_docs = self.doc_agentic_rag.search_agent_collection(
+                    agent_ID=self.vector_store.agent_id,
+                    query=query,
+                    n_results=self.semantic_top_k
+                )
+                # Parse doc strings into mock MemoryEntry objects to unify context interface
+                if raw_docs and isinstance(raw_docs, list):
+                    for d_str in raw_docs:
+                        doc_results.append(MemoryEntry(
+                            lossless_restatement=d_str,
+                            topic="Document Context",
+                            keywords=[],
+                            timestamp=datetime.utcnow().isoformat()
+                        ))
+            except Exception as e:
+                print(f"[HybridRetriever] Document search failed: {e}")
+                
+        # 3. Merge and deduplicate slightly
+        all_results = mem_results + doc_results
+        return all_results
 
     def _keyword_search(
         self,

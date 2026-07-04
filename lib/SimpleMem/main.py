@@ -54,7 +54,8 @@ class SimpleMemSystem:
         # Shared component injection (avoids redundant re-initialization)
         shared_llm_client: Optional['LLMClient'] = None,
         shared_embedding_model: Optional['EmbeddingModel'] = None,
-        shared_agentic_rag = None
+        shared_agentic_rag = None,
+        shared_doc_agentic_rag = None
     ):
         """
         Initialize system
@@ -110,6 +111,7 @@ class SimpleMemSystem:
         self.hybrid_retriever = HybridRetriever(
             llm_client=self.llm_client,
             vector_store=self.vector_store,
+            doc_agentic_rag=shared_doc_agentic_rag,
             enable_planning=enable_planning,
             enable_reflection=enable_reflection,
             max_reflection_rounds=max_reflection_rounds,

@@ -42,10 +42,12 @@ def _count_chunks_in_chroma(agent_id):
             file_rag = Agentic_RAG(database=file_db_path, enable_cache=False, enable_monitoring=False)
             file_col = file_rag.wrapper.manager.get_collection(agent_id)
             if file_col:
-                cdata = file_col.get(limit=1, include=[])
-                return len(cdata.get('ids', []))
-    except Exception:
-        pass
+                cdata = file_col.get(include=["metadatas"])
+                metadatas = cdata.get('metadatas') or []
+                count = sum(1 for m in metadatas if not m or m.get("entry_type") != "memory_entry")
+                return count
+    except Exception as e:
+        print(f"[_count_chunks_in_chroma] Error: {e}")
     return 0
 
 def _get_agent(agent_id, user_id=None):
@@ -944,6 +946,8 @@ def hub_context(ws_slug):
                 f_metas = cdata.get("metadatas", [])
                 for i, cid in enumerate(f_ids):
                     meta = f_metas[i] if f_metas and i < len(f_metas) else {}
+                    if meta.get("entry_type") == "memory_entry":
+                        continue
                     filename = meta.get('filename') or meta.get('source') or f'Chunk {i}'
                     content = f_docs[i] if f_docs and i < len(f_docs) else ''
                     doc_item = {

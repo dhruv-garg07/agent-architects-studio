@@ -121,14 +121,23 @@ class RemoteEmbeddingClient:
 
 
 # -------------------------------------------------
-# Global Chroma Cloud Client (NO EMBEDDING FUNCTION)
+# Global Chroma Cloud Clients (NO EMBEDDING FUNCTION)
 # -------------------------------------------------
 
-CHROMA_CLIENT = chromadb.CloudClient(
-    api_key=os.getenv("CHROMA_API_KEY"),
-    tenant=os.getenv("CHROMA_TENANT"),
-    database=os.getenv("CHROMA_DATABASE_CHAT_HISTORY"),
-)
+_CHROMA_CLIENTS = {}
+import threading
+_CLIENTS_LOCK = threading.RLock()
+
+def get_chroma_client(database_name: str):
+    """Retrieve or create a cached ChromaDB CloudClient for the specified database."""
+    with _CLIENTS_LOCK:
+        if database_name not in _CHROMA_CLIENTS:
+            _CHROMA_CLIENTS[database_name] = chromadb.CloudClient(
+                api_key=os.getenv("CHROMA_API_KEY"),
+                tenant=os.getenv("CHROMA_TENANT"),
+                database=database_name,
+            )
+        return _CHROMA_CLIENTS[database_name]
 
 # -------------------------------------------------
 # Chroma Collection Manager (Remote Embeddings)
@@ -141,10 +150,11 @@ class ChromaCollectionManager:
     """
 
     _collection_cache: Dict[str, any] = {}
+    _cache_lock = threading.RLock()
 
     def __init__(self, database: Optional[str] = None):
-        self.client = CHROMA_CLIENT
         self.database = database or os.getenv("CHROMA_DATABASE_CHAT_HISTORY")
+        self.client = get_chroma_client(self.database)
         self.embedder = RemoteEmbeddingClient()
 
         # [SUCCESS] SINGLE shared disabled embedding function
@@ -156,23 +166,27 @@ class ChromaCollectionManager:
 
 
     def _get_or_cache(self, collection_name: str):
-        if collection_name not in self._collection_cache:
-            # First, try to get existing collection (without specifying embedding function)
-            # This prevents conflicts with collections created with different embedding functions
-            try:
-                col = self.client.get_collection(name=collection_name)
-                print(f"[ChromaCollectionManager] Got existing collection: {collection_name}")
-            except Exception:
-                # Collection doesn't exist, create it with our embedding function
-                col = self.client.create_collection(
-                    name=collection_name,
-                    embedding_function=self._disabled_ef,
-                    metadata={"embedding": "remote-only"},
-                )
-                print(f"[ChromaCollectionManager] Created new collection: {collection_name}")
-            
-            self._collection_cache[collection_name] = col
-        return self._collection_cache[collection_name]
+        # Cache key must include database to prevent cross-database collisions
+        cache_key = f"{self.database}:{collection_name}"
+        
+        with self._cache_lock:
+            if cache_key not in self._collection_cache:
+                # First, try to get existing collection (without specifying embedding function)
+                # This prevents conflicts with collections created with different embedding functions
+                try:
+                    col = self.client.get_collection(name=collection_name)
+                    print(f"[ChromaCollectionManager] Got existing collection: {collection_name} in {self.database}")
+                except Exception:
+                    # Collection doesn't exist, create it with our embedding function
+                    col = self.client.create_collection(
+                        name=collection_name,
+                        embedding_function=self._disabled_ef,
+                        metadata={"embedding": "remote-only"},
+                    )
+                    print(f"[ChromaCollectionManager] Created new collection: {collection_name} in {self.database}")
+                
+                self._collection_cache[cache_key] = col
+            return self._collection_cache[cache_key]
 
     # -------------------------------------------------
     # Collection Ops
@@ -210,7 +224,9 @@ class ChromaCollectionManager:
             embedding_function=self._disabled_ef,
             metadata={"embedding": "remote-only"},
         )
-        self._collection_cache[collection_name] = col
+        cache_key = f"{self.database}:{collection_name}"
+        with self._cache_lock:
+            self._collection_cache[cache_key] = col
 
         if ids and documents:
             embeddings = self.embedder.embed_remote(documents)

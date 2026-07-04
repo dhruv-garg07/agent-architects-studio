@@ -1073,7 +1073,8 @@ def _get_or_create_memory_system(agent_id: str, clear_db: bool = False) -> Simpl
             clear_db=clear_db,
             shared_llm_client=llm,
             shared_embedding_model=emb,
-            shared_agentic_rag=rag
+            shared_agentic_rag=rag,
+            shared_doc_agentic_rag=file_agentic_rag
         )
     return _memory_systems_cache[agent_id]
 
