@@ -25,11 +25,20 @@
             "Spinning up a project-specific agent that only knows about that project's documents",
             "Multi-tenant platforms: one agent per organisation or workspace"
           ],
-          "notes": "agent_slug must be unique across your account and URL-safe (lowercase letters and hyphens only). Store the returned agent_id — it is required by every other endpoint.",
+          "notes": "agent_slug must be unique across your account and URL-safe (lowercase letters and hyphens only). Store the returned agent_id \u2014 it is required by every other endpoint.",
           "errors": [
-            {"code": 400, "message": "Bad request — missing required fields (agent_name or agent_slug)"},
-            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
-            {"code": 409, "message": "Conflict — agent_slug already exists in your account"}
+            {
+              "code": 400,
+              "message": "Bad request \u2014 missing required fields (agent_name or agent_slug)"
+            },
+            {
+              "code": 401,
+              "message": "Unauthorized \u2014 missing or invalid API key"
+            },
+            {
+              "code": 409,
+              "message": "Conflict \u2014 agent_slug already exists in your account"
+            }
           ],
           "code": {
             "curl": "curl -X POST '__BASE__/create_agent' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_name\":\"test-agent\",\"agent_slug\":\"test-agent\"}'",
@@ -53,9 +62,12 @@
             "Verifying that a specific agent_slug has already been created",
             "Syncing your local state with the server after a session restart"
           ],
-          "notes": "Returns only agents associated with the API key used. Both enabled and disabled agents are included — filter on the 'enabled' field client-side if you want active-only results.",
+          "notes": "Returns only agents associated with the API key used. Both enabled and disabled agents are included \u2014 filter on the 'enabled' field client-side if you want active-only results.",
           "errors": [
-            {"code": 401, "message": "Unauthorized — missing or invalid API key"}
+            {
+              "code": 401,
+              "message": "Unauthorized \u2014 missing or invalid API key"
+            }
           ],
           "code": {
             "curl": "curl -X GET '__BASE__/list_agents' -H 'Authorization: <API_KEY>'",
@@ -82,9 +94,18 @@
           ],
           "notes": "Pass agent_id as a query parameter. The response includes all agent fields including description, permissions, limits, and timestamps. Returns 404 if the agent does not exist.",
           "errors": [
-            {"code": 400, "message": "Bad request — missing agent_id parameter"},
-            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
-            {"code": 404, "message": "Not found — agent_id does not exist"}
+            {
+              "code": 400,
+              "message": "Bad request \u2014 missing agent_id parameter"
+            },
+            {
+              "code": 401,
+              "message": "Unauthorized \u2014 missing or invalid API key"
+            },
+            {
+              "code": 404,
+              "message": "Not found \u2014 agent_id does not exist"
+            }
           ],
           "code": {
             "curl": "curl -X GET '__BASE__/get_agent' -H 'Authorization: <API_KEY>' -G --data-urlencode 'agent_id=<AGENT_ID>'",
@@ -111,12 +132,24 @@
             "Changing permissions to grant or revoke capabilities",
             "Renaming an agent for organizational purposes"
           ],
-          "notes": "Only include fields you want to change in the updates object — omitted fields remain unchanged. agent_slug and agent_id cannot be modified after creation.",
+          "notes": "Only include fields you want to change in the updates object \u2014 omitted fields remain unchanged. agent_slug and agent_id cannot be modified after creation.",
           "errors": [
-            {"code": 400, "message": "Bad request — missing agent_id or empty updates object"},
-            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
-            {"code": 404, "message": "Not found — agent_id does not exist"},
-            {"code": 422, "message": "Unprocessable entity — attempted to update an immutable field"}
+            {
+              "code": 400,
+              "message": "Bad request \u2014 missing agent_id or empty updates object"
+            },
+            {
+              "code": 401,
+              "message": "Unauthorized \u2014 missing or invalid API key"
+            },
+            {
+              "code": 404,
+              "message": "Not found \u2014 agent_id does not exist"
+            },
+            {
+              "code": 422,
+              "message": "Unprocessable entity \u2014 attempted to update an immutable field"
+            }
           ],
           "code": {
             "curl": "curl -X POST '__BASE__/update_agent' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\", \"updates\": {\"system_prompt\": \"updated\"}}'",
@@ -141,12 +174,24 @@
             "Pausing an agent during scheduled maintenance",
             "Temporarily blocking an agent when a customer's subscription lapses"
           ],
-          "notes": "Disabling is non-destructive — all documents and memories are preserved. Re-enable with /enable_agent at any time. Disabled agents will return 404 to agent_chat callers.",
+          "notes": "Disabling is non-destructive \u2014 all documents and memories are preserved. Re-enable with /enable_agent at any time. Disabled agents will return 404 to agent_chat callers.",
           "errors": [
-            {"code": 400, "message": "Bad request — missing agent_id"},
-            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
-            {"code": 404, "message": "Not found — agent_id does not exist"},
-            {"code": 409, "message": "Conflict — agent is already disabled"}
+            {
+              "code": 400,
+              "message": "Bad request \u2014 missing agent_id"
+            },
+            {
+              "code": 401,
+              "message": "Unauthorized \u2014 missing or invalid API key"
+            },
+            {
+              "code": 404,
+              "message": "Not found \u2014 agent_id does not exist"
+            },
+            {
+              "code": 409,
+              "message": "Conflict \u2014 agent is already disabled"
+            }
           ],
           "code": {
             "curl": "curl -X POST '__BASE__/disable_agent' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\"}'",
@@ -173,10 +218,22 @@
           ],
           "notes": "Only works on agents that are currently disabled. If the agent is already enabled this is a no-op (returns ok). The agent resumes with all its previous documents and memories intact.",
           "errors": [
-            {"code": 400, "message": "Bad request — missing agent_id"},
-            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
-            {"code": 404, "message": "Not found — agent_id does not exist"},
-            {"code": 409, "message": "Conflict — agent is already enabled"}
+            {
+              "code": 400,
+              "message": "Bad request \u2014 missing agent_id"
+            },
+            {
+              "code": 401,
+              "message": "Unauthorized \u2014 missing or invalid API key"
+            },
+            {
+              "code": 404,
+              "message": "Not found \u2014 agent_id does not exist"
+            },
+            {
+              "code": 409,
+              "message": "Conflict \u2014 agent is already enabled"
+            }
           ],
           "code": {
             "curl": "curl -X POST '__BASE__/enable_agent' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\"}'",
@@ -198,15 +255,24 @@
           },
           "when_to_use": "Use only when the agent and all its data (documents, memory, conversations) should be permanently removed. Prefer disable_agent for temporary suspension.",
           "use_cases": [
-            "GDPR / right-to-erasure request — remove a user's entire AI profile",
+            "GDPR / right-to-erasure request \u2014 remove a user's entire AI profile",
             "Cleaning up test agents in a development environment",
             "Off-boarding a customer and purging their data"
           ],
           "notes": "This action is irreversible. It also attempts to delete the agent's vector DB collections. If vector deletion fails, the agent record is still removed from the database. Consider disable_agent if you may need to restore the agent later.",
           "errors": [
-            {"code": 400, "message": "Bad request — missing agent_id"},
-            {"code": 401, "message": "Unauthorized — invalid API key"},
-            {"code": 404, "message": "Not found — agent does not exist or was already deleted"}
+            {
+              "code": 400,
+              "message": "Bad request \u2014 missing agent_id"
+            },
+            {
+              "code": 401,
+              "message": "Unauthorized \u2014 invalid API key"
+            },
+            {
+              "code": 404,
+              "message": "Not found \u2014 agent does not exist or was already deleted"
+            }
           ],
           "code": {
             "curl": "curl -X POST '__BASE__/delete_agent' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\"}'",
@@ -234,19 +300,31 @@
             "user_id": "string",
             "timestamp": "string"
           },
-          "when_to_use": "Call this whenever the end-user sends a message. It is the primary inference endpoint — it combines the agent's documents, memory, and the current conversation to produce a contextual reply.",
+          "when_to_use": "Call this whenever the end-user sends a message. It is the primary inference endpoint \u2014 it combines the agent's documents, memory, and the current conversation to produce a contextual reply.",
           "use_cases": [
             "Customer support chat widget backed by a product knowledge base",
             "Personal AI assistant that recalls previous conversations",
             "Domain-specific Q&A bot powered by uploaded documents",
             "Automated email-reply drafting with full conversation context"
           ],
-          "notes": "This endpoint triggers LLM inference and may take 2–30 seconds. Use a client timeout of at least 120 seconds. Store the returned conversation_id and pass it on subsequent turns to maintain context continuity. Passing strategy 'auto' enables smart query-complexity based dynamic routing.",
+          "notes": "This endpoint triggers LLM inference and may take 2\u201330 seconds. Use a client timeout of at least 120 seconds. Store the returned conversation_id and pass it on subsequent turns to maintain context continuity. Passing strategy 'auto' enables smart query-complexity based dynamic routing.",
           "errors": [
-            {"code": 400, "message": "Bad request — missing agent_id or message"},
-            {"code": 401, "message": "Unauthorized — invalid API key"},
-            {"code": 404, "message": "Not found — agent_id does not exist or is disabled"},
-            {"code": 503, "message": "Service unavailable — LLM provider is temporarily unreachable"}
+            {
+              "code": 400,
+              "message": "Bad request \u2014 missing agent_id or message"
+            },
+            {
+              "code": 401,
+              "message": "Unauthorized \u2014 invalid API key"
+            },
+            {
+              "code": 404,
+              "message": "Not found \u2014 agent_id does not exist or is disabled"
+            },
+            {
+              "code": 503,
+              "message": "Service unavailable \u2014 LLM provider is temporarily unreachable"
+            }
           ],
           "code": {
             "curl": "curl -X POST '__BASE__/agent_chat' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"message\":\"Hello\",\"strategy\":\"auto\"}'",
@@ -287,11 +365,20 @@
             "Adding FAQs so the agent can answer common questions precisely",
             "Syncing content updates when your source documents change"
           ],
-          "notes": "The documents array and ids array must be the same length. IDs must be unique within the agent — use deterministic IDs (e.g. a filename hash) so you can update documents by ID later. Large documents are automatically chunked.",
+          "notes": "The documents array and ids array must be the same length. IDs must be unique within the agent \u2014 use deterministic IDs (e.g. a filename hash) so you can update documents by ID later. Large documents are automatically chunked.",
           "errors": [
-            {"code": 400, "message": "Bad request — documents and ids arrays have different lengths, or agent_id is missing"},
-            {"code": 401, "message": "Unauthorized — invalid API key"},
-            {"code": 413, "message": "Payload too large — reduce document size or split into smaller batches"}
+            {
+              "code": 400,
+              "message": "Bad request \u2014 documents and ids arrays have different lengths, or agent_id is missing"
+            },
+            {
+              "code": 401,
+              "message": "Unauthorized \u2014 invalid API key"
+            },
+            {
+              "code": 413,
+              "message": "Payload too large \u2014 reduce document size or split into smaller batches"
+            }
           ],
           "code": {
             "curl": "curl -X POST '__BASE__/add_document' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\",\"documents\":[\"doc 1 body\"],\"ids\":[\"doc-1\"],\"metadata\":{}}'",
@@ -325,11 +412,20 @@
             "Correcting inaccurate content that the agent has been using in responses",
             "Syncing documents periodically from an external CMS"
           ],
-          "notes": "document_ids and new_docs arrays must have the same length. The old embeddings are replaced — this is an upsert by ID. If a document_id does not exist, some implementations will insert it as new.",
+          "notes": "document_ids and new_docs arrays must have the same length. The old embeddings are replaced \u2014 this is an upsert by ID. If a document_id does not exist, some implementations will insert it as new.",
           "errors": [
-            {"code": 400, "message": "Bad request — document_ids and new_docs arrays differ in length, or agent_id missing"},
-            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
-            {"code": 404, "message": "Not found — agent or document collection does not exist"}
+            {
+              "code": 400,
+              "message": "Bad request \u2014 document_ids and new_docs arrays differ in length, or agent_id missing"
+            },
+            {
+              "code": 401,
+              "message": "Unauthorized \u2014 missing or invalid API key"
+            },
+            {
+              "code": 404,
+              "message": "Not found \u2014 agent or document collection does not exist"
+            }
           ],
           "code": {
             "curl": "curl -X POST '__BASE__/update_document' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\",\"document_ids\":[\"doc-1\"],\"new_docs\":[\"updated body\"],\"metadata\":{}}'",
@@ -357,11 +453,20 @@
             "Updating the source URL after a content migration",
             "Adding version or last-modified timestamps to track freshness"
           ],
-          "notes": "Only metadata is changed — the document text and its vector embedding remain untouched. This is cheaper and faster than a full document update when only labels need to change.",
+          "notes": "Only metadata is changed \u2014 the document text and its vector embedding remain untouched. This is cheaper and faster than a full document update when only labels need to change.",
           "errors": [
-            {"code": 400, "message": "Bad request — missing agent_id or document_id"},
-            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
-            {"code": 404, "message": "Not found — document_id does not exist in this agent's collection"}
+            {
+              "code": 400,
+              "message": "Bad request \u2014 missing agent_id or document_id"
+            },
+            {
+              "code": 401,
+              "message": "Unauthorized \u2014 missing or invalid API key"
+            },
+            {
+              "code": 404,
+              "message": "Not found \u2014 document_id does not exist in this agent's collection"
+            }
           ],
           "code": {
             "curl": "curl -X POST '__BASE__/update_document_metadata' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\",\"document_id\":\"doc-1\",\"metadata\":{\"source\":\"upload\"}}'",
@@ -388,18 +493,27 @@
               }
             ]
           },
-          "when_to_use": "Use when you need to retrieve specific document chunks by semantic similarity — useful for building a custom RAG pipeline or debugging what context the agent can see for a given query.",
+          "when_to_use": "Use when you need to retrieve specific document chunks by semantic similarity \u2014 useful for building a custom RAG pipeline or debugging what context the agent can see for a given query.",
           "use_cases": [
             "Building a custom RAG pipeline outside of agent_chat",
             "Debugging why the agent answered incorrectly by inspecting which chunks were retrieved",
             "Adding a 'search your knowledge base' feature to your UI",
             "Pre-fetching context before constructing a custom LLM prompt"
           ],
-          "notes": "top_k defaults to 5. Increasing it improves recall but may add noise. Results are ordered by cosine similarity score (highest first). This endpoint does NOT run LLM inference — it only returns matching document chunks.",
+          "notes": "top_k defaults to 5. Increasing it improves recall but may add noise. Results are ordered by cosine similarity score (highest first). This endpoint does NOT run LLM inference \u2014 it only returns matching document chunks.",
           "errors": [
-            {"code": 400, "message": "Bad request — missing query or agent_id"},
-            {"code": 401, "message": "Unauthorized — invalid API key"},
-            {"code": 404, "message": "Not found — agent has no documents or the collection does not exist yet"}
+            {
+              "code": 400,
+              "message": "Bad request \u2014 missing query or agent_id"
+            },
+            {
+              "code": 401,
+              "message": "Unauthorized \u2014 invalid API key"
+            },
+            {
+              "code": 404,
+              "message": "Not found \u2014 agent has no documents or the collection does not exist yet"
+            }
           ],
           "code": {
             "curl": "curl -X POST '__BASE__/search_documents' -H 'Content-Type: application/json' -H 'Authorization: <API_KEY>' -d '{\"agent_id\":\"<ID>\",\"query\":\"what is X\",\"top_k\":5 }'",
@@ -433,11 +547,20 @@
             "Resetting an agent's memory during development or testing with clear_db: true",
             "Re-initialising after a database migration or storage reset"
           ],
-          "notes": "This must be called before add_memory, read_memory, or get_context — those endpoints will fail if the memory system has not been initialised first. Setting clear_db: true permanently erases all stored memories for that agent.",
+          "notes": "This must be called before add_memory, read_memory, or get_context \u2014 those endpoints will fail if the memory system has not been initialised first. Setting clear_db: true permanently erases all stored memories for that agent.",
           "errors": [
-            {"code": 400, "message": "Bad request — missing agent_id"},
-            {"code": 401, "message": "Unauthorized — invalid API key"},
-            {"code": 500, "message": "Internal server error — vector DB initialisation failed (check server logs)"}
+            {
+              "code": 400,
+              "message": "Bad request \u2014 missing agent_id"
+            },
+            {
+              "code": 401,
+              "message": "Unauthorized \u2014 invalid API key"
+            },
+            {
+              "code": 500,
+              "message": "Internal server error \u2014 vector DB initialisation failed (check server logs)"
+            }
           ],
           "code": {
             "curl": "curl -X POST '__BASE__/create_memory' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"clear_db\":false}'",
@@ -449,7 +572,7 @@
           "path": "/process_raw",
           "method": "POST",
           "summary": "Process dialogues via LLM",
-          "description": "Process raw dialogues through LLM to extract structured memory entries. Flow: ADD_DIALOGUE → LLM → JSON RESPONSE → N Memory units → Vector Store. Each dialogue is processed to extract facts, entities, timestamps, and keywords.",
+          "description": "Process raw dialogues through LLM to extract structured memory entries. Flow: ADD_DIALOGUE \u2192 LLM \u2192 JSON RESPONSE \u2192 N Memory units \u2192 Vector Store. Each dialogue is processed to extract facts, entities, timestamps, and keywords.",
           "request": {
             "agent_id": "string",
             "dialogues": [
@@ -475,10 +598,22 @@
           ],
           "notes": "This endpoint triggers LLM inference and may take 10-120 seconds depending on dialogue volume. Each dialogue is processed independently. Use add_memory instead if you already have structured data to avoid unnecessary LLM costs.",
           "errors": [
-            {"code": 400, "message": "Bad request — missing agent_id or empty dialogues array"},
-            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
-            {"code": 404, "message": "Not found — memory system not initialised (call create_memory first)"},
-            {"code": 503, "message": "Service unavailable — LLM processing failed"}
+            {
+              "code": 400,
+              "message": "Bad request \u2014 missing agent_id or empty dialogues array"
+            },
+            {
+              "code": 401,
+              "message": "Unauthorized \u2014 missing or invalid API key"
+            },
+            {
+              "code": 404,
+              "message": "Not found \u2014 memory system not initialised (call create_memory first)"
+            },
+            {
+              "code": 503,
+              "message": "Service unavailable \u2014 LLM processing failed"
+            }
           ],
           "code": {
             "curl": "curl -X POST '__BASE__/process_raw' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"dialogues\":[{\"speaker\":\"Alice\",\"content\":\"Meeting at Starbucks tomorrow at 2pm\",\"timestamp\":\"2025-01-22T10:00:00\"}]}'",
@@ -525,11 +660,20 @@
             "Persisting key decisions made in a conversation for future sessions",
             "Building up a user profile incrementally from explicit data"
           ],
-          "notes": "Unlike process_raw, this bypasses LLM processing — the memory is stored exactly as you provide it. Supply meaningful keywords to improve future recall accuracy. The lossless_restatement field should be a complete, self-contained statement.",
+          "notes": "Unlike process_raw, this bypasses LLM processing \u2014 the memory is stored exactly as you provide it. Supply meaningful keywords to improve future recall accuracy. The lossless_restatement field should be a complete, self-contained statement.",
           "errors": [
-            {"code": 400, "message": "Bad request — missing agent_id or memories array, or memories missing lossless_restatement"},
-            {"code": 401, "message": "Unauthorized — invalid API key"},
-            {"code": 404, "message": "Not found — memory system not initialised (call create_memory first)"}
+            {
+              "code": 400,
+              "message": "Bad request \u2014 missing agent_id or memories array, or memories missing lossless_restatement"
+            },
+            {
+              "code": 401,
+              "message": "Unauthorized \u2014 invalid API key"
+            },
+            {
+              "code": 404,
+              "message": "Not found \u2014 memory system not initialised (call create_memory first)"
+            }
           ],
           "code": {
             "curl": "curl -X POST '__BASE__/add_memory' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"memories\":[{\"lossless_restatement\":\"Alice scheduled a meeting with Bob at Starbucks on January 22, 2025 at 2pm\",\"keywords\":[\"meeting\",\"Starbucks\",\"Alice\",\"Bob\"],\"persons\":[\"Alice\",\"Bob\"],\"location\":\"Starbucks\",\"timestamp\":\"2025-01-22T14:00:00\",\"topic\":\"meeting scheduling\"}]}'",
@@ -575,9 +719,18 @@
           ],
           "notes": "Combines vector similarity, keyword matching, and metadata filtering. Set enable_reflection to true for multi-round retrieval that refines results (slower but higher recall). top_k defaults to 5.",
           "errors": [
-            {"code": 400, "message": "Bad request — missing agent_id or query"},
-            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
-            {"code": 404, "message": "Not found — memory system not initialised (call create_memory first)"}
+            {
+              "code": 400,
+              "message": "Bad request \u2014 missing agent_id or query"
+            },
+            {
+              "code": 401,
+              "message": "Unauthorized \u2014 missing or invalid API key"
+            },
+            {
+              "code": 404,
+              "message": "Not found \u2014 memory system not initialised (call create_memory first)"
+            }
           ],
           "code": {
             "curl": "curl -X POST '__BASE__/read_memory' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"query\":\"When is the meeting with Bob?\",\"top_k\":5,\"enable_reflection\":false}'",
@@ -589,7 +742,7 @@
           "path": "/get_context",
           "method": "POST",
           "summary": "Q&A with memory context",
-          "description": "Ask a question and get an LLM-generated answer using memory context. Full Q&A flow: Query → HybridRetrieval → AnswerGenerator → Response. Returns both the answer and the memory contexts used.",
+          "description": "Ask a question and get an LLM-generated answer using memory context. Full Q&A flow: Query \u2192 HybridRetrieval \u2192 AnswerGenerator \u2192 Response. Returns both the answer and the memory contexts used.",
           "request": {
             "agent_id": "string",
             "question": "string"
@@ -607,19 +760,31 @@
               }
             ]
           },
-          "when_to_use": "Call when you need an LLM-generated answer grounded in the agent's stored memories. It handles the full retrieval-augmented generation cycle internally — use it when you want answers, not raw chunks.",
+          "when_to_use": "Call when you need an LLM-generated answer grounded in the agent's stored memories. It handles the full retrieval-augmented generation cycle internally \u2014 use it when you want answers, not raw chunks.",
           "use_cases": [
             "Answering 'what did we discuss last time?' from a user's perspective",
             "Showing users what the agent remembers about a specific topic",
             "Building a memory-backed Q&A interface without a custom RAG pipeline",
             "Summarising past interactions or decisions on a given subject"
           ],
-          "notes": "agent_chat already calls this internally — only use get_context if you are building a custom pipeline and want the answer + source contexts separately. The contexts_used array shows exactly which memories were retrieved, useful for debugging or citations.",
+          "notes": "agent_chat already calls this internally \u2014 only use get_context if you are building a custom pipeline and want the answer + source contexts separately. The contexts_used array shows exactly which memories were retrieved, useful for debugging or citations.",
           "errors": [
-            {"code": 400, "message": "Bad request — missing question or agent_id"},
-            {"code": 401, "message": "Unauthorized — invalid API key"},
-            {"code": 404, "message": "Not found — memory system not initialised for this agent"},
-            {"code": 503, "message": "Service unavailable — LLM answer generation failed"}
+            {
+              "code": 400,
+              "message": "Bad request \u2014 missing question or agent_id"
+            },
+            {
+              "code": 401,
+              "message": "Unauthorized \u2014 invalid API key"
+            },
+            {
+              "code": 404,
+              "message": "Not found \u2014 memory system not initialised for this agent"
+            },
+            {
+              "code": 503,
+              "message": "Service unavailable \u2014 LLM answer generation failed"
+            }
           ],
           "code": {
             "curl": "curl -X POST '__BASE__/get_context' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"question\":\"What did Alice and Bob discuss about the meeting?\"}'",
@@ -657,7 +822,7 @@
             "agent_id": "string",
             "entry_id": "string"
           },
-          "when_to_use": "Call this to correct or enrich an existing memory entry — for example, updating a fact that has changed or adding missing metadata like location or persons.",
+          "when_to_use": "Call this to correct or enrich an existing memory entry \u2014 for example, updating a fact that has changed or adding missing metadata like location or persons.",
           "use_cases": [
             "Correcting a memory entry that contains outdated information",
             "Adding a person's name to a memory after learning who was involved",
@@ -666,9 +831,18 @@
           ],
           "notes": "Only include fields you want to change in the updates object. If you update lossless_restatement, the vector embedding is also re-computed. Metadata-only updates are faster since they skip re-embedding.",
           "errors": [
-            {"code": 400, "message": "Bad request — missing agent_id or entry_id"},
-            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
-            {"code": 404, "message": "Not found — entry_id does not exist in this agent's memory"}
+            {
+              "code": 400,
+              "message": "Bad request \u2014 missing agent_id or entry_id"
+            },
+            {
+              "code": 401,
+              "message": "Unauthorized \u2014 missing or invalid API key"
+            },
+            {
+              "code": 404,
+              "message": "Not found \u2014 entry_id does not exist in this agent's memory"
+            }
           ],
           "code": {
             "curl": "curl -X POST '__BASE__/update_memory' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"entry_id\":\"<ENTRY_ID>\",\"updates\":{\"lossless_restatement\":\"Updated: Alice rescheduled the meeting to 3pm\",\"timestamp\":\"2025-01-22T15:00:00\"}}'",
@@ -701,11 +875,20 @@
             "Cleaning up test data from development sessions",
             "Purging sensitive information that was accidentally stored"
           ],
-          "notes": "This action is irreversible — deleted memories cannot be recovered. Pass one or more entry_ids. Use list_memories or read_memory first to identify which IDs to delete.",
+          "notes": "This action is irreversible \u2014 deleted memories cannot be recovered. Pass one or more entry_ids. Use list_memories or read_memory first to identify which IDs to delete.",
           "errors": [
-            {"code": 400, "message": "Bad request — missing agent_id or empty entry_ids array"},
-            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
-            {"code": 404, "message": "Not found — memory system not initialised or entry_ids do not exist"}
+            {
+              "code": 400,
+              "message": "Bad request \u2014 missing agent_id or empty entry_ids array"
+            },
+            {
+              "code": 401,
+              "message": "Unauthorized \u2014 missing or invalid API key"
+            },
+            {
+              "code": 404,
+              "message": "Not found \u2014 memory system not initialised or entry_ids do not exist"
+            }
           ],
           "code": {
             "curl": "curl -X POST '__BASE__/delete_memory' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"entry_ids\":[\"<ENTRY_ID_1>\",\"<ENTRY_ID_2>\"]}'",
@@ -743,7 +926,7 @@
             "created_at": "string",
             "updated_at": "string"
           },
-          "when_to_use": "Call this to get a comprehensive overview of an agent's data — how many memories and documents it has, topic distribution, and activity timestamps.",
+          "when_to_use": "Call this to get a comprehensive overview of an agent's data \u2014 how many memories and documents it has, topic distribution, and activity timestamps.",
           "use_cases": [
             "Displaying an agent health dashboard in an admin panel",
             "Monitoring memory growth over time for capacity planning",
@@ -752,9 +935,18 @@
           ],
           "notes": "Statistics are computed on-demand and may be slightly delayed for very large collections. The topics breakdown shows unique topics and their frequency across all memories.",
           "errors": [
-            {"code": 400, "message": "Bad request — missing agent_id"},
-            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
-            {"code": 404, "message": "Not found — agent_id does not exist"}
+            {
+              "code": 400,
+              "message": "Bad request \u2014 missing agent_id"
+            },
+            {
+              "code": 401,
+              "message": "Unauthorized \u2014 missing or invalid API key"
+            },
+            {
+              "code": 404,
+              "message": "Not found \u2014 agent_id does not exist"
+            }
           ],
           "code": {
             "curl": "curl -X POST '__BASE__/agent_stats' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\"}'",
@@ -803,10 +995,16 @@
             "Generating monthly usage reports for internal accounting",
             "Debugging 429 errors by checking remaining request allowance"
           ],
-          "notes": "Authenticated by API key — returns usage for the key's associated account. Counters reset at the start of each billing period. The rate_limits object shows your current plan's limits.",
+          "notes": "Authenticated by API key \u2014 returns usage for the key's associated account. Counters reset at the start of each billing period. The rate_limits object shows your current plan's limits.",
           "errors": [
-            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
-            {"code": 500, "message": "Internal server error — usage tracking service unavailable"}
+            {
+              "code": 401,
+              "message": "Unauthorized \u2014 missing or invalid API key"
+            },
+            {
+              "code": 500,
+              "message": "Internal server error \u2014 usage tracking service unavailable"
+            }
           ],
           "code": {
             "curl": "curl -X POST '__BASE__/api_usage' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>'",
@@ -846,9 +1044,12 @@
             "Diagnosing which subsystem is causing failures",
             "Load balancer health probes to route away from unhealthy instances"
           ],
-          "notes": "Returns HTTP 200 if all services are healthy, 503 if any critical service is degraded. No authentication required — safe to expose to monitoring tools. Check individual service statuses in the response body.",
+          "notes": "Returns HTTP 200 if all services are healthy, 503 if any critical service is degraded. No authentication required \u2014 safe to expose to monitoring tools. Check individual service statuses in the response body.",
           "errors": [
-            {"code": 503, "message": "Service unavailable — one or more backend services are unhealthy (check response body for details)"}
+            {
+              "code": 503,
+              "message": "Service unavailable \u2014 one or more backend services are unhealthy (check response body for details)"
+            }
           ],
           "code": {
             "curl": "curl -X GET '__BASE__/health_detailed'",
@@ -891,9 +1092,18 @@
           ],
           "notes": "Use limit and offset for pagination. Filter by filter_topic or filter_person to narrow results. Returns metadata for each entry including entry_id, which you can use with update_memory or delete_memory.",
           "errors": [
-            {"code": 400, "message": "Bad request — missing agent_id"},
-            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
-            {"code": 404, "message": "Not found — memory system not initialised for this agent"}
+            {
+              "code": 400,
+              "message": "Bad request \u2014 missing agent_id"
+            },
+            {
+              "code": 401,
+              "message": "Unauthorized \u2014 missing or invalid API key"
+            },
+            {
+              "code": 404,
+              "message": "Not found \u2014 memory system not initialised for this agent"
+            }
           ],
           "code": {
             "curl": "curl -X POST '__BASE__/list_memories' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"limit\":50,\"offset\":0}'",
@@ -944,10 +1154,22 @@
           ],
           "notes": "Maximum 100 memories per request. Set skip_duplicates to true to avoid reinserting memories that already exist (matched by lossless_restatement). Returns per-entry status so you can identify and retry failures.",
           "errors": [
-            {"code": 400, "message": "Bad request — missing agent_id or memories array, or exceeds 100 entry limit"},
-            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
-            {"code": 404, "message": "Not found — memory system not initialised (call create_memory first)"},
-            {"code": 413, "message": "Payload too large — reduce batch size"}
+            {
+              "code": 400,
+              "message": "Bad request \u2014 missing agent_id or memories array, or exceeds 100 entry limit"
+            },
+            {
+              "code": 401,
+              "message": "Unauthorized \u2014 missing or invalid API key"
+            },
+            {
+              "code": 404,
+              "message": "Not found \u2014 memory system not initialised (call create_memory first)"
+            },
+            {
+              "code": 413,
+              "message": "Payload too large \u2014 reduce batch size"
+            }
           ],
           "code": {
             "curl": "curl -X POST '__BASE__/bulk_add_memory' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"memories\":[{\"lossless_restatement\":\"Memory 1\",\"keywords\":[\"test\"]},{\"lossless_restatement\":\"Memory 2\",\"keywords\":[\"test\"]}]}'",
@@ -987,11 +1209,20 @@
             "Providing a data export for GDPR data portability requests",
             "Downloading memories for offline analysis or reporting"
           ],
-          "notes": "The export includes all memory entries with their full metadata. Large exports may take time — use a generous timeout. The returned format is compatible with /import_memories for restoration.",
+          "notes": "The export includes all memory entries with their full metadata. Large exports may take time \u2014 use a generous timeout. The returned format is compatible with /import_memories for restoration.",
           "errors": [
-            {"code": 400, "message": "Bad request — missing agent_id"},
-            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
-            {"code": 404, "message": "Not found — agent or memory system does not exist"}
+            {
+              "code": 400,
+              "message": "Bad request \u2014 missing agent_id"
+            },
+            {
+              "code": 401,
+              "message": "Unauthorized \u2014 missing or invalid API key"
+            },
+            {
+              "code": 404,
+              "message": "Not found \u2014 agent or memory system does not exist"
+            }
           ],
           "code": {
             "curl": "curl -X POST '__BASE__/export_memories' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\"}'",
@@ -1031,10 +1262,22 @@
           ],
           "notes": "Use merge_mode \"append\" to add without affecting existing memories, or \"replace\" to clear and reimport. The export_data format must match what /export_memories produces. Large imports may take significant time.",
           "errors": [
-            {"code": 400, "message": "Bad request — missing agent_id or invalid export_data format"},
-            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
-            {"code": 404, "message": "Not found — target agent or memory system does not exist"},
-            {"code": 422, "message": "Unprocessable entity — export_data version is incompatible"}
+            {
+              "code": 400,
+              "message": "Bad request \u2014 missing agent_id or invalid export_data format"
+            },
+            {
+              "code": 401,
+              "message": "Unauthorized \u2014 missing or invalid API key"
+            },
+            {
+              "code": 404,
+              "message": "Not found \u2014 target agent or memory system does not exist"
+            },
+            {
+              "code": 422,
+              "message": "Unprocessable entity \u2014 export_data version is incompatible"
+            }
           ],
           "code": {
             "curl": "curl -X POST '__BASE__/import_memories' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<TARGET_AGENT_ID>\",\"export_data\":{\"memories\":[{\"lossless_restatement\":\"Test\"}]},\"merge_mode\":\"append\"}'",
@@ -1071,10 +1314,22 @@
           ],
           "notes": "This triggers LLM inference and may take 10-60 seconds. summary_length accepts \"brief\", \"medium\", or \"detailed\". Use focus_topic to narrow the summary to a specific subject. Useful for human review of agent knowledge.",
           "errors": [
-            {"code": 400, "message": "Bad request — missing agent_id"},
-            {"code": 401, "message": "Unauthorized — missing or invalid API key"},
-            {"code": 404, "message": "Not found — memory system not initialised or no memories exist"},
-            {"code": 503, "message": "Service unavailable — LLM summarisation failed"}
+            {
+              "code": 400,
+              "message": "Bad request \u2014 missing agent_id"
+            },
+            {
+              "code": 401,
+              "message": "Unauthorized \u2014 missing or invalid API key"
+            },
+            {
+              "code": 404,
+              "message": "Not found \u2014 memory system not initialised or no memories exist"
+            },
+            {
+              "code": 503,
+              "message": "Service unavailable \u2014 LLM summarisation failed"
+            }
           ],
           "code": {
             "curl": "curl -X POST '__BASE__/memory_summary' -H 'Content-Type: application/json' -H 'Authorization: Bearer <API_KEY>' -d '{\"agent_id\":\"<AGENT_ID>\",\"summary_length\":\"medium\"}'",
@@ -1102,10 +1357,16 @@
             "Testing that the memory UI renders correctly after deployment",
             "Embedding the memory page in an iframe within a larger admin tool"
           ],
-          "notes": "Returns HTML, not JSON. Unauthenticated requests may be redirected to a login page. This is a UI endpoint, not an API endpoint — use /read_memory or /list_memories for programmatic access.",
+          "notes": "Returns HTML, not JSON. Unauthenticated requests may be redirected to a login page. This is a UI endpoint, not an API endpoint \u2014 use /read_memory or /list_memories for programmatic access.",
           "errors": [
-            {"code": 302, "message": "Redirect — user is not authenticated, redirecting to login"},
-            {"code": 401, "message": "Unauthorized — session expired or invalid"}
+            {
+              "code": 302,
+              "message": "Redirect \u2014 user is not authenticated, redirecting to login"
+            },
+            {
+              "code": 401,
+              "message": "Unauthorized \u2014 session expired or invalid"
+            }
           ],
           "code": {
             "curl": "curl -X GET '__BASE__/memory' -v",
@@ -1132,9 +1393,18 @@
           ],
           "notes": "Pass the session id as a query parameter. Returns session metadata including creation time and associated user. If no id is provided, may return all sessions for the authenticated user.",
           "errors": [
-            {"code": 400, "message": "Bad request — missing or malformed session id parameter"},
-            {"code": 401, "message": "Unauthorized — missing or invalid credentials"},
-            {"code": 404, "message": "Not found — session id does not exist"}
+            {
+              "code": 400,
+              "message": "Bad request \u2014 missing or malformed session id parameter"
+            },
+            {
+              "code": 401,
+              "message": "Unauthorized \u2014 missing or invalid credentials"
+            },
+            {
+              "code": 404,
+              "message": "Not found \u2014 session id does not exist"
+            }
           ],
           "code": {
             "curl": "curl -G '__BASE__/web/get_sessions' --data-urlencode 'id=51ebe8c7-201b-4275-9bc5-44d7222f3509'",
@@ -1162,11 +1432,20 @@
             "Debugging retrieval quality by inspecting raw search results",
             "Building a citation list showing which stored content matches a query"
           ],
-          "notes": "Unlike /get_context, this does not generate an LLM answer — it only retrieves matching chunks. top_k controls how many results to return (default 3). Results are ranked by relevance score.",
+          "notes": "Unlike /get_context, this does not generate an LLM answer \u2014 it only retrieves matching chunks. top_k controls how many results to return (default 3). Results are ranked by relevance score.",
           "errors": [
-            {"code": 400, "message": "Bad request — missing user_id or query"},
-            {"code": 401, "message": "Unauthorized — missing or invalid credentials"},
-            {"code": 404, "message": "Not found — no data exists for this user_id"}
+            {
+              "code": 400,
+              "message": "Bad request \u2014 missing user_id or query"
+            },
+            {
+              "code": 401,
+              "message": "Unauthorized \u2014 missing or invalid credentials"
+            },
+            {
+              "code": 404,
+              "message": "Not found \u2014 no data exists for this user_id"
+            }
           ],
           "code": {
             "curl": "curl -X POST '__BASE__/web/rag' -H 'Content-Type: application/json' -d '{\"user_id\":\"51ebe8c7-201b-4275-9bc5-44d7222f3509\",\"query\":\"test query\",\"top_k\":3}'",
@@ -1191,10 +1470,16 @@
             "Checking key validity during application startup",
             "Implementing a key rotation workflow that verifies the new key works"
           ],
-          "notes": "Returns {valid: true} if the key is active and has not been revoked. Does not reveal which permissions the key has — only that it is recognized. Use this as a lightweight pre-check rather than making a full API call.",
+          "notes": "Returns {valid: true} if the key is active and has not been revoked. Does not reveal which permissions the key has \u2014 only that it is recognized. Use this as a lightweight pre-check rather than making a full API call.",
           "errors": [
-            {"code": 400, "message": "Bad request — missing api_key field in request body"},
-            {"code": 500, "message": "Internal server error — validation service unavailable"}
+            {
+              "code": 400,
+              "message": "Bad request \u2014 missing api_key field in request body"
+            },
+            {
+              "code": 500,
+              "message": "Internal server error \u2014 validation service unavailable"
+            }
           ],
           "code": {
             "curl": "curl -X POST '__BASE__/validate_key' -H 'Content-Type: application/json' -d '{\"api_key\":\"sk-...\"}'",
@@ -1219,11 +1504,20 @@
             "Creating a session programmatically for automated testing",
             "Initializing a support conversation from an external trigger (e.g., email or webhook)"
           ],
-          "notes": "Store the returned thread_id — it is required for all subsequent /web/chat calls in this conversation. Each session maintains its own message history independently.",
+          "notes": "Store the returned thread_id \u2014 it is required for all subsequent /web/chat calls in this conversation. Each session maintains its own message history independently.",
           "errors": [
-            {"code": 400, "message": "Bad request — missing user_id"},
-            {"code": 401, "message": "Unauthorized — missing or invalid credentials"},
-            {"code": 500, "message": "Internal server error — session creation failed"}
+            {
+              "code": 400,
+              "message": "Bad request \u2014 missing user_id"
+            },
+            {
+              "code": 401,
+              "message": "Unauthorized \u2014 missing or invalid credentials"
+            },
+            {
+              "code": 500,
+              "message": "Internal server error \u2014 session creation failed"
+            }
           ],
           "code": {
             "curl": "curl -X POST '__BASE__/web/create_session' -H 'Content-Type: application/json' -d '{\"user_id\":\"51ebe8c7-201b-4275-9bc5-44d7222f3509\"}'",
@@ -1252,12 +1546,24 @@
             "Building a chatbot widget that streams responses token-by-token",
             "Automating multi-turn conversations for testing or scripting"
           ],
-          "notes": "Requires a valid thread_id from /web/create_session. The history array is optional — the server maintains history server-side, but you can pass it for context if needed. Response may be streamed (text/event-stream) depending on client headers.",
+          "notes": "Requires a valid thread_id from /web/create_session. The history array is optional \u2014 the server maintains history server-side, but you can pass it for context if needed. Response may be streamed (text/event-stream) depending on client headers.",
           "errors": [
-            {"code": 400, "message": "Bad request — missing thread_id, user_id, or message"},
-            {"code": 401, "message": "Unauthorized — missing or invalid credentials"},
-            {"code": 404, "message": "Not found — thread_id does not exist or has expired"},
-            {"code": 503, "message": "Service unavailable — LLM provider is temporarily unreachable"}
+            {
+              "code": 400,
+              "message": "Bad request \u2014 missing thread_id, user_id, or message"
+            },
+            {
+              "code": 401,
+              "message": "Unauthorized \u2014 missing or invalid credentials"
+            },
+            {
+              "code": 404,
+              "message": "Not found \u2014 thread_id does not exist or has expired"
+            },
+            {
+              "code": 503,
+              "message": "Service unavailable \u2014 LLM provider is temporarily unreachable"
+            }
           ],
           "code": {
             "curl": "curl -X POST '__BASE__/web/chat' -H 'Content-Type: application/json' -d '{\"thread_id\":\"local_thread_123\",\"user_id\":\"51ebe8c7-201b-4275-9bc5-44d7222f3509\",\"message\":\"Hello\",\"history\":[]}'",
@@ -1280,9 +1586,12 @@
             "Client-side connectivity test before making authenticated API calls",
             "Automated monitoring to detect service outages"
           ],
-          "notes": "This is the simplest endpoint — no auth required, minimal processing. Returns a status string. Use /health_detailed if you need to verify individual backend service health.",
+          "notes": "This is the simplest endpoint \u2014 no auth required, minimal processing. Returns a status string. Use /health_detailed if you need to verify individual backend service health.",
           "errors": [
-            {"code": 503, "message": "Service unavailable — server is starting up or shutting down"}
+            {
+              "code": 503,
+              "message": "Service unavailable \u2014 server is starting up or shutting down"
+            }
           ],
           "code": {
             "curl": "curl -X GET '__BASE__/ping' -v",
@@ -1317,8 +1626,14 @@
           ],
           "notes": "Must be called before any other memory MCP tools for a given agent. Set clear_db to true only if you want to erase all existing memories. This is the MCP equivalent of the /create_memory HTTP endpoint.",
           "errors": [
-            {"code": 0, "message": "Tool returned error — agent_id is missing or invalid"},
-            {"code": 0, "message": "Tool returned error — vector database initialization failed"}
+            {
+              "code": 0,
+              "message": "Tool returned error \u2014 agent_id is missing or invalid"
+            },
+            {
+              "code": 0,
+              "message": "Tool returned error \u2014 vector database initialization failed"
+            }
           ],
           "code": {
             "curl": "N/A - This is an MCP tool for Claude Desktop integration",
@@ -1330,7 +1645,7 @@
           "path": "mcp://process_raw_dialogues",
           "method": "MCP_TOOL",
           "summary": "Process dialogues via LLM (MCP)",
-          "description": "MCP Tool: Process raw dialogues through LLM to extract structured memory entries. Flow: ADD_DIALOGUE → LLM → JSON RESPONSE → N Memory units → Vector Store.",
+          "description": "MCP Tool: Process raw dialogues through LLM to extract structured memory entries. Flow: ADD_DIALOGUE \u2192 LLM \u2192 JSON RESPONSE \u2192 N Memory units \u2192 Vector Store.",
           "request": {
             "agent_id": "string",
             "dialogues": [
@@ -1353,9 +1668,18 @@
           ],
           "notes": "This triggers LLM processing and may take longer than direct memory tools. Each dialogue object needs at minimum a speaker and content field. Timestamp is optional but improves temporal recall.",
           "errors": [
-            {"code": 0, "message": "Tool returned error — agent_id is missing or memory system not initialized"},
-            {"code": 0, "message": "Tool returned error — dialogues array is empty or malformed"},
-            {"code": 0, "message": "Tool returned error — LLM processing failed"}
+            {
+              "code": 0,
+              "message": "Tool returned error \u2014 agent_id is missing or memory system not initialized"
+            },
+            {
+              "code": 0,
+              "message": "Tool returned error \u2014 dialogues array is empty or malformed"
+            },
+            {
+              "code": 0,
+              "message": "Tool returned error \u2014 LLM processing failed"
+            }
           ],
           "code": {
             "curl": "N/A - MCP Tool",
@@ -1389,10 +1713,16 @@
             "Storing structured data from a tool output directly into agent memory",
             "Adding memories in bulk through a Claude-driven automation script"
           ],
-          "notes": "Bypasses LLM extraction — the memory is stored exactly as provided. Ensure lossless_restatement is a complete, self-contained statement. Include relevant keywords to improve future retrieval.",
+          "notes": "Bypasses LLM extraction \u2014 the memory is stored exactly as provided. Ensure lossless_restatement is a complete, self-contained statement. Include relevant keywords to improve future retrieval.",
           "errors": [
-            {"code": 0, "message": "Tool returned error — agent_id is missing or memory system not initialized"},
-            {"code": 0, "message": "Tool returned error — memories array is empty or missing lossless_restatement"}
+            {
+              "code": 0,
+              "message": "Tool returned error \u2014 agent_id is missing or memory system not initialized"
+            },
+            {
+              "code": 0,
+              "message": "Tool returned error \u2014 memories array is empty or missing lossless_restatement"
+            }
           ],
           "code": {
             "curl": "N/A - MCP Tool",
@@ -1423,8 +1753,14 @@
           ],
           "notes": "Uses hybrid retrieval combining semantic search, keyword matching, and metadata filtering. Set enable_reflection to true for deeper multi-pass retrieval at the cost of latency. top_k defaults to 5 results.",
           "errors": [
-            {"code": 0, "message": "Tool returned error — agent_id is missing or memory system not initialized"},
-            {"code": 0, "message": "Tool returned error — query is empty"}
+            {
+              "code": 0,
+              "message": "Tool returned error \u2014 agent_id is missing or memory system not initialized"
+            },
+            {
+              "code": 0,
+              "message": "Tool returned error \u2014 query is empty"
+            }
           ],
           "code": {
             "curl": "N/A - MCP Tool",
@@ -1436,7 +1772,7 @@
           "path": "mcp://get_context_answer",
           "method": "MCP_TOOL",
           "summary": "Q&A with memory (MCP)",
-          "description": "MCP Tool: Get a context-aware answer using memory. Full Q&A flow: Query → HybridRetrieval → AnswerGenerator → Response.",
+          "description": "MCP Tool: Get a context-aware answer using memory. Full Q&A flow: Query \u2192 HybridRetrieval \u2192 AnswerGenerator \u2192 Response.",
           "request": {
             "agent_id": "string",
             "question": "string"
@@ -1454,9 +1790,18 @@
           ],
           "notes": "This runs full RAG: retrieval + LLM answer generation. The response includes contexts_used showing which memories were consulted. Use mcp://search_memory if you only want raw results without answer generation.",
           "errors": [
-            {"code": 0, "message": "Tool returned error — agent_id is missing or memory system not initialized"},
-            {"code": 0, "message": "Tool returned error — question is empty"},
-            {"code": 0, "message": "Tool returned error — LLM answer generation failed"}
+            {
+              "code": 0,
+              "message": "Tool returned error \u2014 agent_id is missing or memory system not initialized"
+            },
+            {
+              "code": 0,
+              "message": "Tool returned error \u2014 question is empty"
+            },
+            {
+              "code": 0,
+              "message": "Tool returned error \u2014 LLM answer generation failed"
+            }
           ],
           "code": {
             "curl": "N/A - MCP Tool",
@@ -1478,7 +1823,7 @@
             "ok": true,
             "message": "memory_updated"
           },
-          "when_to_use": "Use this MCP tool to modify an existing memory entry — correct facts, add metadata, or update timestamps through Claude Desktop.",
+          "when_to_use": "Use this MCP tool to modify an existing memory entry \u2014 correct facts, add metadata, or update timestamps through Claude Desktop.",
           "use_cases": [
             "Correcting a stored fact when the user provides updated information",
             "Adding a person's name to a memory after identifying who was involved",
@@ -1486,9 +1831,18 @@
           ],
           "notes": "Only include fields you want to change in the updates object. Updating lossless_restatement will re-compute the vector embedding. You need the entry_id which can be obtained from mcp://search_memory or mcp://list_all_memories.",
           "errors": [
-            {"code": 0, "message": "Tool returned error — agent_id or entry_id is missing"},
-            {"code": 0, "message": "Tool returned error — entry_id does not exist in this agent's memory"},
-            {"code": 0, "message": "Tool returned error — updates object is empty"}
+            {
+              "code": 0,
+              "message": "Tool returned error \u2014 agent_id or entry_id is missing"
+            },
+            {
+              "code": 0,
+              "message": "Tool returned error \u2014 entry_id does not exist in this agent's memory"
+            },
+            {
+              "code": 0,
+              "message": "Tool returned error \u2014 updates object is empty"
+            }
           ],
           "code": {
             "curl": "N/A - MCP Tool",
@@ -1517,11 +1871,20 @@
             "Cleaning up incorrect or outdated memories identified during a conversation",
             "Removing sensitive data that was accidentally stored"
           ],
-          "notes": "This is irreversible — deleted memories cannot be recovered. Get entry_ids from mcp://search_memory or mcp://list_all_memories first. Confirm with the user before deleting.",
+          "notes": "This is irreversible \u2014 deleted memories cannot be recovered. Get entry_ids from mcp://search_memory or mcp://list_all_memories first. Confirm with the user before deleting.",
           "errors": [
-            {"code": 0, "message": "Tool returned error — agent_id is missing or memory system not initialized"},
-            {"code": 0, "message": "Tool returned error — entry_ids array is empty"},
-            {"code": 0, "message": "Tool returned error — one or more entry_ids do not exist"}
+            {
+              "code": 0,
+              "message": "Tool returned error \u2014 agent_id is missing or memory system not initialized"
+            },
+            {
+              "code": 0,
+              "message": "Tool returned error \u2014 entry_ids array is empty"
+            },
+            {
+              "code": 0,
+              "message": "Tool returned error \u2014 one or more entry_ids do not exist"
+            }
           ],
           "code": {
             "curl": "N/A - MCP Tool",
@@ -1550,13 +1913,70 @@
           ],
           "notes": "Returns up to the limit number of entries (default 50). For agents with many memories, you may not see all entries in one call. Results include entry_ids which are needed for update and delete operations.",
           "errors": [
-            {"code": 0, "message": "Tool returned error — agent_id is missing or memory system not initialized"},
-            {"code": 0, "message": "Tool returned error — invalid limit value"}
+            {
+              "code": 0,
+              "message": "Tool returned error \u2014 agent_id is missing or memory system not initialized"
+            },
+            {
+              "code": 0,
+              "message": "Tool returned error \u2014 invalid limit value"
+            }
           ],
           "code": {
             "curl": "N/A - MCP Tool",
             "python": "# MCP Tool - Example Claude prompt:\n# \"List all memories for agent 'my-agent'\"",
             "javascript": "// MCP Tool - Invoked via Claude Desktop"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Memory Governance",
+      "endpoints": [
+        {
+          "path": "/{agent_id}/snapshots/create",
+          "method": "POST",
+          "summary": "Create Snapshot",
+          "description": "Create a new linear snapshot of agent memory.",
+          "request": {
+            "name": "string"
+          },
+          "response": {
+            "ok": true,
+            "id": "string"
+          },
+          "when_to_use": "When preparing to inject risky context.",
+          "use_cases": [
+            "Backup",
+            "Experimentation"
+          ],
+          "notes": "Requires agent_id in URL path.",
+          "errors": [],
+          "code": {
+            "curl": "curl -X POST __BASE__/<agent_id>/snapshots/create"
+          }
+        },
+        {
+          "path": "/{agent_id}/snapshots/restore",
+          "method": "POST",
+          "summary": "Restore Snapshot",
+          "description": "Restore agent memory to a previous snapshot timestamp, deleting all future memories.",
+          "request": {
+            "snapshot_id": "string"
+          },
+          "response": {
+            "ok": true,
+            "deleted_memories": 0
+          },
+          "when_to_use": "When agent goes off track due to bad context.",
+          "use_cases": [
+            "Rollback",
+            "Context reset"
+          ],
+          "notes": "Requires snapshot_id. This is a destructive operation.",
+          "errors": [],
+          "code": {
+            "curl": "curl -X POST __BASE__/<agent_id>/snapshots/restore"
           }
         }
       ]

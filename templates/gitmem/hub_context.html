@@ -55,8 +55,6 @@
             <a href="{{ url_for('gitmem.hub_explorer', ws_slug=workspace.id) if workspace else '#' }}" class="gm-ctx-btn">
                 <i data-lucide="folder-tree"></i> Browse Files
             </a>
-            <a href="{{ url_for('gitmem.hub_governance', ws_slug=workspace.id) if workspace else '#' }}" class="gm-ctx-btn">
-                <i data-lucide="shield-check"></i> Governance
             </a>
             <a href="{{ url_for('gitmem.hub_history', ws_slug=workspace.id) if workspace else '#' }}" class="gm-ctx-btn">
                 <i data-lucide="git-branch"></i> History

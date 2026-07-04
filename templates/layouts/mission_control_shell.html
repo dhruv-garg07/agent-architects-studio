@@ -76,23 +76,10 @@
             <!-- TRUST -->
             <div class="gm-nav-group">
                 <div class="gm-nav-group-label">Trust</div>
-                <a href="{{ url_for('gitmem.hub_governance', ws_slug=workspace.id) if workspace else '#' }}"
-                   class="gm-nav-item {{ 'gm-nav-active' if active_page == 'governance' else '' }}">
-                    <i data-lucide="shield-check" class="gm-nav-icon"></i>
-                    <span class="gm-nav-label">Governance</span>
-                    {% if pending_reviews is defined and pending_reviews > 0 %}
-                    <span class="gm-nav-badge">{{ pending_reviews }}</span>
-                    {% endif %}
-                </a>
                 <a href="{{ url_for('gitmem.hub_permissions', ws_slug=workspace.id) if workspace else '#' }}"
                    class="gm-nav-item {{ 'gm-nav-active' if active_page == 'permissions' else '' }}">
                     <i data-lucide="key" class="gm-nav-icon"></i>
                     <span class="gm-nav-label">Permissions</span>
-                </a>
-                <a href="{{ url_for('gitmem.hub_audit', ws_slug=workspace.id) if workspace else '#' }}"
-                   class="gm-nav-item {{ 'gm-nav-active' if active_page == 'audit' else '' }}">
-                    <i data-lucide="file-check" class="gm-nav-icon"></i>
-                    <span class="gm-nav-label">Audit Logs</span>
                 </a>
             </div>
 

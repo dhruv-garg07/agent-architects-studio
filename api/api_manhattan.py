@@ -2489,6 +2489,95 @@ def api_usage():
         return jsonify({'error': str(e)}), 500
 
 
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Memory Governance / Snapshots
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@manhattan_api.route("/<agent_id>/snapshots/create", methods=["POST"])
+def manhattan_snapshot_create(agent_id):
+    data = request.get_json(silent=True) or {}
+    user_id, error = extract_and_validate_api_key(data)
+    if error: return error
+    
+    # Check agent access
+    agent = service.get_agent_for_user(agent_id=agent_id, user_id=user_id)
+    if not agent:
+        return jsonify({'error': 'Agent not found or access denied'}), 404
+        
+    name = data.get('name', 'API Snapshot')
+    checkpoint_id = str(uuid.uuid4())
+    
+    try:
+        if _supabase_backend:
+            _supabase_backend.table('gitmem_checkpoints').insert({
+                'id': checkpoint_id,
+                'agent_id': agent_id,
+                'checkpoint_type': 'snapshot',
+                'name': name,
+                'created_at': datetime.utcnow().isoformat()
+            }).execute()
+        return jsonify({"ok": True, "id": checkpoint_id})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@manhattan_api.route("/<agent_id>/snapshots/restore", methods=["POST"])
+def manhattan_snapshot_restore(agent_id):
+    data = request.get_json(silent=True) or {}
+    user_id, error = extract_and_validate_api_key(data)
+    if error: return error
+    
+    agent = service.get_agent_for_user(agent_id=agent_id, user_id=user_id)
+    if not agent:
+        return jsonify({'error': 'Agent not found or access denied'}), 404
+        
+    snapshot_id = data.get('snapshot_id')
+    if not snapshot_id:
+        return jsonify({"error": "snapshot_id is required"}), 400
+        
+    try:
+        if not _supabase_backend:
+            return jsonify({"error": "Database unavailable"}), 503
+            
+        # 1. Get snapshot
+        res = _supabase_backend.table('gitmem_checkpoints').select('*').eq('id', snapshot_id).execute()
+        if not res.data:
+            return jsonify({"error": "Snapshot not found"}), 404
+            
+        target_time = res.data[0].get('created_at')
+        
+        # 2. Get future memories
+        future_res = _supabase_backend.table('gitmem_memories').select('id')\
+            .eq('agent_id', agent_id).gt('created_at', target_time).execute()
+        future_ids = [m['id'] for m in (future_res.data or [])]
+        
+        deleted_count = 0
+        if future_ids:
+            for i in range(0, len(future_ids), 100):
+                chunk = future_ids[i:i+100]
+                _supabase_backend.table('gitmem_memories').delete().in_('id', chunk).execute()
+                deleted_count += len(chunk)
+                
+            # Also cleanup vector stores if possible
+            try:
+                from Octave_mem.RAG_DB_CONTROLLER_AGENTS.agent_RAG import Agentic_RAG
+                db_path = os.getenv("CHROMA_DATABASE_CHAT_HISTORY")
+                if db_path:
+                    rag = Agentic_RAG(database=db_path, enable_cache=False, enable_monitoring=False)
+                    col = rag.wrapper.manager.get_collection(agent_id)
+                    if col: col.delete(ids=future_ids)
+            except Exception:
+                pass
+                
+        # 3. Cleanup future snapshots
+        _supabase_backend.table('gitmem_checkpoints').delete()\
+            .eq('agent_id', agent_id).gt('created_at', target_time).execute()
+            
+        return jsonify({"ok": True, "deleted_memories": deleted_count})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @manhattan_api.route("/health_detailed", methods=["GET"])
 def health_detailed():
     """Detailed health check endpoint with service status.

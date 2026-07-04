@@ -686,70 +686,41 @@ def hub_file_view(ws_slug, virtual_path=''):
 @gitmem_bp.route('/agent/<agent_id>/advanced/history')
 @login_required
 def agent_history(agent_id):
-    """Unified history view with branch management and commit graph."""
+    """Linear Time Machine view for snapshots."""
     agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
     if not agent_raw:
-        flash("Repository not found.", "error")
+        flash("Workspace not found.", "error")
         return redirect(url_for('gitmem.landing'))
     agent = _agent_context(agent_id, agent_raw)
 
-    current_branch = request.args.get('branch', 'main')
-    
-    # 1. Fetch Branches
-    branches = []
-    try:
-        branches_raw = gitmem_app.vcs.branch_manager.list_branches(agent_id)
-        for b in branches_raw:
-            commit_meta = None
-            if b.get('target_hash') and b['target_hash'] != 'HEAD':
-                try:
-                    res = _db().table('gitmem_commits').select('*').eq('hash', b['target_hash']).limit(1).execute()
-                    if res.data: commit_meta = res.data[0]
-                except: pass
-            branches.append({
-                'name': b['ref_name'],
-                'hash': b['target_hash'],
-                'commit': commit_meta
-            })
-        if not any(b['name'] == 'main' for b in branches):
-            branches.insert(0, {'name': 'main', 'hash': 'HEAD', 'commit': None})
-    except Exception:
-        branches = [{'name': 'main', 'hash': 'HEAD', 'commit': None}]
-
-    # 2. Fetch Commits
-    commits = []
+    # 1. Fetch Snapshots
+    snapshots = []
     try:
         db = _db()
         if db:
-            res = db.table('gitmem_commits').select('*').eq('repo_id', agent_id).order('timestamp', desc=True).limit(100).execute()
-            commits = res.data or []
-    except Exception: pass
-
-    # 3. Graph Logic (Assign tracks/colors)
-    # Simple track allocation: each branch gets a track
-    branch_tracks = {b['name']: i for i, b in enumerate(branches)}
-    # Map commit hash to branch name if it's a branch tip
-    tip_map = {b['hash']: b['name'] for b in branches if b['hash'] != 'HEAD'}
-    
-    for c in commits:
-        c['track'] = branch_tracks.get(tip_map.get(c['hash'], 'main'), 0)
-        c['is_tip'] = c['hash'] in tip_map
+            res = db.table('gitmem_checkpoints').select('*')\
+                .eq('agent_id', agent_id)\
+                .eq('checkpoint_type', 'snapshot')\
+                .order('created_at', desc=True).limit(50).execute()
+            snapshots = res.data or []
+    except Exception as e:
+        print(f"[Snapshots] Error fetching snapshots: {e}")
 
     memory_count = _count_table('gitmem_memories', 'agent_id', agent_id)
-    commit_count = len(commits)
+    snapshot_count = len(snapshots)
 
     import json
-    commits_json = json.dumps([{'sha': c['hash'], 'message': c.get('message',''), 'timestamp': c.get('timestamp',''), 'author_id': c.get('author_id','')} for c in commits])
+    # Serialize for frontend if needed
+    snapshots_json = json.dumps([{'id': s['id'], 'name': s.get('name',''), 'created_at': s.get('created_at','')} for s in snapshots])
 
     return render_template(
-        'history.html',
+        'gitmem/hub_history.html',
         agent=agent,
-        commits=commits,
-        commits_json=commits_json,
-        branches=branches,
-        current_branch=current_branch,
+        workspace=agent,
+        snapshots=snapshots,
+        snapshots_json=snapshots_json,
         memory_count=memory_count,
-        commit_count=commit_count,
+        snapshot_count=snapshot_count,
         sources=get_sources_status(),
     )
 
@@ -1010,65 +981,39 @@ def hub_context_category(ws_slug, category):
 @gitmem_bp.route('/w/<ws_slug>/history')
 @login_required
 def hub_history(ws_slug):
-    """Workspace-level version history — commits, branches, diffs."""
+    """Workspace-level version history — Time Machine Snapshots."""
     agent_raw = _get_agent(ws_slug, user_id=current_user.get_id())
     if not agent_raw: return redirect(url_for('gitmem.landing'))
     agent = _agent_context(ws_slug, agent_raw)
 
     actual_agent_id = agent_raw.get('agent_id')
-    current_branch = request.args.get('branch', 'main')
 
-    # Fetch Branches
-    branches = []
-    try:
-        branches_raw = gitmem_app.vcs.branch_manager.list_branches(actual_agent_id)
-        for b in branches_raw:
-            commit_meta = None
-            if b.get('target_hash') and b['target_hash'] != 'HEAD':
-                try:
-                    res = _db().table('gitmem_commits').select('*').eq('hash', b['target_hash']).limit(1).execute()
-                    if res.data: commit_meta = res.data[0]
-                except: pass
-            branches.append({
-                'name': b['ref_name'],
-                'hash': b['target_hash'],
-                'commit': commit_meta
-            })
-        if not any(b['name'] == 'main' for b in branches):
-            branches.insert(0, {'name': 'main', 'hash': 'HEAD', 'commit': None})
-    except Exception:
-        branches = [{'name': 'main', 'hash': 'HEAD', 'commit': None}]
-
-    # Fetch Commits
-    commits = []
+    # Fetch Snapshots
+    snapshots = []
     try:
         db = _db()
         if db:
-            res = db.table('gitmem_commits').select('*').eq('repo_id', actual_agent_id).order('timestamp', desc=True).limit(100).execute()
-            commits = res.data or []
-    except Exception: pass
-
-    # Graph Logic (Assign tracks/colors)
-    branch_tracks = {b['name']: i for i, b in enumerate(branches)}
-    tip_map = {b['hash']: b['name'] for b in branches if b['hash'] != 'HEAD'}
-    for c in commits:
-        c['track'] = branch_tracks.get(tip_map.get(c['hash'], 'main'), 0)
-        c['is_tip'] = c['hash'] in tip_map
+            res = db.table('gitmem_checkpoints').select('*')\
+                .eq('agent_id', actual_agent_id)\
+                .eq('checkpoint_type', 'snapshot')\
+                .order('created_at', desc=True).limit(50).execute()
+            snapshots = res.data or []
+    except Exception as e:
+        print(f"[Snapshots] Error fetching snapshots: {e}")
 
     memory_count = _count_table('gitmem_memories', 'agent_id', actual_agent_id)
-    commit_count = len(commits)
+    snapshot_count = len(snapshots)
 
     import json
-    commits_json = json.dumps([{'sha': c['hash'], 'message': c.get('message',''), 'timestamp': c.get('timestamp',''), 'author_id': c.get('author_id','')} for c in commits])
+    # Serialize for frontend if needed
+    snapshots_json = json.dumps([{'id': s['id'], 'name': s.get('name',''), 'created_at': s.get('created_at','')} for s in snapshots])
 
     return render_template('gitmem/hub_changes.html',
         workspace=agent,
-        commits=commits,
-        commits_json=commits_json,
-        branches=branches,
-        current_branch=current_branch,
+        snapshots=snapshots,
+        snapshots_json=snapshots_json,
         memory_count=memory_count,
-        commit_count=commit_count,
+        snapshot_count=snapshot_count,
     )
 
 @gitmem_bp.route('/w/<ws_slug>/agents')
@@ -1087,13 +1032,6 @@ def hub_integrations(ws_slug):
     agent = _agent_context(ws_slug, agent_raw)
     return render_template('gitmem/hub_integrations.html', workspace=agent)
 
-@gitmem_bp.route('/w/<ws_slug>/governance')
-@login_required
-def hub_governance(ws_slug):
-    agent_raw = _get_agent(ws_slug, user_id=current_user.get_id())
-    if not agent_raw: return redirect(url_for('gitmem.landing'))
-    agent = _agent_context(ws_slug, agent_raw)
-    return render_template('gitmem/hub_trust_center.html', workspace=agent)
 
 @gitmem_bp.route('/w/<ws_slug>/search')
 @login_required
@@ -1114,12 +1052,8 @@ def hub_chat(ws_slug):
 @gitmem_bp.route('/w/<ws_slug>/permissions')
 @login_required
 def hub_permissions(ws_slug):
-    return redirect(url_for('gitmem.hub_governance', ws_slug=ws_slug))
+    return redirect(url_for('gitmem.hub_settings', ws_slug=ws_slug))
 
-@gitmem_bp.route('/w/<ws_slug>/audit')
-@login_required
-def hub_audit(ws_slug):
-    return redirect(url_for('gitmem.hub_governance', ws_slug=ws_slug))
 
 @gitmem_bp.route('/w/<ws_slug>/branches')
 @login_required
@@ -1196,11 +1130,11 @@ def legacy_agent_logs(agent_id):
 
 @gitmem_bp.route('/agent/<agent_id>/pulls')
 def legacy_agent_pulls(agent_id):
-    return redirect(url_for('gitmem.hub_governance', ws_slug=agent_id), code=301)
+    return redirect(url_for('gitmem.hub_history', ws_slug=agent_id), code=301)
 
 @gitmem_bp.route('/agent/<agent_id>/issues')
 def legacy_agent_issues(agent_id):
-    return redirect(url_for('gitmem.hub_governance', ws_slug=agent_id), code=301)
+    return redirect(url_for('gitmem.hub_history', ws_slug=agent_id), code=301)
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # Create Agent
@@ -2161,28 +2095,83 @@ def api_merge_branches(agent_id):
         return jsonify({"error": str(e)}), 500
 
 
-@gitmem_bp.route('/api/agent/<agent_id>/rollback', methods=['POST'])
+@gitmem_bp.route('/api/checkpoints/<agent_id>/restore', methods=['POST'])
 @login_required
-def api_rollback(agent_id):
-    """Rollback branch to a specific commit."""
+def api_restore_checkpoint(agent_id):
+    """Restore an agent's memory to a specific snapshot timestamp."""
     if not _get_agent(agent_id, user_id=current_user.get_id()):
         return jsonify({"error": "Access denied"}), 403
+        
     data = request.get_json(silent=True) or {}
-    branch = data.get('branch', 'main')
-    target_hash = data.get('hash', '')
-    if not target_hash:
-        return jsonify({"error": "target hash is required"}), 400
+    snapshot_id = data.get('id', '')
+    
+    if not snapshot_id:
+        return jsonify({"error": "Snapshot ID is required"}), 400
+        
     try:
-        success = gitmem_app.vcs.rollback(
-            repo_id=agent_id,
-            branch_name=branch,
-            target_hash=target_hash,
-            actor_id=current_user.get_id()
-        )
-        if not success:
-            return jsonify({"error": "Rollback failed"}), 400
-        return jsonify({"ok": True})
+        db = _db()
+        if not db:
+            return jsonify({"error": "Database unavailable"}), 503
+            
+        # 1. Get the snapshot timestamp
+        res = db.table('gitmem_checkpoints').select('*').eq('id', snapshot_id).execute()
+        if not res.data:
+            return jsonify({"error": "Snapshot not found"}), 404
+        
+        snapshot = res.data[0]
+        target_time = snapshot.get('created_at')
+        if not target_time:
+            return jsonify({"error": "Snapshot has no created_at timestamp"}), 400
+            
+        print(f"[Restore] Rolling back agent {agent_id} to {target_time}")
+        
+        # 2. Find future memories
+        future_mems_res = db.table('gitmem_memories').select('id')\
+            .eq('agent_id', agent_id)\
+            .gt('created_at', target_time).execute()
+            
+        future_ids = [m['id'] for m in (future_mems_res.data or [])]
+        
+        deleted_count = 0
+        if future_ids:
+            # 3. Bulk delete from Supabase
+            # Split into chunks of 100 to avoid long URLs
+            for i in range(0, len(future_ids), 100):
+                chunk = future_ids[i:i+100]
+                db.table('gitmem_memories').delete().in_('id', chunk).execute()
+                deleted_count += len(chunk)
+                
+            # 4. Delete from VectorEngine
+            ve = gitmem_app.vector_engine
+            if ve and ve.client:
+                try:
+                    col = ve.client.get_collection(name=agent_id)
+                    col.delete(ids=future_ids)
+                except Exception as e:
+                    print(f"[Restore] Warning: VE delete failed: {e}")
+                    
+            # 5. Delete from SimpleMem Agentic_RAG
+            try:
+                from Octave_mem.RAG_DB_CONTROLLER_AGENTS.agent_RAG import Agentic_RAG
+                import os
+                database_path = os.getenv("CHROMA_DATABASE_CHAT_HISTORY")
+                if database_path:
+                    rag = Agentic_RAG(database=database_path, enable_cache=False, enable_monitoring=False)
+                    sm_col = rag.wrapper.manager.get_collection(agent_id)
+                    if sm_col:
+                        sm_col.delete(ids=future_ids)
+            except Exception as e:
+                print(f"[Restore] Warning: SimpleMem delete failed: {e}")
+                
+        # 6. (Optional) Cleanup future snapshots
+        db.table('gitmem_checkpoints').delete()\
+            .eq('agent_id', agent_id)\
+            .gt('created_at', target_time).execute()
+            
+        return jsonify({"ok": True, "deleted": deleted_count})
+        
     except Exception as e:
+        print(f"[Restore] Error: {e}")
         return jsonify({"error": str(e)}), 500
 
 
