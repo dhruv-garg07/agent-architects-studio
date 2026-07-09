@@ -403,6 +403,18 @@ Phone: {phone or 'Not provided'}
         return jsonify({"error": "Failed to submit request. Please try again."}), 500
 
 
+@app.route('/api/deck/visit', methods=['POST'])
+def record_deck_visit():
+    """Increment and fetch global deck visitor count using a secure RPC."""
+    try:
+        response = supabase_backend.rpc('increment_deck_views', {}).execute()
+        new_views = response.data
+        return jsonify({"success": True, "views": new_views}), 200
+    except Exception as e:
+        print(f"Error incrementing deck views: {e}")
+        return jsonify({"error": "Failed to update views"}), 500
+
+
 @app.route('/for_investors')
 @app.route('/for-investors')
 def for_investors():

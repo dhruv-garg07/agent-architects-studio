@@ -785,18 +785,32 @@
           }
         }
 
+        .ios-fullscreen {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 99999 !important;
+            background-color: var(--bg-desktop) !important;
+        }
+
         @media (max-width: 992px) {
           #presentation-viewport:fullscreen #deck-controls,
           #presentation-viewport:-webkit-full-screen #deck-controls,
+          #presentation-viewport.ios-fullscreen #deck-controls,
           #presentation-viewport:fullscreen #clearance-control,
           #presentation-viewport:-webkit-full-screen #clearance-control,
+          #presentation-viewport.ios-fullscreen #clearance-control,
           #presentation-viewport:fullscreen #index-drawer,
-          #presentation-viewport:-webkit-full-screen #index-drawer {
+          #presentation-viewport:-webkit-full-screen #index-drawer,
+          #presentation-viewport.ios-fullscreen #index-drawer {
             display: none !important;
           }
           
           #presentation-viewport:fullscreen #mobile-top-nav,
-          #presentation-viewport:-webkit-full-screen #mobile-top-nav {
+          #presentation-viewport:-webkit-full-screen #mobile-top-nav,
+          #presentation-viewport.ios-fullscreen #mobile-top-nav {
             display: flex !important;
           }
         }
@@ -1282,18 +1296,27 @@
         showSlide(currentSlideIndex);
         resizeDeck();
         
-        // Simulate Visitor Counter
-        let count = 218;
-        const countSpan = document.getElementById('view-count-number');
-        if (countSpan) {
-            setTimeout(() => {
-                countSpan.style.opacity = '0';
-                setTimeout(() => {
-                    countSpan.textContent = count + 1;
-                    countSpan.style.opacity = '1';
-                }, 400);
-            }, 1000);
-        }
+        // Fetch Global Visitor Count
+        fetch('/api/deck/visit', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.views) {
+                    const countSpan = document.getElementById('view-count-number');
+                    if (countSpan) {
+                        // Display the previous count briefly
+                        countSpan.textContent = data.views - 1;
+                        setTimeout(() => {
+                            countSpan.style.opacity = '0';
+                            setTimeout(() => {
+                                // Animate to the new true global count
+                                countSpan.textContent = data.views;
+                                countSpan.style.opacity = '1';
+                            }, 400);
+                        }, 1000);
+                    }
+                }
+            })
+            .catch(err => console.error("Error fetching global view count:", err));
 
         // Auto-hide the force landscape button after 10s
         setTimeout(() => {
@@ -1504,17 +1527,25 @@
     // Fullscreen Mode Handler
     function toggleFullscreen() {
         const elem = document.getElementById('presentation-viewport');
-        if (!document.fullscreenElement) {
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const isIOSFallback = elem.classList.contains('ios-fullscreen');
+        
+        if (!document.fullscreenElement && !document.webkitFullscreenElement && !isIOSFallback) {
             if (elem.requestFullscreen) {
                 elem.requestFullscreen().then(lockLandscape);
-            } else if (elem.webkitRequestFullscreen) { /* Safari */
+            } else if (elem.webkitRequestFullscreen) { /* Safari Desktop/iPad */
                 elem.webkitRequestFullscreen();
+            } else if (isIOS) {
+                // iPhone Safari Fallback
+                elem.classList.add('ios-fullscreen');
             }
         } else {
             if (document.exitFullscreen) {
                 document.exitFullscreen().then(unlockLandscape);
             } else if (document.webkitExitFullscreen) {
                 document.webkitExitFullscreen();
+            } else if (isIOSFallback) {
+                elem.classList.remove('ios-fullscreen');
             }
         }
     }
