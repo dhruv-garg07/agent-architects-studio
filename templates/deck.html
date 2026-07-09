@@ -852,13 +852,13 @@
         </button>
     </div>
 
+<div id="presentation-viewport">
+    
     <!-- Mobile Top Navigation (Visible only on small screens) -->
     <div id="mobile-top-nav">
         <button onclick="prevSlide()" class="mobile-nav-btn"><i class="fa-solid fa-chevron-left"></i> PREV</button>
         <button onclick="nextSlide()" class="mobile-nav-btn">NEXT <i class="fa-solid fa-chevron-right"></i></button>
     </div>
-
-<div id="presentation-viewport">
     
     <!-- Sidebar Index drawer -->
     <div id="index-drawer">
@@ -1203,6 +1203,33 @@
                 <div class="classification-footer" style="color: white;">END OF BRIEFING // ARCHIVE FILE 00-X</div>
             </div>
 
+        </div>
+    </div>
+
+    <!-- Lead Capture Modal -->
+    <div id="lead-capture-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 20000; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+        <div style="background-color: var(--bg-slide); border: 2px solid var(--border-color); padding: 40px; width: 90%; max-width: 500px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); font-family: 'Special Elite', cursive; position: relative;">
+            <button onclick="closeLeadModal()" style="position: absolute; top: 15px; right: 20px; background: transparent; border: none; color: var(--typewriter-ink); font-size: 20px; cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
+            <h2 style="color: var(--typewriter-ink); border-bottom: 2px solid var(--typewriter-ink); padding-bottom: 10px; margin-top: 0;">ACCESS REQUEST FORM</h2>
+            <p style="color: var(--typewriter-ink); font-size: 14px; margin-bottom: 25px;">Please provide at least one contact method for authorization clearance.</p>
+            
+            <form id="lead-form" onsubmit="submitLeadForm(event)">
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; color: var(--typewriter-ink); margin-bottom: 5px; font-size: 12px;">FULL NAME</label>
+                    <input type="text" id="lead-name" style="width: 100%; padding: 10px; background: transparent; border: 1px solid var(--typewriter-ink); color: var(--typewriter-ink); font-family: 'Courier Prime', monospace;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; color: var(--typewriter-ink); margin-bottom: 5px; font-size: 12px;">EMAIL ADDRESS</label>
+                    <input type="email" id="lead-email" style="width: 100%; padding: 10px; background: transparent; border: 1px solid var(--typewriter-ink); color: var(--typewriter-ink); font-family: 'Courier Prime', monospace;">
+                </div>
+                <div style="margin-bottom: 25px;">
+                    <label style="display: block; color: var(--typewriter-ink); margin-bottom: 5px; font-size: 12px;">PHONE NUMBER</label>
+                    <input type="tel" id="lead-phone" style="width: 100%; padding: 10px; background: transparent; border: 1px solid var(--typewriter-ink); color: var(--typewriter-ink); font-family: 'Courier Prime', monospace;">
+                </div>
+                <p id="lead-error" style="color: var(--marker-red); font-size: 12px; display: none; margin-bottom: 15px; font-weight: bold;">[!] MUST PROVIDE AT LEAST ONE FIELD.</p>
+                <p id="lead-success" style="color: var(--marker-blue); font-size: 14px; display: none; margin-bottom: 15px; font-weight: bold;">[✓] CREDENTIALS LOGGED. WE WILL CONTACT YOU.</p>
+                <button type="submit" id="lead-submit-btn" style="width: 100%; padding: 15px; background: var(--typewriter-ink); color: var(--bg-slide); border: none; font-family: 'Special Elite', cursive; font-size: 16px; cursor: pointer; text-transform: uppercase;">TRANSMIT SECURELY</button>
+            </form>
         </div>
     </div>
 
@@ -1582,32 +1609,7 @@
     window.onload = initPresentation;
 </script>
 
-    <!-- Lead Capture Modal -->
-    <div id="lead-capture-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 20000; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
-        <div style="background-color: var(--bg-slide); border: 2px solid var(--border-color); padding: 40px; width: 90%; max-width: 500px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); font-family: 'Special Elite', cursive; position: relative;">
-            <button onclick="closeLeadModal()" style="position: absolute; top: 15px; right: 20px; background: transparent; border: none; color: var(--typewriter-ink); font-size: 20px; cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
-            <h2 style="color: var(--typewriter-ink); border-bottom: 2px solid var(--typewriter-ink); padding-bottom: 10px; margin-top: 0;">ACCESS REQUEST FORM</h2>
-            <p style="color: var(--typewriter-ink); font-size: 14px; margin-bottom: 25px;">Please provide at least one contact method for authorization clearance.</p>
-            
-            <form id="lead-form" onsubmit="submitLeadForm(event)">
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; color: var(--typewriter-ink); margin-bottom: 5px; font-size: 12px;">FULL NAME</label>
-                    <input type="text" id="lead-name" style="width: 100%; padding: 10px; background: transparent; border: 1px solid var(--typewriter-ink); color: var(--typewriter-ink); font-family: 'Courier Prime', monospace;">
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; color: var(--typewriter-ink); margin-bottom: 5px; font-size: 12px;">EMAIL ADDRESS</label>
-                    <input type="email" id="lead-email" style="width: 100%; padding: 10px; background: transparent; border: 1px solid var(--typewriter-ink); color: var(--typewriter-ink); font-family: 'Courier Prime', monospace;">
-                </div>
-                <div style="margin-bottom: 25px;">
-                    <label style="display: block; color: var(--typewriter-ink); margin-bottom: 5px; font-size: 12px;">PHONE NUMBER</label>
-                    <input type="tel" id="lead-phone" style="width: 100%; padding: 10px; background: transparent; border: 1px solid var(--typewriter-ink); color: var(--typewriter-ink); font-family: 'Courier Prime', monospace;">
-                </div>
-                <p id="lead-error" style="color: var(--marker-red); font-size: 12px; display: none; margin-bottom: 15px; font-weight: bold;">[!] MUST PROVIDE AT LEAST ONE FIELD.</p>
-                <p id="lead-success" style="color: var(--marker-blue); font-size: 14px; display: none; margin-bottom: 15px; font-weight: bold;">[✓] CREDENTIALS LOGGED. WE WILL CONTACT YOU.</p>
-                <button type="submit" id="lead-submit-btn" style="width: 100%; padding: 15px; background: var(--typewriter-ink); color: var(--bg-slide); border: none; font-family: 'Special Elite', cursive; font-size: 16px; cursor: pointer; text-transform: uppercase;">TRANSMIT SECURELY</button>
-            </form>
-        </div>
-    </div>
+
 
 </body>
 </html>
