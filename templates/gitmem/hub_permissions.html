@@ -1,0 +1,300 @@
+{% extends "layouts/mission_control_shell.html" %}
+
+{% set active_page = 'permissions' %}
+
+{% block workspace_content %}
+
+<div class="gm-page-header" style="display: flex; align-items: center; justify-content: space-between;">
+    <div>
+        <h1 class="gm-page-title">Agent Network & Permissions</h1>
+        <p class="gm-page-subtitle">Manage secure context-sharing connections for {{ workspace.name if workspace else 'this agent' }}.</p>
+    </div>
+    <div>
+        <button onclick="openRequestModal()" class="gm-btn gm-btn-primary" style="display: flex; align-items: center; gap: 8px; background: hsl(230,80%,62%); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600;">
+            <i data-lucide="plus" style="width: 14px; height: 14px;"></i> Request Access
+        </button>
+    </div>
+</div>
+
+<div class="gm-section">
+    <div class="gm-section-header">
+        <h2 class="gm-section-title"><i data-lucide="inbox"></i> Pending Inbound Requests</h2>
+    </div>
+    <div class="gm-section-body" style="padding: 0;">
+        {% set pending_inbound = inbound | selectattr('status', 'equalto', 'pending') | list %}
+        {% if pending_inbound %}
+        <table style="width: 100%; text-align: left; border-collapse: collapse;">
+            <thead style="background: hsl(225,12%,12%); border-bottom: 1px solid hsl(225,10%,20%); font-size: 12px; color: hsl(225,10%,60%);">
+                <tr>
+                    <th style="padding: 12px 16px;">Requesting Agent ID</th>
+                    <th style="padding: 12px 16px;">Requested Permissions</th>
+                    <th style="padding: 12px 16px;">Scope</th>
+                    <th style="padding: 12px 16px; text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for req in pending_inbound %}
+                <tr style="border-bottom: 1px solid hsl(225,10%,15%); font-size: 14px; color: white;">
+                    <td style="padding: 16px;">
+                        <div style="font-family: monospace; color: hsl(230,80%,65%); margin-bottom: 4px;">{{ req.source_agent_id[:12] }}</div>
+                        <div style="font-size: 11px; color: hsl(225,10%,50%);">Requester Agent</div>
+                    </td>
+                    <td style="padding: 16px;">
+                        {% for p in req.permissions %}
+                        <span style="background: hsla(230,80%,62%,0.2); color: hsl(230,80%,65%); padding: 2px 8px; border-radius: 4px; font-size: 11px; text-transform: uppercase;">{{ p }}</span>
+                        {% endfor %}
+                    </td>
+                    <td style="padding: 16px; color: hsl(225,10%,70%);">{{ req.scope }}</td>
+                    <td style="padding: 16px; text-align: right; display: flex; gap: 8px; justify-content: flex-end;">
+                        <button onclick="manageConnection('{{ req.id }}', 'revoked')" style="font-size: 12px; padding: 6px 12px; background: hsla(0,70%,50%,0.2); color: hsl(0,70%,60%); border: 1px solid hsla(0,70%,50%,0.5); border-radius: 6px; cursor: pointer;">Deny</button>
+                        <button onclick="openApproveModal('{{ req.id }}', {{ req.permissions | tojson | forceescape }}, '{{ req.scope }}')" style="font-size: 12px; padding: 6px 12px; background: hsl(150, 60%, 40%); color: white; border: none; border-radius: 6px; cursor: pointer;">Approve</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="padding: 32px; text-align: center; color: hsl(225,10%,50%); font-size: 14px;">No pending inbound requests.</div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="gm-section" style="margin-top: 24px;">
+    <div class="gm-section-header">
+        <h2 class="gm-section-title"><i data-lucide="link"></i> Active Connections</h2>
+    </div>
+    <div class="gm-section-body" style="padding: 0;">
+        {% set active_conns = inbound | selectattr('status', 'equalto', 'approved') | list + outbound | selectattr('status', 'equalto', 'approved') | list %}
+        {% if active_conns %}
+        <table style="width: 100%; text-align: left; border-collapse: collapse;">
+            <thead style="background: hsl(225,12%,12%); border-bottom: 1px solid hsl(225,10%,20%); font-size: 12px; color: hsl(225,10%,60%);">
+                <tr>
+                    <th style="padding: 12px 16px;">Agent</th>
+                    <th style="padding: 12px 16px;">Direction</th>
+                    <th style="padding: 12px 16px;">Permissions</th>
+                    <th style="padding: 12px 16px; text-align: right;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for conn in active_conns %}
+                <tr style="border-bottom: 1px solid hsl(225,10%,15%); font-size: 14px; color: white;">
+                    <td style="padding: 16px; font-family: monospace;">
+                        {% if conn.source_agent_id == workspace.id %}
+                            {{ conn.target_agent_id[:12] }} <span style="color:hsl(225,10%,50%); font-size:12px;">(Target)</span>
+                        {% else %}
+                            {{ conn.source_agent_id[:12] }} <span style="color:hsl(225,10%,50%); font-size:12px;">(Source)</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 16px;">
+                        {% if conn.source_agent_id == workspace.id %}
+                            <span style="color: hsl(200, 80%, 60%);"><i data-lucide="arrow-up-right" style="width:14px; height:14px; vertical-align: middle;"></i> Outbound</span>
+                        {% else %}
+                            <span style="color: hsl(280, 80%, 60%);"><i data-lucide="arrow-down-left" style="width:14px; height:14px; vertical-align: middle;"></i> Inbound</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 16px;">
+                        {% for p in conn.permissions %}
+                        <span style="background: hsla(230,80%,62%,0.2); color: hsl(230,80%,65%); padding: 2px 8px; border-radius: 4px; font-size: 11px; text-transform: uppercase;">{{ p }}</span>
+                        {% endfor %}
+                    </td>
+                    <td style="padding: 16px; text-align: right;">
+                        <button onclick="revokeConnection('{{ conn.id }}')" title="Revoke Access" style="padding: 6px; background: hsla(0,70%,50%,0.2); border: 1px solid hsla(0,70%,50%,0.5); color: hsl(0,70%,60%); border-radius: 6px; cursor: pointer;">
+                            <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="padding: 32px; text-align: center; color: hsl(225,10%,50%); font-size: 14px;">No active connections.</div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal -->
+<div id="request-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: hsl(225,12%,10%); border: 1px solid hsl(225,10%,20%); padding: 24px; border-radius: 12px; width: 400px; max-width: 90%;">
+        <h3 style="color: white; margin-bottom: 16px; font-size: 16px;">Request Agent Access</h3>
+        <input type="text" id="target-agent-id" placeholder="Target Agent ID" style="width: 100%; background: hsl(225,10%,14%); border: 1px solid hsl(225,10%,25%); color: white; padding: 10px; border-radius: 6px; margin-bottom: 16px; font-family: monospace;">
+        
+        <div style="margin-bottom: 16px;">
+            <div style="color: hsl(225,10%,60%); font-size: 12px; margin-bottom: 8px;">Requested Permissions</div>
+            <label style="display: flex; align-items: center; gap: 8px; color: white; font-size: 14px; margin-bottom: 8px;">
+                <input type="checkbox" id="perm-read" checked> Read (Pull Context)
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; color: white; font-size: 14px; margin-bottom: 8px;">
+                <input type="checkbox" id="perm-write"> Write (Inject Memories)
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; color: white; font-size: 14px; margin-bottom: 8px;">
+                <input type="checkbox" id="perm-update"> Update (Modify context)
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; color: white; font-size: 14px;">
+                <input type="checkbox" id="perm-delete"> Delete (Remove context)
+            </label>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+            <div style="color: hsl(225,10%,60%); font-size: 12px; margin-bottom: 8px;">Data Scope</div>
+            <select id="perm-scope" style="width: 100%; background: hsl(225,10%,14%); border: 1px solid hsl(225,10%,25%); color: white; padding: 10px; border-radius: 6px;">
+                <option value="all">Entire Memory</option>
+                <option value="documents">Documents Only</option>
+                <option value="chat_history">Chat History Only</option>
+            </select>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px;">
+            <button onclick="closeRequestModal()" style="padding: 8px 16px; background: transparent; border: 1px solid hsl(225,10%,30%); color: white; border-radius: 6px; cursor: pointer;">Cancel</button>
+            <button onclick="submitRequest()" style="padding: 8px 16px; background: hsl(230,80%,62%); border: none; color: white; border-radius: 6px; font-weight: 600; cursor: pointer;">Send Request</button>
+        </div>
+    </div>
+</div>
+
+<!-- Approve Modal -->
+<div id="approve-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: hsl(225,12%,10%); border: 1px solid hsl(225,10%,20%); padding: 24px; border-radius: 12px; width: 400px; max-width: 90%;">
+        <h3 style="color: white; margin-bottom: 16px; font-size: 16px;">Approve Connection</h3>
+        <p style="color: hsl(225,10%,60%); font-size: 13px; margin-bottom: 16px;">Adjust the permissions and scope before approving access.</p>
+        
+        <input type="hidden" id="approve-conn-id">
+
+        <div style="margin-bottom: 16px;">
+            <div style="color: hsl(225,10%,60%); font-size: 12px; margin-bottom: 8px;">Granted Permissions</div>
+            <label style="display: flex; align-items: center; gap: 8px; color: white; font-size: 14px; margin-bottom: 8px;">
+                <input type="checkbox" id="approve-perm-read"> Read (Pull Context)
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; color: white; font-size: 14px; margin-bottom: 8px;">
+                <input type="checkbox" id="approve-perm-write"> Write (Inject Memories)
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; color: white; font-size: 14px; margin-bottom: 8px;">
+                <input type="checkbox" id="approve-perm-update"> Update (Modify context)
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; color: white; font-size: 14px;">
+                <input type="checkbox" id="approve-perm-delete"> Delete (Remove context)
+            </label>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+            <div style="color: hsl(225,10%,60%); font-size: 12px; margin-bottom: 8px;">Data Scope</div>
+            <select id="approve-perm-scope" style="width: 100%; background: hsl(225,10%,14%); border: 1px solid hsl(225,10%,25%); color: white; padding: 10px; border-radius: 6px;">
+                <option value="all">Entire Memory</option>
+                <option value="documents">Documents Only</option>
+                <option value="chat_history">Chat History Only</option>
+            </select>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px;">
+            <button onclick="closeApproveModal()" style="padding: 8px 16px; background: transparent; border: 1px solid hsl(225,10%,30%); color: white; border-radius: 6px; cursor: pointer;">Cancel</button>
+            <button onclick="submitApprove()" style="padding: 8px 16px; background: hsl(150, 60%, 40%); border: none; color: white; border-radius: 6px; font-weight: 600; cursor: pointer;">Approve Access</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const agentId = "{{ workspace.id if workspace else '' }}";
+
+    function openRequestModal() {
+        document.getElementById('request-modal').style.display = 'flex';
+    }
+    function closeRequestModal() {
+        document.getElementById('request-modal').style.display = 'none';
+    }
+
+    async function submitRequest() {
+        const targetId = document.getElementById('target-agent-id').value;
+        if(!targetId) return alert("Target Agent ID required.");
+        const perms = [];
+        if(document.getElementById('perm-read').checked) perms.push('read');
+        if(document.getElementById('perm-write').checked) perms.push('write');
+        if(document.getElementById('perm-update').checked) perms.push('update');
+        if(document.getElementById('perm-delete').checked) perms.push('delete');
+        
+        if(perms.length === 0) return alert("Select at least one permission.");
+
+        const scope = document.getElementById('perm-scope').value;
+
+        try {
+            const res = await fetch(`/gitmem/api/agents/${agentId}/connections/request`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    target_agent_id: targetId,
+                    permissions: perms,
+                    scope
+                })
+            });
+            if(res.ok) window.location.reload();
+            else {
+                const d = await res.json();
+                alert(d.error || 'Failed');
+            }
+        } catch(e) { alert(e); }
+    }
+
+    async function manageConnection(connId, status) {
+        try {
+            const res = await fetch(`/gitmem/api/agents/${agentId}/connections/${connId}`, {
+                method: status === 'revoked' ? 'DELETE' : 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: status === 'revoked' ? null : JSON.stringify({status})
+            });
+            if(res.ok) window.location.reload();
+            else {
+                const d = await res.json();
+                alert(d.error || 'Failed');
+            }
+        } catch(e) { alert(e); }
+    }
+    
+    function revokeConnection(connId) {
+        if(confirm("Revoke this connection? Data flow will immediately stop.")) {
+            manageConnection(connId, 'revoked');
+        }
+    }
+
+    function openApproveModal(connId, perms, scope) {
+        document.getElementById('approve-conn-id').value = connId;
+        const parsedPerms = typeof perms === 'string' ? JSON.parse(perms) : perms;
+        document.getElementById('approve-perm-read').checked = parsedPerms.includes('read');
+        document.getElementById('approve-perm-write').checked = parsedPerms.includes('write');
+        document.getElementById('approve-perm-update').checked = parsedPerms.includes('update');
+        document.getElementById('approve-perm-delete').checked = parsedPerms.includes('delete');
+        document.getElementById('approve-perm-scope').value = scope || 'all';
+        document.getElementById('approve-modal').style.display = 'flex';
+    }
+
+    function closeApproveModal() {
+        document.getElementById('approve-modal').style.display = 'none';
+    }
+
+    async function submitApprove() {
+        const connId = document.getElementById('approve-conn-id').value;
+        const perms = [];
+        if(document.getElementById('approve-perm-read').checked) perms.push('read');
+        if(document.getElementById('approve-perm-write').checked) perms.push('write');
+        if(document.getElementById('approve-perm-update').checked) perms.push('update');
+        if(document.getElementById('approve-perm-delete').checked) perms.push('delete');
+        
+        if(perms.length === 0) return alert("Select at least one permission.");
+        const scope = document.getElementById('approve-perm-scope').value;
+
+        try {
+            const res = await fetch(`/gitmem/api/agents/${agentId}/connections/${connId}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    status: 'approved',
+                    granted_permissions: perms,
+                    scope: scope
+                })
+            });
+            if(res.ok) window.location.reload();
+            else {
+                const d = await res.json();
+                alert(d.error || 'Failed');
+            }
+        } catch(e) { alert(e); }
+    }
+</script>
+
+{% endblock %}

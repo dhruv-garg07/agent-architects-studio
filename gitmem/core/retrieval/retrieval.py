@@ -92,15 +92,36 @@ Return ONLY JSON, no other content.
             return []
             
         try:
-            # Use metadata filters if provided
-            where_clause = metadata_filters if metadata_filters else None
-            
+            # Format metadata filters for ChromaDB
+            where_clause = None
+            if metadata_filters:
+                valid_filters = []
+                for k, v in metadata_filters.items():
+                    if isinstance(v, (str, int, float, bool)):
+                        valid_filters.append({k: v})
+                    elif isinstance(v, list) and v and all(isinstance(x, (str, int, float, bool)) for x in v):
+                        valid_filters.append({k: {"$in": v}})
+                
+                if len(valid_filters) == 1:
+                    where_clause = valid_filters[0]
+                elif len(valid_filters) > 1:
+                    where_clause = {"$and": valid_filters}
             results = self.vector_store.query(
                 query_text=query,
                 collection_name=agent_id,
                 n_results=limit,
                 where=where_clause
             )
+            
+            # Fallback: if metadata filters produced zero results, retry without them.
+            # LLM-generated filters may not match stored metadata schema.
+            if not results and where_clause:
+                results = self.vector_store.query(
+                    query_text=query,
+                    collection_name=agent_id,
+                    n_results=limit,
+                    where=None
+                )
             
             # VectorEngine.query returns normalized List[Dict]
             formatted = []
@@ -132,8 +153,10 @@ Return ONLY JSON, no other content.
         if not self.client:
             return []
         try:
+            # Try agent_id first (primary key used by most of the codebase),
+            # then fall back to repo_id (legacy alias set by supabase_connector).
             res = self.client.table(self._table).select("*") \
-                .eq("repo_id", repo_id) \
+                .or_(f"agent_id.eq.{repo_id},repo_id.eq.{repo_id}") \
                 .order("created_at", desc=True) \
                 .limit(limit).execute()
             return res.data or []
@@ -147,7 +170,7 @@ Return ONLY JSON, no other content.
             return []
         try:
             res = self.client.table(self._table).select("*") \
-                .eq("repo_id", repo_id) \
+                .or_(f"agent_id.eq.{repo_id},repo_id.eq.{repo_id}") \
                 .gte("importance", 0.7) \
                 .order("importance", desc=True) \
                 .limit(limit).execute()

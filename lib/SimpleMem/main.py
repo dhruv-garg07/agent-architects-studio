@@ -162,13 +162,14 @@ class SimpleMemSystem:
         """
         self.memory_builder.process_remaining()
 
-    def ask(self, question: str, system_prompt: str = None) -> str:
+    def ask(self, question: str, system_prompt: str = None, additional_contexts: List[MemoryEntry] = None) -> str:
         """
         Ask question - Core Q&A interface
 
         Args:
         - question: User question
         - system_prompt: Optional custom system prompt overriding default behavior
+        - additional_contexts: Optional external contexts to include (e.g. cross-agent memories)
 
         Returns:
         - Answer
@@ -179,6 +180,10 @@ class SimpleMemSystem:
 
         # Stage 2: Hybrid retrieval
         contexts = self.hybrid_retriever.retrieve(question)
+        
+        # Inject additional external contexts if provided
+        if additional_contexts:
+            contexts = additional_contexts + contexts
 
         # Inject unsaved dialogue history from RAM buffer to keep the LLM context-aware
         if hasattr(self, 'memory_builder') and self.memory_builder.dialogue_buffer:
@@ -202,7 +207,7 @@ class SimpleMemSystem:
 
         return answer
 
-    def ask_with_contexts(self, question: str, system_prompt: str = None):
+    def ask_with_contexts(self, question: str, system_prompt: str = None, additional_contexts: List[MemoryEntry] = None):
         """
         Ask question and return both the answer and the retrieved contexts.
         
@@ -212,6 +217,7 @@ class SimpleMemSystem:
         Args:
         - question: User question
         - system_prompt: Optional custom system prompt overriding default behavior
+        - additional_contexts: Optional external contexts to include
 
         Returns:
         - Tuple of (answer: str, contexts: List[MemoryEntry])
@@ -222,6 +228,10 @@ class SimpleMemSystem:
 
         # Single retrieval pass
         contexts = self.hybrid_retriever.retrieve(question)
+
+        # Inject additional external contexts if provided
+        if additional_contexts:
+            contexts = additional_contexts + contexts
 
         # Inject unsaved dialogue history from RAM buffer to keep the LLM context-aware
         if hasattr(self, 'memory_builder') and self.memory_builder.dialogue_buffer:
@@ -238,6 +248,7 @@ class SimpleMemSystem:
 
         # Generate answer from retrieved contexts
         answer = self.answer_generator.generate_answer(question, contexts, system_prompt=system_prompt)
+        return answer, contexts
 
         print("\nAnswer:")
         print(answer)

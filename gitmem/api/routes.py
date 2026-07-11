@@ -15,9 +15,19 @@ One agent == one repository. agent_id IS the repo_id.
 
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash, Response
 from flask_login import login_required, current_user
+from datetime import datetime
 import re
+import uuid
 
 from gitmem.core.app import gitmem_app
+from gitmem.core.access.agent_network import (
+    create_agent_connection,
+    evaluate_connection_access,
+    list_agent_connections,
+    normalize_permissions,
+    normalize_scope,
+    update_agent_connection,
+)
 
 gitmem_bp = Blueprint(
     'gitmem', __name__,
@@ -1049,10 +1059,293 @@ def hub_chat(ws_slug):
     agent = _agent_context(ws_slug, agent_raw)
     return render_template('gitmem/hub_chat.html', workspace=agent)
 
+@gitmem_bp.route('/api/agents/<agent_id>/connections', methods=['GET'])
+@login_required
+def agent_connections(agent_id):
+    agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
+    if not agent_raw:
+        return jsonify({'error': 'Agent not found or access denied'}), 404
+
+    db = _db()
+    if not db:
+        return jsonify({'error': 'Database unavailable'}), 503
+
+    try:
+        inbound = [row for row in list_agent_connections(db, agent_id=agent_id) if str(row.get('target_agent_id') or '') == str(agent_id)]
+        outbound = [row for row in list_agent_connections(db, agent_id=agent_id) if str(row.get('source_agent_id') or '') == str(agent_id)]
+        return jsonify({'agent_id': agent_id, 'inbound': inbound, 'outbound': outbound})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@gitmem_bp.route('/api/agents/<agent_id>/connections/request', methods=['POST'])
+@login_required
+def agent_connection_request(agent_id):
+    agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
+    if not agent_raw:
+        return jsonify({'error': 'Agent not found or access denied'}), 404
+
+    data = request.get_json(silent=True) or {}
+    target_agent_id = (data.get('target_agent_id') or '').strip()
+    if not target_agent_id:
+        return jsonify({'error': 'target_agent_id is required'}), 400
+
+    if target_agent_id == agent_id:
+        return jsonify({'error': 'Self-connections are not allowed'}), 400
+
+    if not _get_agent(target_agent_id):
+        return jsonify({'error': 'Target agent not found'}), 404
+
+    permissions = normalize_permissions(data.get('permissions') or data.get('requested_permissions'))
+    if not permissions:
+        return jsonify({'error': 'At least one permission is required'}), 400
+
+    scope = normalize_scope(data.get('scope') or 'all')
+    db = _db()
+    if not db:
+        return jsonify({'error': 'Database unavailable'}), 503
+
+    try:
+        existing = [row for row in list_agent_connections(db, agent_id=agent_id) if str(row.get('source_agent_id') or '') == str(agent_id) and str(row.get('target_agent_id') or '') == str(target_agent_id)]
+        if any(str(row.get('status', '')).lower() in {'pending', 'approved'} for row in existing):
+            return jsonify({'error': 'A pending or approved connection already exists'}), 409
+
+        conn_id = str(uuid.uuid4())
+        row = {
+            'id': conn_id,
+            'source_agent_id': agent_id,
+            'target_agent_id': target_agent_id,
+            'permissions': permissions,
+            'scope': scope,
+            'status': 'pending',
+            'created_at': datetime.utcnow().isoformat(),
+        }
+        create_agent_connection(db, row)
+        return jsonify({'ok': True, 'connection': row}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@gitmem_bp.route('/api/agents/<agent_id>/connections/<connection_id>', methods=['PUT', 'DELETE'])
+@login_required
+def agent_connection_manage(agent_id, connection_id):
+    agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
+    if not agent_raw:
+        return jsonify({'error': 'Agent not found or access denied'}), 404
+
+    db = _db()
+    if not db:
+        return jsonify({'error': 'Database unavailable'}), 503
+
+    try:
+        conn_rows = [row for row in list_agent_connections(db) if str(row.get('id') or '') == str(connection_id)]
+        if not conn_rows:
+            return jsonify({'error': 'Connection not found'}), 404
+        connection = conn_rows[0]
+
+        is_target_agent = str(connection.get('target_agent_id') or '') == str(agent_id)
+        is_source_agent = str(connection.get('source_agent_id') or '') == str(agent_id)
+        if not (is_target_agent or is_source_agent):
+            return jsonify({'error': 'Connection does not belong to this agent'}), 403
+
+        if request.method == 'DELETE':
+            status = 'revoked'
+            updates = {'status': status}
+        else:
+            payload = request.get_json(silent=True) or {}
+            status = (payload.get('status') or '').strip().lower()
+            if status not in {'approved', 'revoked'}:
+                return jsonify({'error': 'status must be approved or revoked'}), 400
+            updates = {'status': status}
+            if status == 'approved':
+                granted_permissions = normalize_permissions(payload.get('granted_permissions') or payload.get('permissions') or connection.get('permissions'))
+                updates['permissions'] = granted_permissions
+                updates['scope'] = normalize_scope(payload.get('scope') or connection.get('scope') or 'all')
+                if not granted_permissions:
+                    return jsonify({'error': 'At least one permission is required'}), 400
+            if status == 'revoked':
+                updates['permissions'] = connection.get('permissions') or []
+
+        if status == 'approved' and not is_target_agent:
+            return jsonify({'error': 'Only the target agent owner can approve a request'}), 403
+
+        updated = update_agent_connection(db, connection_id, updates)
+        return jsonify({'ok': True, 'connection': {**connection, **updated}})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@gitmem_bp.route('/api/agents/<agent_id>/network/pull', methods=['POST'])
+@login_required
+def agent_network_pull(agent_id):
+    agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
+    if not agent_raw:
+        return jsonify({'error': 'Agent not found or access denied'}), 404
+
+    data = request.get_json(silent=True) or {}
+    target_agent_id = (data.get('target_agent_id') or '').strip()
+    query = (data.get('query') or '').strip()
+    requested_scope = (data.get('scope') or 'all').strip().lower()
+    if not target_agent_id or not query:
+        return jsonify({'error': 'target_agent_id and query are required'}), 400
+
+    allowed, reason = evaluate_connection_access(_db(), agent_id, target_agent_id, 'read', requested_scope)
+    if not allowed:
+        return jsonify({'error': f'Access Denied: {reason}'}), 403
+
+    try:
+        # Use the global retrieval orchestrator
+        # CRITICAL: Both repo_id AND agent_id must be the TARGET agent's ID.
+        # repo_id controls Supabase queries (_recency_search, _importance_search)
+        # agent_id controls ChromaDB collection lookup (_semantic_search)
+        result = gitmem_app.retrieval.retrieve(query=query, repo_id=target_agent_id, agent_id=target_agent_id, max_tokens=1000)
+        
+        # Filter based on scope
+        sources = result.get('sources', []) if isinstance(result, dict) else result
+        if isinstance(sources, list):
+            if requested_scope == 'documents':
+                sources = [r for r in sources if r.get('type') == 'document' or r.get('metadata', {}).get('type') == 'document']
+            elif requested_scope == 'chat_history':
+                sources = [r for r in sources if r.get('type') in ('episodic', 'chat', 'chat_history')]
+            if isinstance(result, dict):
+                result['sources'] = sources
+                
+        return jsonify({'ok': True, 'data': result})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@gitmem_bp.route('/api/agents/<agent_id>/network/push', methods=['POST'])
+@login_required
+def agent_network_push(agent_id):
+    agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
+    if not agent_raw:
+        return jsonify({'error': 'Agent not found or access denied'}), 404
+
+    data = request.get_json(silent=True) or {}
+    target_agent_id = (data.get('target_agent_id') or '').strip()
+    memory_content = (data.get('memory') or '').strip()
+    mem_type = (data.get('type') or 'episodic').strip().lower()
+    requested_scope = (data.get('scope') or 'all').strip().lower()
+
+    if not target_agent_id or not memory_content:
+        return jsonify({'error': 'target_agent_id and memory are required'}), 400
+
+    allowed, reason = evaluate_connection_access(_db(), agent_id, target_agent_id, 'write', requested_scope)
+    if not allowed:
+        return jsonify({'error': f'Access Denied: {reason}'}), 403
+
+    try:
+        db = _db()
+        mem_id = str(uuid.uuid4())
+        created_at = datetime.utcnow().isoformat()
+        if db:
+            db.table('gitmem_memories').insert({
+                'id': mem_id,
+                'agent_id': target_agent_id,
+                'repo_id': target_agent_id,
+                'content': memory_content,
+                'type': mem_type,
+                'created_at': created_at,
+            }).execute()
+        
+        # Also index into ChromaDB so the memory is discoverable via semantic search
+        gitmem_app.vector_engine.add_memory({
+            'id': mem_id,
+            'agent_id': target_agent_id,
+            'content': memory_content,
+            'type': mem_type,
+            'importance': 0.5,
+            'created_at': created_at,
+        })
+        
+        return jsonify({'ok': True, 'id': mem_id})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@gitmem_bp.route('/api/agents/<agent_id>/network/update', methods=['PUT'])
+@login_required
+def agent_network_update(agent_id):
+    agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
+    if not agent_raw:
+        return jsonify({'error': 'Agent not found or access denied'}), 404
+
+    data = request.get_json(silent=True) or {}
+    target_agent_id = (data.get('target_agent_id') or '').strip()
+    memory_id = (data.get('memory_id') or '').strip()
+    new_content = (data.get('content') or '').strip()
+    requested_scope = (data.get('scope') or 'all').strip().lower()
+
+    if not target_agent_id or not memory_id or not new_content:
+        return jsonify({'error': 'target_agent_id, memory_id, and content are required'}), 400
+
+    allowed, reason = evaluate_connection_access(_db(), agent_id, target_agent_id, 'update', requested_scope)
+    if not allowed:
+        return jsonify({'error': f'Access Denied: {reason}'}), 403
+
+    try:
+        db = _db()
+        if db:
+            db.table('gitmem_memories').update({
+                'content': new_content,
+                'updated_at': datetime.utcnow().isoformat(),
+            }).eq('id', memory_id).eq('agent_id', target_agent_id).execute()
+        return jsonify({'ok': True, 'id': memory_id})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@gitmem_bp.route('/api/agents/<agent_id>/network/delete', methods=['DELETE'])
+@login_required
+def agent_network_delete(agent_id):
+    agent_raw = _get_agent(agent_id, user_id=current_user.get_id())
+    if not agent_raw:
+        return jsonify({'error': 'Agent not found or access denied'}), 404
+
+    data = request.get_json(silent=True) or {}
+    target_agent_id = (data.get('target_agent_id') or '').strip()
+    memory_id = (data.get('memory_id') or '').strip()
+    requested_scope = (data.get('scope') or 'all').strip().lower()
+
+    if not target_agent_id or not memory_id:
+        return jsonify({'error': 'target_agent_id and memory_id are required'}), 400
+
+    allowed, reason = evaluate_connection_access(_db(), agent_id, target_agent_id, 'delete', requested_scope)
+    if not allowed:
+        return jsonify({'error': f'Access Denied: {reason}'}), 403
+
+    try:
+        db = _db()
+        if db:
+            db.table('gitmem_memories').delete().eq('id', memory_id).eq('agent_id', target_agent_id).execute()
+        return jsonify({'ok': True, 'id': memory_id})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @gitmem_bp.route('/w/<ws_slug>/permissions')
 @login_required
 def hub_permissions(ws_slug):
-    return redirect(url_for('gitmem.hub_settings', ws_slug=ws_slug))
+    agent_raw = _get_agent(ws_slug, user_id=current_user.get_id())
+    if not agent_raw: return redirect(url_for('gitmem.landing'))
+    agent = _agent_context(ws_slug, agent_raw)
+    
+    # Fetch active and pending connections
+    try:
+        db = _db()
+        all_connections = list_agent_connections(db, agent_id=ws_slug)
+        inbound = [c for c in all_connections if str(c.get('target_agent_id')) == str(ws_slug)]
+        outbound = [c for c in all_connections if str(c.get('source_agent_id')) == str(ws_slug)]
+    except Exception as e:
+        inbound, outbound = [], []
+        print(f"Error fetching connections: {e}")
+        
+    return render_template('gitmem/hub_permissions.html', workspace=agent, inbound=inbound, outbound=outbound)
 
 
 @gitmem_bp.route('/w/<ws_slug>/branches')

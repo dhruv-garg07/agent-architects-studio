@@ -82,6 +82,7 @@ from key_utils import hash_key, parse_json_field
 from backend_examples.python.services.api_agents import ApiAgentsService
 from Octave_mem.RAG_DB_CONTROLLER_AGENTS.agent_RAG import Agentic_RAG
 from Octave_mem.SqlDB.sqlDbController import add_message
+from gitmem.core.access.agent_network import evaluate_connection_access
 
 # Create a server-side supabase client (service role) for validation and lookups
 _SUPABASE_URL = os.environ.get('SUPABASE_URL')
@@ -1854,6 +1855,56 @@ def agent_chat():
             except Exception as bg_err:
                 print(f"[agent_chat] Background save/finalize error: {bg_err}")
 
+        # Fetch cross-agent context if approved connections exist
+        cross_agent_contexts = []
+        try:
+            from gitmem.core.app import gitmem_app
+            from gitmem.core.access.agent_network import list_agent_connections
+            from SimpleMem.models.memory_entry import MemoryEntry
+            
+            if gitmem_app.supabase_client:
+                # Find all approved connections where this agent is the source
+                connections = list_agent_connections(gitmem_app.supabase_client, agent_id=agent_id)
+                for conn in connections:
+                    if str(conn.get('source_agent_id')) == str(agent_id) and str(conn.get('status')).lower() == 'approved':
+                        # Check permissions
+                        perms = conn.get('permissions', [])
+                        if isinstance(perms, str):
+                            perms = [p.strip().lower() for p in perms.split(',')]
+                        
+                        if 'read' in perms:
+                            target_id = conn.get('target_agent_id')
+                            if target_id:
+                                print(f"[agent_chat] Pulling cross-agent context from {target_id}")
+                                # Retrieve using gitmem_app.retrieval
+                                result = gitmem_app.retrieval.retrieve(
+                                    query=user_message, 
+                                    repo_id=target_id, 
+                                    agent_id=target_id, 
+                                    max_tokens=1000
+                                )
+                                # Parse results into MemoryEntry objects
+                                sources = result.get('sources', []) if isinstance(result, dict) else result
+                                if isinstance(sources, list):
+                                    # Scope filter (default 'all')
+                                    scope = str(conn.get('scope', 'all')).lower()
+                                    if scope == 'documents':
+                                        sources = [r for r in sources if r.get('type') == 'document' or r.get('metadata', {}).get('type') == 'document']
+                                    elif scope == 'chat_history':
+                                        sources = [r for r in sources if r.get('type') in ('episodic', 'chat', 'chat_history')]
+                                        
+                                    for src in sources:
+                                        content = src.get('content') or str(src)
+                                        topic = src.get('metadata', {}).get('topic', f"Cross-agent context from {target_id}") if isinstance(src, dict) else f"Cross-agent context from {target_id}"
+                                        cross_agent_contexts.append(MemoryEntry(
+                                            lossless_restatement=f"[{target_id}] {content}",
+                                            topic=topic,
+                                            keywords=[],
+                                            timestamp=src.get('created_at') if isinstance(src, dict) else None
+                                        ))
+        except Exception as cx_err:
+            print(f"[agent_chat] Error pulling cross-agent contexts: {cx_err}")
+
         is_stream = str(data.get('stream', '')).lower() == 'true'
 
         if is_stream:
@@ -1870,7 +1921,7 @@ def agent_chat():
                 )
                 
                 # Fetch answer synchronously
-                agent_response_obj = memory_system.ask(user_message, system_prompt=chat_prompt)
+                agent_response_obj = memory_system.ask(user_message, system_prompt=chat_prompt, additional_contexts=cross_agent_contexts)
                 reply_str = json.dumps(agent_response_obj) if isinstance(agent_response_obj, (dict, list)) else str(agent_response_obj)
                 
                 yield f"data: {json.dumps({'type': 'loading', 'status': 'streaming', 'message': 'Generating response...'})}\n\n"
@@ -1898,7 +1949,7 @@ def agent_chat():
                 "but reply naturally as a friendly chatbot. Do not act like a rigid search engine. "
                 "You must output valid JSON format."
             )
-            agent_response = memory_system.ask(user_message, system_prompt=chat_prompt)
+            agent_response = memory_system.ask(user_message, system_prompt=chat_prompt, additional_contexts=cross_agent_contexts)
             
             threading.Thread(
                 target=_background_save_and_finalize,
@@ -2574,6 +2625,86 @@ def manhattan_snapshot_restore(agent_id):
             .eq('agent_id', agent_id).gt('created_at', target_time).execute()
             
         return jsonify({"ok": True, "deleted_memories": deleted_count})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Network / Inter-Agent Communication
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+def _verify_agent_network_access(source_id, target_id, req_permission):
+    if source_id == target_id:
+        return True, "Same agent"
+    if not _supabase_backend:
+        return False, "DB Unavailable"
+    return evaluate_connection_access(_supabase_backend, source_id, target_id, req_permission, "all")
+
+@manhattan_api.route("/<agent_id>/network/pull", methods=["POST"])
+def manhattan_network_pull(agent_id):
+    """Pull context from another agent's memory (requires READ permission)."""
+    data = request.get_json(silent=True) or {}
+    user_id, error = extract_and_validate_api_key(data)
+    if error: return error
+    
+    target_id = data.get('target_agent_id')
+    query = data.get('query')
+    if not target_id or not query:
+        return jsonify({"error": "target_agent_id and query required"}), 400
+        
+    allowed, msg = _verify_agent_network_access(agent_id, target_id, 'read')
+    if not allowed:
+        return jsonify({"error": f"Access Denied: {msg}"}), 403
+        
+    try:
+        # Perform retrieval on target_id
+        from gitmem.core.retrieval.retrieval import RetrievalPipeline
+        retrieval_pipeline = RetrievalPipeline()
+        result = retrieval_pipeline.retrieve(query=query, repo_id=target_id, agent_id=target_id, max_tokens=1000)
+        return jsonify({"ok": True, "data": result})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@manhattan_api.route("/<agent_id>/network/push", methods=["POST"])
+def manhattan_network_push(agent_id):
+    """Push context to another agent's memory (requires WRITE permission)."""
+    data = request.get_json(silent=True) or {}
+    user_id, error = extract_and_validate_api_key(data)
+    if error: return error
+    
+    target_id = data.get('target_agent_id')
+    memory_content = data.get('memory')
+    if not target_id or not memory_content:
+        return jsonify({"error": "target_agent_id and memory required"}), 400
+        
+    allowed, msg = _verify_agent_network_access(agent_id, target_id, 'write')
+    if not allowed:
+        return jsonify({"error": f"Access Denied: {msg}"}), 403
+        
+    try:
+        mem_id = str(uuid.uuid4())
+        if _supabase_backend:
+            _supabase_backend.table('gitmem_memories').insert({
+                'id': mem_id,
+                'agent_id': target_id,
+                'content': memory_content,
+                'type': 'episodic',
+                'created_at': datetime.utcnow().isoformat()
+            }).execute()
+        
+        # Also index in RAG
+        db_path = os.getenv("CHROMA_DATABASE_CHAT_HISTORY")
+        if db_path:
+            rag = Agentic_RAG(database=db_path, enable_cache=False, enable_monitoring=False)
+            rag.add_documents_agent(
+                agent_ID=target_id,
+                documents=[memory_content],
+                metadatas=[{"source": agent_id, "type": "network_push"}],
+                ids=[mem_id]
+            )
+            
+        return jsonify({"ok": True, "id": mem_id})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

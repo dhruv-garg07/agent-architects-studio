@@ -265,12 +265,22 @@ Return ONLY JSON, no other content.
                     query=query,
                     n_results=self.semantic_top_k
                 )
-                # Parse doc strings into mock MemoryEntry objects to unify context interface
+                # Parse doc results into mock MemoryEntry objects to unify context interface.
+                # search_agent_collection returns List[Dict] with keys: id, document, metadata, distance
                 if raw_docs and isinstance(raw_docs, list):
-                    for d_str in raw_docs:
+                    for d_item in raw_docs:
+                        # Handle both dict results (from fetch_related_to_query) and plain strings
+                        if isinstance(d_item, dict):
+                            doc_text = d_item.get('document') or d_item.get('content') or str(d_item)
+                            doc_meta = d_item.get('metadata', {})
+                            doc_topic = doc_meta.get('topic', 'Document Context') if isinstance(doc_meta, dict) else 'Document Context'
+                        else:
+                            doc_text = str(d_item)
+                            doc_topic = 'Document Context'
+                        
                         doc_results.append(MemoryEntry(
-                            lossless_restatement=d_str,
-                            topic="Document Context",
+                            lossless_restatement=doc_text,
+                            topic=doc_topic,
                             keywords=[],
                             timestamp=datetime.utcnow().isoformat()
                         ))
