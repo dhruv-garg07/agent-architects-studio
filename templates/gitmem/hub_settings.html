@@ -5,9 +5,14 @@
 {% block workspace_content %}
 
 <!-- Page Header -->
-<div class="gm-page-header">
-    <h1 class="gm-page-title">Settings</h1>
-    <p class="gm-page-subtitle">Configure workspace behavior, retention, and developer options.</p>
+<div class="gm-page-header" style="display: flex; justify-content: space-between; align-items: flex-start;">
+    <div>
+        <h1 class="gm-page-title">Settings</h1>
+        <p class="gm-page-subtitle">Configure workspace behavior, retention, and developer options.</p>
+    </div>
+    <button id="btn-save-settings" onclick="saveSettings()" style="padding: 8px 16px; border-radius: 8px; background: hsl(230,80%,62%); color: white; font-weight: 600; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s;">
+        <i data-lucide="save" style="width: 16px; height: 16px;"></i> <span id="save-settings-text">Save Changes</span>
+    </button>
 </div>
 
 <!-- Workspace Settings -->
@@ -18,11 +23,11 @@
     <div class="gm-section-body">
         <div class="gm-settings-group">
             <label class="gm-settings-label">Workspace Name</label>
-            <input type="text" value="{{ workspace.name if workspace else '' }}" class="gm-settings-input" placeholder="My Organization">
+            <input type="text" id="setting-ws-name" value="{{ workspace.name if workspace else '' }}" class="gm-settings-input" placeholder="My Organization">
         </div>
         <div class="gm-settings-group">
             <label class="gm-settings-label">Description</label>
-            <textarea class="gm-settings-input" rows="2" placeholder="What this workspace is for...">{{ workspace.description if workspace else '' }}</textarea>
+            <textarea id="setting-ws-desc" class="gm-settings-input" rows="2" placeholder="What this workspace is for...">{{ workspace.description if workspace else '' }}</textarea>
         </div>
     </div>
 </div>
@@ -33,12 +38,13 @@
         <h2 class="gm-section-title"><i data-lucide="layers"></i> Context Governance</h2>
     </div>
     <div class="gm-section-body">
+        {% set meta = workspace.metadata if workspace and workspace.metadata else {} %}
         <div class="gm-settings-row">
             <div class="gm-settings-row-info">
                 <span class="gm-settings-row-title">Auto-approve agent learnings</span>
                 <span class="gm-settings-row-desc">Skip manual review for low-risk context updates from agents.</span>
             </div>
-            <div class="gm-toggle-switch" onclick="this.classList.toggle('active')">
+            <div id="setting-auto-approve" class="gm-toggle-switch {{ 'active' if meta.get('auto_approve_learnings', False) else '' }}" onclick="this.classList.toggle('active')">
                 <div class="gm-toggle-knob"></div>
             </div>
         </div>
@@ -47,7 +53,7 @@
                 <span class="gm-settings-row-title">Require approval for decisions</span>
                 <span class="gm-settings-row-desc">All items categorized as "Decisions" require manual approval before merging.</span>
             </div>
-            <div class="gm-toggle-switch active" onclick="this.classList.toggle('active')">
+            <div id="setting-req-decision" class="gm-toggle-switch {{ 'active' if meta.get('require_decision_approval', True) else '' }}" onclick="this.classList.toggle('active')">
                 <div class="gm-toggle-knob"></div>
             </div>
         </div>
@@ -56,7 +62,7 @@
                 <span class="gm-settings-row-title">Conflict detection</span>
                 <span class="gm-settings-row-desc">Automatically detect contradicting context across agents.</span>
             </div>
-            <div class="gm-toggle-switch active" onclick="this.classList.toggle('active')">
+            <div id="setting-conflict" class="gm-toggle-switch {{ 'active' if meta.get('conflict_detection', True) else '' }}" onclick="this.classList.toggle('active')">
                 <div class="gm-toggle-knob"></div>
             </div>
         </div>
@@ -109,7 +115,7 @@
                 <span class="gm-settings-row-title" style="color: hsl(0,72%,65%);">Delete Workspace</span>
                 <span class="gm-settings-row-desc">Permanently delete this workspace and all its context. This action cannot be undone.</span>
             </div>
-            <button style="background: hsla(0,72%,55%,0.1); color: hsl(0,72%,55%); border: 1px solid hsla(0,72%,55%,0.2); padding: 6px 14px; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.15s ease; flex-shrink: 0;"
+            <button onclick="deleteWorkspace()" style="background: hsla(0,72%,55%,0.1); color: hsl(0,72%,55%); border: 1px solid hsla(0,72%,55%,0.2); padding: 6px 14px; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.15s ease; flex-shrink: 0;"
                     onmouseover="this.style.background='hsla(0,72%,55%,0.15)'"
                     onmouseout="this.style.background='hsla(0,72%,55%,0.1)'">
                 Delete
@@ -184,6 +190,65 @@
             settingsToggle.classList.add('active');
         }
     });
+
+    const agentId = "{{ workspace.id if workspace else '' }}";
+
+    async function saveSettings() {
+        if (!agentId) return;
+        
+        const btnText = document.getElementById('save-settings-text');
+        btnText.innerText = "Saving...";
+        
+        const updates = {
+            agent_name: document.getElementById('setting-ws-name').value,
+            description: document.getElementById('setting-ws-desc').value,
+            metadata: {
+                auto_approve_learnings: document.getElementById('setting-auto-approve').classList.contains('active'),
+                require_decision_approval: document.getElementById('setting-req-decision').classList.contains('active'),
+                conflict_detection: document.getElementById('setting-conflict').classList.contains('active')
+            }
+        };
+
+        try {
+            const res = await fetch('/update_agent', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ agent_id: agentId, updates })
+            });
+            if (res.ok) {
+                btnText.innerText = "Saved!";
+                setTimeout(() => { btnText.innerText = "Save Changes"; }, 2000);
+            } else {
+                alert("Failed to save settings.");
+                btnText.innerText = "Save Changes";
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Error saving settings.");
+            btnText.innerText = "Save Changes";
+        }
+    }
+
+    async function deleteWorkspace() {
+        if (!agentId) return;
+        if (!confirm("Are you sure you want to permanently delete this workspace and all its memory? This cannot be undone.")) return;
+
+        try {
+            const res = await fetch('/delete_agent', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ agent_id: agentId })
+            });
+            if (res.ok) {
+                window.location.href = "/dashboard";
+            } else {
+                alert("Failed to delete workspace.");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Error deleting workspace.");
+        }
+    }
 </script>
 
 {% endblock %}
