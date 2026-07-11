@@ -741,6 +741,80 @@
           display: none;
         }
 
+        /* Mobile Top Navigation (Visible only on small screens) */
+        #mobile-top-nav {
+          display: none;
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          padding: 15px 20px;
+          justify-content: space-between;
+          z-index: 1000;
+          pointer-events: none; /* Let clicks pass through where there are no buttons */
+        }
+        
+        .mobile-nav-btn {
+          pointer-events: auto;
+          background: rgba(0,0,0,0.7);
+          color: white;
+          border: 1px solid rgba(255,255,255,0.3);
+          padding: 10px 20px;
+          border-radius: 6px;
+          font-family: 'Special Elite', cursive;
+          font-size: 16px;
+          cursor: pointer;
+          backdrop-filter: blur(4px);
+        }
+        
+        body.secure-terminal .mobile-nav-btn {
+          background: rgba(10, 11, 13, 0.8);
+          color: var(--typewriter-ink);
+          border-color: var(--typewriter-ink);
+        }
+
+        /* Show top nav only on smaller height/width screens in landscape */
+        @media (max-width: 992px) and (orientation: landscape), (max-height: 500px) {
+          #mobile-top-nav {
+            display: flex;
+          }
+          #clearance-control {
+            top: 15px;
+            right: 50%;
+            transform: translateX(50%);
+          }
+        }
+
+        .ios-fullscreen {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 99999 !important;
+            background-color: var(--bg-desktop) !important;
+        }
+
+        @media (max-width: 992px) {
+          #presentation-viewport:fullscreen #deck-controls,
+          #presentation-viewport:-webkit-full-screen #deck-controls,
+          #presentation-viewport.ios-fullscreen #deck-controls,
+          #presentation-viewport:fullscreen #clearance-control,
+          #presentation-viewport:-webkit-full-screen #clearance-control,
+          #presentation-viewport.ios-fullscreen #clearance-control,
+          #presentation-viewport:fullscreen #index-drawer,
+          #presentation-viewport:-webkit-full-screen #index-drawer,
+          #presentation-viewport.ios-fullscreen #index-drawer {
+            display: none !important;
+          }
+          
+          #presentation-viewport:fullscreen #mobile-top-nav,
+          #presentation-viewport:-webkit-full-screen #mobile-top-nav,
+          #presentation-viewport.ios-fullscreen #mobile-top-nav {
+            display: flex !important;
+          }
+        }
+
         /* Portrait Device Rotation Overlay */
         #rotate-device-overlay {
           display: none;
@@ -784,12 +858,21 @@
     <div id="rotate-device-overlay">
         <i class="fa-solid fa-mobile-screen-button phone-rotate-icon"></i>
         <h2 style="font-size: 28px; margin-bottom: 15px; text-transform: uppercase;">[ ACCESS RESTRICTED ]</h2>
-        <p style="max-width: 450px; font-size: 16px; line-height: 1.5; font-family: 'Courier Prime', monospace;">
+        <p style="max-width: 450px; font-size: 16px; line-height: 1.5; font-family: 'Courier Prime', monospace; margin-bottom: 30px;">
             LANDSCAPE BRIEFING ACTIVE. PLEASE ROTATE YOUR MOBILE DEVICE TO LANDSCAPE ORIENTATION TO ACCESS THIS FILE.
         </p>
+        <button id="force-landscape-btn" onclick="toggleFullscreen()" style="padding: 20px 40px; font-size: 20px; font-weight: bold; background-color: var(--marker-red); color: white; border: none; cursor: pointer; border-radius: 8px; font-family: 'Special Elite', cursive; text-transform: uppercase; box-shadow: 0 5px 15px rgba(0,0,0,0.3); transition: opacity 0.5s;">
+            <i class="fa-solid fa-expand" style="margin-right: 10px;"></i> ENTER FULLSCREEN
+        </button>
     </div>
 
 <div id="presentation-viewport">
+    
+    <!-- Mobile Top Navigation (Visible only on small screens) -->
+    <div id="mobile-top-nav">
+        <button onclick="prevSlide()" class="mobile-nav-btn"><i class="fa-solid fa-chevron-left"></i> PREV</button>
+        <button onclick="nextSlide()" class="mobile-nav-btn">NEXT <i class="fa-solid fa-chevron-right"></i></button>
+    </div>
     
     <!-- Sidebar Index drawer -->
     <div id="index-drawer">
@@ -807,11 +890,18 @@
 
     <!-- Clearance/Theme control -->
     <div id="clearance-control">
-        <span class="control-label">CLEARANCE LEVEL:</span>
-        <button id="theme-toggle" class="btn-clearance" onclick="toggleTheme()">
-            <i class="fa-solid fa-lock"></i>
-            <span id="theme-status">LEVEL 1 (UNCLASSIFIED)</span>
-        </button>
+        <div style="display: flex; gap: 20px; align-items: center;">
+            <div id="visitor-counter" style="font-family: 'Special Elite', cursive; font-size: 11px; color: var(--typewriter-ink); border: 1px solid var(--typewriter-ink); padding: 6px 12px; display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.05);">
+                <i class="fa-solid fa-eye"></i> VIEWS: <span id="view-count-number" style="transition: opacity 0.4s ease;">218</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span class="control-label">CLEARANCE LEVEL:</span>
+                <button id="theme-toggle" class="btn-clearance" onclick="toggleTheme()">
+                    <i class="fa-solid fa-lock"></i>
+                    <span id="theme-status">LEVEL 1 (UNCLASSIFIED)</span>
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Main Presentation Deck -->
@@ -831,13 +921,27 @@
                     <p style="margin-top: 40px; border-left: 6px solid var(--marker-red); padding-left: 25px; background: rgba(192, 57, 43, 0.05); padding-top: 10px; padding-bottom: 10px;">
                         FILE ID: ORG-MEM-2026-X<br>
                         SECURITY CLEARANCE: LEVEL 5 (EXECUTIVE)<br>
-                        SUBJECT: INTERNAL DATA THREADING & CONTAINMENT
+                        SUBJECT: INTERNAL KNOWLEDGE SHARING & SECURITY
                     </p>
                 </div>
                 <div class="classification-footer">PROPERTY OF THE FIRM // FOR AUTHORIZED REVIEW ONLY</div>
             </div>
 
-            <!-- Slide 2: Sitrep -->
+            <!-- Slide 2: Information Rent -->
+            <div class="slide-container" id="slide2_rent">
+                <div class="classification-header">SUBJECT: THE INFORMATION RENT</div>
+                <h2 class="slide-title">THE VALUE OF TACIT KNOWLEDGE</h2>
+                <div class="content-area">
+                    <div style="padding: 30px; background: rgba(0,0,0,0.02); border-left: 6px solid var(--marker-red);">
+                        <p style="font-size: 24px; line-height: 1.5;">Experienced employees are paid higher not because of the additional labor they bring, but because of the <b>knowledge they acquire</b> during their tenure.</p>
+                        <p style="font-size: 24px; line-height: 1.5; margin-top: 20px;">We can bridge this gap.</p>
+                    </div>
+                    <p class="marker-text" style="text-align: center; margin-top: 40px; font-size: 32px;">"Data is cheap, but memory is invaluable."</p>
+                </div>
+                <div class="classification-footer">PROPERTY OF THE FIRM // FOR AUTHORIZED REVIEW ONLY</div>
+            </div>
+
+            <!-- Slide 3: Sitrep -->
             <div class="slide-container" id="slide2">
                 <div class="classification-header">SUBJECT: FRAGMENTATION ANALYSIS</div>
                 <h2 class="slide-title">SITREP: THE FRAGMENTED ENTERPRISE</h2>
@@ -911,7 +1015,7 @@
 
             <!-- Slide 5: The Brain -->
             <div class="slide-container" id="slide5" style="align-items: center; text-align: center;">
-                <div class="classification-header">SOLUTION DEPLOYMENT SPECIFICATION</div>
+                <div class="classification-header">SOLUTION OVERVIEW</div>
                 <div class="content-area" style="align-items: center;">
                     <p class="marker-text" style="font-size: 28px;">[ INITIATING SOLUTION PHASE ]</p>
                     <h1 style="font-size: 100px; margin-top: 20px; line-height: 1;">THE BRAIN</h1>
@@ -925,18 +1029,18 @@
 
             <!-- Slide 6: Versioning -->
             <div class="slide-container" id="slide6">
-                <div class="classification-header">TECHNICAL SPECIFICATION: TEMPORAL CHAIN</div>
-                <h2 class="slide-title">THE THREADED FABRIC (VERSIONING)</h2>
+                <div class="classification-header">HOW IT WORKS: TRACKING HISTORY</div>
+                <h2 class="slide-title">THE CONTINUOUS TIMELINE</h2>
                 <div class="content-area">
                     <div class="two-column">
                         <div style="padding: 25px; background: rgba(0,0,0,0.02); border: 1px dashed var(--typewriter-ink);">
-                            <h3 style="font-family: 'Special Elite'; font-size: 24px; color: var(--typewriter-ink);">TEMPORAL VERSIONING</h3>
+                            <h3 style="font-family: 'Special Elite'; font-size: 24px; color: var(--typewriter-ink);">FULL HISTORY TRACKING</h3>
                             <p style="margin-top: 15px;">We don't just store data; we thread it. Maintain a complete history of <b>how</b> information evolved.</p>
                             <p class="marker-text" style="margin-top: 20px; font-size: 20px;">> RETRIEVE THE TRUTH AT ANY POINT.</p>
                         </div>
                         <div style="padding: 25px; background: rgba(0,0,0,0.02); border: 1px dashed var(--typewriter-ink);">
                             <h3 style="font-family: 'Special Elite'; font-size: 24px; color: var(--typewriter-ink);">CORRUPTION RECOVERY</h3>
-                            <p style="margin-top: 15px;">If data drifts or is corrupted by poor input, the system can "rewind" the fabric to recover the original institutional know-how.</p>
+                            <p style="margin-top: 15px;">If mistakes happen, the system can easily "rewind" to recover the original, correct information.</p>
                             <p class="marker-text" style="margin-top: 20px; font-size: 20px;">> ZERO KNOWLEDGE LOSS.</p>
                         </div>
                     </div>
@@ -946,8 +1050,8 @@
 
             <!-- Slide 7: Hierarchical Containment -->
             <div class="slide-container" id="slide7">
-                <div class="classification-header">SECURITY SPECIFICATION: PERMISSIONS</div>
-                <h2 class="slide-title">HIERARCHICAL CONTAINMENT</h2>
+                <div class="classification-header">SECURITY & ACCESS CONTROL</div>
+                <h2 class="slide-title">SMART ACCESS LEVELS</h2>
                 <div class="content-area">
                     <div class="tiled-content" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
                         <div class="tile">
@@ -962,8 +1066,8 @@
                         </div>
                         <div class="tile">
                             <div class="icon-circle"><i class="fa-solid fa-shield-halved"></i></div>
-                            <h4 style="font-family: 'Special Elite'; margin-bottom: 12px; font-size: 20px;">AGENT QUARANTINE</h4>
-                            <p style="font-size: 16px;">AI agents are bound by the same hierarchy as humans. Information is only accessed by authorized logic.</p>
+                            <h4 style="font-family: 'Special Elite'; margin-bottom: 12px; font-size: 20px;">AI SAFETY CONTROLS</h4>
+                            <p style="font-size: 16px;">AI agents follow the exact same security rules as your human employees. No unauthorized access.</p>
                         </div>
                     </div>
                     <p class="marker-text" style="margin-top: 35px; text-align: center; font-size: 24px; width: 100%;">Containment of Business IP is Non-Negotiable.</p>
@@ -973,15 +1077,15 @@
 
             <!-- Slide 8: Weaponizing AI Agents -->
             <div class="slide-container" id="slide8">
-                <div class="classification-header">OPERATIONAL FOCUS: LOGIC AGENTS</div>
-                <h2 class="slide-title">WEAPONIZING AI AGENTS</h2>
+                <div class="classification-header">OPERATIONAL FOCUS: AI ASSISTANTS</div>
+                <h2 class="slide-title">EMPOWERING YOUR AI TEAM</h2>
                 <div class="content-area">
                     <div class="two-column" style="align-items: center;">
                         <div style="display: flex; flex-direction: column; justify-content: center;">
-                            <h3>GROUND-TRUTH AUTONOMY</h3>
+                            <h3>PERFECT CONTEXT</h3>
                             <p style="margin-top: 15px;">Most AI agents fail due to "flat" data. By plugging into the <b>Company Brain</b>, agents operate with perfect context.</p>
                             <ul style="margin-top: 20px; padding-left: 20px;">
-                                <li style="margin-bottom: 10px;"><b>No Hallucinations:</b> Agents cite the threaded fabric.</li>
+                                <li style="margin-bottom: 10px;"><b>100% Accurate Responses:</b> Agents cite the threaded fabric.</li>
                                 <li style="margin-bottom: 10px;"><b>Consistency:</b> Every agent follows the same verified organizational history.</li>
                                 <li style="margin-bottom: 10px;"><b>Safe Execution:</b> Agents only move on authorized data paths.</li>
                             </ul>
@@ -1095,30 +1199,6 @@
                 <div class="classification-footer">PROPERTY OF THE FIRM // FOR AUTHORIZED REVIEW ONLY</div>
             </div>
 
-            <!-- Slide 13: References -->
-            <div class="slide-container" id="slide13">
-                <div class="classification-header">VERIFIED DOSSIER SOURCES</div>
-                <h2 class="slide-title">INTELLIGENCE SOURCES & REFERENCES</h2>
-                <div class="content-area" style="justify-content: flex-start; margin-top: 10px;">
-                    <div class="table-layout">
-                        <table>
-                            <thead>
-                                <tr><th>ENTITY / SOURCE</th><th>DATA POINT / STUDY</th><th>VERIFIED REFERENCE</th></tr>
-                            </thead>
-                            <tbody>
-                                <tr><td>ASANA INDEX</td><td>Work About Work (664h/Year)</td><td>asana.com/resources/anatomy-of-work</td></tr>
-                                <tr><td>MCKINSEY MGI</td><td>1.8h Daily Search Time</td><td>mckinsey.com/mgi/our-research</td></tr>
-                                <tr><td>GARTNER</td><td>21% Waste / Data Quality Costs</td><td>gartner.com/it/research/knowledge-mgmt</td></tr>
-                                <tr><td>IDC REPORTS</td><td>$31.5B Knowledge Failure Cost</td><td>idc.com/resource-center/ai-infrastructure</td></tr>
-                                <tr><td>PANOPTO</td><td>5.3h Weekly Wait Time</td><td>panopto.com/resource/workplace-productivity</td></tr>
-                                <tr><td>PHALADI (2024)</td><td>Tacit Knowledge Loss Threats</td><td>doi.org/10.4102/sajhrm.v22i0.2229</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <p class="marker-text" style="margin-top: 20px; font-size: 18px;">All data points cross-referenced for Fiscal Accuracy.</p>
-                </div>
-                <div class="classification-footer">PROPERTY OF THE FIRM // FOR AUTHORIZED REVIEW ONLY</div>
-            </div>
 
             <!-- Slide 14: Q&A / Debrief -->
             <div class="slide-container" id="slide14" style="background-color: #2d3436; color: white;">
@@ -1130,12 +1210,40 @@
                     <div style="margin-top: 40px; border: 2px dashed rgba(255,255,255,0.4); padding: 30px; width: 650px;">
                         <p style="color: white; margin-bottom: 8px;">PROJECT LEAD: THE MANHATTAN PROJECT</p>
                         <p style="color: white; margin-bottom: 8px;">LOCATION: SECURE TERMINAL</p>
+                        <button onclick="openLeadModal()" style="margin-top: 20px; padding: 15px 30px; background-color: var(--marker-red); color: white; border: none; font-family: 'Special Elite', cursive; font-size: 18px; cursor: pointer; border-radius: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: background-color 0.3s; text-transform: uppercase;">REQUEST FULL ACCESS</button>
                         <p style="font-size: 14px; opacity: 0.5; margin-top: 20px; color: white;">* WARNING: UNAUTHORIZED SHARING OF THIS DOSSIER IS A BREACH OF CORPORATE IP PROTOCOL.</p>
                     </div>
                 </div>
                 <div class="classification-footer" style="color: white;">END OF BRIEFING // ARCHIVE FILE 00-X</div>
             </div>
 
+        </div>
+    </div>
+
+    <!-- Lead Capture Modal -->
+    <div id="lead-capture-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 20000; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(5px);">
+        <div style="background-color: var(--bg-slide); border: 2px solid var(--border-color); padding: 40px; width: 90%; max-width: 500px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); font-family: 'Special Elite', cursive; position: relative;">
+            <button onclick="closeLeadModal()" style="position: absolute; top: 15px; right: 20px; background: transparent; border: none; color: var(--typewriter-ink); font-size: 20px; cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
+            <h2 style="color: var(--typewriter-ink); border-bottom: 2px solid var(--typewriter-ink); padding-bottom: 10px; margin-top: 0;">ACCESS REQUEST FORM</h2>
+            <p style="color: var(--typewriter-ink); font-size: 14px; margin-bottom: 25px;">Please provide at least one contact method for authorization clearance.</p>
+            
+            <form id="lead-form" onsubmit="submitLeadForm(event)">
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; color: var(--typewriter-ink); margin-bottom: 5px; font-size: 12px;">FULL NAME</label>
+                    <input type="text" id="lead-name" style="width: 100%; padding: 10px; background: transparent; border: 1px solid var(--typewriter-ink); color: var(--typewriter-ink); font-family: 'Courier Prime', monospace;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; color: var(--typewriter-ink); margin-bottom: 5px; font-size: 12px;">EMAIL ADDRESS</label>
+                    <input type="email" id="lead-email" style="width: 100%; padding: 10px; background: transparent; border: 1px solid var(--typewriter-ink); color: var(--typewriter-ink); font-family: 'Courier Prime', monospace;">
+                </div>
+                <div style="margin-bottom: 25px;">
+                    <label style="display: block; color: var(--typewriter-ink); margin-bottom: 5px; font-size: 12px;">PHONE NUMBER</label>
+                    <input type="tel" id="lead-phone" style="width: 100%; padding: 10px; background: transparent; border: 1px solid var(--typewriter-ink); color: var(--typewriter-ink); font-family: 'Courier Prime', monospace;">
+                </div>
+                <p id="lead-error" style="color: var(--marker-red); font-size: 12px; display: none; margin-bottom: 15px; font-weight: bold;">[!] MUST PROVIDE AT LEAST ONE FIELD.</p>
+                <p id="lead-success" style="color: var(--marker-blue); font-size: 14px; display: none; margin-bottom: 15px; font-weight: bold;">[✓] CREDENTIALS LOGGED. WE WILL CONTACT YOU.</p>
+                <button type="submit" id="lead-submit-btn" style="width: 100%; padding: 15px; background: var(--typewriter-ink); color: var(--bg-slide); border: none; font-family: 'Special Elite', cursive; font-size: 16px; cursor: pointer; text-transform: uppercase;">TRANSMIT SECURELY</button>
+            </form>
         </div>
     </div>
 
@@ -1167,18 +1275,18 @@
     // Slide Titles for Dossier Index drawer
     const slideTitles = [
         "01. Classified Cover",
-        "02. SITREP: Fragmentation",
-        "03. Waste: McKinsey Stats",
-        "04. Financial Data Leak",
-        "05. Solution: The Brain",
-        "06. Tech: Temporal Chain",
-        "07. Security: Containment",
-        "08. Autonomy: AI Agents",
-        "09. Projections: ROI Graph",
-        "10. Cost Recovery Audit",
-        "11. Strategic Vulnerability",
-        "12. Operational Roadmap",
-        "13. Research References",
+        "02. The Information Rent",
+        "03. SITREP: Fragmentation",
+        "04. Waste: McKinsey Stats",
+        "05. Financial Data Leak",
+        "06. Solution: The Brain",
+        "07. Tech: Continuous Timeline",
+        "08. Security: Access Control",
+        "09. Autonomy: AI Assistants",
+        "10. Projections: ROI Graph",
+        "11. Cost Recovery Audit",
+        "12. Strategic Vulnerability",
+        "13. Operational Roadmap",
         "14. Final Debriefing Q&A"
     ];
 
@@ -1188,6 +1296,37 @@
         showSlide(currentSlideIndex);
         resizeDeck();
         
+        // Fetch Global Visitor Count
+        fetch('/api/deck/visit', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.views) {
+                    const countSpan = document.getElementById('view-count-number');
+                    if (countSpan) {
+                        // Display the previous count briefly
+                        countSpan.textContent = data.views - 1;
+                        setTimeout(() => {
+                            countSpan.style.opacity = '0';
+                            setTimeout(() => {
+                                // Animate to the new true global count
+                                countSpan.textContent = data.views;
+                                countSpan.style.opacity = '1';
+                            }, 400);
+                        }, 1000);
+                    }
+                }
+            })
+            .catch(err => console.error("Error fetching global view count:", err));
+
+        // Auto-hide the force landscape button after 10s
+        setTimeout(() => {
+            const btn = document.getElementById('force-landscape-btn');
+            if (btn) {
+                btn.style.opacity = '0';
+                setTimeout(() => btn.style.display = 'none', 500);
+            }
+        }, 10000);
+
         // Listeners
         window.addEventListener('resize', resizeDeck);
         document.addEventListener('keydown', handleKeyDown);
@@ -1388,17 +1527,25 @@
     // Fullscreen Mode Handler
     function toggleFullscreen() {
         const elem = document.getElementById('presentation-viewport');
-        if (!document.fullscreenElement) {
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const isIOSFallback = elem.classList.contains('ios-fullscreen');
+        
+        if (!document.fullscreenElement && !document.webkitFullscreenElement && !isIOSFallback) {
             if (elem.requestFullscreen) {
                 elem.requestFullscreen().then(lockLandscape);
-            } else if (elem.webkitRequestFullscreen) { /* Safari */
+            } else if (elem.webkitRequestFullscreen) { /* Safari Desktop/iPad */
                 elem.webkitRequestFullscreen();
+            } else if (isIOS) {
+                // iPhone Safari Fallback
+                elem.classList.add('ios-fullscreen');
             }
         } else {
             if (document.exitFullscreen) {
                 document.exitFullscreen().then(unlockLandscape);
             } else if (document.webkitExitFullscreen) {
                 document.webkitExitFullscreen();
+            } else if (isIOSFallback) {
+                elem.classList.remove('ios-fullscreen');
             }
         }
     }
@@ -1431,9 +1578,69 @@
         }
     }
 
+    // Modal Functions
+    function openLeadModal() {
+        document.getElementById('lead-capture-modal').style.display = 'flex';
+        document.getElementById('lead-success').style.display = 'none';
+        document.getElementById('lead-error').style.display = 'none';
+        document.getElementById('lead-submit-btn').style.display = 'block';
+        document.getElementById('lead-form').reset();
+    }
+
+    function closeLeadModal() {
+        document.getElementById('lead-capture-modal').style.display = 'none';
+    }
+
+    async function submitLeadForm(e) {
+        e.preventDefault();
+        const name = document.getElementById('lead-name').value.trim();
+        const email = document.getElementById('lead-email').value.trim();
+        const phone = document.getElementById('lead-phone').value.trim();
+        const submitBtn = document.getElementById('lead-submit-btn');
+
+        if (!name && !email && !phone) {
+            document.getElementById('lead-error').textContent = "[!] MUST PROVIDE AT LEAST ONE FIELD.";
+            document.getElementById('lead-error').style.display = 'block';
+            return;
+        }
+
+        document.getElementById('lead-error').style.display = 'none';
+        
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = "TRANSMITTING...";
+        submitBtn.disabled = true;
+
+        try {
+            await fetch('/api/deck/submit-lead', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name, email, phone })
+            });
+            // We intentionally ignore response errors to silently fail
+        } catch (err) {
+            console.error("Transmission failed silently", err);
+            // Ignore network errors
+        } 
+        
+        // Always show success state to customer regardless of backend status
+        submitBtn.style.display = 'none';
+        document.getElementById('lead-success').style.display = 'block';
+        
+        setTimeout(() => {
+            closeLeadModal();
+            // Reset the form button silently after closing
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+        }, 3000);
+    }
+
     // Initialize on load
     window.onload = initPresentation;
 </script>
+
+
 
 </body>
 </html>

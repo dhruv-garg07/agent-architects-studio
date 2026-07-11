@@ -357,6 +357,63 @@ def deck():
     except Exception as e:
         return f"<h1>Deck</h1><p>Unable to render page: {e}</p>", 500
     
+@app.route('/api/deck/submit-lead', methods=['POST'])
+def submit_deck_lead():
+    """Handle deck lead submission and send email."""
+    try:
+        data = request.get_json(silent=True) or {}
+        name = data.get('name', '').strip()
+        email = data.get('email', '').strip()
+        phone = data.get('phone', '').strip()
+
+        if not (name or email or phone):
+            return jsonify({"error": "Please provide at least one contact method."}), 400
+
+        # Save to Supabase
+        try:
+            supabase_backend.table('deck_leads').insert({
+                "name": name,
+                "email": email,
+                "phone": phone
+            }).execute()
+        except Exception as sb_err:
+            print(f"Supabase error inserting deck lead: {sb_err}")
+            # We continue even if DB insertion fails, to at least send the email.
+
+        # Format email body
+        email_body = f"""New Access Request from Pitch Deck!
+
+Name: {name or 'Not provided'}
+Email: {email or 'Not provided'}
+Phone: {phone or 'Not provided'}
+"""
+        
+        # Send Email via background task
+        email_service = get_email_service()
+        email_service.send_email_async(
+            receiver_email='2021eeb1175@iitrpr.ac.in',
+            subject='🚀 New Lead: Deck Access Request',
+            body=email_body
+        )
+
+        return jsonify({"success": True, "message": "Lead submitted successfully."}), 200
+
+    except Exception as e:
+        print(f"Error submitting deck lead: {e}")
+        return jsonify({"error": "Failed to submit request. Please try again."}), 500
+
+
+@app.route('/api/deck/visit', methods=['POST'])
+def record_deck_visit():
+    """Increment and fetch global deck visitor count using a secure RPC."""
+    try:
+        response = supabase_backend.rpc('increment_deck_views', {}).execute()
+        new_views = response.data
+        return jsonify({"success": True, "views": new_views}), 200
+    except Exception as e:
+        print(f"Error incrementing deck views: {e}")
+        return jsonify({"error": "Failed to update views"}), 500
+
 
 @app.route('/for_investors')
 @app.route('/for-investors')
