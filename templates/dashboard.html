@@ -1,132 +1,11 @@
-{% extends "base.html" %}
+{% extends "layouts/mission_control_shell.html" %}
+{% set active_page = "dashboard" %}
 
 {% block title %}Dashboard - AI Agent Marketplace{% endblock %}
 
-{% block content %}
-<div class="flex min-h-screen relative">
-
-    <!-- Sidebar -->
-    <div
-        class="w-64 backdrop-blur-xl bg-black/40 border-r border-white/10 fixed left-0 top-14 bottom-0 overflow-y-auto hidden md:block">
-        <nav class="p-4 mt-8">
-
-            <!-- User Summary -->
-            <div class="mb-8 px-2 flex items-center gap-3">
-                <div
-                    class="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center border border-primary/20">
-                    <span class="font-bold text-primary">{{ profile.full_name[:1] }}</span>
-                </div>
-                <div class="overflow-hidden">
-                    <p class="text-sm font-medium text-white truncate">{{ profile.full_name }}</p>
-                    <p class="text-xs text-muted-foreground truncate">@{{ profile.username }}</p>
-                </div>
-            </div>
-
-            <!-- Menu Groups -->
-            <div class="mb-6">
-                <h3 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">Profile</h3>
-                <ul class="space-y-1">
-                    <li>
-                        <a href="#overview"
-                            class="nav-item flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-white/5 hover:text-white transition-all group">
-                            <i data-lucide="user"
-                                class="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors"></i>
-                            Overview
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#settings"
-                            class="nav-item flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-white/5 hover:text-white transition-all group">
-                            <i data-lucide="settings"
-                                class="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors"></i>
-                            Settings
-                        </a>
-                    </li>
-                </ul>
-            </div>
-
-            <div class="mb-6">
-                <h3 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">Workspace
-                </h3>
-                <ul class="space-y-1">
-                    <li>
-                        <a href="#my-agents"
-                            class="nav-item flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-white/5 hover:text-white transition-all group">
-                            <i data-lucide="bot"
-                                class="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors"></i>
-                            My Agents
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#api-keys"
-                            class="nav-item flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-white/5 hover:text-white transition-all group">
-                            <i data-lucide="key"
-                                class="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors"></i>
-                            API Keys
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#billing"
-                            class="nav-item flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-white/5 hover:text-white transition-all group">
-                            <i data-lucide="credit-card"
-                                class="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors"></i>
-                            Billing
-                        </a>
-                    </li>
-                </ul>
-            </div>
-
-            <div class="mb-6">
-                <h3 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">Resources
-                </h3>
-                <ul class="space-y-1">
-                    <li>
-                        <a href="{{ url_for('api_docs') }}"
-                            class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-white/5 hover:text-white transition-all group">
-                            <i data-lucide="book-open"
-                                class="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors"></i>
-                            API Docs
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#support"
-                            class="nav-item flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-white/5 hover:text-white transition-all group">
-                            <i data-lucide="life-buoy"
-                                class="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors"></i>
-                            Support
-                        </a>
-                    </li>
-                </ul>
-            </div>
-
-            <div class="mb-6">
-                <h3 class="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">Legal</h3>
-                <ul class="space-y-1">
-                    <li>
-                        <a href="{{ url_for('terms') }}"
-                            class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-white/5 hover:text-white transition-all group">
-                            <i data-lucide="file-text"
-                                class="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors"></i>
-                            Terms of Service
-                        </a>
-                    </li>
-                    <li>
-                        <a href="{{ url_for('privacy') }}"
-                            class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-gray-300 hover:bg-white/5 hover:text-white transition-all group">
-                            <i data-lucide="shield"
-                                class="w-4 h-4 text-gray-500 group-hover:text-primary transition-colors"></i>
-                            Privacy Policy
-                        </a>
-                    </li>
-                </ul>
-            </div>
-
-        </nav>
-    </div>
-
-    <!-- Main Content -->
-    <div class="md:ml-64 flex-1 overflow-auto">
-        <div class="max-w-5xl mx-auto p-8">
+{% block workspace_content %}
+<div class="flex-1 overflow-auto">
+    <div class="max-w-5xl mx-auto p-8">
 
             <!-- 1. Overview Section -->
             <section id="overview-content" class="content-section hidden animate-fade-in">
@@ -447,7 +326,7 @@
 
         </div>
     </div>
-</div>
+
 
 <!-- Modals (Agent & API Key) -->
 <!-- Create/Edit Agent Modal -->
@@ -585,25 +464,22 @@
         lucide.createIcons();
 
         // --- Tab Switching Logic ---
-        const navItems = document.querySelectorAll('.nav-item');
         const contentSections = document.querySelectorAll('.content-section');
 
-        function switchContent(targetId) {
-            const id = targetId.replace('#', '');
+        function switchContent(targetHash) {
+            // targetHash could be "#overview" or "/dashboard#overview"
+            const hashIndex = targetHash.indexOf('#');
+            if (hashIndex === -1) return;
+            const id = targetHash.substring(hashIndex + 1);
 
-            navItems.forEach(item => {
-                const href = item.getAttribute('href').replace('#', '');
-                if (href === id) {
-                    item.classList.add('bg-white/10', 'text-white');
-                    item.classList.remove('text-gray-300');
-                    // Update icon color if needed
-                    const icon = item.querySelector('svg');
-                    if (icon) icon.classList.add('text-primary');
-                } else {
-                    item.classList.remove('bg-white/10', 'text-white');
-                    item.classList.add('text-gray-300');
-                    const icon = item.querySelector('svg');
-                    if (icon) icon.classList.remove('text-primary');
+            // Update sidebar active states (now uses .gm-nav-item)
+            document.querySelectorAll('.gm-nav-item').forEach(item => {
+                const href = item.getAttribute('href') || '';
+                if (href.endsWith('#' + id)) {
+                    item.classList.add('gm-nav-active');
+                } else if (href.includes('#')) {
+                    // Only remove active state from other dashboard tabs
+                    item.classList.remove('gm-nav-active');
                 }
             });
 
@@ -616,25 +492,17 @@
             });
         }
 
-        navItems.forEach(item => {
-            item.addEventListener('click', (e) => {
-                e.preventDefault();
-                const target = item.getAttribute('href');
-                switchContent(target);
-                history.pushState(null, null, target);
-            });
+        // Listen for hash changes so regular link clicks work automatically
+        window.addEventListener('hashchange', () => {
+            switchContent(window.location.hash);
         });
 
+        // Initialize on load
         if (window.location.hash) {
             switchContent(window.location.hash);
         } else {
-            // Default to overview
-            switchContent('overview');
-            // Mark Overview link as active visually
-            const overviewLink = document.querySelector('a[href="#overview"]');
-            if (overviewLink) {
-                overviewLink.classList.add('bg-white/10', 'text-white');
-            }
+            switchContent('#overview');
+            history.replaceState(null, null, '#overview');
         }
 
         // --- Existing Dashboard Functionality (Agents & Keys) ---

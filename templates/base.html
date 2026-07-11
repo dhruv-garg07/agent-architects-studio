@@ -353,6 +353,14 @@
 
                     <!-- Navigation Links -->
                     <div class="hidden md:flex ml-4 space-x-1 gap-2">
+                        {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('gitmem.landing') }}"
+                            class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-all group">
+                            <i data-lucide="brain"
+                                class="w-4 h-4 text-gray-500 group-hover:text-white transition-colors"></i>
+                            GitMem
+                        </a>
+                        {% endif %}
                         <a href="{{ url_for('api_docs') }}"
                             class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-all group">
                             <i data-lucide="book-open"
@@ -380,12 +388,7 @@
 
                     <!-- Unified Secondary Navigation (Ghost Buttons) -->
                     <div class="hidden md:flex items-center gap-1 mr-2">
-                        <a href="{{ url_for('dashboard') }}"
-                            class="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-all group">
-                            <i data-lucide="layout-dashboard"
-                                class="w-4 h-4 text-gray-500 group-hover:text-white transition-colors"></i>
-                            Dashboard
-                        </a>
+
 
                         <a href="{{ url_for('memory') }}"
                             class="hidden flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-400 hover:text-white hover:bg-white/5 rounded-md transition-all group">
@@ -467,9 +470,8 @@
                 <a href="{{ url_for('about_page') }}" class="block text-gray-400 hover:text-white py-2 text-sm font-medium">About</a>
                 {% if current_user.is_authenticated %}
                     <div class="border-t border-[#2d2d2d] my-2 pt-2"></div>
-                    <a href="{{ url_for('dashboard') }}" class="block text-gray-400 hover:text-white py-2 text-sm font-medium">Dashboard</a>
+                    <a href="{{ url_for('gitmem.landing') }}" class="block text-gray-400 hover:text-white py-2 text-sm font-medium">GitMem</a>
                     <a href="{{ url_for('memory') }}" class="block text-gray-400 hover:text-white py-2 text-sm font-medium">Playground</a>
-                    <a href="/gitmem" class="block text-gray-400 hover:text-white py-2 text-sm font-medium">GitMem</a>
                     <a href="/profile" class="block text-gray-400 hover:text-white py-2 text-sm font-medium">Profile</a>
                     <a href="{{ url_for('logout') }}" class="block text-red-400 hover:text-red-300 py-2 text-sm font-medium">Sign out</a>
                 {% else %}
@@ -568,8 +570,8 @@
                     <ul class="space-y-2">
                         <li><a href="{{ url_for('homepage') }}"
                                 class="text-gray-400 hover:text-blue-400 transition text-sm">Home</a></li>
-                        <li><a href="{{ url_for('dashboard') }}"
-                                class="text-gray-400 hover:text-blue-400 transition text-sm">Dashboard</a></li>
+                        <li><a href="{{ url_for('gitmem.landing') }}"
+                                class="text-gray-400 hover:text-blue-400 transition text-sm">GitMem</a></li>
                     </ul>
                 </div>
 

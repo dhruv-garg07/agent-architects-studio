@@ -36,13 +36,20 @@
 
         <!-- Primary Navigation -->
         <nav class="gm-nav-primary">
-            <!-- MISSION CONTROL / AGENTS -->
-            <a href="{{ url_for('gitmem.hub_agents', ws_slug=workspace.id) if workspace else '#' }}"
-                class="gm-nav-item {{ 'gm-nav-active' if active_page == 'agents' else '' }}" data-tooltip="Agents"
-                style="margin-bottom: 8px;">
-                <i data-lucide="bot" class="gm-nav-icon"></i>
-                <span class="gm-nav-label" style="font-weight: 700;">Agents</span>
-            </a>
+            <!-- CORE -->
+            <div class="gm-nav-group">
+                <div class="gm-nav-group-label">Core</div>
+                <a href="#" title="Dashboard is a stub for now"
+                    class="gm-nav-item {{ 'gm-nav-active' if active_page == 'dashboard' else '' }}">
+                    <i data-lucide="user" class="gm-nav-icon"></i>
+                    <span class="gm-nav-label">Overview</span>
+                </a>
+                <a href="{{ url_for('gitmem.hub_agents', ws_slug=workspace.id) if workspace else '/dashboard#my-agents' }}"
+                    class="gm-nav-item {{ 'gm-nav-active' if active_page == 'agents' else '' }}">
+                    <i data-lucide="bot" class="gm-nav-icon"></i>
+                    <span class="gm-nav-label" style="font-weight: 700;">Agents</span>
+                </a>
+            </div>
 
             <!-- KNOWLEDGE -->
             <div class="gm-nav-group">
@@ -72,11 +79,6 @@
                     <i data-lucide="git-branch" class="gm-nav-icon"></i>
                     <span class="gm-nav-label">History</span>
                 </a>
-            </div>
-
-            <!-- TRUST -->
-            <div class="gm-nav-group">
-                <div class="gm-nav-group-label">Trust</div>
                 <a href="{{ url_for('gitmem.hub_permissions', ws_slug=workspace.id) if workspace else '#' }}"
                     class="gm-nav-item {{ 'gm-nav-active' if active_page == 'permissions' else '' }}">
                     <i data-lucide="share-2" class="gm-nav-icon"></i>
@@ -84,13 +86,53 @@
                 </a>
             </div>
 
-            <!-- INTEGRATIONS -->
+            <!-- CONFIGURATION -->
             <div class="gm-nav-group">
-                <div class="gm-nav-group-label">Integrations</div>
+                <div class="gm-nav-group-label">Configuration</div>
+                <a href="#" title="Dashboard is a stub for now"
+                    class="gm-nav-item">
+                    <i data-lucide="key" class="gm-nav-icon"></i>
+                    <span class="gm-nav-label">API Keys</span>
+                </a>
+                <a href="#" title="Dashboard is a stub for now"
+                    class="gm-nav-item">
+                    <i data-lucide="credit-card" class="gm-nav-icon"></i>
+                    <span class="gm-nav-label">Billing</span>
+                </a>
                 <a href="{{ url_for('gitmem.hub_integrations', ws_slug=workspace.id) if workspace else '#' }}"
                     class="gm-nav-item {{ 'gm-nav-active' if active_page == 'connections' else '' }}">
                     <i data-lucide="cable" class="gm-nav-icon"></i>
                     <span class="gm-nav-label">Connectors</span>
+                </a>
+            </div>
+
+            <!-- RESOURCES -->
+            <div class="gm-nav-group">
+                <div class="gm-nav-group-label">Resources</div>
+                <a href="/api/docs"
+                    class="gm-nav-item">
+                    <i data-lucide="book-open" class="gm-nav-icon"></i>
+                    <span class="gm-nav-label">API Docs</span>
+                </a>
+                <a href="#" title="Dashboard is a stub for now"
+                    class="gm-nav-item">
+                    <i data-lucide="life-buoy" class="gm-nav-icon"></i>
+                    <span class="gm-nav-label">Support</span>
+                </a>
+            </div>
+
+            <!-- LEGAL -->
+            <div class="gm-nav-group">
+                <div class="gm-nav-group-label">Legal</div>
+                <a href="{{ url_for('terms') }}"
+                    class="gm-nav-item">
+                    <i data-lucide="file-text" class="gm-nav-icon"></i>
+                    <span class="gm-nav-label">Terms of Service</span>
+                </a>
+                <a href="{{ url_for('privacy') }}"
+                    class="gm-nav-item">
+                    <i data-lucide="shield" class="gm-nav-icon"></i>
+                    <span class="gm-nav-label">Privacy Policy</span>
                 </a>
             </div>
         </nav>
