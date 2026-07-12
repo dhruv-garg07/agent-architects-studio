@@ -2,273 +2,1269 @@
 
 {% set active_page = 'connections' %}
 
+{% block title %}Connectors — {{ workspace.name if workspace else 'GitMem' }}{% endblock %}
+
 {% block workspace_content %}
 
 <!-- Page Header -->
-<div class="gm-page-header" style="display: flex; align-items: center; justify-content: space-between;">
-    <div>
-        <h1 class="gm-page-title">Connections</h1>
-        <p class="gm-page-subtitle">Knowledge sources feeding in, AI consumers reading out.</p>
-    </div>
-    <button style="background: var(--mc-primary, hsl(230,80%,62%)); color: white; border: none; padding: 10px 18px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; font-family: inherit; box-shadow: 0 2px 8px hsla(230,80%,62%,0.3); transition: all 0.15s ease;"
-            onmouseover="this.style.transform='translateY(-1px)'"
-            onmouseout="this.style.transform='none'">
-        <i data-lucide="plus" style="width: 16px; height: 16px;"></i> New Connection
-    </button>
+<div class="gm-page-header">
+    <h1 class="gm-page-title">Connectors</h1>
+    <p class="gm-page-subtitle">Connect your agent's memory to the tools you already use. MCP servers, IDE extensions, and knowledge pipelines.</p>
 </div>
 
-<!-- Knowledge Sources -->
-<div class="gm-section">
-    <div class="gm-section-header">
-        <h2 class="gm-section-title"><i data-lucide="download"></i> Knowledge Sources</h2>
-        <span style="font-size: 11px; color: hsl(225,10%,42%);">Where context comes from</span>
+<!-- ═══════════════════════════════════════════════════════
+     Section 1: MCP — Model Context Protocol
+     ═══════════════════════════════════════════════════════ -->
+
+<div class="ci-section ci-section-mcp">
+    <div class="ci-section-head">
+        <div class="ci-section-icon ci-icon-mcp">
+            <i data-lucide="cpu"></i>
+        </div>
+        <div>
+            <h2 class="ci-section-title">Model Context Protocol (MCP)</h2>
+            <p class="ci-section-desc">The open standard for connecting AI assistants to external tools and data sources. GitMem exposes an MCP server so any compatible client can search, read, and write your agent's memory.</p>
+        </div>
     </div>
-    <div class="gm-section-body">
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;">
 
-            <!-- Slack -->
-            <div class="gm-conn-card gm-conn-active">
-                <div class="gm-conn-header">
-                    <div class="gm-conn-icon" style="background: hsla(197,100%,47%,0.1); color: hsl(197,100%,47%);">
-                        <i data-lucide="hash"></i>
+    <!-- What is MCP -->
+    <div class="ci-card ci-card-info">
+        <div class="ci-card-head" onclick="toggleAccordion(this)">
+            <div class="ci-card-head-left">
+                <i data-lucide="info" class="ci-card-head-icon" style="color: hsl(230,80%,68%);"></i>
+                <span class="ci-card-head-title">What is MCP?</span>
+            </div>
+            <i data-lucide="chevron-down" class="ci-chevron"></i>
+        </div>
+        <div class="ci-card-body ci-accordion-body" style="display: none;">
+            <p class="ci-prose">
+                <strong>Model Context Protocol (MCP)</strong> is an open specification created by Anthropic that standardises how AI assistants connect to external data and tools. Instead of building custom integrations for every tool, MCP provides a universal interface — similar to how USB standardised hardware connections.
+            </p>
+            <p class="ci-prose">
+                GitMem runs an MCP server that exposes your agent's memory as a set of tools. Any MCP-compatible client (Claude Desktop, Claude Code, Cursor, Windsurf, VS Code + Copilot, and more) can connect to this server and:
+            </p>
+            <div class="ci-feature-grid">
+                <div class="ci-feature-item">
+                    <i data-lucide="search" class="ci-feature-icon"></i>
+                    <div>
+                        <strong>Search Memory</strong>
+                        <span>Semantic search across all your agent's stored knowledge</span>
                     </div>
-                    <div class="gm-conn-identity">
-                        <div class="gm-conn-name">Slack</div>
-                        <div class="gm-conn-channels">#engineering, #sales, #support</div>
-                    </div>
-                    <div class="gm-conn-status-dot gm-conn-dot-live"></div>
                 </div>
-                <div class="gm-conn-metrics">
-                    <div class="gm-conn-metric">
-                        <span class="gm-conn-metric-val">2,401</span>
-                        <span class="gm-conn-metric-label">Items Added</span>
+                <div class="ci-feature-item">
+                    <i data-lucide="file-plus" class="ci-feature-icon"></i>
+                    <div>
+                        <strong>Add Memories</strong>
+                        <span>Store new context, decisions, and learnings</span>
                     </div>
-                    <div class="gm-conn-metric">
-                        <span class="gm-conn-metric-val">12 min</span>
-                        <span class="gm-conn-metric-label">Last Sync</span>
+                </div>
+                <div class="ci-feature-item">
+                    <i data-lucide="list" class="ci-feature-icon"></i>
+                    <div>
+                        <strong>List &amp; Browse</strong>
+                        <span>Navigate categories, files, and memory snapshots</span>
                     </div>
-                    <div class="gm-conn-metric">
-                        <span class="gm-conn-metric-val">3</span>
-                        <span class="gm-conn-metric-label">Agents Using</span>
+                </div>
+                <div class="ci-feature-item">
+                    <i data-lucide="git-branch" class="ci-feature-icon"></i>
+                    <div>
+                        <strong>Version History</strong>
+                        <span>Access snapshots and diffs of your memory over time</span>
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
 
-            <!-- GitHub -->
-            <div class="gm-conn-card gm-conn-active">
-                <div class="gm-conn-header">
-                    <div class="gm-conn-icon" style="background: hsla(0,0%,100%,0.06); color: hsl(0,0%,80%);">
-                        <i data-lucide="github"></i>
-                    </div>
-                    <div class="gm-conn-identity">
-                        <div class="gm-conn-name">GitHub Issues</div>
-                        <div class="gm-conn-channels">acme-corp/core</div>
-                    </div>
-                    <div class="gm-conn-status-dot gm-conn-dot-live"></div>
+    <!-- MCP Server Details -->
+    <div class="ci-card">
+        <div class="ci-card-head" onclick="toggleAccordion(this)">
+            <div class="ci-card-head-left">
+                <i data-lucide="server" class="ci-card-head-icon" style="color: hsl(155,70%,50%);"></i>
+                <span class="ci-card-head-title">Your MCP Server</span>
+                <span class="ci-badge ci-badge-live">Live</span>
+            </div>
+            <i data-lucide="chevron-down" class="ci-chevron"></i>
+        </div>
+        <div class="ci-card-body ci-accordion-body" style="display: none;">
+            <p class="ci-prose" style="margin-bottom: 16px;">Your GitMem instance exposes the following MCP endpoint. Use this URL in any MCP-compatible client to connect.</p>
+
+            <div class="ci-kv-row">
+                <span class="ci-kv-label">Server URL</span>
+                <div class="ci-kv-value ci-copyable" onclick="copyToClipboard(this, '{{ request.host_url }}mcp/sse')">
+                    <code>{{ request.host_url }}mcp/sse</code>
+                    <i data-lucide="copy" class="ci-copy-icon"></i>
                 </div>
-                <div class="gm-conn-metrics">
-                    <div class="gm-conn-metric">
-                        <span class="gm-conn-metric-val">842</span>
-                        <span class="gm-conn-metric-label">Items Added</span>
-                    </div>
-                    <div class="gm-conn-metric">
-                        <span class="gm-conn-metric-val">1 hour</span>
-                        <span class="gm-conn-metric-label">Last Sync</span>
-                    </div>
-                    <div class="gm-conn-metric">
-                        <span class="gm-conn-metric-val">2</span>
-                        <span class="gm-conn-metric-label">Agents Using</span>
-                    </div>
+            </div>
+            <div class="ci-kv-row">
+                <span class="ci-kv-label">Transport</span>
+                <div class="ci-kv-value"><code>SSE (Server-Sent Events)</code></div>
+            </div>
+            <div class="ci-kv-row">
+                <span class="ci-kv-label">Authentication</span>
+                <div class="ci-kv-value"><code>Bearer token (your API key)</code></div>
+            </div>
+            <div class="ci-kv-row">
+                <span class="ci-kv-label">API Key</span>
+                <div class="ci-kv-value">
+                    <a href="{{ url_for('gitmem.hub_api_keys', ws_slug=workspace.id) if workspace else '#' }}" class="ci-link">Manage in API Keys →</a>
                 </div>
             </div>
 
-            <!-- Available Sources -->
-            {% set available = [
-                ('Confluence', 'book-open'),
-                ('Notion', 'sticky-note'),
-                ('Google Drive', 'hard-drive'),
-                ('Jira', 'ticket'),
-                ('Linear', 'kanban'),
-            ] %}
-            {% for name, icon in available %}
-            <div class="gm-conn-card gm-conn-available">
-                <div class="gm-conn-header">
-                    <div class="gm-conn-icon" style="background: hsl(225,10%,14%); color: hsl(225,10%,40%);">
-                        <i data-lucide="{{ icon }}"></i>
-                    </div>
-                    <div class="gm-conn-identity">
-                        <div class="gm-conn-name" style="color: hsl(225,10%,55%);">{{ name }}</div>
-                        <div class="gm-conn-channels" style="color: hsl(225,10%,32%);">Not connected</div>
-                    </div>
-                    <button class="gm-conn-connect-btn">Connect</button>
-                </div>
+            <h4 class="ci-sub-heading">Exposed Tools</h4>
+            <div class="ci-tools-grid">
+                <div class="ci-tool-chip"><i data-lucide="search"></i> search_memory</div>
+                <div class="ci-tool-chip"><i data-lucide="plus"></i> add_memory</div>
+                <div class="ci-tool-chip"><i data-lucide="list"></i> list_memories</div>
+                <div class="ci-tool-chip"><i data-lucide="file-text"></i> get_memory</div>
+                <div class="ci-tool-chip"><i data-lucide="folder-tree"></i> list_categories</div>
+                <div class="ci-tool-chip"><i data-lucide="git-commit-horizontal"></i> get_snapshot</div>
             </div>
-            {% endfor %}
         </div>
     </div>
 </div>
 
-<!-- AI Consumers -->
-<div class="gm-section">
-    <div class="gm-section-header">
-        <h2 class="gm-section-title"><i data-lucide="upload"></i> AI Consumers</h2>
-        <span style="font-size: 11px; color: hsl(225,10%,42%);">Systems reading your context via MCP</span>
+<!-- ═══════════════════════════════════════════════════════
+     Section 2: IDE & AI Client Setup Guides
+     ═══════════════════════════════════════════════════════ -->
+
+<div class="ci-section">
+    <div class="ci-section-head">
+        <div class="ci-section-icon ci-icon-clients">
+            <i data-lucide="terminal"></i>
+        </div>
+        <div>
+            <h2 class="ci-section-title">AI Client Setup Guides</h2>
+            <p class="ci-section-desc">Copy-paste configuration to connect your favourite AI coding assistant to GitMem's MCP server.</p>
+        </div>
     </div>
-    <div class="gm-section-body">
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;">
 
-            <!-- Claude -->
-            <div class="gm-conn-card gm-conn-active">
-                <div class="gm-conn-header">
-                    <div class="gm-conn-icon" style="background: hsla(24,80%,55%,0.1); color: hsl(24,80%,55%);">
-                        <i data-lucide="sparkles"></i>
-                    </div>
-                    <div class="gm-conn-identity">
-                        <div class="gm-conn-name">Claude MCP</div>
-                        <div class="gm-conn-channels">Model Context Protocol</div>
-                    </div>
-                    <div class="gm-conn-status-dot gm-conn-dot-live"></div>
+    <!-- Claude Desktop -->
+    <div class="ci-card">
+        <div class="ci-card-head" onclick="toggleAccordion(this)">
+            <div class="ci-card-head-left">
+                <div class="ci-platform-icon" style="background: hsla(24,80%,55%,0.12); color: hsl(24,80%,55%);">
+                    <i data-lucide="sparkles"></i>
                 </div>
-                <div class="gm-conn-metrics">
-                    <div class="gm-conn-metric">
-                        <span class="gm-conn-metric-val">1.2K</span>
-                        <span class="gm-conn-metric-label">Queries</span>
-                    </div>
-                    <div class="gm-conn-metric">
-                        <span class="gm-conn-metric-val">3 min</span>
-                        <span class="gm-conn-metric-label">Last Query</span>
-                    </div>
-                    <div class="gm-conn-metric">
-                        <span class="gm-conn-metric-val">94%</span>
-                        <span class="gm-conn-metric-label">Hit Rate</span>
-                    </div>
+                <div>
+                    <span class="ci-card-head-title">Claude Desktop</span>
+                    <span class="ci-card-head-sub">Anthropic's desktop app</span>
                 </div>
             </div>
+            <i data-lucide="chevron-down" class="ci-chevron"></i>
+        </div>
+        <div class="ci-card-body ci-accordion-body" style="display: none;">
+            <p class="ci-prose">Add the following to your <code>claude_desktop_config.json</code> file. On macOS this is at <code>~/Library/Application Support/Claude/claude_desktop_config.json</code>, on Windows at <code>%APPDATA%\Claude\claude_desktop_config.json</code>.</p>
+            <div class="ci-code-block">
+                <div class="ci-code-header">
+                    <span>claude_desktop_config.json</span>
+                    <button class="ci-copy-btn" onclick="copyCodeBlock(this)"><i data-lucide="copy"></i> Copy</button>
+                </div>
+                <pre><code>{
+  "mcpServers": {
+    "gitmem": {
+      "url": "{{ request.host_url }}mcp/sse",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_KEY"
+      }
+    }
+  }
+}</code></pre>
+            </div>
+            <div class="ci-note">
+                <i data-lucide="lightbulb"></i>
+                <span>Replace <code>YOUR_API_KEY</code> with a key from your <a href="{{ url_for('gitmem.hub_api_keys', ws_slug=workspace.id) if workspace else '#' }}" class="ci-link">API Keys</a> page. Restart Claude Desktop after editing the config.</span>
+            </div>
+        </div>
+    </div>
 
-            <!-- Available AI consumers -->
-            {% set ai_consumers = [
-                ('Cursor MCP', 'code'),
-                ('Windsurf', 'wind'),
-                ('VS Code Extension', 'file-code'),
-                ('Custom Agent', 'cpu'),
-            ] %}
-            {% for name, icon in ai_consumers %}
-            <div class="gm-conn-card gm-conn-available">
-                <div class="gm-conn-header">
-                    <div class="gm-conn-icon" style="background: hsl(225,10%,14%); color: hsl(225,10%,40%);">
-                        <i data-lucide="{{ icon }}"></i>
-                    </div>
-                    <div class="gm-conn-identity">
-                        <div class="gm-conn-name" style="color: hsl(225,10%,55%);">{{ name }}</div>
-                        <div class="gm-conn-channels" style="color: hsl(225,10%,32%);">Not connected</div>
-                    </div>
-                    <button class="gm-conn-connect-btn">Setup</button>
+    <!-- Claude Code (CLI) -->
+    <div class="ci-card">
+        <div class="ci-card-head" onclick="toggleAccordion(this)">
+            <div class="ci-card-head-left">
+                <div class="ci-platform-icon" style="background: hsla(24,80%,55%,0.12); color: hsl(24,80%,55%);">
+                    <i data-lucide="terminal"></i>
+                </div>
+                <div>
+                    <span class="ci-card-head-title">Claude Code (CLI)</span>
+                    <span class="ci-card-head-sub">Anthropic's coding agent</span>
                 </div>
             </div>
-            {% endfor %}
+            <i data-lucide="chevron-down" class="ci-chevron"></i>
+        </div>
+        <div class="ci-card-body ci-accordion-body" style="display: none;">
+            <p class="ci-prose">Add the MCP server to your project's <code>.mcp.json</code> file (or <code>~/.claude/settings.json</code> for global access):</p>
+            <div class="ci-code-block">
+                <div class="ci-code-header">
+                    <span>.mcp.json</span>
+                    <button class="ci-copy-btn" onclick="copyCodeBlock(this)"><i data-lucide="copy"></i> Copy</button>
+                </div>
+                <pre><code>{
+  "mcpServers": {
+    "gitmem": {
+      "type": "sse",
+      "url": "{{ request.host_url }}mcp/sse",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_KEY"
+      }
+    }
+  }
+}</code></pre>
+            </div>
+            <p class="ci-prose" style="margin-top: 14px;">Or add via the CLI directly:</p>
+            <div class="ci-code-block ci-code-terminal">
+                <div class="ci-code-header">
+                    <span>Terminal</span>
+                    <button class="ci-copy-btn" onclick="copyCodeBlock(this)"><i data-lucide="copy"></i> Copy</button>
+                </div>
+                <pre><code>claude mcp add gitmem \
+  --transport sse \
+  --url "{{ request.host_url }}mcp/sse" \
+  --header "Authorization: Bearer YOUR_API_KEY"</code></pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cursor -->
+    <div class="ci-card">
+        <div class="ci-card-head" onclick="toggleAccordion(this)">
+            <div class="ci-card-head-left">
+                <div class="ci-platform-icon" style="background: hsla(262,80%,60%,0.12); color: hsl(262,80%,60%);">
+                    <i data-lucide="code"></i>
+                </div>
+                <div>
+                    <span class="ci-card-head-title">Cursor</span>
+                    <span class="ci-card-head-sub">AI-first code editor</span>
+                </div>
+            </div>
+            <i data-lucide="chevron-down" class="ci-chevron"></i>
+        </div>
+        <div class="ci-card-body ci-accordion-body" style="display: none;">
+            <p class="ci-prose">Cursor supports MCP natively. Create a <code>.cursor/mcp.json</code> file in your project root:</p>
+            <div class="ci-code-block">
+                <div class="ci-code-header">
+                    <span>.cursor/mcp.json</span>
+                    <button class="ci-copy-btn" onclick="copyCodeBlock(this)"><i data-lucide="copy"></i> Copy</button>
+                </div>
+                <pre><code>{
+  "mcpServers": {
+    "gitmem": {
+      "url": "{{ request.host_url }}mcp/sse",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_KEY"
+      }
+    }
+  }
+}</code></pre>
+            </div>
+            <div class="ci-note">
+                <i data-lucide="lightbulb"></i>
+                <span>After saving, open Cursor's MCP panel (Cursor Settings → MCP) to verify the server is connected and tools are available.</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Windsurf -->
+    <div class="ci-card">
+        <div class="ci-card-head" onclick="toggleAccordion(this)">
+            <div class="ci-card-head-left">
+                <div class="ci-platform-icon" style="background: hsla(188,80%,45%,0.12); color: hsl(188,80%,45%);">
+                    <i data-lucide="wind"></i>
+                </div>
+                <div>
+                    <span class="ci-card-head-title">Windsurf</span>
+                    <span class="ci-card-head-sub">Codeium's AI IDE</span>
+                </div>
+            </div>
+            <i data-lucide="chevron-down" class="ci-chevron"></i>
+        </div>
+        <div class="ci-card-body ci-accordion-body" style="display: none;">
+            <p class="ci-prose">Create a <code>~/.codeium/windsurf/mcp_config.json</code> file (or configure through Windsurf Settings → MCP):</p>
+            <div class="ci-code-block">
+                <div class="ci-code-header">
+                    <span>mcp_config.json</span>
+                    <button class="ci-copy-btn" onclick="copyCodeBlock(this)"><i data-lucide="copy"></i> Copy</button>
+                </div>
+                <pre><code>{
+  "mcpServers": {
+    "gitmem": {
+      "serverUrl": "{{ request.host_url }}mcp/sse",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_KEY"
+      }
+    }
+  }
+}</code></pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- VS Code + GitHub Copilot -->
+    <div class="ci-card">
+        <div class="ci-card-head" onclick="toggleAccordion(this)">
+            <div class="ci-card-head-left">
+                <div class="ci-platform-icon" style="background: hsla(210,80%,55%,0.12); color: hsl(210,80%,55%);">
+                    <i data-lucide="file-code"></i>
+                </div>
+                <div>
+                    <span class="ci-card-head-title">VS Code + GitHub Copilot</span>
+                    <span class="ci-card-head-sub">With MCP support in Copilot Chat</span>
+                </div>
+            </div>
+            <i data-lucide="chevron-down" class="ci-chevron"></i>
+        </div>
+        <div class="ci-card-body ci-accordion-body" style="display: none;">
+            <p class="ci-prose">GitHub Copilot in VS Code supports MCP servers. Add the following to your project's <code>.vscode/mcp.json</code>:</p>
+            <div class="ci-code-block">
+                <div class="ci-code-header">
+                    <span>.vscode/mcp.json</span>
+                    <button class="ci-copy-btn" onclick="copyCodeBlock(this)"><i data-lucide="copy"></i> Copy</button>
+                </div>
+                <pre><code>{
+  "servers": {
+    "gitmem": {
+      "type": "sse",
+      "url": "{{ request.host_url }}mcp/sse",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_KEY"
+      }
+    }
+  }
+}</code></pre>
+            </div>
+            <div class="ci-note">
+                <i data-lucide="lightbulb"></i>
+                <span>Ensure you have the latest GitHub Copilot extension and MCP support enabled in VS Code settings.</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gemini CLI -->
+    <div class="ci-card">
+        <div class="ci-card-head" onclick="toggleAccordion(this)">
+            <div class="ci-card-head-left">
+                <div class="ci-platform-icon" style="background: hsla(200,70%,55%,0.12); color: hsl(200,70%,55%);">
+                    <i data-lucide="hexagon"></i>
+                </div>
+                <div>
+                    <span class="ci-card-head-title">Gemini CLI</span>
+                    <span class="ci-card-head-sub">Google's coding agent</span>
+                </div>
+            </div>
+            <i data-lucide="chevron-down" class="ci-chevron"></i>
+        </div>
+        <div class="ci-card-body ci-accordion-body" style="display: none;">
+            <p class="ci-prose">Add the MCP server to your <code>~/.gemini/settings.json</code> (or project-level <code>.gemini/settings.json</code>):</p>
+            <div class="ci-code-block">
+                <div class="ci-code-header">
+                    <span>settings.json</span>
+                    <button class="ci-copy-btn" onclick="copyCodeBlock(this)"><i data-lucide="copy"></i> Copy</button>
+                </div>
+                <pre><code>{
+  "mcpServers": {
+    "gitmem": {
+      "uri": "{{ request.host_url }}mcp/sse",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_KEY"
+      }
+    }
+  }
+}</code></pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom / Generic Client -->
+    <div class="ci-card">
+        <div class="ci-card-head" onclick="toggleAccordion(this)">
+            <div class="ci-card-head-left">
+                <div class="ci-platform-icon" style="background: hsla(0,0%,100%,0.06); color: hsl(0,0%,70%);">
+                    <i data-lucide="puzzle"></i>
+                </div>
+                <div>
+                    <span class="ci-card-head-title">Custom / Any MCP Client</span>
+                    <span class="ci-card-head-sub">Generic SSE transport</span>
+                </div>
+            </div>
+            <i data-lucide="chevron-down" class="ci-chevron"></i>
+        </div>
+        <div class="ci-card-body ci-accordion-body" style="display: none;">
+            <p class="ci-prose">Any client that supports the MCP specification can connect using the SSE transport. The general pattern:</p>
+            <div class="ci-code-block ci-code-terminal">
+                <div class="ci-code-header">
+                    <span>Connection Details</span>
+                    <button class="ci-copy-btn" onclick="copyCodeBlock(this)"><i data-lucide="copy"></i> Copy</button>
+                </div>
+                <pre><code>Transport:  SSE (Server-Sent Events)
+Endpoint:   {{ request.host_url }}mcp/sse
+Auth:       Bearer YOUR_API_KEY (via Authorization header)
+Protocol:   MCP v1.0</code></pre>
+            </div>
+            <p class="ci-prose" style="margin-top: 14px;">
+                See the <a href="https://modelcontextprotocol.io" target="_blank" class="ci-link">MCP specification ↗</a> for full protocol details.
+            </p>
         </div>
     </div>
 </div>
 
+
+<!-- ═══════════════════════════════════════════════════════
+     Section 3: Knowledge Source Integrations
+     ═══════════════════════════════════════════════════════ -->
+
+<div class="ci-section">
+    <div class="ci-section-head">
+        <div class="ci-section-icon ci-icon-sources">
+            <i data-lucide="database"></i>
+        </div>
+        <div>
+            <h2 class="ci-section-title">Knowledge Source Integrations</h2>
+            <p class="ci-section-desc">Feed context into your agent's memory from external platforms. These integrations ingest documents, messages, and issues into GitMem automatically.</p>
+        </div>
+    </div>
+
+    <div class="ci-integration-grid">
+
+        <!-- Slack -->
+        <div class="ci-integration-card">
+            <div class="ci-integration-header">
+                <div class="ci-integration-logo" style="background: hsla(197,100%,47%,0.1); color: hsl(197,100%,47%);">
+                    <i data-lucide="hash"></i>
+                </div>
+                <div class="ci-integration-info">
+                    <span class="ci-integration-name">Slack</span>
+                    <span class="ci-integration-type">Messaging</span>
+                </div>
+                <span class="ci-badge ci-badge-soon">Coming Soon</span>
+            </div>
+            <p class="ci-integration-desc">Ingest messages from Slack channels into your agent's memory. Capture decisions, Q&A threads, and tribal knowledge automatically.</p>
+            <div class="ci-integration-features">
+                <span><i data-lucide="check"></i> Channel filtering</span>
+                <span><i data-lucide="check"></i> Thread resolution</span>
+                <span><i data-lucide="check"></i> Scheduled syncs</span>
+            </div>
+        </div>
+
+        <!-- GitHub -->
+        <div class="ci-integration-card">
+            <div class="ci-integration-header">
+                <div class="ci-integration-logo" style="background: hsla(0,0%,100%,0.06); color: hsl(0,0%,80%);">
+                    <i data-lucide="github"></i>
+                </div>
+                <div class="ci-integration-info">
+                    <span class="ci-integration-name">GitHub</span>
+                    <span class="ci-integration-type">Code &amp; Issues</span>
+                </div>
+                <span class="ci-badge ci-badge-soon">Coming Soon</span>
+            </div>
+            <p class="ci-integration-desc">Sync issues, PRs, and README content from your repositories. Keep your agent aware of code decisions and release context.</p>
+            <div class="ci-integration-features">
+                <span><i data-lucide="check"></i> Issues &amp; PRs</span>
+                <span><i data-lucide="check"></i> Repo docs</span>
+                <span><i data-lucide="check"></i> Webhook triggers</span>
+            </div>
+        </div>
+
+        <!-- Notion -->
+        <div class="ci-integration-card">
+            <div class="ci-integration-header">
+                <div class="ci-integration-logo" style="background: hsla(0,0%,100%,0.06); color: hsl(0,0%,85%);">
+                    <i data-lucide="sticky-note"></i>
+                </div>
+                <div class="ci-integration-info">
+                    <span class="ci-integration-name">Notion</span>
+                    <span class="ci-integration-type">Wiki &amp; Docs</span>
+                </div>
+                <span class="ci-badge ci-badge-soon">Coming Soon</span>
+            </div>
+            <p class="ci-integration-desc">Import pages and databases from Notion workspaces. Keep your agent's context in sync with your team's documentation.</p>
+            <div class="ci-integration-features">
+                <span><i data-lucide="check"></i> Page import</span>
+                <span><i data-lucide="check"></i> Database sync</span>
+                <span><i data-lucide="check"></i> Incremental updates</span>
+            </div>
+        </div>
+
+        <!-- Confluence -->
+        <div class="ci-integration-card">
+            <div class="ci-integration-header">
+                <div class="ci-integration-logo" style="background: hsla(210,80%,55%,0.1); color: hsl(210,80%,55%);">
+                    <i data-lucide="book-open"></i>
+                </div>
+                <div class="ci-integration-info">
+                    <span class="ci-integration-name">Confluence</span>
+                    <span class="ci-integration-type">Enterprise Wiki</span>
+                </div>
+                <span class="ci-badge ci-badge-soon">Coming Soon</span>
+            </div>
+            <p class="ci-integration-desc">Ingest spaces and pages from Atlassian Confluence. Feed internal documentation, runbooks, and RFCs into your agent.</p>
+            <div class="ci-integration-features">
+                <span><i data-lucide="check"></i> Space filtering</span>
+                <span><i data-lucide="check"></i> Attachment support</span>
+                <span><i data-lucide="check"></i> Label-based sync</span>
+            </div>
+        </div>
+
+        <!-- Jira -->
+        <div class="ci-integration-card">
+            <div class="ci-integration-header">
+                <div class="ci-integration-logo" style="background: hsla(210,90%,50%,0.1); color: hsl(210,90%,55%);">
+                    <i data-lucide="ticket"></i>
+                </div>
+                <div class="ci-integration-info">
+                    <span class="ci-integration-name">Jira</span>
+                    <span class="ci-integration-type">Project Management</span>
+                </div>
+                <span class="ci-badge ci-badge-soon">Coming Soon</span>
+            </div>
+            <p class="ci-integration-desc">Sync Jira issues, epics, and sprint data. Give your agent context about what your team is building and shipping.</p>
+            <div class="ci-integration-features">
+                <span><i data-lucide="check"></i> JQL filtering</span>
+                <span><i data-lucide="check"></i> Epic hierarchy</span>
+                <span><i data-lucide="check"></i> Comment threads</span>
+            </div>
+        </div>
+
+        <!-- Linear -->
+        <div class="ci-integration-card">
+            <div class="ci-integration-header">
+                <div class="ci-integration-logo" style="background: hsla(262,60%,55%,0.1); color: hsl(262,60%,55%);">
+                    <i data-lucide="kanban"></i>
+                </div>
+                <div class="ci-integration-info">
+                    <span class="ci-integration-name">Linear</span>
+                    <span class="ci-integration-type">Issue Tracking</span>
+                </div>
+                <span class="ci-badge ci-badge-soon">Coming Soon</span>
+            </div>
+            <p class="ci-integration-desc">Connect Linear teams and projects. Keep your agent aware of active issues, cycles, and engineering priorities.</p>
+            <div class="ci-integration-features">
+                <span><i data-lucide="check"></i> Team filtering</span>
+                <span><i data-lucide="check"></i> Cycle tracking</span>
+                <span><i data-lucide="check"></i> Webhook sync</span>
+            </div>
+        </div>
+
+        <!-- Google Drive -->
+        <div class="ci-integration-card">
+            <div class="ci-integration-header">
+                <div class="ci-integration-logo" style="background: hsla(145,55%,48%,0.1); color: hsl(145,55%,48%);">
+                    <i data-lucide="hard-drive"></i>
+                </div>
+                <div class="ci-integration-info">
+                    <span class="ci-integration-name">Google Drive</span>
+                    <span class="ci-integration-type">File Storage</span>
+                </div>
+                <span class="ci-badge ci-badge-soon">Coming Soon</span>
+            </div>
+            <p class="ci-integration-desc">Import documents, spreadsheets, and presentations from Google Drive. Ingest shared team knowledge into your agent.</p>
+            <div class="ci-integration-features">
+                <span><i data-lucide="check"></i> Folder filtering</span>
+                <span><i data-lucide="check"></i> Docs &amp; Sheets</span>
+                <span><i data-lucide="check"></i> Shared drives</span>
+            </div>
+        </div>
+
+        <!-- API / Webhook -->
+        <div class="ci-integration-card ci-integration-card-api">
+            <div class="ci-integration-header">
+                <div class="ci-integration-logo" style="background: hsla(38,90%,55%,0.1); color: hsl(38,90%,55%);">
+                    <i data-lucide="webhook"></i>
+                </div>
+                <div class="ci-integration-info">
+                    <span class="ci-integration-name">REST API / Webhooks</span>
+                    <span class="ci-integration-type">Custom Pipeline</span>
+                </div>
+                <span class="ci-badge ci-badge-available">Available Now</span>
+            </div>
+            <p class="ci-integration-desc">Use the GitMem REST API to push context from any custom source. Build your own ingestion pipelines with webhooks.</p>
+            <div class="ci-integration-features">
+                <span><i data-lucide="check"></i> Full CRUD API</span>
+                <span><i data-lucide="check"></i> Batch ingest</span>
+                <span><i data-lucide="check"></i> Semantic indexing</span>
+            </div>
+            <a href="/api/docs" class="ci-integration-cta">
+                <i data-lucide="external-link"></i> View API Docs
+            </a>
+        </div>
+
+    </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     Section 4: Quick Reference
+     ═══════════════════════════════════════════════════════ -->
+
+<div class="ci-section">
+    <div class="ci-section-head">
+        <div class="ci-section-icon ci-icon-ref">
+            <i data-lucide="bookmark"></i>
+        </div>
+        <div>
+            <h2 class="ci-section-title">Quick Reference</h2>
+            <p class="ci-section-desc">Frequently needed links and resources.</p>
+        </div>
+    </div>
+
+    <div class="ci-ref-grid">
+        <a href="/api/docs" class="ci-ref-card">
+            <i data-lucide="book-open" class="ci-ref-icon" style="color: hsl(230,80%,68%);"></i>
+            <div>
+                <span class="ci-ref-title">API Documentation</span>
+                <span class="ci-ref-desc">Full REST API reference</span>
+            </div>
+            <i data-lucide="arrow-right" class="ci-ref-arrow"></i>
+        </a>
+        <a href="{{ url_for('gitmem.hub_api_keys', ws_slug=workspace.id) if workspace else '#' }}" class="ci-ref-card">
+            <i data-lucide="key" class="ci-ref-icon" style="color: hsl(38,90%,55%);"></i>
+            <div>
+                <span class="ci-ref-title">API Keys</span>
+                <span class="ci-ref-desc">Create &amp; manage keys</span>
+            </div>
+            <i data-lucide="arrow-right" class="ci-ref-arrow"></i>
+        </a>
+        <a href="https://modelcontextprotocol.io" target="_blank" class="ci-ref-card">
+            <i data-lucide="globe" class="ci-ref-icon" style="color: hsl(155,70%,50%);"></i>
+            <div>
+                <span class="ci-ref-title">MCP Specification</span>
+                <span class="ci-ref-desc">Official protocol docs</span>
+            </div>
+            <i data-lucide="external-link" class="ci-ref-arrow"></i>
+        </a>
+        <a href="https://github.com/modelcontextprotocol" target="_blank" class="ci-ref-card">
+            <i data-lucide="github" class="ci-ref-icon" style="color: hsl(0,0%,75%);"></i>
+            <div>
+                <span class="ci-ref-title">MCP on GitHub</span>
+                <span class="ci-ref-desc">SDKs, servers &amp; examples</span>
+            </div>
+            <i data-lucide="external-link" class="ci-ref-arrow"></i>
+        </a>
+    </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     Styles
+     ═══════════════════════════════════════════════════════ -->
 <style>
-.gm-conn-card {
-    background: hsl(225, 12%, 11%);
-    border: 1px solid hsl(225, 10%, 16%);
-    border-radius: 12px;
-    padding: 18px;
-    transition: all 0.2s ease;
+/* Section containers */
+.ci-section {
+    margin-bottom: 32px;
 }
-.gm-conn-active:hover {
-    border-color: hsl(225, 10%, 24%);
-}
-.gm-conn-available {
-    opacity: 0.65;
-}
-.gm-conn-available:hover {
-    opacity: 1;
-    border-color: hsl(225, 10%, 22%);
-}
-
-.gm-conn-header {
+.ci-section-head {
     display: flex;
-    align-items: center;
-    gap: 12px;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 20px;
 }
-.gm-conn-icon {
-    width: 38px;
-    height: 38px;
-    border-radius: 9px;
+.ci-section-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
 }
-.gm-conn-icon i { width: 18px; height: 18px; }
+.ci-section-icon i { width: 20px; height: 20px; }
+.ci-icon-mcp { background: hsla(262,70%,55%,0.12); color: hsl(262,70%,55%); }
+.ci-icon-clients { background: hsla(24,80%,55%,0.12); color: hsl(24,80%,55%); }
+.ci-icon-sources { background: hsla(197,100%,47%,0.12); color: hsl(197,100%,47%); }
+.ci-icon-ref { background: hsla(155,70%,50%,0.12); color: hsl(155,70%,50%); }
 
-.gm-conn-identity { flex: 1; min-width: 0; }
-.gm-conn-name {
+.ci-section-title {
+    font-size: 17px;
+    font-weight: 800;
+    color: white;
+    margin: 0;
+    line-height: 1.3;
+    background: none !important;
+    -webkit-text-fill-color: white !important;
+}
+.ci-section-desc {
+    font-size: 13px;
+    color: hsl(225,10%,50%);
+    margin: 3px 0 0;
+    line-height: 1.5;
+    max-width: 560px;
+}
+
+/* Cards (accordion) */
+.ci-card {
+    background: hsl(225,12%,11%);
+    border: 1px solid hsl(225,10%,16%);
+    border-radius: 12px;
+    margin-bottom: 10px;
+    overflow: hidden;
+    transition: border-color 0.2s ease;
+}
+.ci-card:hover {
+    border-color: hsl(225,10%,22%);
+}
+.ci-card-info {
+    border-color: hsla(230,80%,62%,0.15);
+}
+.ci-card-info:hover {
+    border-color: hsla(230,80%,62%,0.3);
+}
+
+.ci-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s ease;
+}
+.ci-card-head:hover {
+    background: hsla(0,0%,100%,0.02);
+}
+.ci-card-head-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.ci-card-head-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+.ci-card-head-title {
     font-size: 14px;
     font-weight: 700;
     color: white;
 }
-.gm-conn-channels {
+.ci-card-head-sub {
     font-size: 11px;
-    color: hsl(225, 10%, 42%);
-    font-family: 'SF Mono', 'Fira Code', monospace;
+    color: hsl(225,10%,45%);
+    margin-left: 2px;
+}
+.ci-chevron {
+    width: 16px;
+    height: 16px;
+    color: hsl(225,10%,40%);
+    flex-shrink: 0;
+    transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
+}
+.ci-chevron.ci-open {
+    transform: rotate(180deg);
 }
 
-.gm-conn-status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
+.ci-card-body {
+    padding: 0 20px 20px;
+}
+
+/* Platform icon (larger, for setup guides) */
+.ci-platform-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
 }
-.gm-conn-dot-live {
-    background: hsl(155, 70%, 45%);
-    box-shadow: 0 0 8px hsla(155, 70%, 45%, 0.5);
+.ci-platform-icon i { width: 18px; height: 18px; }
+
+/* Badges */
+.ci-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 6px;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+.ci-badge-live {
+    background: hsla(155,70%,45%,0.12);
+    color: hsl(155,70%,50%);
+    border: 1px solid hsla(155,70%,45%,0.2);
+}
+.ci-badge-soon {
+    background: hsla(225,10%,50%,0.1);
+    color: hsl(225,10%,55%);
+    border: 1px solid hsla(225,10%,50%,0.15);
+}
+.ci-badge-available {
+    background: hsla(38,90%,55%,0.1);
+    color: hsl(38,90%,55%);
+    border: 1px solid hsla(38,90%,55%,0.2);
 }
 
-.gm-conn-connect-btn {
+/* Prose text */
+.ci-prose {
+    font-size: 13px;
+    color: hsl(225,10%,65%);
+    line-height: 1.7;
+    margin: 0 0 10px;
+}
+.ci-prose strong {
+    color: white;
+    font-weight: 700;
+}
+.ci-prose code {
+    background: hsla(0,0%,100%,0.06);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    color: hsl(24,80%,65%);
+}
+
+/* Feature grid */
+.ci-feature-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 14px;
+}
+.ci-feature-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    background: hsla(0,0%,100%,0.03);
+    border-radius: 10px;
+    border: 1px solid hsl(225,10%,14%);
+}
+.ci-feature-icon {
+    width: 16px;
+    height: 16px;
+    color: var(--mc-primary, hsl(230,80%,62%));
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+.ci-feature-item strong {
+    font-size: 13px;
+    font-weight: 700;
+    color: white;
+    display: block;
+}
+.ci-feature-item span {
+    font-size: 11px;
+    color: hsl(225,10%,50%);
+    line-height: 1.4;
+}
+
+/* KV rows (server details) */
+.ci-kv-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid hsl(225,10%,13%);
+}
+.ci-kv-row:last-of-type { border-bottom: none; }
+.ci-kv-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: hsl(225,10%,50%);
+}
+.ci-kv-value {
+    font-size: 12px;
+    color: hsl(225,10%,70%);
+}
+.ci-kv-value code {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 12px;
+    color: hsl(155,70%,60%);
+}
+.ci-copyable {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: 6px;
+    transition: background 0.15s ease;
+}
+.ci-copyable:hover {
+    background: hsla(0,0%,100%,0.04);
+}
+.ci-copy-icon {
+    width: 14px;
+    height: 14px;
+    color: hsl(225,10%,40%);
+    transition: color 0.15s;
+}
+.ci-copyable:hover .ci-copy-icon {
+    color: hsl(155,70%,55%);
+}
+
+/* Sub heading */
+.ci-sub-heading {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: hsl(225,10%,50%);
+    margin: 18px 0 10px;
+    background: none !important;
+    -webkit-text-fill-color: hsl(225,10%,50%) !important;
+}
+
+/* Tools chips */
+.ci-tools-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.ci-tool-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: hsla(0,0%,100%,0.04);
+    border: 1px solid hsl(225,10%,16%);
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    color: hsl(230,80%,72%);
+}
+.ci-tool-chip i {
+    width: 13px;
+    height: 13px;
+    color: hsl(225,10%,40%);
+}
+
+/* Code blocks */
+.ci-code-block {
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid hsl(225,10%,14%);
+    background: hsl(225,15%,7%);
+}
+.ci-code-terminal {
+    border-color: hsla(155,70%,45%,0.15);
+}
+.ci-code-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    background: hsla(0,0%,100%,0.03);
+    border-bottom: 1px solid hsl(225,10%,14%);
     font-size: 11px;
     font-weight: 600;
-    color: var(--mc-primary, hsl(230,80%,62%));
+    color: hsl(225,10%,50%);
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+}
+.ci-copy-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
     background: none;
-    border: 1px solid hsla(230, 80%, 62%, 0.3);
-    padding: 4px 12px;
+    border: 1px solid hsl(225,10%,18%);
+    color: hsl(225,10%,55%);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
     border-radius: 6px;
     cursor: pointer;
     font-family: inherit;
     transition: all 0.15s ease;
-    flex-shrink: 0;
 }
-.gm-conn-connect-btn:hover {
-    background: hsla(230, 80%, 62%, 0.1);
-    border-color: var(--mc-primary);
+.ci-copy-btn i { width: 12px; height: 12px; }
+.ci-copy-btn:hover {
+    background: hsla(0,0%,100%,0.04);
+    color: white;
+    border-color: hsl(225,10%,28%);
+}
+.ci-code-block pre {
+    margin: 0;
+    padding: 16px;
+    overflow-x: auto;
+}
+.ci-code-block code {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 12px;
+    line-height: 1.65;
+    color: hsl(225,10%,72%);
 }
 
-.gm-conn-metrics {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
+/* Note callout */
+.ci-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    background: hsla(38,90%,55%,0.05);
+    border: 1px solid hsla(38,90%,55%,0.12);
+    border-radius: 8px;
     margin-top: 14px;
-    padding-top: 14px;
-    border-top: 1px solid hsl(225, 10%, 14%);
+    font-size: 12px;
+    color: hsl(225,10%,60%);
+    line-height: 1.6;
 }
-.gm-conn-metric { text-align: center; }
-.gm-conn-metric-val {
-    font-size: 15px;
-    font-weight: 800;
+.ci-note > i {
+    width: 16px;
+    height: 16px;
+    color: hsl(38,90%,55%);
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+.ci-note code {
+    background: hsla(0,0%,100%,0.06);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 11px;
+    color: hsl(24,80%,65%);
+}
+
+/* Links */
+.ci-link {
+    color: var(--mc-primary, hsl(230,80%,68%));
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.15s;
+}
+.ci-link:hover {
+    color: hsl(230,80%,78%);
+    text-decoration: underline;
+}
+
+/* Integration grid */
+.ci-integration-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 14px;
+}
+.ci-integration-card {
+    background: hsl(225,12%,11%);
+    border: 1px solid hsl(225,10%,16%);
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.2s ease;
+}
+.ci-integration-card:hover {
+    border-color: hsl(225,10%,24%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+.ci-integration-card-api {
+    border-color: hsla(38,90%,55%,0.15);
+}
+.ci-integration-card-api:hover {
+    border-color: hsla(38,90%,55%,0.3);
+}
+
+.ci-integration-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+.ci-integration-logo {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.ci-integration-logo i { width: 18px; height: 18px; }
+.ci-integration-info { flex: 1; min-width: 0; }
+.ci-integration-name {
+    font-size: 14px;
+    font-weight: 700;
     color: white;
     display: block;
-    letter-spacing: -0.3px;
 }
-.gm-conn-metric-label {
-    font-size: 10px;
-    font-weight: 500;
-    color: hsl(225, 10%, 42%);
+.ci-integration-type {
+    font-size: 11px;
+    color: hsl(225,10%,45%);
+}
+.ci-integration-desc {
+    font-size: 12px;
+    color: hsl(225,10%,55%);
+    line-height: 1.6;
+    margin-bottom: 14px;
+}
+.ci-integration-features {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.ci-integration-features span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: hsl(225,10%,50%);
+}
+.ci-integration-features i {
+    width: 12px;
+    height: 12px;
+    color: hsl(155,70%,50%);
+}
+.ci-integration-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 14px;
+    padding: 7px 14px;
+    border-radius: 8px;
+    background: hsla(38,90%,55%,0.1);
+    border: 1px solid hsla(38,90%,55%,0.2);
+    color: hsl(38,90%,55%);
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+.ci-integration-cta i { width: 13px; height: 13px; }
+.ci-integration-cta:hover {
+    background: hsla(38,90%,55%,0.15);
+    border-color: hsla(38,90%,55%,0.35);
+}
+
+/* Reference grid */
+.ci-ref-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 10px;
+}
+.ci-ref-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    border-radius: 12px;
+    background: hsl(225,12%,11%);
+    border: 1px solid hsl(225,10%,16%);
+    text-decoration: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+.ci-ref-card:hover {
+    border-color: hsl(225,10%,24%);
+    background: hsl(225,12%,13%);
+}
+.ci-ref-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+.ci-ref-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: white;
     display: block;
-    margin-top: 2px;
+}
+.ci-ref-desc {
+    font-size: 11px;
+    color: hsl(225,10%,45%);
+    display: block;
+    margin-top: 1px;
+}
+.ci-ref-arrow {
+    width: 14px;
+    height: 14px;
+    color: hsl(225,10%,30%);
+    margin-left: auto;
+    flex-shrink: 0;
+    transition: color 0.15s, transform 0.15s;
+}
+.ci-ref-card:hover .ci-ref-arrow {
+    color: hsl(225,10%,55%);
+    transform: translateX(2px);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .ci-feature-grid { grid-template-columns: 1fr; }
+    .ci-integration-grid { grid-template-columns: 1fr; }
+    .ci-ref-grid { grid-template-columns: 1fr; }
+}
+
+/* Animations */
+.ci-section {
+    animation: ciFadeIn 0.35s ease-out both;
+}
+.ci-section:nth-child(2) { animation-delay: 0.05s; }
+.ci-section:nth-child(3) { animation-delay: 0.1s; }
+.ci-section:nth-child(4) { animation-delay: 0.15s; }
+.ci-section:nth-child(5) { animation-delay: 0.2s; }
+
+@keyframes ciFadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 </style>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     Scripts
+     ═══════════════════════════════════════════════════════ -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    lucide.createIcons();
+});
+
+function toggleAccordion(headEl) {
+    const body = headEl.nextElementSibling;
+    const chevron = headEl.querySelector('.ci-chevron');
+
+    if (body.style.display === 'none') {
+        body.style.display = 'block';
+        body.style.opacity = '0';
+        body.style.maxHeight = '0';
+        requestAnimationFrame(() => {
+            body.style.transition = 'opacity 0.25s ease, max-height 0.35s ease';
+            body.style.opacity = '1';
+            body.style.maxHeight = body.scrollHeight + 'px';
+        });
+        if (chevron) chevron.classList.add('ci-open');
+    } else {
+        body.style.transition = 'opacity 0.2s ease, max-height 0.25s ease';
+        body.style.opacity = '0';
+        body.style.maxHeight = '0';
+        setTimeout(() => {
+            body.style.display = 'none';
+            body.style.transition = '';
+        }, 250);
+        if (chevron) chevron.classList.remove('ci-open');
+    }
+}
+
+function copyToClipboard(el, text) {
+    navigator.clipboard.writeText(text).then(() => {
+        const icon = el.querySelector('.ci-copy-icon');
+        if (icon) {
+            icon.setAttribute('data-lucide', 'check');
+            lucide.createIcons();
+            setTimeout(() => {
+                icon.setAttribute('data-lucide', 'copy');
+                lucide.createIcons();
+            }, 2000);
+        }
+    });
+}
+
+function copyCodeBlock(btn) {
+    const codeBlock = btn.closest('.ci-code-block');
+    const code = codeBlock.querySelector('code').innerText;
+    navigator.clipboard.writeText(code).then(() => {
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i data-lucide="check"></i> Copied!';
+        btn.style.color = 'hsl(155,70%,55%)';
+        btn.style.borderColor = 'hsla(155,70%,45%,0.3)';
+        lucide.createIcons();
+        setTimeout(() => {
+            btn.innerHTML = originalHTML;
+            btn.style.color = '';
+            btn.style.borderColor = '';
+            lucide.createIcons();
+        }, 2000);
+    });
+}
+</script>
 
 {% endblock %}
