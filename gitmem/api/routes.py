@@ -862,8 +862,73 @@ def hub_workspace(ws_slug):
 @gitmem_bp.route('/w/<ws_slug>/overview')
 @login_required
 def hub_overview(ws_slug):
-    """Overview page — redirects to Agents since Mission Control merged with Agents."""
-    return redirect(url_for('gitmem.hub_agents', ws_slug=ws_slug))
+    """Overview page — user profile + workspace stats at a glance."""
+    agent_raw = _get_agent(ws_slug, user_id=current_user.get_id())
+    if not agent_raw:
+        return redirect(url_for('gitmem.landing'))
+    agent = _agent_context(ws_slug, agent_raw)
+    actual_agent_id = agent_raw.get('agent_id')
+
+    # Fetch user profile
+    profile = {}
+    try:
+        db = _db()
+        if db:
+            res = db.table('profiles').select('*').eq('id', current_user.get_id()).execute()
+            if res.data:
+                profile = res.data[0]
+    except Exception as e:
+        print(f"[Overview] Error fetching profile: {e}")
+
+    # Memory count + type distribution
+    memory_count = 0
+    type_counts = {}
+    try:
+        db = _db()
+        if db:
+            res = db.table('gitmem_memories').select('type') \
+                .eq('agent_id', actual_agent_id).limit(500).execute()
+            rows = res.data or []
+            memory_count = len(rows)
+            for m in rows:
+                t = m.get('type', 'unknown')
+                type_counts[t] = type_counts.get(t, 0) + 1
+    except Exception as e:
+        print(f"[Overview] Error fetching memories: {e}")
+
+    # Vector count
+    vector_count = 0
+    try:
+        stats = gitmem_app.vector_engine.get_agent_stats(actual_agent_id)
+        vector_count = stats.get('embeddings', 0) or 0
+    except Exception:
+        pass
+
+    # Document count
+    doc_count = _count_chunks_in_chroma(actual_agent_id)
+
+    # Recent activity logs
+    recent_activity = []
+    try:
+        db = _db()
+        if db:
+            res = db.table('gitmem_activity_logs').select('*') \
+                .eq('agent_id', actual_agent_id) \
+                .order('created_at', desc=True).limit(10).execute()
+            recent_activity = res.data or []
+    except Exception:
+        pass
+
+    return render_template('gitmem/hub_overview.html',
+        workspace=agent,
+        profile=profile,
+        memory_count=memory_count,
+        vector_count=vector_count,
+        doc_count=doc_count,
+        type_counts=type_counts,
+        recent_activity=recent_activity,
+    )
+
 
 @gitmem_bp.route('/w/<ws_slug>/context')
 @login_required
@@ -1385,9 +1450,79 @@ def hub_settings(ws_slug):
     agent = _agent_context(ws_slug, agent_raw)
     return render_template('gitmem/hub_settings.html', workspace=agent)
 
+
+@gitmem_bp.route('/w/<ws_slug>/api-keys')
+@login_required
+def hub_api_keys(ws_slug):
+    """API Keys management page."""
+    agent_raw = _get_agent(ws_slug, user_id=current_user.get_id())
+    if not agent_raw:
+        return redirect(url_for('gitmem.landing'))
+    agent = _agent_context(ws_slug, agent_raw)
+    return render_template('gitmem/hub_api_keys.html', workspace=agent)
+
+
+@gitmem_bp.route('/w/<ws_slug>/billing')
+@login_required
+def hub_billing(ws_slug):
+    """Billing & Plans page with real usage stats."""
+    agent_raw = _get_agent(ws_slug, user_id=current_user.get_id())
+    if not agent_raw:
+        return redirect(url_for('gitmem.landing'))
+    agent = _agent_context(ws_slug, agent_raw)
+    actual_agent_id = agent_raw.get('agent_id')
+
+    # Count agents owned by user
+    agent_count = 0
+    try:
+        db = _db()
+        if db:
+            res = db.table('api_agents').select('*', count='exact') \
+                .eq('user_id', current_user.get_id()).limit(1).execute()
+            agent_count = res.count or 0
+    except Exception:
+        pass
+
+    # Count memories for this agent
+    memory_count = _count_table('gitmem_memories', 'agent_id', actual_agent_id)
+
+    # API call count (approximate from activity logs)
+    api_call_count = 0
+    try:
+        db = _db()
+        if db:
+            res = db.table('gitmem_activity_logs').select('*', count='exact') \
+                .eq('agent_id', actual_agent_id).limit(1).execute()
+            api_call_count = res.count or 0
+    except Exception:
+        pass
+
+    return render_template('gitmem/hub_billing.html',
+        workspace=agent,
+        agent_count=agent_count,
+        agent_pct=int((agent_count / 5) * 100) if agent_count else 0,
+        memory_count=memory_count,
+        memory_pct=int((memory_count / 10000) * 100) if memory_count else 0,
+        api_call_count=api_call_count,
+        api_call_pct=int((api_call_count / 1000) * 100) if api_call_count else 0,
+    )
+
+
+@gitmem_bp.route('/w/<ws_slug>/support')
+@login_required
+def hub_support(ws_slug):
+    """Support Center page."""
+    agent_raw = _get_agent(ws_slug, user_id=current_user.get_id())
+    if not agent_raw:
+        return redirect(url_for('gitmem.landing'))
+    agent = _agent_context(ws_slug, agent_raw)
+    return render_template('gitmem/hub_support.html', workspace=agent)
+
+
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # Legacy Redirects (301 Permanent)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 
 @gitmem_bp.route('/agent/<agent_id>')
 def legacy_agent_dashboard(agent_id):

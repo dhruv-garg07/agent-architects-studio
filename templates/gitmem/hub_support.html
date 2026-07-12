@@ -1,0 +1,185 @@
+{% extends "layouts/mission_control_shell.html" %}
+{% set active_page = "support" %}
+
+{% block title %}Support — {{ workspace.name if workspace else 'GitMem' }}{% endblock %}
+
+{% block workspace_content %}
+<div class="flex-1 overflow-auto">
+    <div class="max-w-5xl mx-auto p-8">
+
+        <!-- Header -->
+        <div class="mb-6 animate-fade-in">
+            <h2 class="text-2xl font-bold text-white tracking-tight">Support Center</h2>
+            <p class="text-gray-400">Get help with your agents and account.</p>
+        </div>
+
+        <!-- Contact Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
+            <!-- Founder Contact -->
+            <div class="p-6 rounded-xl bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-white/10 hover:border-primary/50 transition-all group">
+                <div class="w-12 h-12 rounded-lg bg-white/5 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+                    <i data-lucide="mail" class="w-6 h-6 text-white"></i>
+                </div>
+                <h3 class="text-lg font-bold text-white mb-2">Contact Creators</h3>
+                <p class="text-sm text-gray-400 mb-6 min-h-[40px]">For enterprise inquiries, partnerships, or
+                    support, please reach out to us directly via email.</p>
+                <div class="flex items-center text-sm font-medium text-primary">
+                    <i data-lucide="at-sign" class="w-4 h-4 mr-2"></i>
+                    2021eeb1166@iitrpr.ac.in
+                </div>
+            </div>
+
+            <!-- Documentation -->
+            <div class="p-6 rounded-xl bg-[#161616] border border-white/10 hover:border-white/20 transition-all group">
+                <div class="w-12 h-12 rounded-lg bg-white/5 flex items-center justify-center mb-4 group-hover:bg-white/10 transition-colors">
+                    <i data-lucide="book" class="w-6 h-6 text-white"></i>
+                </div>
+                <h3 class="text-lg font-bold text-white mb-2">Documentation</h3>
+                <p class="text-sm text-gray-400 mb-6 min-h-[40px]">Comprehensive guides on building agents, API
+                    references, and SDK usages.</p>
+                <a href="/api/docs"
+                    class="inline-flex items-center text-sm font-medium text-primary hover:text-white transition-colors">
+                    Read Docs <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Quick Links -->
+        <div class="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 animate-fade-in">
+            <a href="/api/docs" class="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-all group flex items-center gap-3 text-decoration-none">
+                <div class="w-9 h-9 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0 group-hover:bg-blue-500/20 transition-colors">
+                    <i data-lucide="code-2" class="w-4 h-4 text-blue-400"></i>
+                </div>
+                <div>
+                    <span class="text-sm font-medium text-white block">API Reference</span>
+                    <span class="text-[11px] text-gray-500">Endpoints & schemas</span>
+                </div>
+            </a>
+            <a href="https://github.com" target="_blank" class="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-all group flex items-center gap-3 text-decoration-none">
+                <div class="w-9 h-9 rounded-lg bg-gray-500/10 flex items-center justify-center flex-shrink-0 group-hover:bg-gray-500/20 transition-colors">
+                    <i data-lucide="github" class="w-4 h-4 text-gray-300"></i>
+                </div>
+                <div>
+                    <span class="text-sm font-medium text-white block">GitHub</span>
+                    <span class="text-[11px] text-gray-500">Source & issues</span>
+                </div>
+            </a>
+            <a href="{{ url_for('gitmem.hub_integrations', ws_slug=workspace.id) if workspace else '#' }}" class="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-all group flex items-center gap-3 text-decoration-none">
+                <div class="w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0 group-hover:bg-amber-500/20 transition-colors">
+                    <i data-lucide="cable" class="w-4 h-4 text-amber-400"></i>
+                </div>
+                <div>
+                    <span class="text-sm font-medium text-white block">Connectors</span>
+                    <span class="text-[11px] text-gray-500">Integrations setup</span>
+                </div>
+            </a>
+        </div>
+
+        <!-- FAQ -->
+        <div class="mt-8 p-6 rounded-xl bg-white/5 border border-white/10 animate-fade-in">
+            <h3 class="text-sm font-semibold text-gray-300 mb-4 uppercase tracking-wide flex items-center gap-2">
+                <i data-lucide="help-circle" class="w-4 h-4 text-primary"></i>
+                Common Issues
+            </h3>
+            <div class="space-y-4">
+                <details class="group">
+                    <summary class="flex items-center justify-between cursor-pointer list-none text-sm text-white font-medium py-1">
+                        <span>How do I increase my API limit?</span>
+                        <span class="transition group-open:rotate-180">
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500"></i>
+                        </span>
+                    </summary>
+                    <p class="text-sm text-gray-400 mt-2 pl-4 border-l-2 border-white/10">
+                        You can upgrade your plan in the
+                        <a href="{{ url_for('gitmem.hub_billing', ws_slug=workspace.id) if workspace else '#' }}"
+                            class="text-primary hover:underline">Billing section</a> to get higher rate limits instantly.
+                    </p>
+                </details>
+                <div class="w-full h-px bg-white/5"></div>
+                <details class="group">
+                    <summary class="flex items-center justify-between cursor-pointer list-none text-sm text-white font-medium py-1">
+                        <span>Where can I find my API Key?</span>
+                        <span class="transition group-open:rotate-180">
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500"></i>
+                        </span>
+                    </summary>
+                    <p class="text-sm text-gray-400 mt-2 pl-4 border-l-2 border-white/10">
+                        Navigate to the
+                        <a href="{{ url_for('gitmem.hub_api_keys', ws_slug=workspace.id) if workspace else '#' }}"
+                            class="text-primary hover:underline">API Keys</a> page in your workspace sidebar.
+                    </p>
+                </details>
+                <div class="w-full h-px bg-white/5"></div>
+                <details class="group">
+                    <summary class="flex items-center justify-between cursor-pointer list-none text-sm text-white font-medium py-1">
+                        <span>How do I add memories to my agent?</span>
+                        <span class="transition group-open:rotate-180">
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500"></i>
+                        </span>
+                    </summary>
+                    <p class="text-sm text-gray-400 mt-2 pl-4 border-l-2 border-white/10">
+                        You can add memories via the API using your API key, or through the
+                        <a href="{{ url_for('gitmem.hub_context', ws_slug=workspace.id) if workspace else '#' }}"
+                            class="text-primary hover:underline">Explorer</a> in the sidebar.
+                        Each memory is automatically embedded and indexed for semantic search.
+                    </p>
+                </details>
+                <div class="w-full h-px bg-white/5"></div>
+                <details class="group">
+                    <summary class="flex items-center justify-between cursor-pointer list-none text-sm text-white font-medium py-1">
+                        <span>Can agents share memory with each other?</span>
+                        <span class="transition group-open:rotate-180">
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500"></i>
+                        </span>
+                    </summary>
+                    <p class="text-sm text-gray-400 mt-2 pl-4 border-l-2 border-white/10">
+                        Yes! Use the
+                        <a href="{{ url_for('gitmem.hub_permissions', ws_slug=workspace.id) if workspace else '#' }}"
+                            class="text-primary hover:underline">Agentic Sharing</a> page to set up inter-agent memory
+                        connections with fine-grained permission scopes.
+                    </p>
+                </details>
+                <div class="w-full h-px bg-white/5"></div>
+                <details class="group">
+                    <summary class="flex items-center justify-between cursor-pointer list-none text-sm text-white font-medium py-1">
+                        <span>How do snapshots and version history work?</span>
+                        <span class="transition group-open:rotate-180">
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500"></i>
+                        </span>
+                    </summary>
+                    <p class="text-sm text-gray-400 mt-2 pl-4 border-l-2 border-white/10">
+                        GitMem automatically creates version snapshots of your agent's memory state.
+                        You can view, compare, and restore previous versions from the
+                        <a href="{{ url_for('gitmem.hub_history', ws_slug=workspace.id) if workspace else '#' }}"
+                            class="text-primary hover:underline">History</a> page.
+                    </p>
+                </details>
+            </div>
+        </div>
+
+        <!-- Status -->
+        <div class="mt-8 p-5 rounded-xl bg-white/5 border border-white/10 animate-fade-in">
+            <div class="flex items-center gap-3">
+                <div class="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div>
+                <span class="text-sm font-medium text-white">All Systems Operational</span>
+                <span class="text-[11px] text-gray-500 ml-auto">Last checked: just now</span>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(5px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        lucide.createIcons();
+    });
+</script>
+{% endblock %}

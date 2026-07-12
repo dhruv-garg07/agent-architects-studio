@@ -39,11 +39,12 @@
             <!-- CORE -->
             <div class="gm-nav-group">
                 <div class="gm-nav-group-label">Core</div>
-                <a href="#" title="Dashboard is a stub for now"
-                    class="gm-nav-item {{ 'gm-nav-active' if active_page == 'dashboard' else '' }}">
+                <a href="{{ url_for('gitmem.hub_overview', ws_slug=workspace.id) if workspace else '/dashboard#overview' }}"
+                    class="gm-nav-item {{ 'gm-nav-active' if active_page == 'overview' else '' }}">
                     <i data-lucide="user" class="gm-nav-icon"></i>
                     <span class="gm-nav-label">Overview</span>
                 </a>
+
                 <a href="{{ url_for('gitmem.hub_agents', ws_slug=workspace.id) if workspace else '/dashboard#my-agents' }}"
                     class="gm-nav-item {{ 'gm-nav-active' if active_page == 'agents' else '' }}">
                     <i data-lucide="bot" class="gm-nav-icon"></i>
@@ -89,13 +90,13 @@
             <!-- CONFIGURATION -->
             <div class="gm-nav-group">
                 <div class="gm-nav-group-label">Configuration</div>
-                <a href="#" title="Dashboard is a stub for now"
-                    class="gm-nav-item">
+                <a href="{{ url_for('gitmem.hub_api_keys', ws_slug=workspace.id) if workspace else '#' }}"
+                    class="gm-nav-item {{ 'gm-nav-active' if active_page == 'api_keys' else '' }}">
                     <i data-lucide="key" class="gm-nav-icon"></i>
                     <span class="gm-nav-label">API Keys</span>
                 </a>
-                <a href="#" title="Dashboard is a stub for now"
-                    class="gm-nav-item">
+                <a href="{{ url_for('gitmem.hub_billing', ws_slug=workspace.id) if workspace else '#' }}"
+                    class="gm-nav-item {{ 'gm-nav-active' if active_page == 'billing' else '' }}">
                     <i data-lucide="credit-card" class="gm-nav-icon"></i>
                     <span class="gm-nav-label">Billing</span>
                 </a>
@@ -114,12 +115,13 @@
                     <i data-lucide="book-open" class="gm-nav-icon"></i>
                     <span class="gm-nav-label">API Docs</span>
                 </a>
-                <a href="#" title="Dashboard is a stub for now"
-                    class="gm-nav-item">
+                <a href="{{ url_for('gitmem.hub_support', ws_slug=workspace.id) if workspace else '#' }}"
+                    class="gm-nav-item {{ 'gm-nav-active' if active_page == 'support' else '' }}">
                     <i data-lucide="life-buoy" class="gm-nav-icon"></i>
                     <span class="gm-nav-label">Support</span>
                 </a>
             </div>
+
 
             <!-- LEGAL -->
             <div class="gm-nav-group">
