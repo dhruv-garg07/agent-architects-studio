@@ -1,0 +1,166 @@
+{
+  "metadata": {
+    "documentTitle": "Exhibit A: Schedule of Deliverables - Open-Source and Third-Party Components",
+    "projectName": "Agent Architects Studio (api & gitmem)",
+    "auditDate": "2026-07-29",
+    "complianceStatus": "PASS - Permissive Licenses Only (No GPL/AGPL)"
+  },
+  "components": [
+    {
+      "componentName": "Flask",
+      "version": "3.1.0",
+      "license": "BSD-3-Clause",
+      "mannerOfUse": "Core Backend Application Framework (api/index.py, gitmem/api/routes.py)"
+    },
+    {
+      "componentName": "Flask-Login",
+      "version": "0.6.3",
+      "license": "MIT",
+      "mannerOfUse": "User Authentication & Session Management (gitmem/api/routes.py)"
+    },
+    {
+      "componentName": "Flask-SocketIO",
+      "version": "5.3.0",
+      "license": "MIT",
+      "mannerOfUse": "Real-Time WebSocket Protocol Layer (gitmem/api/websocket_events.py)"
+    },
+    {
+      "componentName": "Gunicorn",
+      "version": "21.2.0",
+      "license": "MIT",
+      "mannerOfUse": "WSGI HTTP Application Server for Production Deployment"
+    },
+    {
+      "componentName": "Gevent",
+      "version": "23.9.0",
+      "license": "MIT",
+      "mannerOfUse": "Asynchronous Coroutine Worker for Gunicorn Server"
+    },
+    {
+      "componentName": "Werkzeug",
+      "version": "3.1.3",
+      "license": "BSD-3-Clause",
+      "mannerOfUse": "WSGI Web Application Utilities & Security"
+    },
+    {
+      "componentName": "Jinja2",
+      "version": "3.1.4",
+      "license": "BSD-3-Clause",
+      "mannerOfUse": "Server-side Template Rendering Engine"
+    },
+    {
+      "componentName": "Pydantic",
+      "version": "2.9.2",
+      "license": "MIT",
+      "mannerOfUse": "Data Validation & Schema Serialization (gitmem/core/models.py)"
+    },
+    {
+      "componentName": "Supabase Python SDK",
+      "version": "2.4.0",
+      "license": "MIT",
+      "mannerOfUse": "Database & Workspace Storage Client (gitmem/core/storage/supabase_connector.py)"
+    },
+    {
+      "componentName": "OpenAI Python SDK",
+      "version": "Latest",
+      "license": "Apache-2.0",
+      "mannerOfUse": "Vector Embeddings & LLM Integration (gitmem/core/retrieval/embedder.py)"
+    },
+    {
+      "componentName": "Tiktoken",
+      "version": "0.12.0",
+      "license": "MIT",
+      "mannerOfUse": "Fast Token Counting for LLM Context Windows (gitmem/core/retrieval/token_packer.py)"
+    },
+    {
+      "componentName": "ChromaDB",
+      "version": "0.5.0",
+      "license": "Apache-2.0",
+      "mannerOfUse": "Vector Engine for Memory & Semantic Search (gitmem/core/storage/vector_engine.py)"
+    },
+    {
+      "componentName": "NumPy",
+      "version": "2.2.6",
+      "license": "BSD-3-Clause",
+      "mannerOfUse": "Mathematical Vector Operations (gitmem/core/storage/vector_engine.py)"
+    },
+    {
+      "componentName": "Model Context Protocol (MCP)",
+      "version": "Latest",
+      "license": "MIT",
+      "mannerOfUse": "Protocol SDK for Agent Context Sharing (api/mcp_memory_server.py)"
+    },
+    {
+      "componentName": "Requests",
+      "version": "2.31.0",
+      "license": "Apache-2.0",
+      "mannerOfUse": "Synchronous HTTP API Client (gitmem/sdk/client.py)"
+    },
+    {
+      "componentName": "HTTPX",
+      "version": "0.24.0",
+      "license": "BSD-3-Clause",
+      "mannerOfUse": "Asynchronous HTTP Client (api/mcp_memory_client.py)"
+    },
+    {
+      "componentName": "Together AI SDK",
+      "version": "Latest",
+      "license": "Apache-2.0",
+      "mannerOfUse": "LLM API Gateway Client (LLM_calls/together_get_response.py)"
+    },
+    {
+      "componentName": "Cryptography",
+      "version": "Latest",
+      "license": "Apache-2.0 / BSD",
+      "mannerOfUse": "API Key Hashing & Security Utilities (api/key_utils.py)"
+    },
+    {
+      "componentName": "python-dotenv",
+      "version": "1.0.0",
+      "license": "BSD-3-Clause",
+      "mannerOfUse": "Environment Variables Management"
+    },
+    {
+      "componentName": "Socket.IO Client",
+      "version": "4.7.2",
+      "license": "MIT",
+      "mannerOfUse": "Frontend Real-Time WebSocket Client (gitmem/templates/hub_chat.html)"
+    },
+    {
+      "componentName": "Vis Network",
+      "version": "Latest",
+      "license": "Apache-2.0 / MIT",
+      "mannerOfUse": "Interactive Knowledge Graph Visualizer (gitmem/templates/hub_knowledge_studio.html)"
+    },
+    {
+      "componentName": "Force Graph",
+      "version": "1.43",
+      "license": "MIT",
+      "mannerOfUse": "2D/3D Agent Graph Rendering (gitmem/templates/agent_dashboard.html)"
+    },
+    {
+      "componentName": "Marked.js",
+      "version": "Latest",
+      "license": "MIT",
+      "mannerOfUse": "Client-side Markdown Rendering (gitmem/templates/file_view.html)"
+    },
+    {
+      "componentName": "Swagger UI",
+      "version": "5.11.0",
+      "license": "Apache-2.0",
+      "mannerOfUse": "Interactive API Documentation Interface (templates/swagger_ui.html)"
+    },
+    {
+      "componentName": "Tailwind CSS CDN",
+      "version": "Latest",
+      "license": "MIT",
+      "mannerOfUse": "Utility Styling Framework (templates/base.html)"
+    },
+    {
+      "componentName": "Lucide Icons",
+      "version": "Latest",
+      "license": "ISC",
+      "mannerOfUse": "UI Vector Icon Set (templates/base.html)"
+    }
+  ]
+}
