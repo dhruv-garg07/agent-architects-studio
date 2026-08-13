@@ -615,12 +615,15 @@ def hub_file_view(ws_slug, virtual_path=''):
 
     if len(parts) >= 3:
         root, subfolder, item_id = parts[0], parts[1], parts[2]
+        clean_item_id = re.sub(r'\.(json|txt|md)$', '', item_id, flags=re.IGNORECASE)
         try:
             if root == 'memory':
                 # First try Supabase
                 found_in_db = False
                 if _db():
-                    res = _db().table('gitmem_memories').select('*').eq('id', item_id).execute()
+                    res = _db().table('gitmem_memories').select('*').eq('id', clean_item_id).execute()
+                    if not res.data and clean_item_id != item_id:
+                        res = _db().table('gitmem_memories').select('*').eq('id', item_id).execute()
                     if res.data:
                         row = res.data[0]
                         file_content = row.get('content', '')
@@ -635,7 +638,7 @@ def hub_file_view(ws_slug, virtual_path=''):
                 
                 # If not in Supabase, try ChromaDB
                 if not found_in_db:
-                    v = gitmem_app.vector_engine.get_vector(item_id, actual_agent_id)
+                    v = gitmem_app.vector_engine.get_vector(clean_item_id, actual_agent_id) or gitmem_app.vector_engine.get_vector(item_id, actual_agent_id)
                     if v:
                         file_content = v.get('content', '')
                         metadata = v.get('metadata', {})
@@ -649,20 +652,22 @@ def hub_file_view(ws_slug, virtual_path=''):
                         file_rag = Agentic_RAG(database=file_db_path, enable_cache=False, enable_monitoring=False)
                         file_col = file_rag.wrapper.manager.get_collection(actual_agent_id)
                         if file_col:
-                            cdata = file_col.get(ids=[item_id], include=["documents", "metadatas"])
+                            cdata = file_col.get(ids=[clean_item_id, item_id], include=["documents", "metadatas"])
                             if cdata and cdata.get('ids'):
                                 file_content = cdata['documents'][0] if cdata.get('documents') else ''
                                 metadata = cdata['metadatas'][0] if cdata.get('metadatas') else {}
-                                metadata.update({'id': item_id, 'filename': metadata.get('filename') or metadata.get('source')})
+                                metadata.update({'id': clean_item_id, 'filename': metadata.get('filename') or metadata.get('source')})
                 except Exception:
                     pass
             elif root == 'vectors':
-                v = gitmem_app.vector_engine.get_vector(item_id, actual_agent_id)
+                v = gitmem_app.vector_engine.get_vector(clean_item_id, actual_agent_id) or gitmem_app.vector_engine.get_vector(item_id, actual_agent_id)
                 if v:
                     file_content = v.get('content', '')
                     metadata = v.get('metadata', {})
             elif root == 'checkpoints':
-                res = _db().table('gitmem_checkpoints').select('*').eq('id', item_id).execute()
+                res = _db().table('gitmem_checkpoints').select('*').eq('id', clean_item_id).execute()
+                if not res.data and clean_item_id != item_id:
+                    res = _db().table('gitmem_checkpoints').select('*').eq('id', item_id).execute()
                 if res.data:
                     row = res.data[0]
                     file_content = row.get('data', row.get('content', 'No content available'))
@@ -1542,7 +1547,7 @@ def legacy_agent_sources(agent_id):
 
 @gitmem_bp.route('/agent/<agent_id>/history')
 def legacy_agent_history(agent_id):
-    return redirect(url_for('gitmem.hub_activity', ws_slug=agent_id), code=301)
+    return redirect(url_for('gitmem.hub_history', ws_slug=agent_id), code=301)
 
 @gitmem_bp.route('/agent/<agent_id>/settings')
 def legacy_agent_settings(agent_id):
@@ -1550,11 +1555,11 @@ def legacy_agent_settings(agent_id):
 
 @gitmem_bp.route('/agent/<agent_id>/checkpoints')
 def legacy_agent_checkpoints(agent_id):
-    return redirect(url_for('gitmem.hub_activity', ws_slug=agent_id), code=301)
+    return redirect(url_for('gitmem.hub_history', ws_slug=agent_id), code=301)
 
 @gitmem_bp.route('/agent/<agent_id>/logs')
 def legacy_agent_logs(agent_id):
-    return redirect(url_for('gitmem.hub_activity', ws_slug=agent_id), code=301)
+    return redirect(url_for('gitmem.hub_history', ws_slug=agent_id), code=301)
 
 @gitmem_bp.route('/agent/<agent_id>/pulls')
 def legacy_agent_pulls(agent_id):
@@ -1978,11 +1983,9 @@ def api_update_memory(memory_id):
         # Re-index in vector if content changed
         if 'content' in updates:
             try:
-                from gitmem.core.models import MemoryItem
                 updated = {**existing, **updates}
-                mem = MemoryItem(**{k: v for k, v in updated.items() if k != 'embedding'})
                 gitmem_app.vector_engine.delete_memory(memory_id, agent_id=agent_id)
-                gitmem_app.vector_engine.add_memory(mem)
+                gitmem_app.vector_engine.add_memory(updated)
             except Exception:
                 pass  # Vector re-index is best-effort
 

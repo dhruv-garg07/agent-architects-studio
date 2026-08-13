@@ -22,13 +22,13 @@
                     <span>Sync Supabase</span>
                 </button>
             </form>
-            <div
-                class="flex items-center gap-2 px-4 py-2 rounded-xl bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] text-xs text-gray-400 backdrop-blur-md">
+            <button onclick="openGoToFileModal()" id="btn-go-to-file"
+                class="flex items-center gap-2 px-4 py-2 rounded-xl bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] border border-[rgba(255,255,255,0.1)] text-xs text-gray-400 hover:text-white backdrop-blur-md transition-all cursor-pointer">
                 <i data-lucide="search" class="w-4 h-4 text-[#93c5fd]/70"></i>
                 <span class="hidden sm:inline">Go to file</span>
                 <kbd
                     class="text-[10px] bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] px-1.5 py-0.5 rounded text-gray-500">⌘T</kbd>
-            </div>
+            </button>
         </div>
     </div>
 
@@ -201,4 +201,83 @@
         </div>
     </div>
 </div>
+
+<!-- Go to file Modal -->
+<div id="go-to-file-modal" class="fixed inset-0 z-[200] hidden items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+    <div class="bg-[#161616] border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden p-6 flex flex-col gap-4">
+        <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <i data-lucide="search" class="w-4 h-4 text-[#93c5fd]"></i> Quick File Jump
+            </h3>
+            <button onclick="closeGoToFileModal()" class="text-gray-500 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <input type="text" id="go-to-file-input" placeholder="Filter items on this page..." class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 font-mono">
+        <div id="go-to-file-results" class="max-h-60 overflow-y-auto divide-y divide-white/5 flex flex-col gap-1"></div>
+    </div>
+</div>
+
+<script>
+function openGoToFileModal() {
+    const modal = document.getElementById('go-to-file-modal');
+    const input = document.getElementById('go-to-file-input');
+    if (modal && input) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        input.value = '';
+        renderFileFilter('');
+        input.focus();
+    }
+}
+
+function closeGoToFileModal() {
+    const modal = document.getElementById('go-to-file-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+}
+
+function renderFileFilter(query) {
+    const results = document.getElementById('go-to-file-results');
+    if (!results) return;
+    results.innerHTML = '';
+    const rows = document.querySelectorAll('.divide-y > div.group');
+    let count = 0;
+    rows.forEach(row => {
+        const link = row.querySelector('a');
+        if (link) {
+            const text = link.textContent.trim();
+            const href = link.getAttribute('href');
+            if (text.toLowerCase().includes(query.toLowerCase())) {
+                count++;
+                const item = document.createElement('a');
+                item.href = href;
+                item.className = "px-3 py-2 rounded-lg hover:bg-white/5 flex items-center justify-between text-sm text-gray-300 hover:text-white transition-colors font-mono";
+                item.innerHTML = `<span>${text}</span> <i data-lucide="arrow-right" class="w-3.5 h-3.5 opacity-50"></i>`;
+                results.appendChild(item);
+            }
+        }
+    });
+    if (count === 0) {
+        results.innerHTML = `<div class="p-4 text-center text-xs text-gray-500 font-mono">No matching items</div>`;
+    }
+    if (window.lucide) lucide.createIcons();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const input = document.getElementById('go-to-file-input');
+    if (input) {
+        input.addEventListener('input', (e) => renderFileFilter(e.target.value));
+    }
+    document.addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 't') {
+            e.preventDefault();
+            openGoToFileModal();
+        }
+        if (e.key === 'Escape') {
+            closeGoToFileModal();
+        }
+    });
+});
+</script>
 {% endblock %}
