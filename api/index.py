@@ -251,20 +251,19 @@ def proxy_anthropic(path):
                 'Access-Control-Allow-Headers': '*'
             }
 
-        # Forward the request
+        # Forward the request (without stream=True to avoid chunking issues on serverless)
         resp = requests.request(
             method=request.method,
             url=anthropic_url,
             headers=headers,
             data=request.get_data(),
             cookies=request.cookies,
-            allow_redirects=False,
-            stream=True
+            allow_redirects=False
         )
         
         # Filter out hop-by-hop headers
         excluded_headers = ['content-encoding', 'content-length', 'transfer-encoding', 'connection']
-        proxy_headers = [(name, value) for (name, value) in resp.raw.headers.items()
+        proxy_headers = [(name, value) for name, value in resp.headers.items()
                          if name.lower() not in excluded_headers]
         
         # Ensure CORS headers exist
@@ -272,7 +271,7 @@ def proxy_anthropic(path):
         if not has_cors:
             proxy_headers.append(('Access-Control-Allow-Origin', '*'))
 
-        return Response(resp.iter_content(chunk_size=1024), resp.status_code, proxy_headers)
+        return Response(resp.content, resp.status_code, proxy_headers)
     except Exception as e:
         print(f"Error proxying to Anthropic: {e}")
         return jsonify({"error": str(e)}), 500
