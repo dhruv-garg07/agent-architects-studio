@@ -231,50 +231,7 @@ def ping():
     """Simple ping endpoint for keep-alive and health checks."""
     return jsonify({"status": "ok", "timestamp": datetime.utcnow().isoformat()})
 
-from flask import Response
-
-@app.route('/api/anthropic/<path:path>', methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'])
-def proxy_anthropic(path):
-    """Proxy requests to Anthropic API."""
-    import requests
-    anthropic_url = f"https://api.anthropic.com/{path}"
-    
-    # Exclude 'Host' header to prevent issues with the target server
-    headers = {key: value for (key, value) in request.headers if key.lower() != 'host'}
-    
-    try:
-        # Handle preflight OPTIONS request
-        if request.method == 'OPTIONS':
-            return '', 200, {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
-                'Access-Control-Allow-Headers': '*'
-            }
-
-        # Forward the request (without stream=True to avoid chunking issues on serverless)
-        resp = requests.request(
-            method=request.method,
-            url=anthropic_url,
-            headers=headers,
-            data=request.get_data(),
-            cookies=request.cookies,
-            allow_redirects=False
-        )
-        
-        # Filter out hop-by-hop headers
-        excluded_headers = ['content-encoding', 'content-length', 'transfer-encoding', 'connection']
-        proxy_headers = [(name, value) for name, value in resp.headers.items()
-                         if name.lower() not in excluded_headers]
-        
-        # Ensure CORS headers exist
-        has_cors = any(name.lower() == 'access-control-allow-origin' for name, _ in proxy_headers)
-        if not has_cors:
-            proxy_headers.append(('Access-Control-Allow-Origin', '*'))
-
-        return Response(resp.content, resp.status_code, proxy_headers)
-    except Exception as e:
-        print(f"Error proxying to Anthropic: {e}")
-        return jsonify({"error": str(e)}), 500
+# /api/anthropic/* is served by the anthropic_proxy blueprint (see api/anthropic_proxy.py)
 
 
 @app.route('/health')
