@@ -56,7 +56,6 @@
             <a href="{{ url_for('gitmem.hub_explorer', ws_slug=workspace.id) if workspace else '#' }}" class="gm-ctx-btn">
                 <i data-lucide="folder-tree"></i> Browse Files
             </a>
-            </a>
             <a href="{{ url_for('gitmem.hub_history', ws_slug=workspace.id) if workspace else '#' }}" class="gm-ctx-btn">
                 <i data-lucide="git-branch"></i> History
             </a>
@@ -146,8 +145,8 @@
                     <i data-lucide="mouse-pointer-click" style="width: 32px; height: 32px; margin-bottom: 12px; opacity: 0.5;"></i><br>
                     Select a node in the Intelligence Map or a memory in the list to inspect details.
                 </div>
-            </div>
             <div class="gm-inspector-footer" style="padding: 12px 16px; border-top: 1px solid hsl(225,10%,16%); display: flex; gap: 8px; justify-content: flex-end; background: hsl(225, 12%, 11%);">
+                <button class="gm-ctx-btn" id="overlay-btn-copy"><i data-lucide="copy"></i> Copy ID</button>
                 <button class="gm-ctx-btn" id="overlay-btn-fs"><i data-lucide="file-code"></i> View Source</button>
             </div>
         </div>
@@ -892,7 +891,7 @@
         const mem = rawMemories.find(m => m.id === currentCmId);
         if (!mem) return;
         const safeType = mem.type || 'unknown';
-        const path = `memory/${safeType}/${mem.id}.json`;
+        const path = `memory/${safeType}/${mem.id}`;
         
         // Redirect to real file view
         const baseUrl = "{{ url_for('gitmem.hub_file_view', ws_slug=workspace.id) if workspace else '#' }}";
@@ -1064,14 +1063,18 @@
             }
         });
         
-        document.getElementById('overlay-btn-copy').addEventListener('click', () => {
-            const title = document.getElementById('overlay-title').textContent;
-            const id = title.split(' ')[1];
-            if (id) {
-                navigator.clipboard.writeText(id);
-                alert('Copied ID');
-            }
-        });
+        const copyBtn = document.getElementById('overlay-btn-copy');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', () => {
+                const idEl = document.getElementById('active-inspector-id');
+                if (idEl && idEl.textContent.trim()) {
+                    navigator.clipboard.writeText(idEl.textContent.trim());
+                    alert('Copied ID: ' + idEl.textContent.trim());
+                } else {
+                    alert('Please select a memory or node first.');
+                }
+            });
+        }
     });
 </script>
 
