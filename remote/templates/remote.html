@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+    <title>Mobile Desktop Remote</title>
+    <link rel="stylesheet" href="/static/css/remote.css" />
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body>
+    <script>
+        window.REMOTE_CONFIG = {
+            wsPort: {{ ws_port }},
+            hostname: window.location.hostname
+        };
+    </script>
+    <div class="container">
+        <header>
+            <h1>Mobile Remote</h1>
+            <p>Use your phone to control the laptop over Wi-Fi. Open this page from the laptop IP.</p>
+            <div id="connectionStatus" style="font-size: 12px; margin-top: 5px;">● Connecting...</div>
+        </header>
+
+        <section class="remote-grid">
+            <div class="touchpad-panel mobile-full">
+                <div class="panel-head">
+                    <h2>Touchpad</h2>
+                    <span class="hint">Drag to move mouse, toggle scroll mode for scrolling.</span>
+                </div>
+                <div id="touchpad" class="touchpad">Touch here</div>
+                <div class="touchpad-buttons">
+                    <button id="leftClick">Left Click</button>
+                    <button id="okClick">OK</button>
+                    <button id="rightClick">Right Click</button>
+                    <button id="doubleClick">Double Click</button>
+                    <button id="dragMode">Drag Mode</button>
+                    <button id="scrollMode">Scroll Mode</button>
+                </div>
+                <div class="sensitivity-control">
+                    <label for="sensitivityRange">Sensitivity <span id="sensitivityValue">2.0</span></label>
+                    <input id="sensitivityRange" type="range" min="0.5" max="4" step="0.1" value="2" />
+                </div>
+            </div>
+
+            <div class="controls-panel mobile-full">
+                <div class="section">
+                    <h2>Keyboard</h2>
+                    <textarea id="keyboardInput" placeholder="Type text and send it to the laptop..."></textarea>
+                    <div class="keyboard-actions">
+                        <button id="sendText">Send Text</button>
+                        <button id="enterKey">Enter</button>
+                        <button id="backspaceKey">Backspace</button>
+                    </div>
+                </div>
+                <div class="section">
+                    <h2>Media</h2>
+                    <div class="button-grid">
+                        <button data-action="playpause">Play/Pause</button>
+                        <button data-action="volumeup">Vol +</button>
+                        <button data-action="volumedown">Vol -</button>
+                        <button data-action="mute">Mute</button>
+                    </div>
+                </div>
+                <div class="section">
+                    <h2>System</h2>
+                    <div class="button-grid">
+                        <button data-action="open">Open App</button>
+                        <button data-action="lock">Lock</button>
+                        <button data-action="sleep">Sleep</button>
+                        <button data-action="restart">Restart</button>
+                    </div>
+                </div>
+                <div class="section">
+                    <h2>Launcher</h2>
+                    <div class="button-grid">
+                        <button id="launchChrome">Open Chrome</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="/static/js/socket-client.js"></script>
+    <script src="/static/js/touchpad.js"></script>
+    <script src="/static/js/keyboard.js"></script>
+    <script src="/static/js/media.js"></script>
+</body>
+</html>

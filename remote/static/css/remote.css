@@ -1,0 +1,158 @@
+body {
+    margin: 0;
+    font-family: Inter, system-ui, sans-serif;
+    background: #0f1523;
+    color: #f8fafc;
+}
+
+.container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 14px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 14px;
+}
+
+header h1 {
+    margin: 0;
+    font-size: clamp(1.8rem, 4vw, 2.5rem);
+}
+
+header p {
+    margin: 10px auto 0;
+    max-width: 720px;
+    color: #cbd5e1;
+}
+
+.remote-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+}
+
+.touchpad-panel,
+.controls-panel,
+.preview-panel {
+    background: #162039;
+    border-radius: 22px;
+    padding: 16px;
+    box-shadow: 0 24px 60px rgba(8, 11, 24, 0.34);
+}
+
+.panel-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.panel-head h2 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.hint {
+    font-size: 0.86rem;
+    color: #94a3b8;
+}
+
+.touchpad {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    padding: 22px;
+    min-height: 320px;
+    display: grid;
+    place-items: center;
+    touch-action: none;
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Cpath d='M5 5 L20 20 L16 22 L30 44 L34 42 L20 24 L44 20 Z' fill='%23ffffff' stroke='%23000000' stroke-width='3'/%3E%3C/svg%3E") 0 0, grab;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    font-size: 1.1rem;
+    color: #cbd5e1;
+}
+
+.sensitivity-control {
+    display: grid;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.sensitivity-control label {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    color: #cbd5e1;
+    font-size: 0.95rem;
+}
+
+.sensitivity-control input[type="range"] {
+    width: 100%;
+}
+
+.touchpad-buttons,
+.keyboard-actions,
+.button-grid {
+    display: grid;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+button {
+    border: 0;
+    border-radius: 16px;
+    background: #1f2b48;
+    color: #fff;
+    padding: 14px 16px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: transform 0.12s ease, background 0.12s ease;
+}
+
+button:hover,
+button:active {
+    transform: translateY(-1px);
+    background: #2d3d65;
+}
+
+textarea {
+    width: 100%;
+    min-height: 100px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #f8fafc;
+    padding: 14px;
+    resize: vertical;
+    font-size: 1rem;
+}
+
+.preview-panel img {
+    width: 100%;
+    border-radius: 18px;
+    margin-top: 12px;
+    background: #080b13;
+    min-height: 240px;
+    object-fit: cover;
+}
+
+@media (min-width: 900px) {
+    .remote-grid {
+        grid-template-columns: 1.3fr 0.9fr;
+    }
+
+    .controls-panel {
+        grid-column: span 2;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    button {
+        transition: none;
+    }
+}
