@@ -1850,6 +1850,13 @@ try:
 except Exception as e:
     print('[STARTUP] Could not register apis_my_agents blueprint:', e)
 
+try:
+    from anthropic_proxy import anthropic_proxy_bp
+    app.register_blueprint(anthropic_proxy_bp, url_prefix='/api/anthropic')
+    print('[STARTUP] Anthropic Proxy Blueprint registered at /api/anthropic')
+except Exception as e:
+    print('[STARTUP] Could not register anthropic_proxy blueprint:', e)
+
 # Routes
 @app.route('/')
 def homepage():
